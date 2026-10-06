@@ -1,0 +1,18 @@
+#!/bin/sh
+# mm 7.0.0 pointed at the LOCAL stub backend (harness/stub-backend.mjs) + anvil fork.
+# Separate HOME from bin/mm so the "no sign-in" evidence stays reproducible.
+SPIKE="$(cd "$(dirname "$0")/.." && pwd)"
+STUB="${STUB_URL:-http://127.0.0.1:18788}"
+export HOME="$SPIKE/.mmhome-harness"
+export MM_TELEMETRY_DISABLED=1 DO_NOT_TRACK=1
+export NODE_OPTIONS="--no-deprecation ${NODE_OPTIONS:-}"
+export npm_config_cache="${ISO_NPM_CACHE:-~/.npm}"
+# Every backend URL -> localhost stub, so nothing reaches MetaMask with a fake token.
+for v in MM_AGENTIC_PROXY_HOST MM_OIDC_ISSUER MM_INTROSPECT_URL MM_SERVER_WALLET_BASE_URL \
+         MM_BRIDGE_API_BASE_URL MM_ACCOUNTS_API_BASE_URL MM_PRICE_API_BASE_URL MM_TOKEN_API_BASE_URL \
+         MM_PREDICT_RELAYER_URL MM_LIFI_EARN_API_BASE_URL MM_LIFI_QUOTE_API_BASE_URL; do
+  export "$v=$STUB"
+done
+export MM_INFURA_RPC_BASE_URL="$STUB/rpc"
+export MM_INTROSPECT_URL="$STUB/introspect"
+exec node "$SPIKE/node_modules/@metamask/agent-wallet/dist/index.js" "$@"

@@ -1,0 +1,59 @@
+chain 10143 block 68695842
+MON deployer=4.701351956 maker=0 taker1=0
++ fund_maker 0x52deace9b6524bda96aeaa1ffc29ce10f81bdfccf239ab9947e51e1f02171acd
++ fund_taker1 0x151b221a7561529cb47814ece6c51700e523ce1ca62244a4e58c8839ce6e96b6
++ ausd_maker 10000
+  faucet global cooldown (60 s) — waiting
++ ausd_taker1 10000
++ yes 0x03222e19fda0fb305df95092edbb65f26e0806ab
++ mint_maker 500
++ market 0x47cb4f32Eb554E4a873DA20CA86261bc3d9CD42A
+  market 0x47cb4f32Eb554E4a873DA20CA86261bc3d9CD42A
++ deposit_ausd 0x80d8582d03135d12518d05dad15dc19f71be5579abf0d7786cb01c029afc9c3a
++ deposit_yes 0x626d93e409cb24b864ea3fd81317bb8db9741e26d87eecb3e9f2e2743eac20c0
++ single_ask 
++ ladder 
+  L2 @block 68696219
+    ask 0.460  100.000000 YES
+    ask 0.450  75.000000 YES
+    ask 0.440  50.000000 YES
+    ----- spread 0.020 -----
+    bid 0.420  50.000000 YES
+    bid 0.410  75.000000 YES
+    bid 0.400  100.000000 YES
++ book_quoted 
++ take 
+  L2 @block 68696242
+    ask 0.460  100.000000 YES
+    ask 0.450  75.000000 YES
+    ask 0.440  4.545455 YES
+    ----- spread 0.020 -----
+    bid 0.420  50.000000 YES
+    bid 0.410  75.000000 YES
+    bid 0.400  100.000000 YES
++ book_after_take 
++ cancel_all 0x7883dec9a408c0bb02a2a9dbb2adf64f13c6a890fdfa244f577b051b0bef4c3b
+  L2 @block 68696256
+    ----- spread n/a -----
++ book_after_cancel 
++ maker_margin_after 
+
+  gasLimit(billed)  MON@102gwei  latency  status  label / tx
+      21000  0.00214    1227ms  success  MON 0.6 deployer->maker  0x52deace9b6524bda96aeaa1ffc29ce10f81bdfccf239ab9947e51e1f02171acd
+      21000  0.00214    1270ms  success  MON 0.2 deployer->taker1  0x151b221a7561529cb47814ece6c51700e523ce1ca62244a4e58c8839ce6e96b6
+     150190  0.01532    1912ms  success  faucet.requestFunds (maker)  0xab0bb5c6f3865fc5a76100393680dc5b67fefd612652af3efe327551e6ea5677
+     150190  0.01532    5659ms  success  faucet.requestFunds (taker1)  0x5c068ad2671ef183eb89c12c6f3bd41b786c17aa0c388a483dbbfb4bcbde519e
+     650403  0.06634    1612ms  success  deploy SpikeToken (YES 6dp)  0xbc4b54326de492285427963e2650b014706ff91cdf0d3f3a39274e8203b73af7
+      93069  0.00949    2799ms  success  YES.mint 500 -> maker  0x4d3c39f37d189bc6ebbd77283842f0bc3baa574539e36395a6612b6bec0deca7
+    1473065  0.15025    1159ms  success  router.deployProxy (create YES/AUSD market)  0x5c184afcf9fe6b1e96518cb286ac28822f59b9a177802c6ee42d108c03335fc7
+      82152  0.00838    2831ms  success  approve 0xd029C2  0x7fcc67fdcc55f4a0093d026fe5b43428c5cda24eb6791ef29c8c73d04befbac9
+     153471  0.01565    2914ms  success  margin.deposit 0xa9012a  0x80d8582d03135d12518d05dad15dc19f71be5579abf0d7786cb01c029afc9c3a
+      60761  0.00620     871ms  success  approve 0xd029C2  0x94f7ed75eeba3d6bc9774f4d8f425bf69b852b2cf751b2bdf6ec953e1ba8e140
+     162656  0.01659    2042ms  success  margin.deposit 0x03222e  0x626d93e409cb24b864ea3fd81317bb8db9741e26d87eecb3e9f2e2743eac20c0
+     373264  0.03807    1453ms  success  addSellOrder 50@0.45  0x93ce546bdc767de347fc3bda7d087d523f3f2a3aac219ad89b5ef84a4fa07c92
+     987702  0.10075    1864ms  success  batchUpdate: cancel 1 + place 3 bids/3 asks  0xa6f28baf51c5ad68f8b99d52a552d36fe024d41281bc967ffbe1d9d45334a73e
+      82166  0.00838    3933ms  success  approve 0x47cb4f  0xe394e33b838cb2a1349bc6892dabd3ea78d3e62c7314ada780a322c163cb9e2a
+     389326  0.03971    1162ms  success  placeAndExecuteMarketBuy 20 AUSD  0xb2b77c1377a549c4476ccd5e615780303392570ca54dcc9b24e10372413078da
+     453680  0.04628    4677ms  success  batchCancelOrdersNoRevert x6  0x7883dec9a408c0bb02a2a9dbb2adf64f13c6a890fdfa244f577b051b0bef4c3b
+  total 16 txs ≈ 0.5410 MON
+MON deployer=3.670981182 maker=0.352764648 taker1=0.136588436

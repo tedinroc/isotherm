@@ -1,0 +1,417 @@
+{
+  "rpc": "anvil fork of https://testnet-rpc.monad.xyz",
+  "live": false,
+  "startedAt": "2026-10-06T13:04:01.754Z",
+  "steps": [
+    {
+      "t": "2026-10-06T13:04:01.772Z",
+      "s": "chain 10143 @ block 68689869 via anvil fork"
+    },
+    {
+      "t": "2026-10-06T13:04:03.051Z",
+      "s": "anvil: set 100 MON on deployer/maker/taker1/taker2 (anvil_setBalance)"
+    },
+    {
+      "t": "2026-10-06T13:04:03.825Z",
+      "s": "maker AUSD = 10000"
+    },
+    {
+      "t": "2026-10-06T13:04:05.450Z",
+      "s": "taker1 AUSD = 10000"
+    },
+    {
+      "t": "2026-10-06T13:04:05.980Z",
+      "s": "taker2 AUSD = 10000"
+    },
+    {
+      "t": "2026-10-06T13:04:07.267Z",
+      "s": "(a) YES token 0x1ecd98e27c5314007ae20fb5f29063637584cbff; maker YES=2000"
+    },
+    {
+      "t": "2026-10-06T13:04:13.091Z",
+      "s": "(b) market 0xCdF86940C2A15ae199d7024B3c3395B4aC6e678E (vault 0x37aC117ca1B29515be2e3E594E05e3bC562941b4) created by 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11; router owner is 0x07bBBf2e9911705a7b258e0A05A34620058fC1D1",
+      "market": "0xCdF86940C2A15ae199d7024B3c3395B4aC6e678E",
+      "vault": "0x37aC117ca1B29515be2e3E594E05e3bC562941b4",
+      "yes": "0x1ecd98e27c5314007ae20fb5f29063637584cbff"
+    },
+    {
+      "t": "2026-10-06T13:04:13.092Z",
+      "s": "    getMarketParams = [10000,\"1000000\",\"0x1eCD98e27c5314007Ae20FB5f29063637584cbff\",\"6\",\"0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC\",\"6\",10,\"1000000\",\"1000000000000\",\"10\",\"0\"]"
+    },
+    {
+      "t": "2026-10-06T13:04:15.232Z",
+      "s": "(c) maker margin: AUSD=500 YES=1000"
+    },
+    {
+      "t": "2026-10-06T13:04:16.036Z",
+      "s": "    single quotes: bid id 1 @0.41, ask id 2 @0.45"
+    },
+    {
+      "t": "2026-10-06T13:04:16.427Z",
+      "s": "    batch ladder placed ids 3,4,5,6,7,8"
+    },
+    {
+      "t": "2026-10-06T13:04:16.803Z",
+      "s": "    re-quoted ladder ids 9,10,11,12,13,14",
+      "book": {
+        "block": "68689886",
+        "bids": [
+          {
+            "price": 0.43,
+            "size": 100
+          },
+          {
+            "price": 0.42,
+            "size": 150
+          },
+          {
+            "price": 0.41,
+            "size": 200
+          }
+        ],
+        "asks": [
+          {
+            "price": 0.45,
+            "size": 100
+          },
+          {
+            "price": 0.46,
+            "size": 150
+          },
+          {
+            "price": 0.47,
+            "size": 200
+          }
+        ],
+        "bestBid": 0.43,
+        "bestAsk": 0.45
+      }
+    },
+    {
+      "t": "2026-10-06T13:04:18.554Z",
+      "s": "(d) taker1 market-bought with 50 AUSD -> +110.758477 YES in wallet (2 fills)",
+      "fills": [
+        {
+          "orderId": "12",
+          "price": "450000000000000000",
+          "filled": "100000000",
+          "isBuy": true
+        },
+        {
+          "orderId": "13",
+          "price": "460000000000000000",
+          "filled": "10869347",
+          "isBuy": true
+        }
+      ]
+    },
+    {
+      "t": "2026-10-06T13:04:19.559Z",
+      "s": "    taker2 market-sold 30 YES -> +12.8871 AUSD in wallet"
+    },
+    {
+      "t": "2026-10-06T13:04:20.424Z",
+      "s": "    taker2 bought via Router.anyToAnySwap (20 AUSD, FOK) -> +43.434781 YES"
+    },
+    {
+      "t": "2026-10-06T13:04:20.425Z",
+      "s": "    book after takes",
+      "book": {
+        "block": "68689892",
+        "bids": [
+          {
+            "price": 0.43,
+            "size": 70
+          },
+          {
+            "price": 0.42,
+            "size": 150
+          },
+          {
+            "price": 0.41,
+            "size": 200
+          }
+        ],
+        "asks": [
+          {
+            "price": 0.46,
+            "size": 95.652393
+          },
+          {
+            "price": 0.47,
+            "size": 200
+          }
+        ],
+        "bestBid": 0.43,
+        "bestAsk": 0.46
+      }
+    },
+    {
+      "t": "2026-10-06T13:04:21.519Z",
+      "s": "(e) maker open orders (scan): 9:bid@0.43x70 10:bid@0.42x150 11:bid@0.41x200 13:ask@0.46x95.652393 14:ask@0.47x200"
+    },
+    {
+      "t": "2026-10-06T13:04:21.873Z",
+      "s": "    replaced with ids 15,16"
+    },
+    {
+      "t": "2026-10-06T13:04:22.190Z",
+      "s": "    after cancelAll: bids=0 asks=0",
+      "book": {
+        "block": "68689894",
+        "bids": [],
+        "asks": []
+      }
+    },
+    {
+      "t": "2026-10-06T13:04:22.606Z",
+      "s": "    maker withdrew margin; wallet AUSD=10057.0997 YES=1875.652393"
+    }
+  ],
+  "txs": [
+    {
+      "label": "faucet.requestFunds -> 0xd57263",
+      "hash": "0x0ac598c302faad0aa86e9feceedd217d3a267bed0da36b547a5a046796b3671a",
+      "gasUsed": "128414",
+      "gasLimit": "149260",
+      "effectiveGasPrice": "88508659000",
+      "costMonAt102Gwei": 0.01522452,
+      "latencyMs": 765,
+      "status": "success"
+    },
+    {
+      "label": "faucet.requestFunds -> 0x636D05",
+      "hash": "0x2e344f1bb91ee5d64c98c8cb81829773c2551e89e2f95fcf9fb4224625688e73",
+      "gasUsed": "128414",
+      "gasLimit": "149260",
+      "effectiveGasPrice": "68015204830",
+      "costMonAt102Gwei": 0.01522452,
+      "latencyMs": 1621,
+      "status": "success"
+    },
+    {
+      "label": "faucet.requestFunds -> 0x029049",
+      "hash": "0x2cbd73e23222acb8fe50be5337e3edab8f5fa2b94e171df6c4c5ee8e4d0e8375",
+      "gasUsed": "128414",
+      "gasLimit": "149260",
+      "effectiveGasPrice": "52321066164",
+      "costMonAt102Gwei": 0.01522452,
+      "latencyMs": 525,
+      "status": "success"
+    },
+    {
+      "label": "deploy SpikeToken (YES, 6dp)",
+      "hash": "0x4224579a8f344840db33e919a48f6cc531ba57bdf48729cb42530aec3a03e700",
+      "gasUsed": "585497",
+      "gasLimit": "673322",
+      "effectiveGasPrice": "45916916800",
+      "costMonAt102Gwei": 0.068678844,
+      "latencyMs": 292,
+      "status": "success"
+    },
+    {
+      "label": "YES.mint 2,000 -> maker",
+      "hash": "0x60de26d2acb21e0b67926d2478c1819c1280cd29d23ff0b5e8e811550925eb4c",
+      "gasUsed": "80029",
+      "gasLimit": "92034",
+      "effectiveGasPrice": "40346133401",
+      "costMonAt102Gwei": 0.009387468,
+      "latencyMs": 304,
+      "status": "success"
+    },
+    {
+      "label": "YES.mint 50 -> taker2",
+      "hash": "0xb318d0cebd2fd0962e70f9d2dfd26bb9ae18ce57b42019f0911d214c608b82da",
+      "gasUsed": "63041",
+      "gasLimit": "72498",
+      "effectiveGasPrice": "35433114779",
+      "costMonAt102Gwei": 0.007394796,
+      "latencyMs": 493,
+      "status": "success"
+    },
+    {
+      "label": "router.deployProxy (create YES/AUSD market)",
+      "hash": "0x39ab6d55fe2fcbe825a7fe4b7221205407c63dc49280e56b1cfbf73fcdf8e155",
+      "gasUsed": "1258600",
+      "gasLimit": "1469571",
+      "effectiveGasPrice": "31132593262",
+      "costMonAt102Gwei": 0.149896242,
+      "latencyMs": 575,
+      "status": "success"
+    },
+    {
+      "label": "approve 0xd029C2",
+      "hash": "0x732447e298841d45c1018f4de5ad2b8afe45b3da518d1832e305edd69f096837",
+      "gasUsed": "70573",
+      "gasLimit": "81669",
+      "effectiveGasPrice": "27429227241",
+      "costMonAt102Gwei": 0.008330238,
+      "latencyMs": 685,
+      "status": "success"
+    },
+    {
+      "label": "margin.deposit 0xa9012a",
+      "hash": "0xd575ffc1cac272bd61533bead0d4c7b27040100b95deda436edd63c01959e6be",
+      "gasUsed": "131244",
+      "gasLimit": "152557",
+      "effectiveGasPrice": "24128682486",
+      "costMonAt102Gwei": 0.015560814,
+      "latencyMs": 554,
+      "status": "success"
+    },
+    {
+      "label": "approve 0xd029C2",
+      "hash": "0xe8d25c953361d1cc971505145b040a7841c4c4da6010efea89effdc0d4c23f22",
+      "gasUsed": "52046",
+      "gasLimit": "59853",
+      "effectiveGasPrice": "21242656344",
+      "costMonAt102Gwei": 0.006105006,
+      "latencyMs": 318,
+      "status": "success"
+    },
+    {
+      "label": "margin.deposit 0x1ecd98",
+      "hash": "0xea4a0531ffa806063e4331d3f5a4c035b1db190fb5bad4db3f504e68742adfab",
+      "gasUsed": "139156",
+      "gasLimit": "161801",
+      "effectiveGasPrice": "18714080217",
+      "costMonAt102Gwei": 0.016503702,
+      "latencyMs": 325,
+      "status": "success"
+    },
+    {
+      "label": "addBuyOrder 100@0.41",
+      "hash": "0x2a3b83663e09f8d7fd9d5db1553ed581430a0895cd85ec755481f8c05ba61b7f",
+      "gasUsed": "317021",
+      "gasLimit": "369600",
+      "effectiveGasPrice": "16503928558",
+      "costMonAt102Gwei": 0.0376992,
+      "latencyMs": 352,
+      "status": "success"
+    },
+    {
+      "label": "addSellOrder 100@0.45",
+      "hash": "0x86c6d483fc422d51a59818a57586a956a77ae9f34bc3d0c629069bfbccb9767f",
+      "gasUsed": "342618",
+      "gasLimit": "399504",
+      "effectiveGasPrice": "14574129274",
+      "costMonAt102Gwei": 0.040749408,
+      "latencyMs": 448,
+      "status": "success"
+    },
+    {
+      "label": "batchUpdate re-quote: cancel 2 + place 3 bids/3 asks",
+      "hash": "0xa60a1587c72a7d9fa5f30a9c1d87c57f7d1e193de6e7cd5a3a04c68c327ce32e",
+      "gasUsed": "780014",
+      "gasLimit": "910431",
+      "effectiveGasPrice": "12885114350",
+      "costMonAt102Gwei": 0.092863962,
+      "latencyMs": 385,
+      "status": "success"
+    },
+    {
+      "label": "batchUpdate steady-state re-quote: cancel 6 + place 6",
+      "hash": "0x46f0ef6b09713156bb10f2f343d3ab62596855bf792b647e1e3318acdaaa9901",
+      "gasUsed": "861746",
+      "gasLimit": "1005904",
+      "effectiveGasPrice": "11414925983",
+      "costMonAt102Gwei": 0.102602208,
+      "latencyMs": 369,
+      "status": "success"
+    },
+    {
+      "label": "approve 0xCdF869",
+      "hash": "0xc5ad3842737167666b79b78fe68c295e2f09e6c3fa1e8d227377ee4d3c1517d6",
+      "gasUsed": "70585",
+      "gasLimit": "81683",
+      "effectiveGasPrice": "10128018604",
+      "costMonAt102Gwei": 0.008331666,
+      "latencyMs": 1058,
+      "status": "success"
+    },
+    {
+      "label": "placeAndExecuteMarketBuy 50 AUSD",
+      "hash": "0x6e71699e3c61cb6517940d0a4b1a3c3230f08db3985e3be312a12773be2c0829",
+      "gasUsed": "327166",
+      "gasLimit": "435075",
+      "effectiveGasPrice": "8988090114",
+      "costMonAt102Gwei": 0.04437765,
+      "latencyMs": 385,
+      "status": "success"
+    },
+    {
+      "label": "approve 0xCdF869",
+      "hash": "0xddfd0a71ee8eaa7ecfe264324fa22dcb3c321c929f4776efd7d6e1b7f4fb1c6c",
+      "gasUsed": "52058",
+      "gasLimit": "59867",
+      "effectiveGasPrice": "7993934569",
+      "costMonAt102Gwei": 0.006106434,
+      "latencyMs": 658,
+      "status": "success"
+    },
+    {
+      "label": "placeAndExecuteMarketSell 30 YES",
+      "hash": "0xaf31771b07eeecf112f435ff56490f441d0ba51f0c6bef60da4e1f42f4a49dc7",
+      "gasUsed": "301549",
+      "gasLimit": "400688",
+      "effectiveGasPrice": "7120299565",
+      "costMonAt102Gwei": 0.040870176,
+      "latencyMs": 341,
+      "status": "success"
+    },
+    {
+      "label": "approve 0x7EFbE1",
+      "hash": "0xecff44f06a7ae76e1e5981b42d7a17331a45837b933740f98815f02eca5459d6",
+      "gasUsed": "70585",
+      "gasLimit": "81683",
+      "effectiveGasPrice": "6358338070",
+      "costMonAt102Gwei": 0.008331666,
+      "latencyMs": 434,
+      "status": "success"
+    },
+    {
+      "label": "router.anyToAnySwap 20 AUSD->YES",
+      "hash": "0xfb68a43c24dbe69977bc664e3cf9f5d2a86e140ef35cad0827e86f0e08b5c0e5",
+      "gasUsed": "374242",
+      "gasLimit": "493522",
+      "effectiveGasPrice": "5689176176",
+      "costMonAt102Gwei": 0.050339244,
+      "latencyMs": 424,
+      "status": "success"
+    },
+    {
+      "label": "batchUpdate replace: cancel 5 + place 1b/1a",
+      "hash": "0x4a8613a70c8493bdfe03136de726f892e2f42122f2c3abf48bd72e40fac98f11",
+      "gasUsed": "565151",
+      "gasLimit": "659432",
+      "effectiveGasPrice": "5105953966",
+      "costMonAt102Gwei": 0.067262064,
+      "latencyMs": 349,
+      "status": "success"
+    },
+    {
+      "label": "batchCancelOrdersNoRevert x2",
+      "hash": "0x6f9d249c5f26f3a7a9763776ab4bb5f87c96ed0ab1437a84c9941406a3f6be72",
+      "gasUsed": "248833",
+      "gasLimit": "289937",
+      "effectiveGasPrice": "4596577194",
+      "costMonAt102Gwei": 0.029573574,
+      "latencyMs": 312,
+      "status": "success"
+    },
+    {
+      "label": "margin.batchWithdrawMaxTokens",
+      "hash": "0x62c6931277a4f7723139397666b5f2018ed4b8a58d5061c18eb42c7e6b9cd1a8",
+      "gasUsed": "156748",
+      "gasLimit": "182350",
+      "effectiveGasPrice": "4148496624",
+      "costMonAt102Gwei": 0.0185997,
+      "latencyMs": 412,
+      "status": "success"
+    }
+  ],
+  "totalMon": 0.8752376220000001,
+  "market": "0xCdF86940C2A15ae199d7024B3c3395B4aC6e678E",
+  "yes": "0x1ecd98e27c5314007ae20fb5f29063637584cbff",
+  "endBlock": "68689895"
+}

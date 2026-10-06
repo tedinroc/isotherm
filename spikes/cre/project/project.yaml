@@ -1,0 +1,10 @@
+# CRE project settings (RPCs per target). chain-name values come from chain-selectors.
+anvil-fork:
+  rpcs:
+    - chain-name: monad-testnet
+      url: http://127.0.0.1:${ISOTHERM_ANVIL_PORT}
+
+testnet:
+  rpcs:
+    - chain-name: monad-testnet
+      url: https://testnet-rpc.monad.xyz

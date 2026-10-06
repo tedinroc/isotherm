@@ -1,0 +1,9 @@
+bun test v1.4.2 (744846f84)
+
+e2e/anvil.e2e.test.ts:
+ISOTHERM_E2E_RPC not set; skipping
+
+ 8 pass
+ 0 fail
+ 27 expect() calls
+Ran 8 tests across 2 files. [98.00ms]

@@ -1,0 +1,17 @@
+{
+  "rpc": "https://testnet-rpc.monad.xyz",
+  "simulatedOnTopOfBlock": "68711523",
+  "user": "0xe20FE2AD0cD83a42700c212c5046786ce8c2cA14",
+  "userMON": "0",
+  "faucet": {
+    "status": "success",
+    "gasUsed": "150000000"
+  },
+  "transferWithAuthorization": {
+    "status": "success",
+    "gasUsed": "150000000"
+  },
+  "userAusdAfter": "9975000000",
+  "authorizationUsed": true
+}
+LIVE SIMULATION PASS

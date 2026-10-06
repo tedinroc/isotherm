@@ -1,0 +1,78 @@
+[RCSS] obs days 847; lead1 model-days 6847; lead2 6847; pm events 184
+[RJTT] obs days 1009; lead1 model-days 6847; lead2 6847; pm events 209
+validation top 5 (pooled RPS over k=2..42, lower is better):
+  0.6695 {"biasWindow":60,"weighting":"invmse","dist":"empirical","bandwidth":0.6,"residWindow":90,"spreadScale":true,"minTrain":20} {"RCSS_L1":0.7616,"RCSS_L2":0.8614,"RJTT_L1":0.5347,"RJTT_L2":0.5981}
+  0.6706 {"biasWindow":90,"weighting":"invmse","dist":"empirical","bandwidth":0.6,"residWindow":90,"spreadScale":true,"minTrain":20} {"RCSS_L1":0.7634,"RCSS_L2":0.8645,"RJTT_L1":0.536,"RJTT_L2":0.597}
+  0.6708 {"biasWindow":60,"weighting":"invmse","dist":"empirical","bandwidth":0.35,"residWindow":90,"spreadScale":true,"minTrain":20} {"RCSS_L1":0.7642,"RCSS_L2":0.8641,"RJTT_L1":0.5348,"RJTT_L2":0.5987}
+  0.6729 {"biasWindow":90,"weighting":"invmse","dist":"empirical","bandwidth":0.35,"residWindow":90,"spreadScale":true,"minTrain":20} {"RCSS_L1":0.7675,"RCSS_L2":0.8685,"RJTT_L1":0.537,"RJTT_L2":0.5981}
+  0.6776 {"biasWindow":60,"weighting":"invmse","dist":"gaussian","bandwidth":0.5,"residWindow":90,"spreadScale":true,"minTrain":20} {"RCSS_L1":0.7723,"RCSS_L2":0.8755,"RJTT_L1":0.5384,"RJTT_L2":0.6042}
+validation worst: 0.7966 {"biasWindow":90,"weighting":"equal","dist":"gaussian","bandwidth":0.5,"residWindow":90,"spreadScale":true,"minTrain":20}
+
+[RCSS] test days 179 (skipped 5), strike-evals 1790
+   model_L2         Brier 0.0764  logloss 0.2502
+   model_L1         Brier 0.0685  logloss 0.2247
+   pm_D-1_12        Brier 0.0712  logloss 0.2319
+   pm_D-1_23        Brier 0.0637  logloss 0.2090
+   pm_D_08          Brier 0.0591  logloss 0.1962
+   clim30           Brier 0.1720  logloss 0.5318
+   blend_L2+pm12    Brier 0.0708  logloss 0.2323
+   blend_L1+pm23    Brier 0.0636  logloss 0.2108
+   pmRecal_23       Brier 0.0578  logloss 0.1914
+   stack_pm23+L1    Brier 0.0580  logloss 0.1922
+   pmRecal_12       Brier 0.0619  logloss 0.2051
+   stack_pm12+L2    Brier 0.0624  logloss 0.2074
+   model_L2 vs pm_D-1_12 (Brier)          diff 0.00524 CI95 [-0.0013,0.01172] P(A better) 0.059
+   model_L1 vs pm_D-1_23 (Brier)          diff 0.00481 CI95 [-0.00013,0.00974] P(A better) 0.028
+   blend_L1+pm23 vs pm_D-1_23 (Brier)     diff -0.00008 CI95 [-0.00254,0.00233] P(A better) 0.505
+   model_L1 vs pm_D-1_23 (logloss)        diff 0.01574 CI95 [0.0011,0.02931] P(A better) 0.015
+   pmRecal_23 vs pm_D-1_23 (Brier)        diff -0.00032 CI95 [-0.00377,0.00295] P(A better) 0.584 days 148
+   stack_pm23+L1 vs pm_D-1_23 (Brier)     diff -0.00007 CI95 [-0.00349,0.00338] P(A better) 0.519 days 148
+   stack_pm23+L1 vs pmRecal_23 (Brier)    diff 0.00025 CI95 [-0.00068,0.00121] P(A better) 0.294 days 148
+   stack_pm12+L2 vs pm_D-1_12 (Brier)     diff -0.0015 CI95 [-0.00621,0.0031] P(A better) 0.733 days 148
+   last stacking fits [a, b_pm, b_model]: {"pmRecal_23":[0.138,1.166],"stack_pm23+L1":[-0.031,0.907,0.323],"pmRecal_12":[0.245,1.215],"stack_pm12+L2":[0.273,1.25,-0.04]}
+   deterministic MAE: mu_L1 1.057 (bias -0.085), mu_L2 1.192; exact-integer hit (round(mu_L1)==Y) 60/179
+   raw L1 MAE by model: ecmwf 1.933, gfs 1.542, icon 1.922, jma 2.826, cma 2.746, meteofrance 1.508, gem 2.659
+
+[RJTT] test days 202 (skipped 7), strike-evals 2010
+   model_L2         Brier 0.0729  logloss 0.2372
+   model_L1         Brier 0.0631  logloss 0.2075
+   pm_D-1_12        Brier 0.0594  logloss 0.1990
+   pm_D-1_23        Brier 0.0556  logloss 0.1873
+   pm_D_08          Brier 0.0506  logloss 0.1720
+   clim30           Brier 0.1996  logloss 0.6054
+   blend_L2+pm12    Brier 0.0641  logloss 0.2120
+   blend_L1+pm23    Brier 0.0578  logloss 0.1920
+   pmRecal_23       Brier 0.0579  logloss 0.1970
+   stack_pm23+L1    Brier 0.0597  logloss 0.2025
+   pmRecal_12       Brier 0.0618  logloss 0.2065
+   stack_pm12+L2    Brier 0.0616  logloss 0.2065
+   model_L2 vs pm_D-1_12 (Brier)          diff 0.01349 CI95 [0.0092,0.0178] P(A better) 0
+   model_L1 vs pm_D-1_23 (Brier)          diff 0.00746 CI95 [0.0036,0.01123] P(A better) 0
+   blend_L1+pm23 vs pm_D-1_23 (Brier)     diff 0.00219 CI95 [0.00034,0.00401] P(A better) 0.009
+   model_L1 vs pm_D-1_23 (logloss)        diff 0.02014 CI95 [0.00686,0.03293] P(A better) 0
+   pmRecal_23 vs pm_D-1_23 (Brier)        diff 0.00131 CI95 [0.00031,0.00233] P(A better) 0.003 days 171
+   stack_pm23+L1 vs pm_D-1_23 (Brier)     diff 0.00306 CI95 [0.00119,0.00502] P(A better) 0 days 171
+   stack_pm23+L1 vs pmRecal_23 (Brier)    diff 0.00175 CI95 [0.00038,0.00325] P(A better) 0.005 days 171
+   stack_pm12+L2 vs pm_D-1_12 (Brier)     diff 0.00092 CI95 [-0.00102,0.00301] P(A better) 0.184 days 171
+   last stacking fits [a, b_pm, b_model]: {"pmRecal_23":[-0.063,1.027],"stack_pm23+L1":[-0.011,1.225,-0.223],"pmRecal_12":[-0.156,1.078],"stack_pm12+L2":[-0.092,1.283,-0.232]}
+   deterministic MAE: mu_L1 0.902 (bias 0.061), mu_L2 1.058; exact-integer hit (round(mu_L1)==Y) 73/202
+   raw L1 MAE by model: ecmwf 1.317, gfs 1.17, icon 1.135, jma 1.514, cma 1.597, meteofrance 2.41, gem 1.369
+
+[pooled]
+   model_L2         Brier 0.0746  logloss 0.2433  n 3800
+   model_L1         Brier 0.0656  logloss 0.2156  n 3800
+   pm_D-1_12        Brier 0.0650  logloss 0.2145  n 3800
+   pm_D-1_23        Brier 0.0594  logloss 0.1975  n 3800
+   pm_D_08          Brier 0.0546  logloss 0.1834  n 3800
+   clim30           Brier 0.1866  logloss 0.5707  n 3800
+   blend_L2+pm12    Brier 0.0672  logloss 0.2216  n 3800
+   blend_L1+pm23    Brier 0.0606  logloss 0.2008  n 3800
+   pmRecal_23       Brier 0.0578  logloss 0.1944  n 3190
+   stack_pm23+L1    Brier 0.0589  logloss 0.1977  n 3190
+   pmRecal_12       Brier 0.0618  logloss 0.2059  n 3190
+   stack_pm12+L2    Brier 0.0620  logloss 0.2069  n 3190
+   model_L2 vs pm_D-1_12 (Brier)          diff 0.0096 CI95 [0.00554,0.01333] P(A better) 0 days 381
+   model_L1 vs pm_D-1_23 (Brier)          diff 0.00621 CI95 [0.00301,0.00918] P(A better) 0 days 381
+   blend_L1+pm23 vs pm_D-1_23 (Brier)     diff 0.00112 CI95 [-0.00044,0.00256] P(A better) 0.078 days 381
+   blend_L2+pm12 vs pm_D-1_12 (Brier)     diff 0.00226 CI95 [0.00027,0.00402] P(A better) 0.014 days 381
+node scripts/backtest.ts  44.28s user 0.23s system 100% cpu 44.220 total

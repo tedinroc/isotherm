@@ -1,0 +1,22 @@
+{
+  "name": "isotherm-settle-workflow",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@chainlink/cre-sdk": "1.23.0",
+    "@noble/curves": "1.9.7",
+    "viem": "2.54.2",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/bun": "1.2.21"
+  }
+}

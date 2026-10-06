@@ -1,0 +1,16 @@
+# tools (CRE CLI binary, bun, patched CLI) — reinstall with ./setup.sh
+.tools/
+# secrets (attester key) — never commit
+.secrets/
+.env
+project/.env
+# build outputs
+project/settle/node_modules/
+project/settle/binary.wasm
+project/settle/*.wasm
+project/settle/.cre_build_tmp.js
+onchain/out/
+onchain/cache/
+# large doc dump (re-download: curl -sSL https://docs.chain.link/cre/ts/llms-full.txt)
+docs/cre_ts_llms-full.txt
+logs/anvil-*.pid

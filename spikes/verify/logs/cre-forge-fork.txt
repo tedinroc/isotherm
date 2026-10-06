@@ -1,0 +1,21 @@
+Compiling 45 files with Solc 0.8.37
+Solc 0.8.37 finished in 685.05ms
+Compiler run successful!
+
+Ran 7 tests for test/ForwarderFork.t.sol:ForwarderForkTest
+[PASS] test_directOnReport_reverts() (gas: 73562)
+[PASS] test_forgedReport_rejectedButTxSucceeds() (gas: 170397)
+[PASS] test_liveForwardersIdentity() (gas: 44122)
+[PASS] test_mockForwarder_metadataShape() (gas: 861872)
+Logs:
+  metadata passed by MockKeystoneForwarder: 0x111111111111111111111111111111111111111111111111111111111111111137373231353638323933aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0001
+
+[PASS] test_productionForwarder_requiresDonSignatures() (gas: 81503)
+[PASS] test_replay_rejected() (gas: 323268)
+[PASS] test_tsReport_settlesThroughMockForwarder() (gas: 220711)
+Logs:
+  gas: MockKeystoneForwarder.report -> Resolver.onReport (in-call, warm calldata): 160316
+
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 7.18s (16.48s CPU time)
+
+Ran 1 test suite in 8.18s (7.18s CPU time): 7 tests passed, 0 failed, 0 skipped (7 total tests)

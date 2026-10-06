@@ -1,0 +1,23 @@
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...
+✓ Workflow compiled
+✓ Simulation limits enabled
+  HTTP: req=120kb resp=250kb timeout=10s | ConfHTTP: req=125kb resp=500kb timeout=1m30s | Consensus obs=25kb | ChainWrite evm_report=50kb evm_gas=10000000 solana_report=265b solana_cu=300000 | WASM binary=100mb compressed=20mb
+  Binary hash: 3111f2fdf168860ef6ef473321a548a29b658036ee3a5d94d84644d1b38757f5
+  Config hash: 5f996b10a5b07caddc2a493bcc3d25aa92ea48b9391e8c560c56f2bb948dbd04
+2026-10-06T06:30:27Z [SIMULATION] Simulator Initialized
+
+2026-10-06T06:30:27Z [SIMULATION] Running trigger trigger=cron-trigger@1.0.0
+2026-10-06T06:30:27Z [USER LOG] RCSS 2026-10-05: already resolved (status=1), skip
+
+✓ Workflow Simulation Result:
+"[{\"station\":\"RCSS\",\"date\":20261005,\"skipped\":\"already-resolved\"}]"
+
+2026-10-06T06:30:27Z [SIMULATION] Execution finished signal received
+2026-10-06T06:30:27Z [SIMULATION] Skipping WorkflowEngineV2
+
+⚠️  Update available! You’re running 1.37.0-isotherm-nologin, but 1.37.0 is the latest.
+Run `cre update` or visit https://github.com/smartcontractkit/cre-cli/releases to upgrade.
+

@@ -1,0 +1,18 @@
+{
+  "schedule": "0 30 16 * * *",
+  "chainSelectorName": "monad-testnet",
+  "chainId": "10143",
+  "resolverAddress": "0xb7b91d408f74f4e5c444c75981208ca78e2bca09",
+  "readSettled": true,
+  "gasLimit": "180000",
+  "iemBaseUrl": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py",
+  "awcBaseUrl": "https://aviationweather.gov/api/data/metar",
+  "minObs": 40,
+  "stations": [
+    {
+      "icao": "RCSS",
+      "tzOffsetMin": 480
+    }
+  ],
+  "dateOverride": "2026-10-04"
+}

@@ -1,0 +1,22 @@
+{
+ "chainId": 10143,
+ "rpc": "https://testnet-rpc.monad.xyz",
+ "router": "0x7EFbE105Ca7415dE98F96622173458ac1c054630",
+ "marginAccount": "0xd029C2D98ff85D8F64799017fE00a59B1159CE02",
+ "kuruForwarder": "0x681bB1508E14433b148a2549ba2726454aDc9BB4",
+ "orderBookImpl": "0x72caE0a99C19B574e8a6De558F43fc1D019c9374",
+ "ausd": "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC",
+ "ausdFaucet": "0xd236c18D274E54FAccC3dd9DDA4b27965a73ee6C",
+ "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
+ "params": {
+  "type": "0",
+  "sizePrecision": "1000000",
+  "pricePrecision": "10000",
+  "tickSize": "10",
+  "minSize": "1000000",
+  "maxSize": "1000000000000",
+  "takerFeeBps": "10",
+  "makerFeeBps": "0",
+  "kuruAmmSpread": "100"
+ }
+}

@@ -1,0 +1,49 @@
+:root {
+  --bg: #0f1720;
+  --card: #16212c;
+  --line: #243243;
+  --ink: #e8eef4;
+  --muted: #8ea0b3;
+  --hot: #ff7a45;
+  --cool: #5eead4;
+  --warn: #fbbf24;
+  color-scheme: dark;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { min-height: 100dvh; -webkit-font-smoothing: antialiased; }
+.shell {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: max(12px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.top { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
+.brand { font-weight: 800; letter-spacing: 0.02em; font-size: 18px; }
+.pill { font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--cool); }
+.pill.warn { color: var(--warn); }
+.hero h1 { margin: 4px 0 6px; font-size: 26px; line-height: 1.15; }
+.eyebrow { margin: 0; color: var(--hot); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+.card h2, .card h3 { margin: 0 0 8px; font-size: 15px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin-top: 12px; font-size: 14px; }
+.kv span { color: var(--muted); }
+.kv b { font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.actions { display: flex; flex-direction: column; gap: 10px; }
+button {
+  appearance: none; border: 0; border-radius: 12px; padding: 14px 16px; min-height: 48px;
+  font-size: 15px; font-weight: 700; color: #0b1118; background: var(--cool); cursor: pointer;
+}
+button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+button.link { background: transparent; color: var(--muted); min-height: 36px; padding: 6px; font-weight: 500; }
+button:disabled { opacity: 0.45; cursor: default; }
+.muted { color: var(--muted); }
+.fine { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
+.log { font-size: 13px; }
+.logline { padding: 6px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+a { color: var(--cool); }
+code { background: #0b1118; padding: 1px 5px; border-radius: 6px; font-size: 13px; }

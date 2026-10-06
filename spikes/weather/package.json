@@ -1,0 +1,21 @@
+{
+  "name": "@isotherm/forecast-spike",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Isotherm weather spike: settlement source fidelity (METAR vs Polymarket), forecast engine v0, calibration backtest. Zero dependencies; Node >= 22.18 runs the .ts files directly.",
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "test": "node --test test/*.test.ts",
+    "fidelity": "node scripts/fidelity.ts",
+    "sources": "node scripts/sources.ts",
+    "ogimet": "node scripts/ogimet_check.ts",
+    "prices": "node scripts/prices.ts",
+    "backtest": "node scripts/backtest.ts",
+    "live": "node scripts/live.ts",
+    "recompute": "node scripts/settle.ts",
+    "report": "node scripts/report.ts",
+    "all": "npm run fidelity && npm run sources && npm run ogimet && npm run prices && npm run backtest && npm run live && npm run report"
+  },
+  "license": "MIT"
+}

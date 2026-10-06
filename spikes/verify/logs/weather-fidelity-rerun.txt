@@ -1,0 +1,25 @@
+[RCSS] IEM obs 41853 (20224 SPECI), days 1010, 7251 ms
+[RCSS] polymarket events 206, resolved w/ single winner 203, closed w/o winner 0
+[RCSS] 2026-03-16..2026-10-05  station-sourced events: 184, other-sourced: 19
+   rule_localDay_allReports     {"n":184,"match":183,"mismatch":1,"noData":0}
+   rule_localDay_onCycleOnly    {"n":184,"match":180,"mismatch":4,"noData":0}
+   rule_localDay_hourlyOnly     {"n":184,"match":155,"mismatch":29,"noData":0}
+   rule_utcDay_allReports       {"n":184,"match":171,"mismatch":13,"noData":0}
+   other-sourced (not RCSS/RJTT) events: {"https://www.cwa.gov.tw/v8/c/w/obs_station.html?id=46692":7,"https://www.weather.gov/wrh/timeseries?site=rctp":12}
+   half-hour-decisive days: {"n":28,"allReportsMatch":27,"hourlyMatch":2}  incomplete-coverage days: 0
+[RCSS] by resolution source: {"https://www.cwa.gov.tw/v8/c/w/obs_station.html?id=46692":{"n":7,"match":1,"mismatch":6,"first":"2026-03-16","last":"2026-03-22"},"https://www.weather.gov/wrh/timeseries?site=rctp":{"n":12,"match":2,"mismatch":10,"first":"2026-03-23","last":"2026-04-04"},"wunderground:RCSS":{"n":183,"match":182,"mismatch":1,"first":"2026-04-05","last":"2026-10-05"},"noaa-timeseries:RCSS":{"n":1,"match":1,"mismatch":0,"first":"2026-08-24","last":"2026-08-24"}}
+   MISMATCH 2026-05-04 [wunderground:RCSS] winner=24°C iem=25 onCycle=25 hourly=24 utcDay=25 nObs=54 at=13:30
+   off-cycle-SPECI-decisive days: 3 2026-04-21: all=30 onCycle=29 winner="30°C" | 2026-04-22: all=33 onCycle=32 winner="33°C" | 2026-07-13: all=34 onCycle=33 winner="34°C"
+[RJTT] IEM obs 50496 (26262 SPECI), days 1010, 7543 ms
+[RJTT] polymarket events 212, resolved w/ single winner 209, closed w/o winner 0
+[RJTT] 2026-03-10..2026-10-05  station-sourced events: 209, other-sourced: 0
+   rule_localDay_allReports     {"n":209,"match":209,"mismatch":0,"noData":0}
+   rule_localDay_onCycleOnly    {"n":209,"match":209,"mismatch":0,"noData":0}
+   rule_localDay_hourlyOnly     {"n":209,"match":182,"mismatch":27,"noData":0}
+   rule_utcDay_allReports       {"n":209,"match":185,"mismatch":24,"noData":0}
+   other-sourced (not RCSS/RJTT) events: {}
+   half-hour-decisive days: {"n":28,"allReportsMatch":28,"hourlyMatch":1}  incomplete-coverage days: 0
+[RJTT] by resolution source: {"wunderground:RJTT":{"n":166,"match":166,"mismatch":0,"first":"2026-03-10","last":"2026-08-23"},"noaa-timeseries:RJTT":{"n":43,"match":43,"mismatch":0,"first":"2026-08-24","last":"2026-10-05"}}
+   off-cycle-SPECI-decisive days: 0 
+http cache { hits: 8, misses: 10 }
+node scripts/fidelity.ts  1.09s user 0.13s system 4% cpu 26.398 total

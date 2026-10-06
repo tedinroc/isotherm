@@ -1,0 +1,16 @@
+node_modules/
+out/
+cache/
+broadcast/*/31337/
+.env
+.env.*
+*.key
+.DS_Store
+spikes/**/node_modules/
+spikes/**/.venv/
+.secrets/
+**/.secrets/
+spikes/dynamic/docs-cache/
+spikes/cre/docs/
+spikes/cre/ref/
+.mmhome-*/

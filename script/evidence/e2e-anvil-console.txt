@@ -1,0 +1,50 @@
+[06:21:20] mode=anvil rpc=http://127.0.0.1:18947 chain=10143 out=<scratch>/e2e/run3
+[06:21:20] deployer=0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11 maker(operator,relayer)=0xd572638F07829D1c3636400FB73CF34Ca6c7448a taker1=0x636D0598E416e5f66acD0F6Ac2Ae96306529b4d5 taker2=0x029049a9dA77231dd86A90E52Fd6Db542424e727 attester=0x2215241F37b968A8dB5d2caA9e956c6a3d70A6d5
+[06:21:21] anvil: funded 100 MON each
+[06:21:21] MON 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11 = 100.000000000000000000
+[06:21:21] MON 0xd572638F07829D1c3636400FB73CF34Ca6c7448a = 100.000000000000000000
+[06:21:21] MON 0x636D0598E416e5f66acD0F6Ac2Ae96306529b4d5 = 100.000000000000000000
+[06:21:21] MON 0x029049a9dA77231dd86A90E52Fd6Db542424e727 = 100.000000000000000000
+[06:21:21] 1. deploy (forge script)
+[06:21:34] Resolver=0x1ecd98e27c5314007ae20fb5f29063637584cbff Vault=0x3eac273ecd52de155e5681567c001c1868725be2
+[06:21:34] 2. createLadder RCSS date=20261006 dayEnd=1791302400 close=1791301800 (now=1791292353)
+[06:21:38] YES>=30 0xA8568f41BF0dceC91dC6682D27F28F1E770102da "RCSS-20261006-GE30-Y" | NO 0x532AECD4dd807E6A6F6470A919AE72b89d368fC0
+[06:21:39] 3. faucet requestFunds + approve + mintSet 100 AUSD (taker1)
+[06:21:46] faucet busy (MaxFrequencyExceeded), retry 1
+[06:21:47] taker1 AUSD=10000000000 [1e10]
+[06:21:49] 4. permit-relayed mint (taker2 signs with cast, maker submits)
+[06:21:51] taker2 YES30=50000000 [5e7] (minted by relayer, paid by taker2)
+[06:21:52] 6. clock -> 1791303000 (dayEnd+600)
+[06:21:52] 7. EIP-712: cast typed-data signature == signature over contract settlementDigest (0x60c8fcec96fe9b950abc48e0132f5276b4b075f1a6d987fb507789d95ffef4d0)
+[06:21:53] 7a. forged report via MockKeystoneForwarder (sent by an arbitrary EOA): ReportProcessed=REJECTED
+[06:21:55] 7b. attested report: ReportProcessed=success result=(1, 31, 1791303002 [1.791e9], 0x1e22400315704cac07025d7fb1be7002f274875a3bdf8c4aa3bdfe2577d0611a)
+[06:21:56] 7c. replayed report: ReportProcessed=REJECTED
+[06:21:56] 8. redeem (Tmax=31 vs strike 30)
+[06:21:58] taker1 burned YES=190000000 NO=130000000 -> +190000000 AUSD units; taker2 burned YES=50000000 NO=110000000 -> +50000000
+[06:21:58] vault AUSD left=0 series30 collateral=0
+[06:21:58] strike 32 payoutHalves=0 2 
+
+step                        gasUsed  gasLimit  status  tx
+deploy:new Resolver         2534104  3294335   true    0xccfd3f26972933c35c94bc1cc2e655f69308d5003a02dd4d29983b03f96eff9e
+deploy:new CollateralVault  4359833  5667782   true    0x1f8286c5e28aabc124908b6eeb501a61e0bf1558d3e1fd1d18d6b2b2164810b9
+deploy:registerStation      60851    79106     true    0x12a59af99ec7bdc18921fe50d050086e64c6197a57a92d7e63bb9d41d1dc8f88
+deploy:registerStation      60851    79106     true    0xcef9cc034404d42e831f8363758de0262a5da3ce7df3f29b358a84182e3ceb62
+deploy:registerStation      60851    79106     true    0x060cd3ba0c1b9d89bff95658ec897bac1f4fe6b7cf22f9fa3b84c8d8e5f90fc5
+deploy:registerStation      60851    79106     true    0x62ecb22b402c2116e4582ed929edea0be7c9e3dea57151a308ce281296283fda
+deploy:setOperator          59746    77669     true    0xe22d0f30a3d84a859888c4964f27ff34f6032b95edb787f695ee6247e399c5bf
+createLadder6               1547334  1547334   0x1     0xc89c67303c4a2ad551d791adadd79813e0cf0e5dd7608a775fa3e0f54d1a7149
+createSeries1               306574   306574    0x1     0x476cadc45d6ccec58b882fd031ae1d07c5362099c5ca796e2ee480be69f32a13
+faucet                      128414   129791    0x1     0x9fc3ce9beebf1bd822c3f58e9cd4f061d9d25bcaf2692ce358dcbf948c56959c
+faucet2                     128414   129791    0x1     0x0c9a453f32164d3f15e303e2529412b9c26d539e06af5550973dccfe4a5eb070
+approve                     70225    70668     0x1     0x73e93dc837c4fd1010defb8fa0c9fe07551c4b15966b0c7e9d3066d68bdf39a2
+mintSet                     282367   282367    0x1     0xd8a8a9319d81586e930e822a044039468a4307af2bcd73034a76e00ea3d4d185
+mintSet_2nd                 180367   180367    0x1     0xc208f145a3d5909ffc2123cd64c5418bc59505d7efe433056a826c629a663dd6
+mintSetWithPermit           284019   284019    0x1     0x50f77c2e8f996865b820d4c9e438b46b648822dee13b3411a2232d97fc4654bc
+transferNO                  56515    56871     0x1     0x736300be7fc44a70fcf98b13460c55455efcf42111bf430e27313ee46e0da986
+redeemSet                   159969   159969    0x1     0xe4b16a35aedc9ea5e6f5a838839d6d329360e5e8170bf9d404add1b9a41cb4de
+cre_forged                  88999    89615     0x1     0xd88aca1bdceb279387aad9d9fc8a7e0a1d24c6357614c50eaa1284b690633d89
+cre_settle                  148685   150249    0x1     0x9560f5f70d694462ef37a9d06f077acfc8ea57d89aab04b0d76d2f6fc5d5f0d5
+cre_replay                  108527   109453    0x1     0x903f5c368621f92d30c33ed39c16c531a21245b89b33e8403111630118fb2289
+redeem_taker1               181875   181875    0x1     0x41f4ba99af82f201d682df37de2c69df9f5e1cb7275105b1c083fb01829edb3b
+redeem_taker2               181875   181875    0x1     0x109d696a2e2c7f5c006e8a4d55129125384412319ff50964e64bb38ff345b07e
+[06:21:58] artifacts in <scratch>/e2e/run3

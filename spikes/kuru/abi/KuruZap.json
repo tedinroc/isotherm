@@ -1,0 +1,240 @@
+[
+ {
+  "type": "function",
+  "name": "buyNo",
+  "inputs": [
+   {
+    "name": "set",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "market",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "ausdIn",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "minAusdBack",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "to",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "noOut",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "ausdBack",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "buyYes",
+  "inputs": [
+   {
+    "name": "market",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "ausdIn",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "minYesOut",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "to",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "yesOut",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "refund",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "sellYes",
+  "inputs": [
+   {
+    "name": "market",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "yesIn",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "minAusdOut",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "to",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "ausdOut",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "refund",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "event",
+  "name": "ZapBuyNo",
+  "inputs": [
+   {
+    "name": "user",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "market",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "ausdIn",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   },
+   {
+    "name": "noOut",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   },
+   {
+    "name": "ausdBack",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "ZapBuyYes",
+  "inputs": [
+   {
+    "name": "user",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "market",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "ausdIn",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   },
+   {
+    "name": "yesOut",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   },
+   {
+    "name": "ausdRefund",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "ZapSellYes",
+  "inputs": [
+   {
+    "name": "user",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "market",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "yesIn",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   },
+   {
+    "name": "ausdOut",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   },
+   {
+    "name": "yesRefund",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "error",
+  "name": "Slippage",
+  "inputs": []
+ }
+]

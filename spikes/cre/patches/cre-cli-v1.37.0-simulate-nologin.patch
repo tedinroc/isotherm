@@ -1,0 +1,12 @@
+diff --git a/cmd/root.go b/cmd/root.go
+index fff6c44..9bf255f 100644
+--- a/cmd/root.go
++++ b/cmd/root.go
+@@ -600,6 +600,7 @@ func isLoadSettings(cmd *cobra.Command) bool {
+ // isLoadCredentials. They still get best-effort credentials via
+ // TryAttachCredentials so telemetry keeps working.
+ var LoginExemptCommands = map[string]struct{}{
++	"cre workflow simulate":        {}, // ISOTHERM SPIKE PATCH: local-only simulator without login (dev harness, not for submission evidence)
+ 	"cre version":                  {},
+ 	"cre login":                    {},
+ 	"cre logout":                   {},

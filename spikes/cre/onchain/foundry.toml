@@ -1,0 +1,25 @@
+# Spike-local Foundry project: compiles the contracts builder's Resolver (../../../src) unmodified
+# and drives it through the real MockKeystoneForwarder on a Monad-testnet fork.
+[profile.default]
+src = "src"
+test = "test"
+script = "script"
+out = "out"
+cache_path = "cache"
+libs = ["../../../lib"]
+allow_paths = ["../../../src"]
+solc_version = "0.8.37"
+evm_version = "osaka"
+network = "monad"
+optimizer = true
+optimizer_runs = 10_000
+fs_permissions = [{ access = "read", path = "../project/settle/fixtures" }]
+remappings = [
+  "@openzeppelin/contracts/=../../../lib/openzeppelin-contracts/contracts/",
+  "forge-std/=../../../lib/forge-std/src/",
+  "isotherm/=../../../src/",
+]
+
+[rpc_endpoints]
+monad_testnet = "https://testnet-rpc.monad.xyz"
+anvil = "http://127.0.0.1:${ISOTHERM_ANVIL_PORT}"

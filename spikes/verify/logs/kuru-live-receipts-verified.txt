@@ -1,0 +1,16 @@
+MON_0.6_deployer->maker                  status=1 blk=68695860 from=0xb855f2bc to=0xd572638f gasUsed=21000 limit=21000 used==limit=True
+MON_0.2_deployer->taker1                 status=1 blk=68695876 from=0xb855f2bc to=0x636d0598 gasUsed=21000 limit=21000 used==limit=True
+faucet.requestFunds_(maker)              status=1 blk=68695888 from=0xd572638f to=0xd236c18d gasUsed=150190 limit=150190 used==limit=True
+faucet.requestFunds_(taker1)             status=1 blk=68696102 from=0x636d0598 to=0xd236c18d gasUsed=150190 limit=150190 used==limit=True
+deploy_SpikeToken_(YES_6dp)              status=1 blk=68696130 from=0xb855f2bc to=CREATE gasUsed=650403 limit=650403 used==limit=True
+YES.mint_500_->_maker                    status=1 blk=68696139 from=0xb855f2bc to=0x03222e19 gasUsed=93069 limit=93069 used==limit=True
+router.deployProxy_(create_YES/AUSD_mark status=1 blk=68696150 from=0xb855f2bc to=0x7efbe105 gasUsed=1473065 limit=1473065 used==limit=True
+approve_0xd029C2                         status=1 blk=68696156 from=0xd572638f to=0xa9012a05 gasUsed=82152 limit=82152 used==limit=True
+margin.deposit_0xa9012a                  status=1 blk=68696171 from=0xd572638f to=0xd029c2d9 gasUsed=153471 limit=153471 used==limit=True
+approve_0xd029C2                         status=1 blk=68696188 from=0xd572638f to=0x03222e19 gasUsed=60761 limit=60761 used==limit=True
+margin.deposit_0x03222e                  status=1 blk=68696198 from=0xd572638f to=0xd029c2d9 gasUsed=162656 limit=162656 used==limit=True
+addSellOrder_50@0.45                     status=1 blk=68696204 from=0xd572638f to=0x47cb4f32 gasUsed=373264 limit=373264 used==limit=True
+batchUpdate:_cancel_1_+_place_3_bids/3_a status=1 blk=68696216 from=0xd572638f to=0x47cb4f32 gasUsed=987702 limit=987702 used==limit=True
+approve_0x47cb4f                         status=1 blk=68696228 from=0x636d0598 to=0xa9012a05 gasUsed=82166 limit=82166 used==limit=True
+placeAndExecuteMarketBuy_20_AUSD         status=1 blk=68696240 from=0x636d0598 to=0x47cb4f32 gasUsed=389326 limit=389326 used==limit=True
+batchCancelOrdersNoRevert_x6             status=1 blk=68696246 from=0xd572638f to=0x47cb4f32 gasUsed=453680 limit=453680 used==limit=True

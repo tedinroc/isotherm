@@ -1,0 +1,12 @@
+{
+  "generatedFrom": "<repo>/spikes/e2e/logs/fork-2026-10-06T13-54-06",
+  "generatedAt": "2026-10-06T13:54:50.088Z",
+  "note": "MON per wallet for one MODE=live run (fork-measured billed gas x1.3 + 0.05)",
+  "perRole": {
+    "deployer": 2.14,
+    "maker": 1.08,
+    "taker1": 0.17,
+    "taker2": 0.3
+  },
+  "total": 3.69
+}

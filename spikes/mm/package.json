@@ -1,0 +1,16 @@
+{
+  "name": "isotherm-spike-mm-host",
+  "version": "1.0.0",
+  "description": "Local, isolated MetaMask Agent Wallet (mm 7.0.0) host for the Isotherm plugin spike",
+  "scripts": {
+    "mm": "bin/mm",
+    "mm:harness": "bin/mm-harness"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@metamask/agent-wallet": "^7.0.0"
+  },
+  "private": true
+}

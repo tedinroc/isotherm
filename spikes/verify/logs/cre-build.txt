@@ -1,0 +1,4 @@
+  Compiling workflow...
+✓ Workflow compiled successfully
+  Binary hash: cf876580c2e2e780392149f04e50386717f5ecee0d629634ba0ec1075d4c0da5
+✓ Build output written to <tmp>/verify/cre-project/settle/binary.wasm

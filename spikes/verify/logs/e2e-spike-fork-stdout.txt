@@ -1,0 +1,217 @@
+Isotherm e2e MODE=fork RPC=http://127.0.0.1:19349 out=<tmp>/verify/mirror/spikes/e2e/logs/fork-2026-10-06T14-25-12
+
+== preflight
+chain 10143 via anvil/v1.8.5 at block 68708328, ts 1791296710 (2026-10-06T14:25:10.000Z)
+MockKeystoneForwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192: MockKeystoneForwarder 1.0.0
+  deployer 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11  100 MON  0.000000 AUSD
+  maker    0xd572638F07829D1c3636400FB73CF34Ca6c7448a  100 MON  9800.000000 AUSD
+  taker1   0x636D0598E416e5f66acD0F6Ac2Ae96306529b4d5  100 MON  9980.000000 AUSD
+  taker2   0x029049a9dA77231dd86A90E52Fd6Db542424e727  100 MON  0.000000 AUSD
+
+== fund
+
+== deploy
+  # 1 deploy Resolver (forwarder=MockKeystoneForwarder, attester=deployer) deployer used   2534104 limit   2787515  0.2843 MON  313 ms  0x3fd5e793…303c
+  # 2 deploy CollateralVault (+OutcomeToken impl)          deployer used   4359857 limit   4795843  0.4892 MON  330 ms  0x6c38895f…a166
+  # 3 registerStation RCSS UTC+8h                          deployer used     60851 limit     66937  0.0068 MON  317 ms  0x9bdcebac…dacb
+  # 4 registerStation RJTT UTC+9h                          deployer used     60851 limit     66937  0.0068 MON  300 ms  0xac00f23b…5618
+  # 5 registerStation ZGSZ UTC+8h                          deployer used     60851 limit     66937  0.0068 MON  309 ms  0x867a44f1…b832
+  # 6 deploy IsothermZap (Kuru router, vault)              deployer used   1385339 limit   1523873  0.1554 MON  766 ms  0x8577a276…95bd
+  Resolver 0xfb41a75dfb8052408048944a2b5276767b2dc69c  Vault 0x2c6a121d3b0af0c171a81742f40b1d067b72587d  Zap 0x755e09238edab1a230eb424e73837497ce922564
+
+== ladder
+  RCSS local date 20261007, dayEnd 2026-10-07T16:00:00.000Z, close 2026-10-07T15:00:00.000Z
+  # 7 createLadder RCSS 20261007 strikes [28,29,30]        deployer used    848810 limit    933692  0.0952 MON  349 ms  0x64d76ebf…7830
+  # 8 createSeries RJTT 20261007 >=25                      deployer used    364889 limit    401378  0.0409 MON  287 ms  0x64c0ca2b…19d9
+  # 9 createSeries ZGSZ 20261007 >=30                      deployer used    364889 limit    401378  0.0409 MON  321 ms  0x287bbfeb…fa38
+  RCSS-20261007-GE28-Y  YES 0xd778B31CDCC694a4FFAB9dd944C9C3749cDd471D  NO 0x96081d19e03F1be8329F65190330E727a4A96BB6
+  RCSS-20261007-GE29-Y  YES 0x7d1AFEbcab6cA2Bb3ceE0fBb65A8a6241AC418Ee  NO 0x9D50debcAcd638F8F1582E7458C91BeEA2b2CD0f
+  RCSS-20261007-GE30-Y  YES 0xb1FD4Ff0B041BB8a2F9098B7317550FeCDa251eB  NO 0x84fd41006716f8FE7ec7b9cb18fdB4C9c1FE59bC
+  void ladder RJTT-20261007-GE25-Y, stale ladder ZGSZ-20261007-GE30-Y
+
+== makerInventory
+  #10 AUSD faucet.requestFunds -> maker                    maker    used    111414 limit    123774  0.0126 MON  316 ms  0xaaa0e99b…3aac
+  #11 maker approve AUSD -> vault                          maker    used     70585 limit     78131  0.0080 MON  309 ms  0x16c2268b…f8d1
+  #12 maker mintSet >=28 x500                              maker    used    279231 limit    307155  0.0313 MON  318 ms  0x7331cbe7…f12d
+  #13 maker mintSet >=29 x500                              maker    used    262243 limit    288468  0.0294 MON  292 ms  0xd0dacb0a…e1a6
+  #14 maker mintSet >=30 x500                              maker    used    262243 limit    288468  0.0294 MON  367 ms  0x96443dcb…dd1e
+  #15 maker mintSet void-ladder RJTT x100                  maker    used    262243 limit    288468  0.0294 MON  313 ms  0xe6e6cc50…a3bf
+  #16 maker mintSet stale-ladder ZGSZ x10                  maker    used    262243 limit    288468  0.0294 MON  649 ms  0x26cb00ca…b16a
+
+== markets
+  forecast: Taipei 20261007 Tmax mu=26 sigma=1.5 (Open-Meteo) -> P(>=k): 28:0.159 29:0.048 30:0.010
+  #17 Kuru Router.deployProxy YES>=28/AUSD                 deployer used   1310536 limit   1463712  0.1493 MON  319 ms  0xa1a541c3…9924
+  #18 Kuru Router.deployProxy YES>=29/AUSD                 deployer used   1310536 limit   1463712  0.1493 MON  312 ms  0x5dd4676c…6d98
+  #19 Kuru Router.deployProxy YES>=30/AUSD                 deployer used   1310536 limit   1463712  0.1493 MON  650 ms  0xd4ff1cfa…d3f4
+  #20 maker approve AUSD -> Kuru MarginAccount             maker    used     50773 limit     55992  0.0057 MON  299 ms  0x8760b9b3…c63c
+  #21 maker MarginAccount.deposit AUSD 800                 maker    used    114244 limit    126927  0.0129 MON  313 ms  0xee8014ee…0bd0
+  #22 maker approve YES>=28 -> MarginAccount               maker    used     62596 limit     69349  0.0071 MON  379 ms  0xa2fb9614…a6e2
+  #23 maker MarginAccount.deposit YES>=28 300              maker    used    149698 limit    166575  0.0170 MON  312 ms  0xc2d9b2b3…d68a
+  #24 maker approve YES>=29 -> MarginAccount               maker    used     62596 limit     69349  0.0071 MON  286 ms  0x14fcf391…409c
+  #25 maker MarginAccount.deposit YES>=29 300              maker    used    149698 limit    166575  0.0170 MON  312 ms  0x0590d54b…a7e2
+  #26 maker approve YES>=30 -> MarginAccount               maker    used     62596 limit     69349  0.0071 MON  307 ms  0xb9926685…713e
+  #27 maker MarginAccount.deposit YES>=30 300              maker    used    149698 limit    166575  0.0170 MON  292 ms  0x555119f6…4864
+  #28 maker quote >=28: 200@0.138 / 200@0.179              maker    used    528262 limit    589552  0.0601 MON  281 ms  0xd233f938…ebdd
+  #29 maker quote >=29: 200@0.027 / 200@0.068              maker    used    528232 limit    589519  0.0601 MON  314 ms  0x9c53243e…b537
+  #30 maker quote >=30: 200@0.001 / 200@0.030              maker    used    528177 limit    589457  0.0601 MON  301 ms  0xe54103ca…6006
+  book >=28C  bestBid 0.138  bestAsk 0.179  market 0xBeF193282701cd0Ba41840C3aC0646ffeBF0c32f
+  book >=29C  bestBid 0.027  bestAsk 0.068  market 0xcB18a56113773a8eC5b2C55C0601eaAAa706B29c
+  book >=30C  bestBid 0.001  bestAsk 0.030  market 0xF60822eAC91DbBC21Bb03d5d490Fe0e30d6CD511
+
+== takers
+  faucet: global 60 s cooldown (MaxFrequencyExceeded), advancing anvil clock 61 s
+  #31 AUSD faucet.requestFunds -> taker1                   taker1   used    111414 limit    123774  0.0126 MON  310 ms  0x506aeb67…fab3
+  #32 taker1 approve AUSD -> market >=29                   taker1   used     70225 limit     77735  0.0079 MON  304 ms  0x5c30c80e…05d4
+  #33 taker1 Kuru market-buy YES>=29 for 12 AUSD           taker1   used    306037 limit    392945  0.0401 MON  314 ms  0xafbbf645…eda1
+  taker1 got 176.294117 YES>=29 in wallet (1 Trade event(s) at 0.068; expected 176.294118)
+  #34 taker1 transfer 200 AUSD -> taker2                   taker1   used     72049 limit     79254  0.0081 MON  319 ms  0x1cb12ad7…7a1e
+  #35 taker2 approve AUSD -> Zap (once)                    taker2   used     70585 limit     78131  0.0080 MON  315 ms  0xd8f10fe8…98c1
+  #36 taker2 Zap.buyNo >=30 with 40 AUSD (mint set, sell YES) taker2   used    653179 limit    816474  0.0833 MON  292 ms  0xb0d816c1…31b4
+  taker2 got 40.000000 NO>=30 + 0.039960 AUSD back; net NO price 0.9990 (1 - bid 0.001 - fee)
+  #37 taker2 Zap.buyYes >=28 with 30 AUSD                  taker2   used    493583 limit    616979  0.0629 MON  306 ms  0x6434f83c…044b
+  taker2 got 167.430167 YES>=28 (refund 0.000000)
+  Zap balance after both flows: 0 AUSD, 0 YES, 0 NO
+  book >=28C  bestBid 0.138  bestAsk 0.179
+  book >=29C  bestBid 0.027  bestAsk 0.068
+  book >=30C  bestBid 0.001  bestAsk 0.030
+
+== requote
+  #38 maker re-quote >=28: 200@0.148 / 132@0.189 cancel 2  maker    used    487056 limit    543502  0.0554 MON  292 ms  0x6953a68d…91bf
+  #39 maker re-quote >=29: 200@0.017 / 123@0.058 cancel 2  maker    used    487043 limit    543486  0.0554 MON  308 ms  0x448e83c6…3cdc
+  #40 maker re-quote >=30: 200@0.001 / 200@0.040 cancel 2  maker    used    431375 limit    481280  0.0491 MON  286 ms  0x677ecf35…64cb
+
+== close
+  #41 maker pull quotes >=28 (batchCancelOrdersNoRevert x2) maker    used    248833 limit    277331  0.0283 MON  297 ms  0xc7ec50cb…961f
+  #42 maker pull quotes >=29 (batchCancelOrdersNoRevert x2) maker    used    248833 limit    277331  0.0283 MON  322 ms  0xb46de187…2e99
+  #43 maker pull quotes >=30 (batchCancelOrdersNoRevert x2) maker    used    248833 limit    277331  0.0283 MON  285 ms  0xbdb6de6d…df66
+  book >=28C  bestBid none  bestAsk none
+  book >=29C  bestBid none  bestAsk none
+  book >=30C  bestBid none  bestAsk none
+
+== dayEnd
+  anvil clock -> 2026-10-07T16:10:00.000Z (dayEnd + 10 min)
+  vault.duePendingLadders -> RCSS/20261007, RJTT/20261007, ZGSZ/20261007
+
+== settle
+  #44 CRE report RCSS tmax=29 via MockKeystoneForwarder    deployer used    152505 limit    220000  0.0224 MON  302 ms  0xa5bdc797…9b5b
+  ReportProcessed.result=true  LadderResolved status=1 tmax=29  resultOf=(1, 29)  eth_estimateGas=154069 vs used 152505
+  #45 CRE replay RCSS tmax=35 (must be rejected)           deployer used    112335 limit    220000  0.0224 MON  981 ms  0x0e5be099…af54
+  replay ReportProcessed.result=false (tx succeeds, Resolver rejected it: write-once)
+  #46 CRE void report RJTT                                 deployer used    152403 limit    220000  0.0224 MON  342 ms  0xbcc7ef89…f97a
+
+== redeem
+  #47 taker1 redeem YES>=29 x176.294117 (29>=29 wins)      taker1   used    146595 limit    161255  0.0164 MON  279 ms  0xfc342766…f072
+  #48 taker2 redeem NO>=30 x40.000000 (29<30: NO wins)     taker2   used    146601 limit    161262  0.0164 MON  280 ms  0xa20341e7…730e
+  #49 taker2 redeem YES>=28 x167.430167                    taker2   used    146583 limit    161242  0.0164 MON  279 ms  0x717e133d…0e5a
+  #50 maker MarginAccount.batchWithdrawMaxTokens [AUSD, YES x3] maker    used    267682 limit    298373  0.0304 MON  292 ms  0x3da74d6a…bae5
+  #51 maker redeem losing NO>=29 x500.000000 -> pays 0     maker    used     99993 limit    109993  0.0112 MON  298 ms  0x4b233d7d…9b7a
+  losing side: maker burned 500.000000 NO>=29, payout 0.000000 AUSD
+  #52 maker redeem >=28 YES x332.402235 NO x500.000000     maker    used    181851 limit    200037  0.0204 MON  296 ms  0x05533ba9…5178
+  #53 maker redeem >=29 YES x323.529412 NO x0.000000       maker    used    146595 limit    161255  0.0164 MON  433 ms  0xed71b829…398c
+  #54 maker redeem >=30 YES x540.000000 NO x500.000000     maker    used    181861 limit    200048  0.0204 MON  623 ms  0xe725a4d2…7b44
+  #55 maker redeem void RJTT YES x100 -> 0.5 each          maker    used    146443 limit    161088  0.0164 MON  313 ms  0x685d7b86…da0b
+  #56 maker redeem void RJTT NO x100 -> 0.5 each           maker    used    146451 limit    161097  0.0164 MON  307 ms  0x381df266…01e6
+  void: 100 YES -> 50.000000 AUSD, 100 NO -> 50.000000 AUSD
+
+== stale
+  #57 anyone (taker1) voidIfStale ZGSZ after 24h without a report taker1   used     67668 limit     74435  0.0076 MON  298 ms  0xbc671235…f99e
+  #58 maker redeem stale ZGSZ set x10 -> 10 AUSD           maker    used    181711 limit    199883  0.0204 MON  275 ms  0xcad3446e…85d9
+
+== checks
+  RCSS-20261007-GE28-Y   payout YES/NO 1/0  collateral 0.167598  outstanding claims 0.167598
+  RCSS-20261007-GE29-Y   payout YES/NO 1/0  collateral 0.176471  outstanding claims 0.176471
+  RCSS-20261007-GE30-Y   payout YES/NO 0/1  collateral 0.000000  outstanding claims 0.000000
+  RJTT-20261007-GE25-Y   payout YES/NO 0.5/0.5  collateral 0.000000  outstanding claims 0.000000
+  ZGSZ-20261007-GE30-Y   payout YES/NO 0.5/0.5  collateral 0.000000  outstanding claims 0.000000
+  vault AUSD 0.344069 == sum(series collateral) 0.344069  (the remaining claims are Kuru's taker-fee YES)
+  taker1: paid 12 AUSD for 176.294117 YES>=29, redeemed 176.294117 -> P&L 164.294117 AUSD
+  taker2: NO>=30 cost 39.960040 for 40.000000 (paid 40.000000); YES>=28 cost 30 for 167.430167 (paid 167.430167)
+
+== budgetProbe
+  #59 createLadder RCSS 20261012 6 strikes (budget probe)  deployer used   1541264 limit   1695391  0.1729 MON  278 ms  0x22e01e12…4add
+
+#   phase     step                                                       from       gas used  gas limit   MON@102      ms  tx
+1   deploy    deploy Resolver (forwarder=MockKeystoneForwarder, attester deployer    2534104    2787515    0.2843     313  0x3fd5e793c2b939c5fe4803a1b1539dfd2e4b6f504229a4f84562d0ca9d4a303c
+2   deploy    deploy CollateralVault (+OutcomeToken impl)                deployer    4359857    4795843    0.4892     330  0x6c38895f4a80b123f5a6fe2212b91e3b933b7e039238deec43b31766e063a166
+3   deploy    registerStation RCSS UTC+8h                                deployer      60851      66937    0.0068     317  0x9bdcebac78cf5411bb1b7b2a261a84ce8a264d2b0d75081b89adb9aba3f2dacb
+4   deploy    registerStation RJTT UTC+9h                                deployer      60851      66937    0.0068     300  0xac00f23bcdd565c499515966dec23aaa451382bd5d5039255ebbd31da4a15618
+5   deploy    registerStation ZGSZ UTC+8h                                deployer      60851      66937    0.0068     309  0x867a44f1ebd504bdc5531c73d658b2a9a90e5aca8596c066d11402d753bcb832  (fork-only)
+6   deploy    deploy IsothermZap (Kuru router, vault)                    deployer    1385339    1523873    0.1554     766  0x8577a27642ddb2b273dc7bfdba198b216e1663719c5d40352a8b1bfe6d1b95bd
+7   ladder    createLadder RCSS 20261007 strikes [28,29,30]              deployer     848810     933692    0.0952     349  0x64d76ebfd5ebd539a4aa11186dfe01eb54e59eaad77286b2aaf12bb4480a7830
+8   ladder    createSeries RJTT 20261007 >=25                            deployer     364889     401378    0.0409     287  0x64c0ca2b89dcc10f1e53afa4b507e09a0e2a67122b810fbde0b48ed9cbdd19d9
+9   ladder    createSeries ZGSZ 20261007 >=30                            deployer     364889     401378    0.0409     321  0x287bbfebae70f6c041b357a4d6054e3b33df064fe0b7cc258c6a55591ab6fa38  (fork-only)
+10  maker     AUSD faucet.requestFunds -> maker                          maker        111414     123774    0.0126     316  0xaaa0e99b1caab3e36ae83e14ebd286c8bcf305142553e7b32a5f50f1a6333aac
+11  maker     maker approve AUSD -> vault                                maker         70585      78131    0.0080     309  0x16c2268b6ebbc78c2233263e0322460ce3445ee517e0444344887523357bf8d1
+12  maker     maker mintSet >=28 x500                                    maker        279231     307155    0.0313     318  0x7331cbe704d5db2ceae0825d3da21eca0bdb88481c762f1305459162dd60f12d
+13  maker     maker mintSet >=29 x500                                    maker        262243     288468    0.0294     292  0xd0dacb0af7e67d523e8d6a763d42b479c0316df7de22b0656908c8d750a9e1a6
+14  maker     maker mintSet >=30 x500                                    maker        262243     288468    0.0294     367  0x96443dcb9913769349e83a06c2eed507b0f00bfd5f6155a6a48279f90e11dd1e
+15  maker     maker mintSet void-ladder RJTT x100                        maker        262243     288468    0.0294     313  0xe6e6cc50b8e366a9ec0a7fb5200e75fee6a853098367e3bf2455706d0330a3bf
+16  maker     maker mintSet stale-ladder ZGSZ x10                        maker        262243     288468    0.0294     649  0x26cb00ca4e04503f5d1436d8cecba429c0d608291dcfc6eb823cebd6074cb16a  (fork-only)
+17  markets   Kuru Router.deployProxy YES>=28/AUSD                       deployer    1310536    1463712    0.1493     319  0xa1a541c3c7f9e42ee6edd7047af1719f17fefb8481a328f832061bfa3e849924
+18  markets   Kuru Router.deployProxy YES>=29/AUSD                       deployer    1310536    1463712    0.1493     312  0x5dd4676cf53c2164189dd03a797f81f1bb547a30f5fe128933a6cc64d2536d98
+19  markets   Kuru Router.deployProxy YES>=30/AUSD                       deployer    1310536    1463712    0.1493     650  0xd4ff1cfa7ca003bde54f843ad6e37e1f16a3aa8fcc9f7d5e59f95aff93aad3f4
+20  markets   maker approve AUSD -> Kuru MarginAccount                   maker         50773      55992    0.0057     299  0x8760b9b37a6f40e733882f184f860f8833181f7c990ef4db6a39395718f6c63c
+21  markets   maker MarginAccount.deposit AUSD 800                       maker        114244     126927    0.0129     313  0xee8014ee7315bbb666573427bc271dbb3fe8a00f22bed349442b1ba7dfb00bd0
+22  markets   maker approve YES>=28 -> MarginAccount                     maker         62596      69349    0.0071     379  0xa2fb9614acc843b678819fd1c8209a32acc53ea006f3682be4f86d081ed6a6e2
+23  markets   maker MarginAccount.deposit YES>=28 300                    maker        149698     166575    0.0170     312  0xc2d9b2b3d50aaddb384817a7d23f0947ed9e2d8ad98381b6514d362be84ed68a
+24  markets   maker approve YES>=29 -> MarginAccount                     maker         62596      69349    0.0071     286  0x14fcf39190eb41d9eddb84d441ca17fce7bf96fb75904b0ec990a48baa3f409c
+25  markets   maker MarginAccount.deposit YES>=29 300                    maker        149698     166575    0.0170     312  0x0590d54b981e0e70839d198dbc973143dd606615a9091cb9aae247be17e4a7e2
+26  markets   maker approve YES>=30 -> MarginAccount                     maker         62596      69349    0.0071     307  0xb9926685c8df4cc479345c6a1bf7ddfe32c4f6413d2eca911a9d070edf26713e
+27  markets   maker MarginAccount.deposit YES>=30 300                    maker        149698     166575    0.0170     292  0x555119f6d3481e15e6439774fbb0ceaeda35af86cceebee3e01bdd9147654864
+28  markets   maker quote >=28: 200@0.138 / 200@0.179                    maker        528262     589552    0.0601     281  0xd233f93876b4b6277ec0229a23ceb20bf45e860344e33fe952155453ac3febdd
+29  markets   maker quote >=29: 200@0.027 / 200@0.068                    maker        528232     589519    0.0601     314  0x9c53243eba79af5bb1703be7dbc455f3e2348c0dfbf3fae3d4fbcbe41d6db537
+30  markets   maker quote >=30: 200@0.001 / 200@0.030                    maker        528177     589457    0.0601     301  0xe54103caec3d0b1c02be27f6a8664e2434da1c7b4c4658d4125fbee8a12f6006
+31  takers    AUSD faucet.requestFunds -> taker1                         taker1       111414     123774    0.0126     310  0x506aeb6734797836876457022860fcba14545ee7894589f523672151ba51fab3
+32  takers    taker1 approve AUSD -> market >=29                         taker1        70225      77735    0.0079     304  0x5c30c80ee04767d1e5e798f6267137f09fafbc4ded6e17cfbe6b5e9bc94805d4
+33  takers    taker1 Kuru market-buy YES>=29 for 12 AUSD                 taker1       306037     392945    0.0401     314  0xafbbf645da92a01250b1ef2dc9b86d0eadc75f8b525e4cea9b42d8cd2a76eda1
+34  takers    taker1 transfer 200 AUSD -> taker2                         taker1        72049      79254    0.0081     319  0x1cb12ad7f247e25a03a44a8b65d690c58c192fd1c916026ca84b857ab9b87a1e
+35  takers    taker2 approve AUSD -> Zap (once)                          taker2        70585      78131    0.0080     315  0xd8f10fe8c9de7db9487fcd08a7a88b4c23327f0d02137478ae9442c83a5b98c1
+36  takers    taker2 Zap.buyNo >=30 with 40 AUSD (mint set, sell YES)    taker2       653179     816474    0.0833     292  0xb0d816c1e345bddc3237fcda4f0bf7896a3bd0b6bc7d6637044adec9e0be31b4
+37  takers    taker2 Zap.buyYes >=28 with 30 AUSD                        taker2       493583     616979    0.0629     306  0x6434f83c0e5ac055658c9f8fa63a32bdfb74f3688ed31e5daf138d6cb476044b
+38  requote   maker re-quote >=28: 200@0.148 / 132@0.189 cancel 2        maker        487056     543502    0.0554     292  0x6953a68dde2d8d66a6c08e58b8dafb17847c144ec2f2249e8606e08aa55c91bf
+39  requote   maker re-quote >=29: 200@0.017 / 123@0.058 cancel 2        maker        487043     543486    0.0554     308  0x448e83c6639a2c86ad864a3595d43060735d7a9b6ac99cd6d3d277c757663cdc
+40  requote   maker re-quote >=30: 200@0.001 / 200@0.040 cancel 2        maker        431375     481280    0.0491     286  0x677ecf35b450af7cebbd3168ac87c5252be42d78906036f508685b10277d64cb
+41  close     maker pull quotes >=28 (batchCancelOrdersNoRevert x2)      maker        248833     277331    0.0283     297  0xc7ec50cb9f22fd8939b2aee340fe07de2831e77c118f99b3c6633479ea51961f
+42  close     maker pull quotes >=29 (batchCancelOrdersNoRevert x2)      maker        248833     277331    0.0283     322  0xb46de187cbe8547dc2359b749c1e078ce736469b001270cfc457a9d6542e2e99
+43  close     maker pull quotes >=30 (batchCancelOrdersNoRevert x2)      maker        248833     277331    0.0283     285  0xbdb6de6d65abdd002e85d737e8af296032a0db8e14cf97792c633461055ddf66
+44  settle    CRE report RCSS tmax=29 via MockKeystoneForwarder          deployer     152505     220000    0.0224     302  0xa5bdc797458d4631224c5e338378adf02c4dea25059d9eb8c42e25ff0f539b5b
+45  settle    CRE replay RCSS tmax=35 (must be rejected)                 deployer     112335     220000    0.0224     981  0x0e5be0995e06df94d1a7baef9ed960faffb5540ececc4a82de7307595aa7af54
+46  settle    CRE void report RJTT                                       deployer     152403     220000    0.0224     342  0xbcc7ef89574c93a47940db1660334cd226c16df6d121757063bf203df027f97a
+47  redeem    taker1 redeem YES>=29 x176.294117 (29>=29 wins)            taker1       146595     161255    0.0164     279  0xfc342766f774a38f8553bf75bd79a3cd5cbe2e19830d2fecdec7dc85f784f072
+48  redeem    taker2 redeem NO>=30 x40.000000 (29<30: NO wins)           taker2       146601     161262    0.0164     280  0xa20341e736aacab5531985e63979160ae19ab66ee439c0feeb40c40a5a03730e
+49  redeem    taker2 redeem YES>=28 x167.430167                          taker2       146583     161242    0.0164     279  0x717e133d3d08d09c84cfa31e474ffd12f6574a2973d76b853465d98e6ff20e5a
+50  redeem    maker MarginAccount.batchWithdrawMaxTokens [AUSD, YES x3]  maker        267682     298373    0.0304     292  0x3da74d6adf0cd4a9b715ad742a2561fb29cab9efd1b04040aa3fbcb1b9bbbae5
+51  redeem    maker redeem losing NO>=29 x500.000000 -> pays 0           maker         99993     109993    0.0112     298  0x4b233d7d69d5ed9e13fa2745ffd09089b1b958e4c44c7ea4f4ce1b23aa349b7a
+52  redeem    maker redeem >=28 YES x332.402235 NO x500.000000           maker        181851     200037    0.0204     296  0x05533ba9b956ab7b058d7b543dde4a801c61500f61f6432e624c68ec9a365178
+53  redeem    maker redeem >=29 YES x323.529412 NO x0.000000             maker        146595     161255    0.0164     433  0xed71b8290f915299e6985d463d02bb06cffc9e3f425702382fe1c4b41289398c
+54  redeem    maker redeem >=30 YES x540.000000 NO x500.000000           maker        181861     200048    0.0204     623  0xe725a4d2de823db8679ec00074cb8cc9ec72805a29df5de1730317bdad117b44
+55  redeem    maker redeem void RJTT YES x100 -> 0.5 each                maker        146443     161088    0.0164     313  0x685d7b86b214606aa557d31c827cd9477a7431d05d7a505e90a41878bb23da0b
+56  redeem    maker redeem void RJTT NO x100 -> 0.5 each                 maker        146451     161097    0.0164     307  0x381df26696cd370a363d1c8d2799bcbbe8ac98c1a0160129de6fa63a686401e6
+57  stale     anyone (taker1) voidIfStale ZGSZ after 24h without a repor taker1        67668      74435    0.0076     298  0xbc67123534107fa67535d69dc940f8db941c9f3f4939f26c34ea5b1343caf99e  (fork-only)
+58  stale     maker redeem stale ZGSZ set x10 -> 10 AUSD                 maker        181711     199883    0.0204     275  0xcad3446e2162a010f177a3bfad98bf3614b22ec9dd385f113f2521d5a6ce85d9  (fork-only)
+59  probe     createLadder RCSS 20261012 6 strikes (budget probe)        deployer    1541264    1695391    0.1729     278  0x22e01e12db8e7c7fcbfbf0a3efe1a936e962de5628d4bd9a1eb89d857d2b4add  (fork-only)
+
+TOTAL 59 txs: gas used 25616407, gas limit (billed) 28748689, 2.9324 MON at 102 gwei
+per wallet (live-relevant steps only): deployer 1.5940, maker 0.7880, taker1 0.0852, taker2 0.1871
+latency send->receipt: median 310 ms, min 279, max 981 (fork)
+
+DAILY TESTNET-MON BUDGET, 1 city x 6 strikes, hourly re-quotes (billed gas limit x 102 gwei; measured per op on fork)
+  createLadder, 6 strikes (12 token clones)               1 x   1695391 gas = 0.1729 MON
+  Kuru Router.deployProxy, one book per strike            6 x   1463712 gas = 0.8958 MON
+  maker mintSet (inventory per strike)                    6 x    294697 gas = 0.1804 MON
+  maker approve new YES -> MarginAccount                  6 x     69349 gas = 0.0424 MON
+  maker MarginAccount.deposit YES                         6 x    166575 gas = 0.1019 MON
+  maker MarginAccount.deposit AUSD (daily top-up)         1 x    126927 gas = 0.0129 MON
+  maker initial quote (1 bid + 1 ask)                     6 x    589509 gas = 0.3608 MON
+  maker HOURLY re-quote (cancel 2 + place 2), 24 x 6    144 x    522756 gas = 7.6782 MON
+  maker pulls quotes at close                             6 x    277331 gas = 0.1697 MON
+  CRE settlement report (sim forwarder: we pay)           1 x    220000 gas = 0.0224 MON
+  maker MarginAccount withdraw                            1 x    298373 gas = 0.0304 MON
+  maker redeem                                            6 x    187113 gas = 0.1145 MON
+  TOTAL per city-day                                   9.783 MON  (fixed 2.104 + re-quotes 7.678)
+  variants: re-quote only strikes that moved >=1 tick (~half): 5.943 MON/day; every 30 min (METAR cadence): 17.461 MON/day
+  per user trade (paid by the user or a relayer): taker buy 0.0401, Zap.buyNo 0.0833, Zap.buyYes 0.0629, redeem 0.0164 MON
+
+live run requirement written to <tmp>/verify/mirror/spikes/e2e/logs/live-requirements.json: deployer 2.14, maker 1.08, taker1 0.17, taker2 0.3 = 3.69 MON total
+
+E2E OK (fork). Evidence: <tmp>/verify/mirror/spikes/e2e/logs/fork-2026-10-06T14-25-12/{console.txt,steps.tsv,steps.jsonl,summary.json,state.json}

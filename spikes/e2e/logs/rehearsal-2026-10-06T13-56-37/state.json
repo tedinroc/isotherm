@@ -1,0 +1,212 @@
+{
+  "mode": "live",
+  "rpc": "http://127.0.0.1:18992",
+  "done": [
+    "preflight",
+    "fund",
+    "deploy",
+    "ladder",
+    "makerInventory",
+    "markets",
+    "takers",
+    "requote",
+    "close",
+    "dayEnd",
+    "settle",
+    "redeem",
+    "stale",
+    "checks",
+    "budgetProbe"
+  ],
+  "series": {
+    "28": {
+      "strike": 28,
+      "id": "0xcb6bf583d9761e49568b11bfc8b69b52f73e24a11fb516c618cb188b2241a9b3",
+      "yes": "0x829930e34b5e5Ce164F61E898a378B0cAe3d8a4e",
+      "no": "0x59fab455344ed93705B8fFc7A5CF1b82875daEA5",
+      "symbol": "ZZZZ-20261006-GE28-Y",
+      "market": "0x900793BD5091380fe14F2714A7B82de8eA314beB"
+    },
+    "29": {
+      "strike": 29,
+      "id": "0x4f3b3913c0a68e364f4f362cac535f96dd16388e84c4e79fca0eab74aa7311ef",
+      "yes": "0x820891F8a23AC2b9ceDe7d67D7D29db9951406b3",
+      "no": "0x997F89d3991992F2Ec041EFC422e8a0D6f56d3FB",
+      "symbol": "ZZZZ-20261006-GE29-Y",
+      "market": "0x0a75Aff5899A42218e03533d51866C9e0d0B5196"
+    },
+    "30": {
+      "strike": 30,
+      "id": "0x763a7e139a42e88307545caa602932f64a10c69293634d118cd057dfa1259d48",
+      "yes": "0xbb597BA06c01dcdB8Fe9EeC177d91EAfdB646327",
+      "no": "0x94B32309F1120f56a72D4D4D2f7d9738201CAaaa",
+      "symbol": "ZZZZ-20261006-GE30-Y",
+      "market": "0xe83dD9a3b5D7f4638b0D1bb7762e505D71F6224b"
+    }
+  },
+  "orders": {
+    "28": [
+      3,
+      4
+    ],
+    "29": [
+      3,
+      4
+    ],
+    "30": [
+      3,
+      4
+    ]
+  },
+  "quotes": {
+    "28": [
+      {
+        "bid": 1080,
+        "ask": 1490
+      },
+      {
+        "bid": 1180,
+        "ask": 1590
+      }
+    ],
+    "29": [
+      {
+        "bid": 150,
+        "ask": 560
+      },
+      {
+        "bid": 50,
+        "ask": 460
+      }
+    ],
+    "30": [
+      {
+        "bid": 10,
+        "ask": 270
+      },
+      {
+        "bid": 10,
+        "ask": 370
+      }
+    ]
+  },
+  "start": {
+    "deployer": {
+      "mon": "3.652621182",
+      "ausd": "0.000000"
+    },
+    "maker": {
+      "mon": "0.352764648",
+      "ausd": "9800.000000"
+    },
+    "taker1": {
+      "mon": "0.136588436",
+      "ausd": "9980.000000"
+    },
+    "taker2": {
+      "mon": "0",
+      "ausd": "0.000000"
+    }
+  },
+  "r": {
+    "taker1": {
+      "spentAusd": 10,
+      "yes29": "178392856",
+      "fills": 1,
+      "ask": 0.056
+    },
+    "taker2": {
+      "no30": "40000000",
+      "back30": "39960",
+      "netCost30": "39960040",
+      "bid30": 0.001,
+      "yes28": "174322147",
+      "spend28": 26
+    },
+    "cre": {
+      "settle": {
+        "hash": "0x15714ba0f6f48477edf3138f7b2ce13d6632e9c88d98e258057be40d2eccddf8",
+        "estimate": "154069",
+        "gasUsed": "152505"
+      },
+      "replay": "0x01742651ae48f00312d39cf65f34aac69b2c7dc858f3da143d426bc8b1adef15",
+      "void": "0xac50681b2e62964361d870d3bf72da6a407b16c53a4751e41884c75b39f304ef"
+    },
+    "loserPayout": "0",
+    "makerRedeem": {
+      "28": {
+        "yes": "325503356",
+        "no": "500000000",
+        "payout": "325503356"
+      },
+      "29": {
+        "yes": "321428572",
+        "no": "0",
+        "payout": "321428572"
+      },
+      "30": {
+        "yes": "540000000",
+        "no": "500000000",
+        "payout": "500000000"
+      }
+    },
+    "void": {
+      "yesPayout": "50000000",
+      "noPayout": "50000000"
+    },
+    "end": {
+      "deployer": {
+        "ausd": "0.000000",
+        "mon": "2.528610074805139491"
+      },
+      "maker": {
+        "ausd": "19702.891628",
+        "mon": "1.070805953275090895"
+      },
+      "taker1": {
+        "ausd": "19948.392856",
+        "mon": "0.169253095862321979"
+      },
+      "taker2": {
+        "ausd": "348.362107",
+        "mon": "0.298165249098781015"
+      }
+    }
+  },
+  "forkBlock": "68702683",
+  "stations": {
+    "settle": {
+      "code": "ZZZZ",
+      "hex": "0x5a5a5a5a",
+      "offset": 35100
+    },
+    "void": {
+      "code": "ZZZY",
+      "hex": "0x5a5a5a59",
+      "offset": 35100
+    }
+  },
+  "resolver": "0x1c7a8a5df93f7f33c778c2163d8887e9249475f1",
+  "vault": "0xc83fe722eb5bd29a0355c090f14ccb0605153713",
+  "zap": "0x1b1d91ebd1590c7814aedcae66ac6ded492c792e",
+  "date": 20261006,
+  "dayEnd": 1791296100,
+  "close": 1791296040,
+  "voidSeries": {
+    "strike": 25,
+    "id": "0xa4ffa79e3a65df47b0da50c312697defb6059b05ccb61c2258f9c400c100e11e",
+    "yes": "0x0210a4f983FD561F0937a607Ec4ad646E6674beE",
+    "no": "0x264235F41F60Ce452daC7317c445211DB1044f05",
+    "symbol": "ZZZY-20261006-GE25-Y"
+  },
+  "forecast": {
+    "mu": 25.8,
+    "sigma": 1.5,
+    "source": "https://api.open-meteo.com/v1/forecast?latitude=25.0697&longitude=121.5525&daily=temperature_2m_max&timezone=Asia%2FTaipei&start_date=2026-10-06&end_date=2026-10-06",
+    "fv": {
+      "28": 0.12853719855750034,
+      "29": 0.03593026547734279,
+      "30": 0.006818869775968239
+    }
+  }
+}

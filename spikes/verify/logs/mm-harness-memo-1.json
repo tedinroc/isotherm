@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "data": {
+    "chainId": 10143,
+    "from": "0xA74351452257c5bf84167F2D597E994f792134cf",
+    "to": "0xA74351452257c5bf84167F2D597E994f792134cf",
+    "memo": "isotherm:v0:RCSS:2026-10-07:tmax=26",
+    "gasLimit": "30000",
+    "status": "CONFIRMED",
+    "hash": "0xcb1bf4265841748249983802cbf58c19ae21f0d7032e736676a2b15c4b572688",
+    "pollingId": "4fa39eb5-3020-4f22-b93b-4f55f9488206",
+    "submitMs": 247
+  }
+}

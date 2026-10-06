@@ -1,0 +1,380 @@
+Compiling 78 files with Solc 0.8.37
+Solc 0.8.37 finished in 2.49s
+Compiler run successful with warnings:
+Warning (2519): This declaration shadows an existing declaration.
+   --> test/fork/MonadTestnetFork.t.sol:222:23:
+    |
+222 |     function _payload(uint32 date, int16 tmax, bytes32 src, uint256 signerPk) internal view returns (bytes memory) {
+    |                       ^^^^^^^^^^^
+Note: The shadowed declaration is here:
+  --> test/fork/MonadTestnetFork.t.sol:95:5:
+   |
+95 |     uint32 date;
+   |     ^^^^^^^^^^^
+
+Warning (2018): Function state mutability can be restricted to view
+   --> test/fork/MonadTestnetFork.t.sol:245:5:
+    |
+245 |     function _processedResult() internal returns (bool) {
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+   --> test/integration/IsothermE2EFork.t.sol:272:5:
+    |
+272 |     function _solvency() internal {
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+warning[missing-zero-check]: address parameter is used in a state write or value transfer without a zero-address check
+   ╭▸ src/CollateralVault.sol:45:82
+   │
+45 │     constructor(address owner_, IIsothermResolver resolver_, IERC20 collateral_, address guardian_)
+   │                                                                                  ━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://getfoundry.sh/forge/linting/missing-zero-check
+
+warning[missing-zero-check]: address parameter is used in a state write or value transfer without a zero-address check
+   ╭▸ src/OutcomeToken.sol:27:17
+   │
+27 │     constructor(address vault_) ERC20("Isotherm Outcome", "ISO") ERC20Permit("Isotherm Outcome") {
+   │                 ━━━━━━━━━━━━━━
+   │
+   ╰ help: https://getfoundry.sh/forge/linting/missing-zero-check
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+   ╭▸ src/ForecastCommit.sol:81:13
+   │
+81 │         if (block.timestamp >= deadline) revert CommitWindowClosed(deadline);
+   │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://getfoundry.sh/forge/linting/block-timestamp
+
+warning[missing-zero-check]: address parameter is used in a state write or value transfer without a zero-address check
+   ╭▸ src/Resolver.sol:82:72
+   │
+82 │     constructor(address owner_, address forwarder_, address attester_, address guardian_)
+   │                                                                        ━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://getfoundry.sh/forge/linting/missing-zero-check
+
+warning[unsafe-typecast]: typecast can truncate values
+   ╭▸ src/ForecastCommit.sol:85:25
+   │
+85 │         c.committedAt = uint64(block.timestamp);
+   │                         ━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint64' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[reentrancy-events]: event emitted after an external call; reentrancy can reorder or fabricate logs that off-chain consumers rely on
+    ╭▸ src/CollateralVault.sol:187:9
+    │
+187 │         emit SetMinted(seriesId, payer, to, amount);
+    │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/reentrancy-events
+
+warning[unsafe-typecast]: typecast can truncate values
+   ╭▸ src/ForecastCommit.sol:97:24
+   │
+97 │         c.revealedAt = uint64(block.timestamp);
+   │                        ━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint64' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[reentrancy-events]: event emitted after an external call; reentrancy can reorder or fabricate logs that off-chain consumers rely on
+   ╭▸ src/CollateralVault.sol:99:9
+   │
+99 │         emit SetRedeemed(seriesId, msg.sender, amount);
+   │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://getfoundry.sh/forge/linting/reentrancy-events
+
+warning[missing-events-access-control]: `isOperator` is changed without an event but is used for access control
+    ╭▸ src/StrikeFactory.sol:104:9
+    │
+104 │         isOperator[account] = enabled;
+    │         ━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/missing-events-access-control
+
+warning[require-revert-in-loop]: `require` or `revert` inside a loop
+    ╭▸ src/ForecastCommit.sol:120:35
+    │
+120 │             if (probBps[i] > BPS) revert BadForecast();
+    │                                   ━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/require-revert-in-loop
+
+warning[require-revert-in-loop]: `require` or `revert` inside a loop
+    ╭▸ src/ForecastCommit.sol:121:58
+    │
+121 │             if (i > 0 && strikesC[i] <= strikesC[i - 1]) revert BadForecast();
+    │                                                          ━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/require-revert-in-loop
+
+warning[reentrancy-events]: event emitted after an external call; reentrancy can reorder or fabricate logs that off-chain consumers rely on
+    ╭▸ src/CollateralVault.sol:117:9
+    │
+117 │         emit Redeemed(seriesId, msg.sender, yesAmount, noAmount, payout);
+    │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/reentrancy-events
+
+warning[uninitialized-local]: local variable is read before being initialized
+    ╭▸ src/CollateralVault.sol:148:21
+    │
+148 │                 due[n++] = l;
+    │                     ━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/uninitialized-local
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/CollateralVault.sol:145:17
+    │
+145 │                 block.timestamp >= resolver.dayEnd(l.station, l.date)
+    │                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/block-timestamp
+
+warning[calls-loop]: external call inside a loop
+    ╭▸ src/CollateralVault.sol:145:36
+    │
+145 │                 block.timestamp >= resolver.dayEnd(l.station, l.date)
+    │                                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/calls-loop
+
+warning[calls-loop]: external call inside a loop
+    ╭▸ src/CollateralVault.sol:146:24
+    │
+146 │                     && resolver.resultOf(l.station, l.date).status == IIsothermResolver.Status.None
+    │                        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/calls-loop
+
+warning[missing-zero-check]: address parameter is used in a state write or value transfer without a zero-address check
+    ╭▸ src/CollateralVault.sol:160:26
+    │
+160 │     function setGuardian(address guardian_) external onlyOwner {
+    │                          ━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/missing-zero-check
+
+warning[reentrancy-events]: event emitted after an external call; reentrancy can reorder or fabricate logs that off-chain consumers rely on
+    ╭▸ src/StrikeFactory.sol:188:13
+    │
+188 │             emit LadderCreated(station, date, _ladders.length - 1);
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/reentrancy-events
+
+warning[reentrancy-events]: event emitted after an external call; reentrancy can reorder or fabricate logs that off-chain consumers rely on
+    ╭▸ src/StrikeFactory.sol:192:9
+    │
+192 │         emit SeriesCreated(seriesId, station, date, strikeC, closeTime, address(yes), address(no));
+    │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/reentrancy-events
+
+warning[require-revert-in-loop]: `require` or `revert` inside a loop
+    ╭▸ src/StrikeFactory.sol:162:63
+    │
+162 │         if (strikeC < MIN_STRIKE_C || strikeC > MAX_STRIKE_C) revert StrikeOutOfRange(strikeC);
+    │                                                               ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/require-revert-in-loop
+
+warning[require-revert-in-loop]: `require` or `revert` inside a loop
+    ╭▸ src/StrikeFactory.sol:165:43
+    │
+165 │         if (address(s.yes) != address(0)) revert SeriesExists(seriesId);
+    │                                           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/require-revert-in-loop
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/StrikeFactory.sol:155:13
+    │
+155 │         if (closeTime <= block.timestamp || closeTime > end) revert BadCloseTime(closeTime, end);
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/block-timestamp
+
+warning[reentrancy-events]: event emitted after an external call; reentrancy can reorder or fabricate logs that off-chain consumers rely on
+    ╭▸ src/Resolver.sol:235:9
+    │
+235 │         emit LadderResolved(station, date, status, tmaxC, sourcesHash, msg.sender);
+    │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/reentrancy-events
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/Resolver.sol:127:13
+    │
+127 │         if (block.timestamp < staleAt) revert NotStale(station, date, staleAt);
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/block-timestamp
+
+warning[missing-zero-check]: address parameter is used in a state write or value transfer without a zero-address check
+    ╭▸ src/Resolver.sol:191:26
+    │
+191 │     function setGuardian(address guardian_) external onlyOwner {
+    │                          ━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/missing-zero-check
+
+warning[missing-zero-check]: address parameter is used in a state write or value transfer without a zero-address check
+    ╭▸ src/Resolver.sol:198:54
+    │
+198 │     function setExpectedWorkflow(bytes32 workflowId, address workflowOwner) external onlyOwner {
+    │                                                      ━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/missing-zero-check
+
+warning[unsafe-typecast]: typecast can truncate values
+   ╭▸ src/lib/StationTime.sol:34:16
+   │
+34 │         return uint256(int256(dayStartUtc(date)) - int256(utcOffsetSeconds));
+   │                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[unsafe-typecast]: typecast can truncate values
+   ╭▸ src/lib/StationTime.sol:34:24
+   │
+34 │         return uint256(int256(dayStartUtc(date)) - int256(utcOffsetSeconds));
+   │                        ━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'int256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[divide-before-multiply]: division before multiplication may lose precision
+   ╭▸ src/lib/StationTime.sol:57:27
+   │
+57 │         uint256 yoe = y - era * 400; // [0, 399]
+   │                           ━━━━━━━━━
+   │
+   ╰ help: https://getfoundry.sh/forge/linting/divide-before-multiply
+
+warning[divide-before-multiply]: division before multiplication may lose precision
+   ╭▸ src/lib/StationTime.sol:61:16
+   │
+61 │         return era * 146_097 + doe - 719_468;
+   │                ━━━━━━━━━━━━━
+   │
+   ╰ help: https://getfoundry.sh/forge/linting/divide-before-multiply
+
+warning[require-revert-in-loop]: `require` or `revert` inside a loop
+   ╭▸ src/lib/StationTime.sol:69:22
+   │
+69 │             if (!ok) revert InvalidStationCode(station);
+   │                      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://getfoundry.sh/forge/linting/require-revert-in-loop
+
+warning[arbitrary-send-erc20]: `transferFrom` uses an arbitrary `from`; require it to equal `msg.sender` or `address(this)`
+    ╭▸ src/CollateralVault.sol:184:9
+    │
+184 │         collateral.safeTransferFrom(payer, address(this), amount);
+    │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/arbitrary-send-erc20
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/CollateralVault.sol:182:13
+    │
+182 │         if (block.timestamp >= s.closeTime) revert MintClosed(seriesId, s.closeTime);
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/Resolver.sol:228:13
+    │
+228 │         if (block.timestamp < end) revert DayNotOver(station, date, end);
+    │             ━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://getfoundry.sh/forge/linting/block-timestamp
+
+warning[unsafe-typecast]: typecast can truncate values
+    ╭▸ src/Resolver.sol:233:24
+    │
+233 │         r.resolvedAt = uint64(block.timestamp);
+    │                        ━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint64' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://getfoundry.sh/forge/linting/unsafe-typecast
+
+warning[environment-read-across-mutation]: `block.timestamp` may be reused across `vm.warp`
+    ╭▸ test/integration/IsothermE2EFork.t.sol:396:25
+    │
+396 │                 vm.warp(block.timestamp + 61); // global 60 s cooldown
+    │                 ────────━━━━━━━━━━━━━━━────── `vm.warp` changes this environment here
+    │
+    ├ help: capture it with `vm.getBlockTimestamp()` instead
+    ╰ help: https://getfoundry.sh/forge/linting/environment-read-across-mutation
+
+warning[environment-read-across-mutation]: `block.timestamp` may be reused across `vm.warp`
+    ╭▸ test/integration/IsothermE2EFork.t.sol:296:28
+    │
+296 │         date = _taipeiDate(block.timestamp + 1 days);
+    │                            ━━━━━━━━━━━━━━━
+    ‡
+396 │                 vm.warp(block.timestamp + 61); // global 60 s cooldown
+    │                 ───────────────────────────── `vm.warp` changes this environment here
+    │
+    ├ help: capture it with `vm.getBlockTimestamp()` instead
+    ╰ help: https://getfoundry.sh/forge/linting/environment-read-across-mutation
+
+warning[environment-read-across-mutation]: `block.timestamp` may be reused across `vm.warp`
+    ╭▸ test/unit/CollateralVault.t.sol:244:28
+    │
+244 │         uint256 deadline = block.timestamp + 10 minutes;
+    │                            ━━━━━━━━━━━━━━━
+    ‡
+247 │         vm.warp(deadline + 1);
+    │         ───────────────────── `vm.warp` changes this environment here
+    │
+    ├ help: capture it with `vm.getBlockTimestamp()` instead
+    ╰ help: https://getfoundry.sh/forge/linting/environment-read-across-mutation
+
+warning[environment-read-across-mutation]: `block.chainid` may be reused across `vm.chainId`
+    ╭▸ test/unit/Resolver.t.sol:181:33
+    │
+181 │         uint256 originalChain = block.chainid;
+    │                                 ━━━━━━━━━━━━━
+182 │         vm.chainId(143); // same contract, different chain
+    │         ─────────────── `vm.chainId` changes this environment here
+    │
+    ├ help: capture it with `vm.getChainId()` instead
+    ╰ help: https://getfoundry.sh/forge/linting/environment-read-across-mutation
+

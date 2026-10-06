@@ -1,0 +1,24 @@
+RCSS 2026-04-13  PM=33°C           src=RCSS   IEM tmax=33   reports=44  hours=24 MATCH
+RCSS 2026-04-25  PM=21°C           src=RCSS   IEM tmax=21   reports=49  hours=24 MATCH
+RCSS 2026-05-02  PM=32°C           src=RCSS   IEM tmax=32   reports=44  hours=24 MATCH
+RCSS 2026-05-25  PM=36°C           src=RCSS   IEM tmax=36   reports=46  hours=24 MATCH
+RCSS 2026-06-03  PM=37°C           src=RCSS   IEM tmax=37   reports=49  hours=24 MATCH
+RCSS 2026-06-17  PM=34°C or higher src=RCSS   IEM tmax=35   reports=59  hours=24 MATCH
+RCSS 2026-08-09  PM=29°C           src=RCSS   IEM tmax=29   reports=69  hours=24 MATCH
+RCSS 2026-08-13  PM=36°C           src=RCSS   IEM tmax=36   reports=47  hours=24 MATCH
+RCSS 2026-08-17  PM=36°C           src=RCSS   IEM tmax=36   reports=42  hours=24 MATCH
+RCSS 2026-08-22  PM=35°C           src=RCSS   IEM tmax=35   reports=55  hours=24 MATCH
+RCSS 2026-08-26  PM=32°C           src=RCSS   IEM tmax=32   reports=45  hours=24 MATCH
+RCSS 2026-09-12  PM=32°C           src=RCSS   IEM tmax=32   reports=52  hours=24 MATCH
+RCSS 2026-09-24  PM=32°C           src=RCSS   IEM tmax=32   reports=42  hours=24 MATCH
+RCSS 2026-10-03  PM=30°C           src=RCSS   IEM tmax=30   reports=49  hours=24 MATCH
+RJTT 2026-03-12  PM=12°C           src=RJTT   IEM tmax=12   reports=48  hours=24 MATCH
+RJTT 2026-03-30  PM=20°C           src=RJTT   IEM tmax=20   reports=48  hours=24 MATCH
+RJTT 2026-04-08  PM=17°C           src=RJTT   IEM tmax=17   reports=48  hours=24 MATCH
+RJTT 2026-05-09  PM=23°C           src=RJTT   IEM tmax=23   reports=48  hours=24 MATCH
+RJTT 2026-05-14  PM=24°C           src=RJTT   IEM tmax=24   reports=48  hours=24 MATCH
+RJTT 2026-09-15  PM=28°C           src=OTHER:https://www.weather.gov/wrh/timeseries?site=rjtt IEM tmax=28   reports=48  hours=24 MATCH
+RCSS 2026-05-04  PM=24°C           src=RCSS   IEM tmax=25   reports=54  hours=24 MISMATCH
+RCSS 2026-04-21  PM=30°C           src=RCSS   IEM tmax=30   reports=45  hours=24 MATCH
+RCSS 2026-07-13  PM=34°C           src=RCSS   IEM tmax=34   reports=54  hours=24 MATCH
+station-sourced: 21/22 match

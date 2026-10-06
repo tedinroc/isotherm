@@ -1,0 +1,24 @@
+[
+ {
+  "name": "requestFunds",
+  "type": "function",
+  "stateMutability": "nonpayable",
+  "inputs": [
+   {
+    "type": "address"
+   }
+  ],
+  "outputs": []
+ },
+ {
+  "name": "lastDripTimestamp",
+  "type": "function",
+  "stateMutability": "view",
+  "inputs": [],
+  "outputs": [
+   {
+    "type": "uint256"
+   }
+  ]
+ }
+]

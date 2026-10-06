@@ -1,0 +1,28 @@
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...
+✓ Workflow compiled
+✓ Simulation limits enabled
+  HTTP: req=120kb resp=250kb timeout=10s | ConfHTTP: req=125kb resp=500kb timeout=1m30s | Consensus obs=25kb | ChainWrite evm_report=50kb evm_gas=10000000 solana_report=265b solana_cu=300000 | WASM binary=100mb compressed=20mb
+  Binary hash: 3111f2fdf168860ef6ef473321a548a29b658036ee3a5d94d84644d1b38757f5
+  Config hash: d324b1901cec470bd63d75213c51d0d75b0e79145048a561c1eb37edec27a8f1
+2026-10-06T06:31:07Z [SIMULATION] Simulator Initialized
+
+2026-10-06T06:31:07Z [SIMULATION] Running trigger trigger=cron-trigger@1.0.0
+2026-10-06T06:31:10Z [USER LOG] RCSS 2026-10-04: IEM tmax=35 obs=45 | AWC tmax=35 obs=45
+2026-10-06T06:31:10Z [USER LOG] RCSS 2026-10-04: report payload 0x5243535300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000135288c00000000000000000000000000000000000000000000000000000000000000230000000000000000000000000000000000000000000000000000000000000000f778ae82f8fc83ded968a79f5e007e399ebc79f5580858d9ae1283937eeea3d100000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000041f4301982cf702e8cd71b9df7e9795a5fb994689980451a1bcf66b909b06e5b311d7b4a51aaebcca745db91a4567cda56cfacc2a4661fbb90737db500ae3b6d951c00000000000000000000000000000000000000000000000000000000000000
+2026-10-06T06:31:12Z [USER LOG] RCSS 2026-10-04: writeReport tx 0x999c2cce489beeba14a21899adb87b807f014b30608c16ebd579de5d77a8ca29
+
+✓ Workflow Simulation Result:
+"[{\"station\":\"RCSS\",\"date\":20261004,\"tmaxC\":35,\"isVoid\":false,\"sourcesHash\":\"0xf778ae82f8fc83ded968a79f5e007e399ebc79f5580858d9ae1283937eeea3d1\",\"txHash\":\"0x999c2cce489beeba14a21899adb87b807f014b30608c16ebd579de5d77a8ca29\"}]"
+
+2026-10-06T06:31:12Z [SIMULATION] Execution finished signal received
+2026-10-06T06:31:12Z [SIMULATION] Skipping WorkflowEngineV2
+
+⚠️  Update available! You’re running 1.37.0-isotherm-nologin, but 1.37.0 is the latest.
+Run `cre update` or visit https://github.com/smartcontractkit/cre-cli/releases to upgrade.
+
+real 11.53
+user 10.93
+sys 0.88

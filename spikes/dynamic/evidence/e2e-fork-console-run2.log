@@ -1,0 +1,25 @@
+chain 10143 block 68693915 relayer 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11 user 0x9F44278337caE54b9dfe297e4a1f4aC2A3898c03
+PASS  user (fresh embedded wallet) starts with 0 MON
+PASS  GaslessDepositor deployed  {"depositor":"0x1ecd98e27c5314007ae20fb5f29063637584cbff","gasUsed":"516431"}
+PASS  GET /info  {"relayer":"0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11","chainId":10143,"monBalance":"9.9540","ausdBalance":"0.00","signer":"local-key","depositTo":"0x029049a9dA77231dd86A90E52Fd6Db542424e727","maxRelayAusd":"1000.00"}
+PASS  POST /drip minted AUSD to user via faucet (relayer float empty, relayer paid gas)  {"ausd":"10000.00","source":"agora-faucet","gasUsed":"128414","gasLimit":"149260","latencyMs":318}
+PASS  second drip within 60 s -> clean 429 (faucet global cooldown)  "AUSD faucet cooling down (global 60 s limit); retry shortly"
+PASS  relayer refill() pulled 10,000 AUSD float from faucet  {"ok":true,"txHash":"0x9013dd3cf499828d876ee80c2dda066b591a04fd34586d63a3291fb3542786fc","gasUsed":"128414","gasLimit":"149260"}
+PASS  drip #2 paid 1,000 AUSD from relayer float (no faucet dependency)  {"gasUsed":"72049","gasLimit":"82857","latencyMs":758}
+PASS  user still has 0 MON after drip
+PASS  relayed transferWithAuthorization moved 25 AUSD user -> vault  {"tx":"0x710771b7ad31307707b65989597b80a3980f75ab96e4d13964816239852556ab","gasUsed":"112269","gasLimit":"129110","latencyMs":1790}
+PASS  user paid 0 MON for the deposit
+PASS  authorizationState(user, nonce) == true
+PASS  replay rejected by relayer policy  "authorization nonce already used"
+PASS  replay rejected onchain (AUSD)  "The contract function \"transferWithAuthorization\" reverted with the following signature:"
+PASS  tampered value rejected by relayer (sig mismatch)  "signature does not match `from`"
+PASS  tampered value rejected onchain (AUSD)  "The contract function \"transferWithAuthorization\" reverted with the following signature:"
+PASS  non-allowlisted destination rejected  "destination 0x000000000000000000000000000000000000dEaD not allowlisted for transfer"
+PASS  receiveWithAuthorization by non-payee reverts (front-run safe)  "The contract function \"receiveWithAuthorization\" reverted with the following signature:"
+PASS  relayed depositWithAuthorization (receiveWithAuthorization) credited 40 AUSD  {"tx":"0x0024bac567e9fa5af4f077a239a18c92cef02ec5c400687b6e49da29762a1a91","gasUsed":"153358","gasLimit":"176362"}
+PASS  permit + depositWithPermit credited 15 AUSD  {"tx":"0x389384b20514af72b4db64421325d8d1553178952d611f82e8ed0dccbcacaf5d","gasUsed":"163148","gasLimit":"187621"}
+PASS  user still has 0 MON after 3 gasless AUSD movements
+PASS  MON drip delivered 0.05 MON  {"tx":["0xb7ef9b7f1a2495fc5403f4f04ec89f8912f2161fa1c430765d143fb379045eca"],"latencyMs":293}
+PASS  direct embedded-wallet tx (AUSD self-transfer) succeeded with user-paid MON  {"tx":"0xf5f1bad1876f698da023179be56f2beaabc761bfcc74483d3e55cfe494eee5e9","gasUsed":"44249","gasLimit":"51273","effectiveGasPrice":"27516443141","paidWei":"1410850589168493","paidMON":"0.001410850589168493","billedOn":"gas LIMIT (Monad rule)","nodeGasPrice":"27516443141"}
+
+22 passed, 0 failed -> <repo>/spikes/dynamic/evidence/e2e-fork-2026-10-06T13-13-34-920Z.json

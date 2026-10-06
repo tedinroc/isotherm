@@ -1,0 +1,10 @@
+chain 10143 block 68712050 via https://testnet-rpc.monad.xyz; dependencies have code: AUSD, faucet, MockKeystoneForwarder, KuruRouter, KuruMarginAccount
+requirement per run (from fork-2026-10-06T14-25-12): deployer 2.14, maker 1.08, taker1 0.17, taker2 0.3 = 3.69 MON
+
+deployer 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11     3.6526 MON  need  2.14    (0.000000 AUSD)
+maker    0xd572638F07829D1c3636400FB73CF34Ca6c7448a     0.3528 MON  need  1.08  top-up 0.7272 from deployer  (9800.000000 AUSD)
+taker1   0x636D0598E416e5f66acD0F6Ac2Ae96306529b4d5     0.1366 MON  need  0.17  top-up 0.0334 from deployer  (9980.000000 AUSD)
+taker2   0x029049a9dA77231dd86A90E52Fd6Db542424e727     0.0000 MON  need  0.30  top-up 0.3000 from deployer  (0.000000 AUSD)
+
+deployer needs 3.2081 MON (own 2.14 + top-ups 1.0681), has 3.6526 -> READY
+Make sure no other process is sending from these wallets during the run (nonce races).

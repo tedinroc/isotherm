@@ -1,0 +1,450 @@
+[
+ {
+  "name": "addBuyOrder",
+  "type": "function",
+  "stateMutability": "nonpayable",
+  "inputs": [
+   {
+    "type": "uint32",
+    "name": "_price"
+   },
+   {
+    "type": "uint96",
+    "name": "size"
+   },
+   {
+    "type": "bool",
+    "name": "_postOnly"
+   }
+  ],
+  "outputs": []
+ },
+ {
+  "name": "addSellOrder",
+  "type": "function",
+  "stateMutability": "nonpayable",
+  "inputs": [
+   {
+    "type": "uint32",
+    "name": "_price"
+   },
+   {
+    "type": "uint96",
+    "name": "_size"
+   },
+   {
+    "type": "bool",
+    "name": "_postOnly"
+   }
+  ],
+  "outputs": []
+ },
+ {
+  "name": "batchUpdate",
+  "type": "function",
+  "stateMutability": "nonpayable",
+  "inputs": [
+   {
+    "type": "uint32[]",
+    "name": "buyPrices"
+   },
+   {
+    "type": "uint96[]",
+    "name": "buySizes"
+   },
+   {
+    "type": "uint32[]",
+    "name": "sellPrices"
+   },
+   {
+    "type": "uint96[]",
+    "name": "sellSizes"
+   },
+   {
+    "type": "uint40[]",
+    "name": "orderIdsToCancel"
+   },
+   {
+    "type": "bool",
+    "name": "postOnly"
+   }
+  ],
+  "outputs": []
+ },
+ {
+  "name": "batchCancelOrders",
+  "type": "function",
+  "stateMutability": "nonpayable",
+  "inputs": [
+   {
+    "type": "uint40[]",
+    "name": "_orderIds"
+   }
+  ],
+  "outputs": []
+ },
+ {
+  "name": "batchCancelOrdersNoRevert",
+  "type": "function",
+  "stateMutability": "nonpayable",
+  "inputs": [
+   {
+    "type": "uint40[]",
+    "name": "_orderIds"
+   }
+  ],
+  "outputs": []
+ },
+ {
+  "name": "placeAndExecuteMarketBuy",
+  "type": "function",
+  "stateMutability": "payable",
+  "inputs": [
+   {
+    "type": "uint96",
+    "name": "_quoteSize"
+   },
+   {
+    "type": "uint256",
+    "name": "_minAmountOut"
+   },
+   {
+    "type": "bool",
+    "name": "_isMargin"
+   },
+   {
+    "type": "bool",
+    "name": "_isFillOrKill"
+   }
+  ],
+  "outputs": [
+   {
+    "type": "uint256"
+   }
+  ]
+ },
+ {
+  "name": "placeAndExecuteMarketSell",
+  "type": "function",
+  "stateMutability": "payable",
+  "inputs": [
+   {
+    "type": "uint96",
+    "name": "_size"
+   },
+   {
+    "type": "uint256",
+    "name": "_minAmountOut"
+   },
+   {
+    "type": "bool",
+    "name": "_isMargin"
+   },
+   {
+    "type": "bool",
+    "name": "_isFillOrKill"
+   }
+  ],
+  "outputs": [
+   {
+    "type": "uint256"
+   }
+  ]
+ },
+ {
+  "name": "bestBidAsk",
+  "type": "function",
+  "stateMutability": "view",
+  "inputs": [],
+  "outputs": [
+   {
+    "type": "uint256"
+   },
+   {
+    "type": "uint256"
+   }
+  ]
+ },
+ {
+  "name": "getL2Book",
+  "type": "function",
+  "stateMutability": "view",
+  "inputs": [],
+  "outputs": [
+   {
+    "type": "bytes"
+   }
+  ]
+ },
+ {
+  "name": "getL2Book",
+  "type": "function",
+  "stateMutability": "view",
+  "inputs": [
+   {
+    "type": "uint32",
+    "name": "_bidPricePoints"
+   },
+   {
+    "type": "uint32",
+    "name": "_askPricePoints"
+   }
+  ],
+  "outputs": [
+   {
+    "type": "bytes"
+   }
+  ]
+ },
+ {
+  "name": "getMarketParams",
+  "type": "function",
+  "stateMutability": "view",
+  "inputs": [],
+  "outputs": [
+   {
+    "type": "uint32"
+   },
+   {
+    "type": "uint96"
+   },
+   {
+    "type": "address"
+   },
+   {
+    "type": "uint256"
+   },
+   {
+    "type": "address"
+   },
+   {
+    "type": "uint256"
+   },
+   {
+    "type": "uint32"
+   },
+   {
+    "type": "uint96"
+   },
+   {
+    "type": "uint96"
+   },
+   {
+    "type": "uint256"
+   },
+   {
+    "type": "uint256"
+   }
+  ]
+ },
+ {
+  "name": "s_orderIdCounter",
+  "type": "function",
+  "stateMutability": "view",
+  "inputs": [],
+  "outputs": [
+   {
+    "type": "uint40"
+   }
+  ]
+ },
+ {
+  "name": "s_orders",
+  "type": "function",
+  "stateMutability": "view",
+  "inputs": [
+   {
+    "type": "uint40"
+   }
+  ],
+  "outputs": [
+   {
+    "type": "address",
+    "name": "ownerAddress"
+   },
+   {
+    "type": "uint96",
+    "name": "size"
+   },
+   {
+    "type": "uint40",
+    "name": "prev"
+   },
+   {
+    "type": "uint40",
+    "name": "next"
+   },
+   {
+    "type": "uint40",
+    "name": "flippedId"
+   },
+   {
+    "type": "uint32",
+    "name": "price"
+   },
+   {
+    "type": "uint32",
+    "name": "flippedPrice"
+   },
+   {
+    "type": "bool",
+    "name": "isBuy"
+   }
+  ]
+ },
+ {
+  "name": "s_buyPricePoints",
+  "type": "function",
+  "stateMutability": "view",
+  "inputs": [
+   {
+    "type": "uint256"
+   }
+  ],
+  "outputs": [
+   {
+    "type": "uint40",
+    "name": "head"
+   },
+   {
+    "type": "uint40",
+    "name": "tail"
+   }
+  ]
+ },
+ {
+  "name": "s_sellPricePoints",
+  "type": "function",
+  "stateMutability": "view",
+  "inputs": [
+   {
+    "type": "uint256"
+   }
+  ],
+  "outputs": [
+   {
+    "type": "uint40",
+    "name": "head"
+   },
+   {
+    "type": "uint40",
+    "name": "tail"
+   }
+  ]
+ },
+ {
+  "name": "marketState",
+  "type": "function",
+  "stateMutability": "view",
+  "inputs": [],
+  "outputs": [
+   {
+    "type": "uint8"
+   }
+  ]
+ },
+ {
+  "name": "OrderCreated",
+  "type": "event",
+  "inputs": [
+   {
+    "type": "uint40",
+    "name": "orderId"
+   },
+   {
+    "type": "address",
+    "name": "owner"
+   },
+   {
+    "type": "uint96",
+    "name": "size"
+   },
+   {
+    "type": "uint32",
+    "name": "price"
+   },
+   {
+    "type": "bool",
+    "name": "isBuy"
+   }
+  ]
+ },
+ {
+  "name": "OrderCanceled",
+  "type": "event",
+  "inputs": [
+   {
+    "type": "uint40",
+    "name": "orderId"
+   },
+   {
+    "type": "address",
+    "name": "owner"
+   },
+   {
+    "type": "uint32",
+    "name": "price"
+   },
+   {
+    "type": "uint96",
+    "name": "size"
+   },
+   {
+    "type": "bool",
+    "name": "isBuy"
+   }
+  ]
+ },
+ {
+  "name": "OrdersCanceled",
+  "type": "event",
+  "inputs": [
+   {
+    "type": "uint40[]",
+    "name": "orderId"
+   },
+   {
+    "type": "address",
+    "name": "owner"
+   }
+  ]
+ },
+ {
+  "name": "Trade",
+  "type": "event",
+  "inputs": [
+   {
+    "type": "uint40",
+    "name": "orderId"
+   },
+   {
+    "type": "address",
+    "name": "makerAddress"
+   },
+   {
+    "type": "bool",
+    "name": "isBuy"
+   },
+   {
+    "type": "uint256",
+    "name": "price"
+   },
+   {
+    "type": "uint96",
+    "name": "updatedSize"
+   },
+   {
+    "type": "address",
+    "name": "takerAddress"
+   },
+   {
+    "type": "address",
+    "name": "txOrigin"
+   },
+   {
+    "type": "uint96",
+    "name": "filledSize"
+   }
+  ]
+ }
+]

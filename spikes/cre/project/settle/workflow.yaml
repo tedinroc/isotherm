@@ -1,0 +1,18 @@
+# Isotherm settlement workflow — per-target settings.
+#  anvil-fork : simulate --broadcast against a local `anvil --fork-url https://testnet-rpc.monad.xyz` (no MON needed)
+#  testnet    : simulate --broadcast against live Monad testnet 10143 (needs MON on CRE_ETH_PRIVATE_KEY)
+anvil-fork:
+  user-workflow:
+    workflow-name: "isotherm-settle"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.anvil.json"
+    secrets-path: "../secrets.yaml"
+
+testnet:
+  user-workflow:
+    workflow-name: "isotherm-settle"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.testnet.json"
+    secrets-path: "../secrets.yaml"

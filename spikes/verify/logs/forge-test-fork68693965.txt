@@ -1,0 +1,140 @@
+No files changed, compilation skipped
+
+Ran 7 tests for test/unit/OutcomeToken.t.sol:OutcomeTokenTest
+[PASS] test_implementationIsInert() (gas: 117527)
+[PASS] test_metadata() (gas: 733467)
+[PASS] test_negativeStrikeNames() (gas: 525610)
+[PASS] test_onlyVaultMintBurn() (gas: 1032518)
+[PASS] test_permitOnClone() (gas: 1239896)
+[PASS] test_predictedAddresses() (gas: 469618)
+[PASS] test_transferable() (gas: 1041372)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 2.70ms (1.55ms CPU time)
+
+Ran 30 tests for test/unit/Resolver.t.sol:ResolverTest
+[PASS] testFuzz_onlyAttesterSignatureAccepted(uint256,int16) (runs: 1000, μ: 108614, ~: 108618)
+[PASS] test_attestationToggleRequiresWorkflowId() (gas: 283872)
+[PASS] test_constructorRejectsZero() (gas: 19590)
+[PASS] test_dayEnd() (gas: 52315)
+[PASS] test_digestMatchesManualEip712() (gas: 31658)
+[PASS] test_guardianAdmin() (gas: 155297)
+[PASS] test_lateReportStillAcceptedIfNotVoided() (gas: 165416)
+[PASS] test_metadataIgnoredWhenNotPinned() (gas: 164885)
+[PASS] test_noDoubleSettleOrReplay() (gas: 449193)
+[PASS] test_ownable2Step() (gas: 146366)
+[PASS] test_pause() (gas: 338503)
+[PASS] test_registerStation() (gas: 255355)
+[PASS] test_rejectsBeforeDayEnd() (gas: 211149)
+[PASS] test_rejectsMalformedSignature() (gas: 126673)
+[PASS] test_rejectsNonForwarder() (gas: 87557)
+[PASS] test_rejectsTamperedPayload() (gas: 228809)
+[PASS] test_rejectsTmaxOutOfRange() (gas: 163965)
+[PASS] test_rejectsUnknownStationAndBadDate() (gas: 181188)
+[PASS] test_rejectsWrongSigner() (gas: 96308)
+[PASS] test_setAttester() (gas: 288981)
+[PASS] test_setForwarder() (gas: 290318)
+[PASS] test_settle() (gas: 168900)
+[PASS] test_settleBoundsInclusive() (gas: 292546)
+[PASS] test_signatureBoundToResolverAndChain() (gas: 316554)
+[PASS] test_staleVoidWorksWhilePaused() (gas: 158926)
+[PASS] test_supportsInterface() (gas: 52287)
+[PASS] test_voidIfStale() (gas: 208074)
+[PASS] test_voidIfStaleUnknownStation() (gas: 59631)
+[PASS] test_voidReport() (gas: 165445)
+[PASS] test_workflowMetadataChecks() (gas: 329926)
+Suite result: ok. 30 passed; 0 failed; 0 skipped; finished in 82.55ms (84.91ms CPU time)
+
+Ran 7 tests for test/unit/ForecastCommit.t.sol:ForecastCommitTest
+[PASS] testFuzz_commitReveal(int16,uint16,bytes32) (runs: 1000, μ: 187582, ~: 187441)
+[PASS] test_cannotOverwrite() (gas: 163513)
+[PASS] test_commitDeadline() (gas: 85420)
+[PASS] test_commitReveal() (gas: 273886)
+[PASS] test_forecastersAreIndependent() (gas: 245877)
+[PASS] test_misc() (gas: 188387)
+[PASS] test_revealValidation() (gas: 383167)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 100.58ms (101.59ms CPU time)
+
+Ran 24 tests for test/unit/CollateralVault.t.sol:CollateralVaultTest
+[PASS] test_constructorRequires6Decimals() (gas: 653474)
+[PASS] test_createLadder() (gas: 2554679)
+[PASS] test_createSeries() (gas: 501349)
+[PASS] test_createSeriesAccessControl() (gas: 567165)
+[PASS] test_createSeriesValidation() (gas: 792926)
+[PASS] test_duePendingLadders() (gas: 1630709)
+[PASS] test_guardianAdmin() (gas: 139345)
+[PASS] test_mintSet() (gas: 989075)
+[PASS] test_mintSetReverts() (gas: 808860)
+[PASS] test_mintSetTo() (gas: 992377)
+[PASS] test_mintSetWithPermit() (gas: 1172604)
+[PASS] test_mintSetWithPermitExpiredOrFrontRun() (gas: 817034)
+[PASS] test_noDoubleRedeem() (gas: 1375352)
+[PASS] test_noWinsBelowStrike() (gas: 1263975)
+[PASS] test_oneReportSettlesWholeLadder() (gas: 4992516)
+[PASS] test_pauseStopsMintingOnly() (gas: 1666297)
+[PASS] test_redeemRequiresResolution() (gas: 932397)
+[PASS] test_redeemSetBeforeAndAfterResolution() (gas: 1525101)
+[PASS] test_redeemSetNeedsBothLegs() (gas: 1049866)
+[PASS] test_seriesCollateralIsolated() (gas: 2054884)
+[PASS] test_settlementOfOtherLadderDoesNotLeak() (gas: 1494412)
+[PASS] test_voidFullSetRedeemsExactly() (gas: 1118247)
+[PASS] test_voidPaysHalf() (gas: 1466563)
+[PASS] test_yesWinsAtStrike() (gas: 1549569)
+Suite result: ok. 24 passed; 0 failed; 0 skipped; finished in 100.69ms (7.87ms CPU time)
+
+Ran 4 tests for test/fuzz/VaultFuzz.t.sol:VaultFuzzTest
+[PASS] testFuzz_cannotMintAfterClose(uint256) (runs: 1000, μ: 649676, ~: 649931)
+[PASS] testFuzz_mintRedeemSetRoundTrip(uint256,uint256,bool) (runs: 1000, μ: 1219375, ~: 1314165)
+[PASS] testFuzz_payoutRule(int16,int16) (runs: 1000, μ: 651130, ~: 650972)
+[PASS] testFuzz_setPaysExactlyOne(uint256,uint256,int16,int16,bool) (runs: 1000, μ: 1524514, ~: 1536547)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 101.13ms (369.80ms CPU time)
+
+Ran 7 tests for test/unit/StationTime.t.sol:StationTimeTest
+[PASS] testFuzz_consecutiveDays(uint256) (runs: 1000, μ: 41134, ~: 41068)
+[PASS] testFuzz_roundTrip(uint256) (runs: 1000, μ: 25189, ~: 25175)
+[PASS] test_invalidDates() (gas: 246379)
+[PASS] test_knownVectors() (gas: 74927)
+[PASS] test_taipeiDayEnd() (gas: 35499)
+[PASS] test_validateOffset() (gas: 139538)
+[PASS] test_validateStation() (gas: 130878)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 101.17ms (186.09ms CPU time)
+
+Ran 2 tests for test/fork/MonadTestnetFork.t.sol:MonadTestnetForkTest
+[PASS] test_fork_criticalPath() (gas: 4030167)
+[PASS] test_fork_liveContracts() (gas: 129486)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 3.19s (946.16ms CPU time)
+
+Ran 2 tests for test/integration/IsothermE2EFork.t.sol:IsothermE2EForkTest
+[PASS] test_e2e_fullLoop() (gas: 18777582)
+[PASS] test_e2e_zapThinBook() (gas: 6948042)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 3.33s (1.22s CPU time)
+
+Ran 1 test for test/invariant/VaultInvariant.t.sol:VaultInvariantTest
+[PASS]
+VaultInvariantTest invariants:
+[PASS] invariant_balanceMatchesAccounting
+[PASS] invariant_conservation
+[PASS] invariant_payoutRules
+[PASS] invariant_resultsFinal
+[PASS] invariant_solvency
+ VaultInvariantTest invariants (runs: 256, calls: 32768, reverts: 0)
+
+╭--------------+-----------+-------+---------+----------╮
+| Contract     | Selector  | Calls | Reverts | Discards |
++=======================================================+
+| VaultHandler | mintSet   | 4649  | 0       | 0        |
+|--------------+-----------+-------+---------+----------|
+| VaultHandler | redeem    | 4666  | 0       | 0        |
+|--------------+-----------+-------+---------+----------|
+| VaultHandler | redeemSet | 4686  | 0       | 0        |
+|--------------+-----------+-------+---------+----------|
+| VaultHandler | settle    | 4739  | 0       | 0        |
+|--------------+-----------+-------+---------+----------|
+| VaultHandler | transfer  | 4647  | 0       | 0        |
+|--------------+-----------+-------+---------+----------|
+| VaultHandler | voidStale | 4712  | 0       | 0        |
+|--------------+-----------+-------+---------+----------|
+| VaultHandler | warp      | 4669  | 0       | 0        |
+╰--------------+-----------+-------+---------+----------╯
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 18.17s (18.16s CPU time)
+
+Ran 9 test suites in 18.17s (25.17s CPU time): 84 tests passed, 0 failed, 0 skipped (84 total tests)

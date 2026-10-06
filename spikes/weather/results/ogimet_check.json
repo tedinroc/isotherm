@@ -1,0 +1,57 @@
+{
+ "generatedAt": "2026-10-06T13:25:33.174Z",
+ "stations": {
+  "RCSS": {
+   "ogimetObs": 20715,
+   "ogimetDays": 432,
+   "ogimetCompleteDays": 429,
+   "vsPolymarket": {
+    "n": 184,
+    "match": 183,
+    "mismatch": 1,
+    "noData": 0,
+    "mismatches": [
+     {
+      "date": "2026-05-04",
+      "ogimet": 25,
+      "winner": "24°C"
+     }
+    ]
+   },
+   "vsIem": {
+    "bothComplete": 272,
+    "agree": 272,
+    "disagree": 0,
+    "disagreements": []
+   },
+   "daysOgimetCompleteButIemNot": {
+    "n": 157,
+    "first": "2025-09-17",
+    "last": "2026-02-21"
+   },
+   "ms": 100
+  },
+  "RJTT": {
+   "ogimetObs": 10539,
+   "ogimetDays": 220,
+   "ogimetCompleteDays": 218,
+   "vsPolymarket": {
+    "n": 209,
+    "match": 209,
+    "mismatch": 0,
+    "noData": 0,
+    "mismatches": []
+   },
+   "vsIem": {
+    "bothComplete": 218,
+    "agree": 218,
+    "disagree": 0,
+    "disagreements": []
+   },
+   "daysOgimetCompleteButIemNot": {
+    "n": 0
+   },
+   "ms": 61
+  }
+ }
+}

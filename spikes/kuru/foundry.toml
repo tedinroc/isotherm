@@ -1,0 +1,21 @@
+# Kuru spike — standalone Foundry project (reuses forge-std from the repo root lib/).
+[profile.default]
+src = "src"
+test = "test"
+script = "script"
+out = "out"
+cache_path = "cache"
+libs = ["../../lib"]
+remappings = ["forge-std/=../../lib/forge-std/src/"]
+solc_version = "0.8.30"
+# Kuru's own deployments are compiled with evm_version=prague (Kuru-contracts-dex-public/foundry.toml);
+# Monad testnet/mainnet execute prague bytecode. Do NOT bump to osaka (CLZ etc.) without checking Monad.
+evm_version = "prague"
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+fs_permissions = [{ access = "read-write", path = "./logs" }]
+
+[rpc_endpoints]
+monad_testnet = "https://testnet-rpc.monad.xyz"
+anvil = "http://127.0.0.1:8546"

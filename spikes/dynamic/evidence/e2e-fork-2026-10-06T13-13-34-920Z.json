@@ -1,0 +1,74 @@
+{
+  "rpc": "http://127.0.0.1:18645",
+  "live": false,
+  "relayer": "0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11",
+  "user": "0x9F44278337caE54b9dfe297e4a1f4aC2A3898c03",
+  "forkBlock": "68693915",
+  "depositor": {
+    "address": "0x1ecd98e27c5314007ae20fb5f29063637584cbff",
+    "gasUsed": "516431",
+    "tx": "0x143e712a466ff89d0a077d00053dcc0b49865aeefd459b58a1eb1f41a206e91b"
+  },
+  "drip": {
+    "ok": true,
+    "ausdSource": "agora-faucet",
+    "txHashes": [
+      "0x4fc6dc556e9ffe6d8e2fd8667640311f1813fb9425b42439e9e5ae077a9ee70a"
+    ],
+    "gasUsed": "128414",
+    "gasLimit": "149260",
+    "latencyMs": 318
+  },
+  "refill": {
+    "ok": true,
+    "txHash": "0x9013dd3cf499828d876ee80c2dda066b591a04fd34586d63a3291fb3542786fc",
+    "gasUsed": "128414",
+    "gasLimit": "149260"
+  },
+  "dripFromFloat": {
+    "ok": true,
+    "ausdSource": "relayer-float",
+    "txHashes": [
+      "0x9fe29f289d53ec805e23f30b18441347d96aef239677e9d633da1445ef40cb13"
+    ],
+    "gasUsed": "72049",
+    "gasLimit": "82857",
+    "latencyMs": 758
+  },
+  "transferWithAuthorization": {
+    "ok": true,
+    "txHash": "0x710771b7ad31307707b65989597b80a3980f75ab96e4d13964816239852556ab",
+    "gasUsed": "112269",
+    "gasLimit": "129110",
+    "estimate": "112269",
+    "latencyMs": 1790,
+    "signMs": 1
+  },
+  "receiveWithAuthorization": {
+    "ok": true,
+    "txHash": "0x0024bac567e9fa5af4f077a239a18c92cef02ec5c400687b6e49da29762a1a91",
+    "gasUsed": "153358",
+    "gasLimit": "176362",
+    "estimate": "153358",
+    "latencyMs": 661
+  },
+  "permit": {
+    "tx": "0x389384b20514af72b4db64421325d8d1553178952d611f82e8ed0dccbcacaf5d",
+    "gasUsed": "163148",
+    "gasLimit": "187621"
+  },
+  "directTx": {
+    "tx": "0xf5f1bad1876f698da023179be56f2beaabc761bfcc74483d3e55cfe494eee5e9",
+    "gasUsed": "44249",
+    "gasLimit": "51273",
+    "effectiveGasPrice": "27516443141",
+    "paidWei": "1410850589168493",
+    "paidMON": "0.001410850589168493",
+    "billedOn": "gas LIMIT (Monad rule)",
+    "nodeGasPrice": "27516443141"
+  },
+  "summary": {
+    "pass": 22,
+    "fail": 0
+  }
+}

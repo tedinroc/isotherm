@@ -1,0 +1,232 @@
+[
+ {
+  "station": "RCSS",
+  "date": "2026-04-13",
+  "pm_winner": "33\u00b0C",
+  "pm_source": "RCSS",
+  "iem_tmax": 33,
+  "iem_reports": 44,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RCSS",
+  "date": "2026-04-25",
+  "pm_winner": "21\u00b0C",
+  "pm_source": "RCSS",
+  "iem_tmax": 21,
+  "iem_reports": 49,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RCSS",
+  "date": "2026-05-02",
+  "pm_winner": "32\u00b0C",
+  "pm_source": "RCSS",
+  "iem_tmax": 32,
+  "iem_reports": 44,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RCSS",
+  "date": "2026-05-25",
+  "pm_winner": "36\u00b0C",
+  "pm_source": "RCSS",
+  "iem_tmax": 36,
+  "iem_reports": 46,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RCSS",
+  "date": "2026-06-03",
+  "pm_winner": "37\u00b0C",
+  "pm_source": "RCSS",
+  "iem_tmax": 37,
+  "iem_reports": 49,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RCSS",
+  "date": "2026-06-17",
+  "pm_winner": "34\u00b0C or higher",
+  "pm_source": "RCSS",
+  "iem_tmax": 35,
+  "iem_reports": 59,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RCSS",
+  "date": "2026-08-09",
+  "pm_winner": "29\u00b0C",
+  "pm_source": "RCSS",
+  "iem_tmax": 29,
+  "iem_reports": 69,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RCSS",
+  "date": "2026-08-13",
+  "pm_winner": "36\u00b0C",
+  "pm_source": "RCSS",
+  "iem_tmax": 36,
+  "iem_reports": 47,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RCSS",
+  "date": "2026-08-17",
+  "pm_winner": "36\u00b0C",
+  "pm_source": "RCSS",
+  "iem_tmax": 36,
+  "iem_reports": 42,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RCSS",
+  "date": "2026-08-22",
+  "pm_winner": "35\u00b0C",
+  "pm_source": "RCSS",
+  "iem_tmax": 35,
+  "iem_reports": 55,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RCSS",
+  "date": "2026-08-26",
+  "pm_winner": "32\u00b0C",
+  "pm_source": "RCSS",
+  "iem_tmax": 32,
+  "iem_reports": 45,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RCSS",
+  "date": "2026-09-12",
+  "pm_winner": "32\u00b0C",
+  "pm_source": "RCSS",
+  "iem_tmax": 32,
+  "iem_reports": 52,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RCSS",
+  "date": "2026-09-24",
+  "pm_winner": "32\u00b0C",
+  "pm_source": "RCSS",
+  "iem_tmax": 32,
+  "iem_reports": 42,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RCSS",
+  "date": "2026-10-03",
+  "pm_winner": "30\u00b0C",
+  "pm_source": "RCSS",
+  "iem_tmax": 30,
+  "iem_reports": 49,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RJTT",
+  "date": "2026-03-12",
+  "pm_winner": "12\u00b0C",
+  "pm_source": "RJTT",
+  "iem_tmax": 12,
+  "iem_reports": 48,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RJTT",
+  "date": "2026-03-30",
+  "pm_winner": "20\u00b0C",
+  "pm_source": "RJTT",
+  "iem_tmax": 20,
+  "iem_reports": 48,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RJTT",
+  "date": "2026-04-08",
+  "pm_winner": "17\u00b0C",
+  "pm_source": "RJTT",
+  "iem_tmax": 17,
+  "iem_reports": 48,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RJTT",
+  "date": "2026-05-09",
+  "pm_winner": "23\u00b0C",
+  "pm_source": "RJTT",
+  "iem_tmax": 23,
+  "iem_reports": 48,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RJTT",
+  "date": "2026-05-14",
+  "pm_winner": "24\u00b0C",
+  "pm_source": "RJTT",
+  "iem_tmax": 24,
+  "iem_reports": 48,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RJTT",
+  "date": "2026-09-15",
+  "pm_winner": "28\u00b0C",
+  "pm_source": "OTHER:https://www.weather.gov/wrh/timeseries?site=rjtt",
+  "iem_tmax": 28,
+  "iem_reports": 48,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RCSS",
+  "date": "2026-05-04",
+  "pm_winner": "24\u00b0C",
+  "pm_source": "RCSS",
+  "iem_tmax": 25,
+  "iem_reports": 54,
+  "iem_hours": 24,
+  "match": false
+ },
+ {
+  "station": "RCSS",
+  "date": "2026-04-21",
+  "pm_winner": "30\u00b0C",
+  "pm_source": "RCSS",
+  "iem_tmax": 30,
+  "iem_reports": 45,
+  "iem_hours": 24,
+  "match": true
+ },
+ {
+  "station": "RCSS",
+  "date": "2026-07-13",
+  "pm_winner": "34\u00b0C",
+  "pm_source": "RCSS",
+  "iem_tmax": 34,
+  "iem_reports": 54,
+  "iem_hours": 24,
+  "match": true
+ }
+]

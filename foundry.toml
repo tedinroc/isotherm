@@ -1,0 +1,33 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+test = "test"
+script = "script"
+solc_version = "0.8.37"     # latest release, no known bugs (solidity bugs_by_version.json, 2026-10-06)
+evm_version = "osaka"       # Monad supports all Fusaka opcodes/precompiles (docs.monad.xyz)
+network = "monad"           # Foundry >=1.8: Monad gas model (MIP-8 pages, cold-access repricing), 128 KB code limit
+optimizer = true
+optimizer_runs = 10_000
+via_ir = false
+bytecode_hash = "ipfs"
+cbor_metadata = true
+gas_snapshot_check = false
+fs_permissions = [{ access = "read", path = "./" }]
+
+[fuzz]
+runs = 1_000
+seed = "0x150"
+
+[invariant]
+runs = 256
+depth = 128
+fail_on_revert = true
+show_metrics = true
+
+[rpc_endpoints]
+monad_testnet = "https://testnet-rpc.monad.xyz"
+monad = "https://rpc.monad.xyz"
+
+[fmt]
+line_length = 120

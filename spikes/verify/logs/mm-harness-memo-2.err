@@ -1,0 +1,2 @@
+Intent: Isotherm forecast memo for Taipei (0 MON)
+$SP/mmh.sh weather memo taipei --wait --json  0.76s user 0.06s system 22% cpu 3.706 total

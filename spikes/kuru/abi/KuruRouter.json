@@ -1,0 +1,231 @@
+[
+ {
+  "name": "deployProxy",
+  "type": "function",
+  "stateMutability": "nonpayable",
+  "inputs": [
+   {
+    "type": "uint8",
+    "name": "_type"
+   },
+   {
+    "type": "address",
+    "name": "_baseAssetAddress"
+   },
+   {
+    "type": "address",
+    "name": "_quoteAssetAddress"
+   },
+   {
+    "type": "uint96",
+    "name": "_sizePrecision"
+   },
+   {
+    "type": "uint32",
+    "name": "_pricePrecision"
+   },
+   {
+    "type": "uint32",
+    "name": "_tickSize"
+   },
+   {
+    "type": "uint96",
+    "name": "_minSize"
+   },
+   {
+    "type": "uint96",
+    "name": "_maxSize"
+   },
+   {
+    "type": "uint256",
+    "name": "_takerFeeBps"
+   },
+   {
+    "type": "uint256",
+    "name": "_makerFeeBps"
+   },
+   {
+    "type": "uint96",
+    "name": "_kuruAmmSpread"
+   }
+  ],
+  "outputs": [
+   {
+    "type": "address",
+    "name": "proxy"
+   }
+  ]
+ },
+ {
+  "name": "anyToAnySwap",
+  "type": "function",
+  "stateMutability": "payable",
+  "inputs": [
+   {
+    "type": "address[]",
+    "name": "_marketAddresses"
+   },
+   {
+    "type": "bool[]",
+    "name": "_isBuy"
+   },
+   {
+    "type": "bool[]",
+    "name": "_nativeSend"
+   },
+   {
+    "type": "address",
+    "name": "_debitToken"
+   },
+   {
+    "type": "address",
+    "name": "_creditToken"
+   },
+   {
+    "type": "uint256",
+    "name": "_amount"
+   },
+   {
+    "type": "uint256",
+    "name": "_minAmountOut"
+   }
+  ],
+  "outputs": [
+   {
+    "type": "uint256"
+   }
+  ]
+ },
+ {
+  "name": "verifiedMarket",
+  "type": "function",
+  "stateMutability": "view",
+  "inputs": [
+   {
+    "type": "address"
+   }
+  ],
+  "outputs": [
+   {
+    "type": "uint32",
+    "name": "pricePrecision"
+   },
+   {
+    "type": "uint96",
+    "name": "sizePrecision"
+   },
+   {
+    "type": "address",
+    "name": "baseAssetAddress"
+   },
+   {
+    "type": "uint256",
+    "name": "baseAssetDecimals"
+   },
+   {
+    "type": "address",
+    "name": "quoteAssetAddress"
+   },
+   {
+    "type": "uint256",
+    "name": "quoteAssetDecimals"
+   },
+   {
+    "type": "uint32",
+    "name": "tickSize"
+   },
+   {
+    "type": "uint96",
+    "name": "minSize"
+   },
+   {
+    "type": "uint96",
+    "name": "maxSize"
+   },
+   {
+    "type": "uint256",
+    "name": "takerFeeBps"
+   },
+   {
+    "type": "uint256",
+    "name": "makerFeeBps"
+   }
+  ]
+ },
+ {
+  "name": "owner",
+  "type": "function",
+  "stateMutability": "view",
+  "inputs": [],
+  "outputs": [
+   {
+    "type": "address"
+   }
+  ]
+ },
+ {
+  "name": "marginAccountAddress",
+  "type": "function",
+  "stateMutability": "view",
+  "inputs": [],
+  "outputs": [
+   {
+    "type": "address"
+   }
+  ]
+ },
+ {
+  "name": "MarketRegistered",
+  "type": "event",
+  "inputs": [
+   {
+    "type": "address",
+    "name": "baseAsset"
+   },
+   {
+    "type": "address",
+    "name": "quoteAsset"
+   },
+   {
+    "type": "address",
+    "name": "market"
+   },
+   {
+    "type": "address",
+    "name": "vaultAddress"
+   },
+   {
+    "type": "uint32",
+    "name": "pricePrecision"
+   },
+   {
+    "type": "uint96",
+    "name": "sizePrecision"
+   },
+   {
+    "type": "uint32",
+    "name": "tickSize"
+   },
+   {
+    "type": "uint96",
+    "name": "minSize"
+   },
+   {
+    "type": "uint96",
+    "name": "maxSize"
+   },
+   {
+    "type": "uint256",
+    "name": "takerFeeBps"
+   },
+   {
+    "type": "uint256",
+    "name": "makerFeeBps"
+   },
+   {
+    "type": "uint96",
+    "name": "kuruAmmSpread"
+   }
+  ]
+ }
+]

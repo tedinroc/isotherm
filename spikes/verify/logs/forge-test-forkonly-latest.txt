@@ -1,0 +1,29 @@
+No files changed, compilation skipped
+
+Ran 2 tests for test/fork/MonadTestnetFork.t.sol:MonadTestnetForkTest
+[PASS] test_fork_criticalPath() (gas: 4030179)
+Logs:
+  faucet.requestFunds gave (AUSD base units) 10000000000
+  ladder RCSS date 20261007
+  YES>=30 token 0x709CfB1800312BaB579AA7876557e10ee7F935F8 RCSS-20261007-GE30-Y
+  MockKeystoneForwarder.report (incl. onReport) gas, in-test measure 159394
+
+[PASS] test_fork_liveContracts() (gas: 129486)
+Logs:
+  fork block 68707311 timestamp 1791296399
+
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 10.93s (7.69s CPU time)
+
+Ran 2 tests for test/integration/IsothermE2EFork.t.sol:IsothermE2EForkTest
+[PASS] test_e2e_fullLoop() (gas: 18777582)
+Logs:
+  ladder RCSS date 20261007 dayEnd 1791388800
+  series 0 unclaimed winning claims (Kuru fee collector) 36586
+  series 1 unclaimed winning claims (Kuru fee collector) 87720
+  taker1 P&L (AUSD units) 37631578
+  taker2 NO>=30 cost / payout 28811200 40000000
+
+[PASS] test_e2e_zapThinBook() (gas: 6948042)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 14.72s (17.96s CPU time)
+
+Ran 2 test suites in 14.72s (25.65s CPU time): 4 tests passed, 0 failed, 0 skipped (4 total tests)

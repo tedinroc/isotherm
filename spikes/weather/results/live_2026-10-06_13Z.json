@@ -1,0 +1,938 @@
+{
+ "generatedAt": "2026-10-06T13:20:03.840Z",
+ "cfg": {
+  "biasWindow": 60,
+  "weighting": "invmse",
+  "dist": "empirical",
+  "bandwidth": 0.6,
+  "residWindow": 90,
+  "spreadScale": true,
+  "minTrain": 20
+ },
+ "stations": {
+  "RCSS": {
+   "todayLocal": "2026-10-06",
+   "observedSoFar": {
+    "tmaxC": 25,
+    "nObs": 38,
+    "lastLocal": "20:30"
+   },
+   "days": {
+    "2026-10-07": {
+     "lead": 1,
+     "mu": 27.72,
+     "modelSpread": 0.86,
+     "nModels": 7,
+     "corrected": {
+      "ecmwf_ifs025": 27.52,
+      "gfs_seamless": 26.49,
+      "icon_seamless": 27.05,
+      "jma_seamless": 29.3,
+      "cma_grapes_global": 28.02,
+      "meteofrance_seamless": 28.46,
+      "gem_seamless": 27.63
+     },
+     "bias": {
+      "ecmwf_ifs025": -1.42,
+      "gfs_seamless": -1.29,
+      "icon_seamless": -1.25,
+      "jma_seamless": -2.8,
+      "cma_grapes_global": -2.52,
+      "meteofrance_seamless": -0.77,
+      "gem_seamless": -2.33
+     },
+     "residSd": 1.12,
+     "ensemble": {
+      "members": 122,
+      "perModel": {
+       "ecmwf_ifs025": 51,
+       "gfs025": 31,
+       "icon_seamless": 40
+      },
+      "p10": 24.89,
+      "p50": 27.35,
+      "p90": 28.42
+     },
+     "ladder": [
+      {
+       "k": 23,
+       "model": 1,
+       "ensembleRaw": 1,
+       "polymarket": 0.999,
+       "edge": 0
+      },
+      {
+       "k": 24,
+       "model": 0.996,
+       "ensembleRaw": 0.995,
+       "polymarket": 0.999,
+       "edge": -0.003
+      },
+      {
+       "k": 25,
+       "model": 0.982,
+       "ensembleRaw": 0.94,
+       "polymarket": 0.993,
+       "edge": -0.011
+      },
+      {
+       "k": 26,
+       "model": 0.956,
+       "ensembleRaw": 0.797,
+       "polymarket": 0.988,
+       "edge": -0.032
+      },
+      {
+       "k": 27,
+       "model": 0.851,
+       "ensembleRaw": 0.64,
+       "polymarket": 0.883,
+       "edge": -0.031
+      },
+      {
+       "k": 28,
+       "model": 0.561,
+       "ensembleRaw": 0.401,
+       "polymarket": 0.489,
+       "edge": 0.071
+      },
+      {
+       "k": 29,
+       "model": 0.206,
+       "ensembleRaw": 0.123,
+       "polymarket": 0.127,
+       "edge": 0.079
+      },
+      {
+       "k": 30,
+       "model": 0.04,
+       "ensembleRaw": 0.013,
+       "polymarket": 0.021,
+       "edge": 0.02
+      },
+      {
+       "k": 31,
+       "model": 0.007,
+       "ensembleRaw": 0,
+       "polymarket": 0.006,
+       "edge": 0.001
+      },
+      {
+       "k": 32,
+       "model": 0,
+       "ensembleRaw": 0,
+       "polymarket": 0.003,
+       "edge": -0.003
+      }
+     ],
+     "polymarket": {
+      "slug": "highest-temperature-in-taipei-on-october-7-2026",
+      "volume": 5367,
+      "sumMid": 0.992,
+      "buckets": [
+       {
+        "label": "22°C or below",
+        "lo": null,
+        "hi": 22,
+        "bid": null,
+        "ask": 0.001,
+        "mid": 0.0005,
+        "liquidity": 2761.74067
+       },
+       {
+        "label": "23°C",
+        "lo": 23,
+        "hi": 23,
+        "bid": null,
+        "ask": 0.001,
+        "mid": 0.0005,
+        "liquidity": 1764.65294
+       },
+       {
+        "label": "24°C",
+        "lo": 24,
+        "hi": 24,
+        "bid": 0.003,
+        "ask": 0.009,
+        "mid": 0.006,
+        "liquidity": 1838.94669
+       },
+       {
+        "label": "25°C",
+        "lo": 25,
+        "hi": 25,
+        "bid": 0.004,
+        "ask": 0.005,
+        "mid": 0.0045000000000000005,
+        "liquidity": 1657.49431
+       },
+       {
+        "label": "26°C",
+        "lo": 26,
+        "hi": 26,
+        "bid": 0.09,
+        "ask": 0.12,
+        "mid": 0.105,
+        "liquidity": 2000.1147
+       },
+       {
+        "label": "27°C",
+        "lo": 27,
+        "hi": 27,
+        "bid": 0.37,
+        "ask": 0.41,
+        "mid": 0.39,
+        "liquidity": 13257.8116
+       },
+       {
+        "label": "28°C",
+        "lo": 28,
+        "hi": 28,
+        "bid": 0.34,
+        "ask": 0.38,
+        "mid": 0.36,
+        "liquidity": 30952.2113
+       },
+       {
+        "label": "29°C",
+        "lo": 29,
+        "hi": 29,
+        "bid": 0.1,
+        "ask": 0.11,
+        "mid": 0.10500000000000001,
+        "liquidity": 1785.3337
+       },
+       {
+        "label": "30°C",
+        "lo": 30,
+        "hi": 30,
+        "bid": 0.01,
+        "ask": 0.02,
+        "mid": 0.015,
+        "liquidity": 2458.76955
+       },
+       {
+        "label": "31°C",
+        "lo": 31,
+        "hi": 31,
+        "bid": 0.002,
+        "ask": 0.003,
+        "mid": 0.0025,
+        "liquidity": 2568.41916
+       },
+       {
+        "label": "32°C or higher",
+        "lo": 32,
+        "hi": null,
+        "bid": 0.002,
+        "ask": 0.004,
+        "mid": 0.003,
+        "liquidity": 3237.08303
+       }
+      ],
+      "ladder": {
+       "23": 0.9994959677419355,
+       "24": 0.9989919354838711,
+       "25": 0.9929435483870968,
+       "26": 0.9884072580645161,
+       "27": 0.8825604838709677,
+       "28": 0.4894153225806452,
+       "29": 0.12651209677419356,
+       "30": 0.02066532258064516,
+       "31": 0.005544354838709678,
+       "32": 0.003024193548387097
+      }
+     }
+    },
+    "2026-10-08": {
+     "lead": 2,
+     "mu": 29.83,
+     "modelSpread": 0.92,
+     "nModels": 7,
+     "corrected": {
+      "ecmwf_ifs025": 28.86,
+      "gfs_seamless": 28.91,
+      "icon_seamless": 29.83,
+      "jma_seamless": 30.58,
+      "cma_grapes_global": 28.65,
+      "meteofrance_seamless": 30.91,
+      "gem_seamless": 30.81
+     },
+     "bias": {
+      "ecmwf_ifs025": -1.46,
+      "gfs_seamless": -1.21,
+      "icon_seamless": -1.23,
+      "jma_seamless": -2.78,
+      "cma_grapes_global": -2.25,
+      "meteofrance_seamless": -0.71,
+      "gem_seamless": -2.51
+     },
+     "residSd": 1.19,
+     "ensemble": {
+      "members": 122,
+      "perModel": {
+       "ecmwf_ifs025": 51,
+       "gfs025": 31,
+       "icon_seamless": 40
+      },
+      "p10": 26.81,
+      "p50": 28.93,
+      "p90": 30.06
+     },
+     "ladder": [
+      {
+       "k": 25,
+       "model": 0.999,
+       "ensembleRaw": 0.998,
+       "polymarket": 0.983,
+       "edge": 0.016
+      },
+      {
+       "k": 26,
+       "model": 0.992,
+       "ensembleRaw": 0.98,
+       "polymarket": 0.977,
+       "edge": 0.016
+      },
+      {
+       "k": 27,
+       "model": 0.985,
+       "ensembleRaw": 0.918,
+       "polymarket": 0.946,
+       "edge": 0.039
+      },
+      {
+       "k": 28,
+       "model": 0.965,
+       "ensembleRaw": 0.8,
+       "polymarket": 0.895,
+       "edge": 0.07
+      },
+      {
+       "k": 29,
+       "model": 0.875,
+       "ensembleRaw": 0.613,
+       "polymarket": 0.806,
+       "edge": 0.069
+      },
+      {
+       "k": 30,
+       "model": 0.631,
+       "ensembleRaw": 0.292,
+       "polymarket": 0.5,
+       "edge": 0.131
+      },
+      {
+       "k": 31,
+       "model": 0.269,
+       "ensembleRaw": 0.07,
+       "polymarket": 0.139,
+       "edge": 0.13
+      },
+      {
+       "k": 32,
+       "model": 0.051,
+       "ensembleRaw": 0.006,
+       "polymarket": 0.067,
+       "edge": -0.017
+      },
+      {
+       "k": 33,
+       "model": 0.004,
+       "ensembleRaw": 0,
+       "polymarket": 0.039,
+       "edge": -0.035
+      },
+      {
+       "k": 34,
+       "model": 0,
+       "ensembleRaw": 0,
+       "polymarket": 0.017,
+       "edge": -0.017
+      }
+     ],
+     "polymarket": {
+      "slug": "highest-temperature-in-taipei-on-october-8-2026",
+      "volume": 356,
+      "sumMid": 1.177,
+      "buckets": [
+       {
+        "label": "24°C or below",
+        "lo": null,
+        "hi": 24,
+        "bid": 0.001,
+        "ask": 0.039,
+        "mid": 0.02,
+        "liquidity": 1490.91813
+       },
+       {
+        "label": "25°C",
+        "lo": 25,
+        "hi": 25,
+        "bid": 0.001,
+        "ask": 0.014,
+        "mid": 0.0075,
+        "liquidity": 1060.51966
+       },
+       {
+        "label": "26°C",
+        "lo": 26,
+        "hi": 26,
+        "bid": 0.002,
+        "ask": 0.07,
+        "mid": 0.036000000000000004,
+        "liquidity": 1398.8703
+       },
+       {
+        "label": "27°C",
+        "lo": 27,
+        "hi": 27,
+        "bid": 0.04,
+        "ask": 0.08,
+        "mid": 0.06,
+        "liquidity": 1786.3277
+       },
+       {
+        "label": "28°C",
+        "lo": 28,
+        "hi": 28,
+        "bid": 0.09,
+        "ask": 0.12,
+        "mid": 0.105,
+        "liquidity": 1651.3912
+       },
+       {
+        "label": "29°C",
+        "lo": 29,
+        "hi": 29,
+        "bid": 0.35,
+        "ask": 0.37,
+        "mid": 0.36,
+        "liquidity": 6188.4091
+       },
+       {
+        "label": "30°C",
+        "lo": 30,
+        "hi": 30,
+        "bid": 0.4,
+        "ask": 0.45,
+        "mid": 0.42500000000000004,
+        "liquidity": 10444.1854
+       },
+       {
+        "label": "31°C",
+        "lo": 31,
+        "hi": 31,
+        "bid": 0.06,
+        "ask": 0.11,
+        "mid": 0.08499999999999999,
+        "liquidity": 1653.3206
+       },
+       {
+        "label": "32°C",
+        "lo": 32,
+        "hi": 32,
+        "bid": 0.02,
+        "ask": 0.046,
+        "mid": 0.033,
+        "liquidity": 1497.7178
+       },
+       {
+        "label": "33°C",
+        "lo": 33,
+        "hi": 33,
+        "bid": 0.003,
+        "ask": 0.048,
+        "mid": 0.025500000000000002,
+        "liquidity": 2634.23618
+       },
+       {
+        "label": "34°C or higher",
+        "lo": 34,
+        "hi": null,
+        "bid": 0.001,
+        "ask": 0.04,
+        "mid": 0.0205,
+        "liquidity": 2189.41531
+       }
+      ],
+      "ladder": {
+       "25": 0.9830148619957537,
+       "26": 0.9766454352441613,
+       "27": 0.946072186836518,
+       "28": 0.8951167728237792,
+       "29": 0.8059447983014861,
+       "30": 0.5002123142250531,
+       "31": 0.13927813163481953,
+       "32": 0.06709129511677282,
+       "33": 0.03906581740976645,
+       "34": 0.01740976645435244
+      }
+     }
+    }
+   }
+  },
+  "RJTT": {
+   "todayLocal": "2026-10-06",
+   "observedSoFar": {
+    "tmaxC": 26,
+    "nObs": 44,
+    "lastLocal": "21:30"
+   },
+   "days": {
+    "2026-10-07": {
+     "lead": 1,
+     "mu": 23.83,
+     "modelSpread": 1.24,
+     "nModels": 7,
+     "corrected": {
+      "ecmwf_ifs025": 24.23,
+      "gfs_seamless": 23.15,
+      "icon_seamless": 23.96,
+      "jma_seamless": 25.73,
+      "cma_grapes_global": 21.33,
+      "meteofrance_seamless": 24.04,
+      "gem_seamless": 24.23
+     },
+     "bias": {
+      "ecmwf_ifs025": -0.13,
+      "gfs_seamless": 0.25,
+      "icon_seamless": -0.36,
+      "jma_seamless": -0.73,
+      "cma_grapes_global": -0.43,
+      "meteofrance_seamless": -2.04,
+      "gem_seamless": -0.73
+     },
+     "residSd": 1.28,
+     "ensemble": {
+      "members": 122,
+      "perModel": {
+       "ecmwf_ifs025": 51,
+       "gfs025": 31,
+       "icon_seamless": 40
+      },
+      "p10": 21.83,
+      "p50": 24.25,
+      "p90": 25.76
+     },
+     "ladder": [
+      {
+       "k": 21,
+       "model": 0.974,
+       "ensembleRaw": 0.978,
+       "polymarket": 0.999,
+       "edge": -0.025
+      },
+      {
+       "k": 22,
+       "model": 0.925,
+       "ensembleRaw": 0.921,
+       "polymarket": 0.989,
+       "edge": -0.064
+      },
+      {
+       "k": 23,
+       "model": 0.809,
+       "ensembleRaw": 0.839,
+       "polymarket": 0.944,
+       "edge": -0.135
+      },
+      {
+       "k": 24,
+       "model": 0.563,
+       "ensembleRaw": 0.694,
+       "polymarket": 0.795,
+       "edge": -0.233
+      },
+      {
+       "k": 25,
+       "model": 0.282,
+       "ensembleRaw": 0.446,
+       "polymarket": 0.349,
+       "edge": -0.066
+      },
+      {
+       "k": 26,
+       "model": 0.098,
+       "ensembleRaw": 0.188,
+       "polymarket": 0.046,
+       "edge": 0.052
+      },
+      {
+       "k": 27,
+       "model": 0.032,
+       "ensembleRaw": 0.042,
+       "polymarket": 0.01,
+       "edge": 0.022
+      },
+      {
+       "k": 28,
+       "model": 0.009,
+       "ensembleRaw": 0.006,
+       "polymarket": 0.004,
+       "edge": 0.005
+      },
+      {
+       "k": 29,
+       "model": 0.001,
+       "ensembleRaw": 0,
+       "polymarket": 0.001,
+       "edge": -0.001
+      },
+      {
+       "k": 30,
+       "model": 0,
+       "ensembleRaw": 0,
+       "polymarket": 0,
+       "edge": 0
+      }
+     ],
+     "polymarket": {
+      "slug": "highest-temperature-in-tokyo-on-october-7-2026",
+      "volume": 11034,
+      "sumMid": 1.007,
+      "buckets": [
+       {
+        "label": "20°C or below",
+        "lo": null,
+        "hi": 20,
+        "bid": 0.001,
+        "ask": 0.002,
+        "mid": 0.0015,
+        "liquidity": 3955.89431
+       },
+       {
+        "label": "21°C",
+        "lo": 21,
+        "hi": 21,
+        "bid": 0.009,
+        "ask": 0.01,
+        "mid": 0.0095,
+        "liquidity": 2146.86891
+       },
+       {
+        "label": "22°C",
+        "lo": 22,
+        "hi": 22,
+        "bid": 0.03,
+        "ask": 0.06,
+        "mid": 0.045,
+        "liquidity": 3810.0596
+       },
+       {
+        "label": "23°C",
+        "lo": 23,
+        "hi": 23,
+        "bid": 0.13,
+        "ask": 0.17,
+        "mid": 0.15000000000000002,
+        "liquidity": 2789.1498
+       },
+       {
+        "label": "24°C",
+        "lo": 24,
+        "hi": 24,
+        "bid": 0.44,
+        "ask": 0.46,
+        "mid": 0.45,
+        "liquidity": 5483.1214
+       },
+       {
+        "label": "25°C",
+        "lo": 25,
+        "hi": 25,
+        "bid": 0.3,
+        "ask": 0.31,
+        "mid": 0.305,
+        "liquidity": 19049.6012
+       },
+       {
+        "label": "26°C",
+        "lo": 26,
+        "hi": 26,
+        "bid": 0.032,
+        "ask": 0.039,
+        "mid": 0.035500000000000004,
+        "liquidity": 2477.2354
+       },
+       {
+        "label": "27°C",
+        "lo": 27,
+        "hi": 27,
+        "bid": 0.004,
+        "ask": 0.009,
+        "mid": 0.0065,
+        "liquidity": 1882.26015
+       },
+       {
+        "label": "28°C",
+        "lo": 28,
+        "hi": 28,
+        "bid": 0.002,
+        "ask": 0.003,
+        "mid": 0.0025,
+        "liquidity": 2528.42502
+       },
+       {
+        "label": "29°C",
+        "lo": 29,
+        "hi": 29,
+        "bid": null,
+        "ask": 0.002,
+        "mid": 0.001,
+        "liquidity": 3361.77681
+       },
+       {
+        "label": "30°C or higher",
+        "lo": 30,
+        "hi": null,
+        "bid": null,
+        "ask": 0.001,
+        "mid": 0.0005,
+        "liquidity": 5051.38026
+       }
+      ],
+      "ladder": {
+       "21": 0.9985104270109235,
+       "22": 0.9890764647467725,
+       "23": 0.9443892750744786,
+       "24": 0.795431976166832,
+       "25": 0.34856007944389283,
+       "26": 0.045680238331678266,
+       "27": 0.010427010923535254,
+       "28": 0.00397219463753724,
+       "29": 0.001489572989076465,
+       "30": 0.000496524329692155
+      }
+     }
+    },
+    "2026-10-08": {
+     "lead": 2,
+     "mu": 23.56,
+     "modelSpread": 0.76,
+     "nModels": 7,
+     "corrected": {
+      "ecmwf_ifs025": 23.19,
+      "gfs_seamless": 23.38,
+      "icon_seamless": 22.98,
+      "jma_seamless": 23.89,
+      "cma_grapes_global": 22.22,
+      "meteofrance_seamless": 24.61,
+      "gem_seamless": 24.26
+     },
+     "bias": {
+      "ecmwf_ifs025": -0.09,
+      "gfs_seamless": 0.02,
+      "icon_seamless": -0.18,
+      "jma_seamless": -0.59,
+      "cma_grapes_global": -0.42,
+      "meteofrance_seamless": -1.91,
+      "gem_seamless": -0.76
+     },
+     "residSd": 1.45,
+     "ensemble": {
+      "members": 122,
+      "perModel": {
+       "ecmwf_ifs025": 51,
+       "gfs025": 31,
+       "icon_seamless": 40
+      },
+      "p10": 22.79,
+      "p50": 23.58,
+      "p90": 24.78
+     },
+     "ladder": [
+      {
+       "k": 19,
+       "model": 1,
+       "ensembleRaw": 1,
+       "polymarket": 0.998,
+       "edge": 0.002
+      },
+      {
+       "k": 20,
+       "model": 0.999,
+       "ensembleRaw": 1,
+       "polymarket": 0.99,
+       "edge": 0.009
+      },
+      {
+       "k": 21,
+       "model": 0.986,
+       "ensembleRaw": 1,
+       "polymarket": 0.988,
+       "edge": -0.002
+      },
+      {
+       "k": 22,
+       "model": 0.94,
+       "ensembleRaw": 0.991,
+       "polymarket": 0.977,
+       "edge": -0.037
+      },
+      {
+       "k": 23,
+       "model": 0.795,
+       "ensembleRaw": 0.886,
+       "polymarket": 0.935,
+       "edge": -0.14
+      },
+      {
+       "k": 24,
+       "model": 0.493,
+       "ensembleRaw": 0.539,
+       "polymarket": 0.649,
+       "edge": -0.155
+      },
+      {
+       "k": 25,
+       "model": 0.192,
+       "ensembleRaw": 0.201,
+       "polymarket": 0.168,
+       "edge": 0.023
+      },
+      {
+       "k": 26,
+       "model": 0.039,
+       "ensembleRaw": 0.073,
+       "polymarket": 0.057,
+       "edge": -0.018
+      },
+      {
+       "k": 27,
+       "model": 0.005,
+       "ensembleRaw": 0.027,
+       "polymarket": 0.036,
+       "edge": -0.031
+      },
+      {
+       "k": 28,
+       "model": 0,
+       "ensembleRaw": 0.004,
+       "polymarket": 0.01,
+       "edge": -0.01
+      }
+     ],
+     "polymarket": {
+      "slug": "highest-temperature-in-tokyo-on-october-8-2026",
+      "volume": 1486,
+      "sumMid": 1.082,
+      "buckets": [
+       {
+        "label": "18°C or below",
+        "lo": null,
+        "hi": 18,
+        "bid": 0.001,
+        "ask": 0.004,
+        "mid": 0.0025,
+        "liquidity": 2978.60137
+       },
+       {
+        "label": "19°C",
+        "lo": 19,
+        "hi": 19,
+        "bid": 0.001,
+        "ask": 0.016,
+        "mid": 0.0085,
+        "liquidity": 2748.59064
+       },
+       {
+        "label": "20°C",
+        "lo": 20,
+        "hi": 20,
+        "bid": 0.001,
+        "ask": 0.003,
+        "mid": 0.002,
+        "liquidity": 2049.40878
+       },
+       {
+        "label": "21°C",
+        "lo": 21,
+        "hi": 21,
+        "bid": 0.005,
+        "ask": 0.019,
+        "mid": 0.012,
+        "liquidity": 1641.83522
+       },
+       {
+        "label": "22°C",
+        "lo": 22,
+        "hi": 22,
+        "bid": 0.03,
+        "ask": 0.06,
+        "mid": 0.045,
+        "liquidity": 2079.5064
+       },
+       {
+        "label": "23°C",
+        "lo": 23,
+        "hi": 23,
+        "bid": 0.3,
+        "ask": 0.32,
+        "mid": 0.31,
+        "liquidity": 19455.5646
+       },
+       {
+        "label": "24°C",
+        "lo": 24,
+        "hi": 24,
+        "bid": 0.5,
+        "ask": 0.54,
+        "mid": 0.52,
+        "liquidity": 23851.8401
+       },
+       {
+        "label": "25°C",
+        "lo": 25,
+        "hi": 25,
+        "bid": 0.1,
+        "ask": 0.14,
+        "mid": 0.12000000000000001,
+        "liquidity": 2591.3179
+       },
+       {
+        "label": "26°C",
+        "lo": 26,
+        "hi": 26,
+        "bid": 0.02,
+        "ask": 0.026,
+        "mid": 0.023,
+        "liquidity": 2131.41341
+       },
+       {
+        "label": "27°C",
+        "lo": 27,
+        "hi": 27,
+        "bid": 0.012,
+        "ask": 0.044,
+        "mid": 0.027999999999999997,
+        "liquidity": 2498.06584
+       },
+       {
+        "label": "28°C or higher",
+        "lo": 28,
+        "hi": null,
+        "bid": 0.005,
+        "ask": 0.017,
+        "mid": 0.011000000000000001,
+        "liquidity": 1947.74119
+       }
+      ],
+      "ladder": {
+       "19": 0.9976894639556377,
+       "20": 0.989833641404806,
+       "21": 0.9879852125693162,
+       "22": 0.9768946395563771,
+       "23": 0.935304990757856,
+       "24": 0.6487985212569317,
+       "25": 0.1682070240295749,
+       "26": 0.05730129390018485,
+       "27": 0.03604436229205176,
+       "28": 0.010166358595194087
+      }
+     }
+    }
+   }
+  }
+ }
+}

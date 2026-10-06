@@ -1,0 +1,70 @@
+[
+ {
+  "name": "deposit",
+  "type": "function",
+  "stateMutability": "payable",
+  "inputs": [
+   {
+    "type": "address",
+    "name": "_user"
+   },
+   {
+    "type": "address",
+    "name": "_token"
+   },
+   {
+    "type": "uint256",
+    "name": "_amount"
+   }
+  ],
+  "outputs": []
+ },
+ {
+  "name": "withdraw",
+  "type": "function",
+  "stateMutability": "nonpayable",
+  "inputs": [
+   {
+    "type": "uint256",
+    "name": "_amount"
+   },
+   {
+    "type": "address",
+    "name": "_token"
+   }
+  ],
+  "outputs": []
+ },
+ {
+  "name": "batchWithdrawMaxTokens",
+  "type": "function",
+  "stateMutability": "nonpayable",
+  "inputs": [
+   {
+    "type": "address[]",
+    "name": "_tokens"
+   }
+  ],
+  "outputs": []
+ },
+ {
+  "name": "getBalance",
+  "type": "function",
+  "stateMutability": "view",
+  "inputs": [
+   {
+    "type": "address",
+    "name": "_user"
+   },
+   {
+    "type": "address",
+    "name": "_token"
+   }
+  ],
+  "outputs": [
+   {
+    "type": "uint256"
+   }
+  ]
+ }
+]

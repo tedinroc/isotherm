@@ -1,0 +1,76 @@
+chain 10143 @ block 68695044 via http://127.0.0.1:8548
+deployer 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11 MON=4.701351956
+maker 0xd572638F07829D1c3636400FB73CF34Ca6c7448a MON=0
+taker1 0x636D0598E416e5f66acD0F6Ac2Ae96306529b4d5 MON=0
+taker2 0x029049a9dA77231dd86A90E52Fd6Db542424e727 MON=0
+    sent 1 MON -> maker (0xbd24379add9b166fbe9434c185974086be95efda2e4972e6417deb8fdde80546); maker MON=1
+    sent 0.35 MON -> taker1 (0xe23cada8a9b2d57c30cc8e15c056f590ba55ef8ae58fb06716927d6741b4bd5c); taker1 MON=0.35
+maker AUSD = 10000
+taker1 AUSD = 10000
+(a) YES token 0xff7787583e421213bd4a6910bbf8c67684b74627; maker YES=2000
+(b) market 0x8093b30B21295030021ccAD5881c6AE654C8bc6E (vault 0x1F245637d1a8aAe0F06F72787c8D1a8Da2Fa3264) created by 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11; router owner is 0x07bBBf2e9911705a7b258e0A05A34620058fC1D1
+    getMarketParams = [10000,"1000000","0xff7787583E421213bd4a6910bbF8c67684b74627","6","0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC","6",10,"1000000","1000000000000","10","0"]
+(c) maker margin: AUSD=500 YES=1000
+    single quotes: bid id 1 @0.41, ask id 2 @0.45
+  L2 @block 68695058
+    ask 0.450  100.000000 YES
+    ----- spread 0.040 -----
+    bid 0.410  100.000000 YES
+    batch ladder placed ids 3,4,5,6,7,8
+    re-quoted ladder ids 9,10,11,12,13,14
+  L2 @block 68695060
+    ask 0.470  200.000000 YES
+    ask 0.460  150.000000 YES
+    ask 0.450  100.000000 YES
+    ----- spread 0.020 -----
+    bid 0.430  100.000000 YES
+    bid 0.420  150.000000 YES
+    bid 0.410  200.000000 YES
+(d) taker1 market-bought with 50 AUSD -> +110.758477 YES in wallet (2 fills)
+    taker1 market-sold 30 YES -> +12.8871 AUSD in wallet
+    taker1 bought via Router.anyToAnySwap (20 AUSD, FOK) -> +43.434781 YES
+    book after takes
+  L2 @block 68695066
+    ask 0.470  200.000000 YES
+    ask 0.460  95.652393 YES
+    ----- spread 0.030 -----
+    bid 0.430  70.000000 YES
+    bid 0.420  150.000000 YES
+    bid 0.410  200.000000 YES
+(e) maker open orders (scan): 9:bid@0.43x70 10:bid@0.42x150 11:bid@0.41x200 13:ask@0.46x95.652393 14:ask@0.47x200
+    replaced with ids 15,16
+  L2 @block 68695067
+    ask 0.455  120.000000 YES
+    ----- spread 0.030 -----
+    bid 0.425  120.000000 YES
+    after cancelAll: bids=0 asks=0
+    maker withdrew margin; wallet AUSD=10057.0997 YES=1875.652393
+
+  gasUsed   gasLimit  MON@102gwei(limit)  latency  label
+     21000     21000     0.00214          656ms  MON transfer 1 -> maker
+     21000     21000     0.00214          451ms  MON transfer 0.35 -> taker1
+    128414    149260     0.01522          395ms  faucet.requestFunds -> 0xd57263
+    128414    149260     0.01522          561ms  faucet.requestFunds -> 0x636D05
+    585497    673322     0.06868          299ms  deploy SpikeToken (YES, 6dp)
+     80029     92034     0.00939          289ms  YES.mint 2,000 -> maker
+   1258612   1469584     0.14990          525ms  router.deployProxy (create YES/AUSD market)
+     70573     81669     0.00833          695ms  approve 0xd029C2
+    131244    152557     0.01556          554ms  margin.deposit 0xa9012a
+     52046     59853     0.00611         1355ms  approve 0xd029C2
+    139168    161815     0.01651          499ms  margin.deposit 0xff7787
+    317021    369600     0.03770          336ms  addBuyOrder 100@0.41
+    342618    399504     0.04075          289ms  addSellOrder 100@0.45
+    780014    910431     0.09286         1387ms  batchUpdate re-quote: cancel 2 + place 3 bids/3 asks
+    861746   1005904     0.10260          594ms  batchUpdate steady-state re-quote: cancel 6 + place 6
+     70585     81683     0.00833          563ms  approve 0x8093b3
+    327166    435075     0.04438          703ms  placeAndExecuteMarketBuy 50 AUSD
+     52058     59867     0.00611          499ms  approve 0x8093b3
+    301549    400688     0.04087          698ms  placeAndExecuteMarketSell 30 YES
+     70585     81683     0.00833          431ms  approve 0x7EFbE1
+    374254    493538     0.05034          490ms  router.anyToAnySwap 20 AUSD->YES
+    565151    659432     0.06726          529ms  batchUpdate replace: cancel 5 + place 1b/1a
+    248833    289937     0.02957          347ms  batchCancelOrdersNoRevert x2
+    156760    182364     0.01860          304ms  margin.batchWithdrawMaxTokens
+  total 24 txs = 0.8569 MON (billed on gas limit)
+
+wrote <repo>/spikes/kuru/logs/lifecycle-live-1791292714054.json

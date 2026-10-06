@@ -1,0 +1,284 @@
+{
+ "generatedAt": "2026-10-06T13:29:54.549Z",
+ "stations": {
+  "RCSS": {
+   "icao": "RCSS",
+   "city": "taipei",
+   "iemObs": 41849,
+   "events": 206,
+   "resolved": 203,
+   "closedWithoutWinner": [],
+   "firstDate": "2026-03-16",
+   "lastDate": "2026-10-05",
+   "stationSourcedEvents": 184,
+   "otherSourcedEvents": [
+    {
+     "date": "2026-03-16",
+     "source": "https://www.cwa.gov.tw/v8/c/w/obs_station.html?id=46692",
+     "match": true
+    },
+    {
+     "date": "2026-03-17",
+     "source": "https://www.cwa.gov.tw/v8/c/w/obs_station.html?id=46692",
+     "match": false
+    },
+    {
+     "date": "2026-03-18",
+     "source": "https://www.cwa.gov.tw/v8/c/w/obs_station.html?id=46692",
+     "match": false
+    },
+    {
+     "date": "2026-03-19",
+     "source": "https://www.cwa.gov.tw/v8/c/w/obs_station.html?id=46692",
+     "match": false
+    },
+    {
+     "date": "2026-03-20",
+     "source": "https://www.cwa.gov.tw/v8/c/w/obs_station.html?id=46692",
+     "match": false
+    },
+    {
+     "date": "2026-03-21",
+     "source": "https://www.cwa.gov.tw/v8/c/w/obs_station.html?id=46692",
+     "match": false
+    },
+    {
+     "date": "2026-03-22",
+     "source": "https://www.cwa.gov.tw/v8/c/w/obs_station.html?id=46692",
+     "match": false
+    },
+    {
+     "date": "2026-03-23",
+     "source": "https://www.weather.gov/wrh/timeseries?site=rctp",
+     "match": false
+    },
+    {
+     "date": "2026-03-24",
+     "source": "https://www.weather.gov/wrh/timeseries?site=rctp",
+     "match": false
+    },
+    {
+     "date": "2026-03-25",
+     "source": "https://www.weather.gov/wrh/timeseries?site=rctp",
+     "match": false
+    },
+    {
+     "date": "2026-03-26",
+     "source": "https://www.weather.gov/wrh/timeseries?site=rctp",
+     "match": false
+    },
+    {
+     "date": "2026-03-27",
+     "source": "https://www.weather.gov/wrh/timeseries?site=rctp",
+     "match": true
+    },
+    {
+     "date": "2026-03-28",
+     "source": "https://www.weather.gov/wrh/timeseries?site=rctp",
+     "match": false
+    },
+    {
+     "date": "2026-03-29",
+     "source": "https://www.weather.gov/wrh/timeseries?site=rctp",
+     "match": false
+    },
+    {
+     "date": "2026-03-30",
+     "source": "https://www.weather.gov/wrh/timeseries?site=rctp",
+     "match": false
+    },
+    {
+     "date": "2026-04-01",
+     "source": "https://www.weather.gov/wrh/timeseries?site=rctp",
+     "match": false
+    },
+    {
+     "date": "2026-04-02",
+     "source": "https://www.weather.gov/wrh/timeseries?site=rctp",
+     "match": false
+    },
+    {
+     "date": "2026-04-03",
+     "source": "https://www.weather.gov/wrh/timeseries?site=rctp",
+     "match": false
+    },
+    {
+     "date": "2026-04-04",
+     "source": "https://www.weather.gov/wrh/timeseries?site=rctp",
+     "match": true
+    }
+   ],
+   "rule_localDay_allReports": {
+    "n": 184,
+    "match": 183,
+    "mismatch": 1,
+    "noData": 0
+   },
+   "rule_localDay_onCycleOnly": {
+    "n": 184,
+    "match": 180,
+    "mismatch": 4,
+    "noData": 0
+   },
+   "rule_localDay_hourlyOnly": {
+    "n": 184,
+    "match": 155,
+    "mismatch": 29,
+    "noData": 0
+   },
+   "rule_utcDay_allReports": {
+    "n": 184,
+    "match": 171,
+    "mismatch": 13,
+    "noData": 0
+   },
+   "bySource": {
+    "https://www.cwa.gov.tw/v8/c/w/obs_station.html?id=46692": {
+     "n": 7,
+     "match": 1,
+     "mismatch": 6,
+     "first": "2026-03-16",
+     "last": "2026-03-22"
+    },
+    "https://www.weather.gov/wrh/timeseries?site=rctp": {
+     "n": 12,
+     "match": 2,
+     "mismatch": 10,
+     "first": "2026-03-23",
+     "last": "2026-04-04"
+    },
+    "wunderground:RCSS": {
+     "n": 183,
+     "match": 182,
+     "mismatch": 1,
+     "first": "2026-04-05",
+     "last": "2026-10-05"
+    },
+    "noaa-timeseries:RCSS": {
+     "n": 1,
+     "match": 1,
+     "mismatch": 0,
+     "first": "2026-08-24",
+     "last": "2026-08-24"
+    }
+   },
+   "mismatches": [
+    {
+     "date": "2026-05-04",
+     "source": "wunderground:RCSS",
+     "sourceKind": "station",
+     "winner": "24°C",
+     "iemTmax": 25,
+     "iemBucket": "25°C",
+     "match": false,
+     "onCycleTmax": 25,
+     "onCycleMatch": false,
+     "hourlyTmax": 24,
+     "hourlyMatch": true,
+     "offCycleDecisive": false,
+     "utcDayTmax": 25,
+     "utcDayMatch": false,
+     "nObs": 54,
+     "complete": true,
+     "atLocal": [
+      "13:30"
+     ],
+     "resolutionSource": "https://www.wunderground.com/history/daily/tw/taipei/RCSS",
+     "volume": 338042
+    }
+   ],
+   "speciDecisiveDays": [
+    {
+     "date": "2026-04-21",
+     "all": 30,
+     "onCycle": 29,
+     "winner": "30°C",
+     "allMatch": true,
+     "onCycleMatch": false
+    },
+    {
+     "date": "2026-04-22",
+     "all": 33,
+     "onCycle": 32,
+     "winner": "33°C",
+     "allMatch": true,
+     "onCycleMatch": false
+    },
+    {
+     "date": "2026-07-13",
+     "all": 34,
+     "onCycle": 33,
+     "winner": "34°C",
+     "allMatch": true,
+     "onCycleMatch": false
+    }
+   ],
+   "halfHourDecisiveDays": {
+    "n": 28,
+    "allReportsMatch": 27,
+    "hourlyMatch": 2
+   },
+   "incompleteDays": []
+  },
+  "RJTT": {
+   "icao": "RJTT",
+   "city": "tokyo",
+   "iemObs": 50493,
+   "events": 212,
+   "resolved": 209,
+   "closedWithoutWinner": [],
+   "firstDate": "2026-03-10",
+   "lastDate": "2026-10-05",
+   "stationSourcedEvents": 209,
+   "otherSourcedEvents": [],
+   "rule_localDay_allReports": {
+    "n": 209,
+    "match": 209,
+    "mismatch": 0,
+    "noData": 0
+   },
+   "rule_localDay_onCycleOnly": {
+    "n": 209,
+    "match": 209,
+    "mismatch": 0,
+    "noData": 0
+   },
+   "rule_localDay_hourlyOnly": {
+    "n": 209,
+    "match": 182,
+    "mismatch": 27,
+    "noData": 0
+   },
+   "rule_utcDay_allReports": {
+    "n": 209,
+    "match": 185,
+    "mismatch": 24,
+    "noData": 0
+   },
+   "bySource": {
+    "wunderground:RJTT": {
+     "n": 166,
+     "match": 166,
+     "mismatch": 0,
+     "first": "2026-03-10",
+     "last": "2026-08-23"
+    },
+    "noaa-timeseries:RJTT": {
+     "n": 43,
+     "match": 43,
+     "mismatch": 0,
+     "first": "2026-08-24",
+     "last": "2026-10-05"
+    }
+   },
+   "mismatches": [],
+   "speciDecisiveDays": [],
+   "halfHourDecisiveDays": {
+    "n": 28,
+    "allReportsMatch": 28,
+    "hourlyMatch": 1
+   },
+   "incompleteDays": []
+  }
+ }
+}

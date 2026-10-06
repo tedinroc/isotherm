@@ -1,0 +1,69 @@
+chain 10143 @ block 68707993 via anvil fork
+anvil: set 100 MON on deployer/maker/taker1/taker2 (anvil_setBalance)
+maker AUSD = 9800
+taker1 AUSD = 9980
+taker2 AUSD = 10000
+(a) YES token 0x2c6a121d3b0af0c171a81742f40b1d067b72587d; maker YES=2000
+(b) market 0xf1E2b41AC389fB06295DE8945E183B99ab82FcFC (vault 0xb7657EE7246ea7B7F2072049253f2e63fA15cD0e) created by 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11; router owner is 0x07bBBf2e9911705a7b258e0A05A34620058fC1D1
+    getMarketParams = [10000,"1000000","0x2c6a121d3b0aF0C171A81742f40B1D067B72587d","6","0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC","6",10,"1000000","1000000000000","10","0"]
+(c) maker margin: AUSD=719.9999 YES=1000
+    single quotes: bid id 1 @0.41, ask id 2 @0.45
+  L2 @block 68708003
+    ask 0.450  100.000000 YES
+    ----- spread 0.040 -----
+    bid 0.410  100.000000 YES
+    batch ladder placed ids 3,4,5,6,7,8
+    re-quoted ladder ids 9,10,11,12,13,14
+  L2 @block 68708005
+    ask 0.470  200.000000 YES
+    ask 0.460  150.000000 YES
+    ask 0.450  100.000000 YES
+    ----- spread 0.020 -----
+    bid 0.430  100.000000 YES
+    bid 0.420  150.000000 YES
+    bid 0.410  200.000000 YES
+(d) taker1 market-bought with 50 AUSD -> +110.758477 YES in wallet (2 fills)
+    taker2 market-sold 30 YES -> +12.8871 AUSD in wallet
+    taker2 bought via Router.anyToAnySwap (20 AUSD, FOK) -> +43.434781 YES
+    book after takes
+  L2 @block 68708011
+    ask 0.470  200.000000 YES
+    ask 0.460  95.652393 YES
+    ----- spread 0.030 -----
+    bid 0.430  70.000000 YES
+    bid 0.420  150.000000 YES
+    bid 0.410  200.000000 YES
+(e) maker open orders (scan): 9:bid@0.43x70 10:bid@0.42x150 11:bid@0.41x200 13:ask@0.46x95.652393 14:ask@0.47x200
+    replaced with ids 15,16
+  L2 @block 68708012
+    ask 0.455  120.000000 YES
+    ----- spread 0.030 -----
+    bid 0.425  120.000000 YES
+    after cancelAll: bids=0 asks=0
+    maker withdrew margin; wallet AUSD=10077.0996 YES=1875.652393
+
+  gasUsed   gasLimit  MON@102gwei(limit)  latency  label
+    128414    149260     0.01522          312ms  faucet.requestFunds -> 0x029049
+    585497    673322     0.06868          306ms  deploy SpikeToken (YES, 6dp)
+     80029     92034     0.00939          314ms  YES.mint 2,000 -> maker
+     63041     72498     0.00739          658ms  YES.mint 50 -> taker2
+   1258612   1469584     0.14990          314ms  router.deployProxy (create YES/AUSD market)
+    114244    132697     0.01354          309ms  margin.deposit 0xa9012a
+     52046     59853     0.00611          325ms  approve 0xd029C2
+    139168    161815     0.01651          297ms  margin.deposit 0x2c6a12
+    317021    369600     0.03770          328ms  addBuyOrder 100@0.41
+    342618    399504     0.04075          303ms  addSellOrder 100@0.45
+    780014    910431     0.09286          311ms  batchUpdate re-quote: cancel 2 + place 3 bids/3 asks
+    861746   1005904     0.10260          289ms  batchUpdate steady-state re-quote: cancel 6 + place 6
+     70585     81683     0.00833          336ms  approve 0xf1E2b4
+    327166    435075     0.04438          295ms  placeAndExecuteMarketBuy 50 AUSD
+     52058     59867     0.00611          292ms  approve 0xf1E2b4
+    301549    400688     0.04087          315ms  placeAndExecuteMarketSell 30 YES
+     70585     81683     0.00833          291ms  approve 0x7EFbE1
+    374254    493538     0.05034          317ms  router.anyToAnySwap 20 AUSD->YES
+    565151    659432     0.06726          301ms  batchUpdate replace: cancel 5 + place 1b/1a
+    248833    289937     0.02957          306ms  batchCancelOrdersNoRevert x2
+    156760    182364     0.01860          302ms  margin.batchWithdrawMaxTokens
+  total 21 txs = 0.8344 MON (billed on gas limit)
+
+wrote <tmp>/verify/kuru-copy/logs/lifecycle-anvil-1791296639737.json

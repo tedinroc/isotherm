@@ -1,0 +1,17 @@
+
+  gasUsed  gasLimit(billed)  MON@102gwei  pattern
+   528288     616381  0.06287  first quote 1b/1a on empty book (fresh price levels)
+   403710     470836  0.04803  re-quote 1b/1a SAME prices (cancel 2 + place 2) #1
+   403710     470836  0.04803  re-quote 1b/1a SAME prices (cancel 2 + place 2) #2
+   403710     470836  0.04803  re-quote 1b/1a SAME prices (cancel 2 + place 2) #3
+   459346     535834  0.05466  re-quote 1b/1a SHIFTED +0.005 (cancel 2 + place 2) #1
+   486987     568126  0.05795  re-quote 1b/1a SHIFTED +0.005 (cancel 2 + place 2) #2
+   459277     535753  0.05465  re-quote 1b/1a SHIFTED +0.005 (cancel 2 + place 2) #3
+   863552    1008025  0.10282  re-quote to 3b/3a (cancel 2 + place 6)
+   789664     921693  0.09401  re-quote 3b/3a SAME prices (cancel 6 + place 6)
+   845444     986858  0.10066  re-quote 3b/3a SHIFTED one tick-row (cancel 6 + place 6)
+    70585      81683  0.00833  (approve market AUSD, one-off)
+   292324     389023  0.03968  taker market buy 10 AUSD (1 level, partial)
+   258324     343037  0.03499  taker market buy 30 AUSD (finishes level 1, into level 2)
+   357587     471538  0.04810  taker market buy 90 AUSD (crosses 2 levels)
+   247720     288634  0.02944  cancelAll remaining (scan + batchCancelOrdersNoRevert)

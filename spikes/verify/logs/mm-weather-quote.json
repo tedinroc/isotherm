@@ -1,0 +1,77 @@
+{
+  "ok": true,
+  "data": {
+    "city": "Taipei",
+    "station": "RCSS",
+    "date": "2026-10-07",
+    "forecastTmaxC": 26,
+    "forecastSource": "open-meteo:temperature_2m_max",
+    "ladder": [
+      {
+        "strike": "Tmax>=23C",
+        "k": 23,
+        "fairYes": 0.9856,
+        "fairNo": 0.0144
+      },
+      {
+        "strike": "Tmax>=24C",
+        "k": 24,
+        "fairYes": 0.9409,
+        "fairNo": 0.0591
+      },
+      {
+        "strike": "Tmax>=25C",
+        "k": 25,
+        "fairYes": 0.8257,
+        "fairNo": 0.1743
+      },
+      {
+        "strike": "Tmax>=26C",
+        "k": 26,
+        "fairYes": 0.6227,
+        "fairNo": 0.3773
+      },
+      {
+        "strike": "Tmax>=27C",
+        "k": 27,
+        "fairYes": 0.3773,
+        "fairNo": 0.6227
+      },
+      {
+        "strike": "Tmax>=28C",
+        "k": 28,
+        "fairYes": 0.1743,
+        "fairNo": 0.8257
+      },
+      {
+        "strike": "Tmax>=29C",
+        "k": 29,
+        "fairYes": 0.0591,
+        "fairNo": 0.9409
+      }
+    ],
+    "chain": {
+      "chainId": 10143,
+      "blockNumber": "68711009",
+      "rpcSource": "direct-rpc",
+      "rpcUrl": "https://testnet-rpc.monad.xyz",
+      "gatewayError": "A project id is required to resolve the default EVM gateway RPC URL.",
+      "readMs": 2803
+    },
+    "collateral": {
+      "token": "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC",
+      "symbol": "AUSD",
+      "decimals": 6,
+      "totalSupply": "1302010000.000000",
+      "holder": null,
+      "holderSource": "none",
+      "balance": null
+    },
+    "venue": {
+      "kuruRouter": "0x7EFbE105Ca7415dE98F96622173458ac1c054630",
+      "routerDeployed": true
+    },
+    "note": "Placeholder pricing: N(forecast, 1.6C) with METAR integer rounding; not the production model."
+  },
+  "hint": "Isotherm Taipei 2026-10-07: forecast Tmax 26C"
+}

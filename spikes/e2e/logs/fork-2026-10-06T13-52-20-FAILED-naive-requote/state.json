@@ -1,0 +1,155 @@
+{
+  "mode": "fork",
+  "rpc": "http://127.0.0.1:18991",
+  "done": [
+    "preflight",
+    "fund",
+    "deploy",
+    "ladder",
+    "makerInventory",
+    "markets",
+    "takers"
+  ],
+  "series": {
+    "28": {
+      "strike": 28,
+      "id": "0xa200379e31da17cb68427cc2874c316b927926de5612af0c78b39ae231c8de89",
+      "yes": "0xd778B31CDCC694a4FFAB9dd944C9C3749cDd471D",
+      "no": "0x96081d19e03F1be8329F65190330E727a4A96BB6",
+      "symbol": "RCSS-20261007-GE28-Y",
+      "market": "0xBeF193282701cd0Ba41840C3aC0646ffeBF0c32f"
+    },
+    "29": {
+      "strike": 29,
+      "id": "0x0cdce740abc765b64d0fd9f4edbc3e9f83336e84eaa98659eca0064634b53646",
+      "yes": "0x7d1AFEbcab6cA2Bb3ceE0fBb65A8a6241AC418Ee",
+      "no": "0x9D50debcAcd638F8F1582E7458C91BeEA2b2CD0f",
+      "symbol": "RCSS-20261007-GE29-Y",
+      "market": "0xcB18a56113773a8eC5b2C55C0601eaAAa706B29c"
+    },
+    "30": {
+      "strike": 30,
+      "id": "0x87baeb9b239bda5f152464813fd7e26526541d0f5301bc11d04d65e6e53b45b4",
+      "yes": "0xb1FD4Ff0B041BB8a2F9098B7317550FeCDa251eB",
+      "no": "0x84fd41006716f8FE7ec7b9cb18fdB4C9c1FE59bC",
+      "symbol": "RCSS-20261007-GE30-Y",
+      "market": "0xF60822eAC91DbBC21Bb03d5d490Fe0e30d6CD511"
+    }
+  },
+  "orders": {
+    "28": [
+      1,
+      2
+    ],
+    "29": [
+      1,
+      2
+    ],
+    "30": [
+      1,
+      2
+    ]
+  },
+  "quotes": {
+    "28": [
+      {
+        "bid": 1380,
+        "ask": 1790
+      }
+    ],
+    "29": [
+      {
+        "bid": 270,
+        "ask": 680
+      }
+    ],
+    "30": [
+      {
+        "bid": 10,
+        "ask": 300
+      }
+    ]
+  },
+  "start": {
+    "deployer": {
+      "mon": "100",
+      "ausd": "0.000000"
+    },
+    "maker": {
+      "mon": "100",
+      "ausd": "9800.000000"
+    },
+    "taker1": {
+      "mon": "100",
+      "ausd": "9980.000000"
+    },
+    "taker2": {
+      "mon": "100",
+      "ausd": "0.000000"
+    }
+  },
+  "r": {
+    "taker1": {
+      "spentAusd": 12,
+      "yes29": "176294117",
+      "fills": 1,
+      "ask": 0.068
+    },
+    "taker2": {
+      "no30": "40000000",
+      "back30": "39960",
+      "netCost30": "39960040",
+      "bid30": 0.001,
+      "yes28": "167430167",
+      "spend28": 30
+    }
+  },
+  "forkBlock": "68700516",
+  "stations": {
+    "settle": {
+      "code": "RCSS",
+      "hex": "0x52435353",
+      "offset": 28800
+    },
+    "void": {
+      "code": "RJTT",
+      "hex": "0x524a5454",
+      "offset": 32400
+    },
+    "stale": {
+      "code": "ZGSZ",
+      "hex": "0x5a47535a",
+      "offset": 28800
+    }
+  },
+  "resolver": "0xfb41a75dfb8052408048944a2b5276767b2dc69c",
+  "vault": "0x2c6a121d3b0af0c171a81742f40b1d067b72587d",
+  "zap": "0x755e09238edab1a230eb424e73837497ce922564",
+  "date": 20261007,
+  "dayEnd": 1791388800,
+  "close": 1791385200,
+  "voidSeries": {
+    "strike": 25,
+    "id": "0x38fdf652caf509f9ca75ed7cfd889e4354993ce9e9872472997fab7df4e5aee0",
+    "yes": "0x33F16e59D6fdbca2605bA749dCE9bdC4E0e89b54",
+    "no": "0x93369fb5B63Fa652EBc669634B367028342ccEb3",
+    "symbol": "RJTT-20261007-GE25-Y"
+  },
+  "staleSeries": {
+    "strike": 30,
+    "id": "0x789c36e46ffbc7be35943bbc322a263799395781e8ad84e1272cd02d9f070fe1",
+    "yes": "0xAf5422EF5A54EbB86Dd337dD2a454E988553be34",
+    "no": "0x43BBD07Abe0309338610997C7f565C182961F97c",
+    "symbol": "ZGSZ-20261007-GE30-Y"
+  },
+  "forecast": {
+    "mu": 26,
+    "sigma": 1.5,
+    "source": "https://api.open-meteo.com/v1/forecast?latitude=25.0697&longitude=121.5525&daily=temperature_2m_max&timezone=Asia%2FTaipei&start_date=2026-10-07&end_date=2026-10-07",
+    "fv": {
+      "28": 0.15865525956313153,
+      "29": 0.04779033035973734,
+      "30": 0.009815306844952909
+    }
+  }
+}

@@ -1,0 +1,5 @@
+@metamask/agent-wallet: Installing plugin file:<tmp>/verify/mm-plugin-isotherm-0.0.1.tgz... installed v0.0.1
+Traceback (most recent call last):
+  File "<repo>/spikes/mm/scripts/add-monad-testnet-chain.py", line 14, in <module>
+    d = json.load(open(p))
+FileNotFoundError: [Errno 2] No such file or directory: '<tmp>/verify/mmhome/.metamask/wallets.json'

@@ -1,0 +1,95 @@
+{
+  "market": "0x472f0fdd090A03A14BF85f2bBf84a1e13ECD691B",
+  "rows": [
+    {
+      "pattern": "first quote 1b/1a on empty book (fresh price levels)",
+      "gasUsed": "528288",
+      "gasLimit": "616381",
+      "mon": 0.062870862
+    },
+    {
+      "pattern": "re-quote 1b/1a SAME prices (cancel 2 + place 2) #1",
+      "gasUsed": "403710",
+      "gasLimit": "470836",
+      "mon": 0.048025272
+    },
+    {
+      "pattern": "re-quote 1b/1a SAME prices (cancel 2 + place 2) #2",
+      "gasUsed": "403710",
+      "gasLimit": "470836",
+      "mon": 0.048025272
+    },
+    {
+      "pattern": "re-quote 1b/1a SAME prices (cancel 2 + place 2) #3",
+      "gasUsed": "403710",
+      "gasLimit": "470836",
+      "mon": 0.048025272
+    },
+    {
+      "pattern": "re-quote 1b/1a SHIFTED +0.005 (cancel 2 + place 2) #1",
+      "gasUsed": "459346",
+      "gasLimit": "535834",
+      "mon": 0.054655068
+    },
+    {
+      "pattern": "re-quote 1b/1a SHIFTED +0.005 (cancel 2 + place 2) #2",
+      "gasUsed": "486987",
+      "gasLimit": "568126",
+      "mon": 0.057948852
+    },
+    {
+      "pattern": "re-quote 1b/1a SHIFTED +0.005 (cancel 2 + place 2) #3",
+      "gasUsed": "459277",
+      "gasLimit": "535753",
+      "mon": 0.054646806
+    },
+    {
+      "pattern": "re-quote to 3b/3a (cancel 2 + place 6)",
+      "gasUsed": "863552",
+      "gasLimit": "1008025",
+      "mon": 0.10281855
+    },
+    {
+      "pattern": "re-quote 3b/3a SAME prices (cancel 6 + place 6)",
+      "gasUsed": "789664",
+      "gasLimit": "921693",
+      "mon": 0.094012686
+    },
+    {
+      "pattern": "re-quote 3b/3a SHIFTED one tick-row (cancel 6 + place 6)",
+      "gasUsed": "845444",
+      "gasLimit": "986858",
+      "mon": 0.100659516
+    },
+    {
+      "pattern": "(approve market AUSD, one-off)",
+      "gasUsed": "70585",
+      "gasLimit": "81683",
+      "mon": 0.008331666
+    },
+    {
+      "pattern": "taker market buy 10 AUSD (1 level, partial)",
+      "gasUsed": "292324",
+      "gasLimit": "389023",
+      "mon": 0.039680346
+    },
+    {
+      "pattern": "taker market buy 30 AUSD (finishes level 1, into level 2)",
+      "gasUsed": "258324",
+      "gasLimit": "343037",
+      "mon": 0.034989774
+    },
+    {
+      "pattern": "taker market buy 90 AUSD (crosses 2 levels)",
+      "gasUsed": "357587",
+      "gasLimit": "471538",
+      "mon": 0.048096876
+    },
+    {
+      "pattern": "cancelAll remaining (scan + batchCancelOrdersNoRevert)",
+      "gasUsed": "247720",
+      "gasLimit": "288634",
+      "mon": 0.029440668
+    }
+  ]
+}

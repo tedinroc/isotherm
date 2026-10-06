@@ -1,0 +1,5 @@
+dist/
+alt-jssdk/dist/
+.secrets/
+.env.local
+*.log.tmp

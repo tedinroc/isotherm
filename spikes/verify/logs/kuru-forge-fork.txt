@@ -1,0 +1,32 @@
+Compiling 24 files with Solc 0.8.30
+Solc 0.8.30 finished in 2.41s
+Compiler run successful!
+
+Ran 4 tests for test/KuruFork.t.sol:KuruForkTest
+[PASS] test_liveProbeOnFork() (gas: 3728642)
+Logs:
+  market 0x1bebf36Fba40B0EcEc87bd2d0a6151cB1f617Ad3
+  gas create/deposit/bid/ask 1164156 48435 213784
+  gas ask/batch6/buy 199454 552889 63359
+  gas sell/cancel6 52408 60329
+  taker YES received for 100 AUSD 179284642
+  taker AUSD received for 20 YES 10889100
+
+[PASS] test_nonOwnerCanCreateMarket() (gas: 1369239)
+Logs:
+  market created by non-owner: 0x1aBbeF9081d0A754B1319DE0Bf2d2F5D2F8238a2
+
+[PASS] test_postOnlyAndInsufficientMargin() (gas: 2635549)
+[PASS] test_zapPaths() (gas: 5812872)
+Logs:
+  zap.buyYes: 50 AUSD -> 121829267 YES(6dp); refund 0
+  zap.sellYes: 60914633 YES -> AUSD 24341434
+  zap.buyNo: 40 AUSD -> NO 40000000
+             AUSD back 15984000
+  router.anyToAnySwap: 30 AUSD -> YES 73097560
+  maker margin AUSD 1062999700
+  maker margin YES  500914633
+
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 14.65s (36.87s CPU time)
+
+Ran 1 test suite in 15.45s (14.65s CPU time): 4 tests passed, 0 failed, 0 skipped (4 total tests)
