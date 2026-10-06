@@ -1,0 +1,228 @@
+{
+  "mode": "live",
+  "rpc": "https://testnet-rpc.monad.xyz",
+  "out": "<repo>/spikes/e2e/logs/live-2026-10-06T15-04-29",
+  "forkBlock": "68716074",
+  "addresses": {
+    "resolver": "0x1c7a8a5df93f7f33c778c2163d8887e9249475f1",
+    "vault": "0xc83fe722eb5bd29a0355c090f14ccb0605153713",
+    "zap": "0x1b1d91ebd1590c7814aedcae66ac6ded492c792e",
+    "series": {
+      "28": {
+        "strike": 28,
+        "id": "0xcb6bf583d9761e49568b11bfc8b69b52f73e24a11fb516c618cb188b2241a9b3",
+        "yes": "0x829930e34b5e5Ce164F61E898a378B0cAe3d8a4e",
+        "no": "0x59fab455344ed93705B8fFc7A5CF1b82875daEA5",
+        "symbol": "ZZZZ-20261006-GE28-Y",
+        "market": "0x900793BD5091380fe14F2714A7B82de8eA314beB"
+      },
+      "29": {
+        "strike": 29,
+        "id": "0x4f3b3913c0a68e364f4f362cac535f96dd16388e84c4e79fca0eab74aa7311ef",
+        "yes": "0x820891F8a23AC2b9ceDe7d67D7D29db9951406b3",
+        "no": "0x997F89d3991992F2Ec041EFC422e8a0D6f56d3FB",
+        "symbol": "ZZZZ-20261006-GE29-Y",
+        "market": "0x0a75Aff5899A42218e03533d51866C9e0d0B5196"
+      },
+      "30": {
+        "strike": 30,
+        "id": "0x763a7e139a42e88307545caa602932f64a10c69293634d118cd057dfa1259d48",
+        "yes": "0xbb597BA06c01dcdB8Fe9EeC177d91EAfdB646327",
+        "no": "0x94B32309F1120f56a72D4D4D2f7d9738201CAaaa",
+        "symbol": "ZZZZ-20261006-GE30-Y",
+        "market": "0xe83dD9a3b5D7f4638b0D1bb7762e505D71F6224b"
+      }
+    },
+    "voidSeries": {
+      "strike": 25,
+      "id": "0xa4ffa79e3a65df47b0da50c312697defb6059b05ccb61c2258f9c400c100e11e",
+      "yes": "0x0210a4f983FD561F0937a607Ec4ad646E6674beE",
+      "no": "0x264235F41F60Ce452daC7317c445211DB1044f05",
+      "symbol": "ZZZY-20261006-GE25-Y"
+    }
+  },
+  "stations": {
+    "settle": {
+      "code": "ZZZZ",
+      "hex": "0x5a5a5a5a",
+      "offset": 30600
+    },
+    "void": {
+      "code": "ZZZY",
+      "hex": "0x5a5a5a59",
+      "offset": 30600
+    }
+  },
+  "date": 20261006,
+  "forecast": {
+    "mu": 25.8,
+    "sigma": 1.5,
+    "source": "https://api.open-meteo.com/v1/forecast?latitude=25.0697&longitude=121.5525&daily=temperature_2m_max&timezone=Asia%2FTaipei&start_date=2026-10-06&end_date=2026-10-06",
+    "fv": {
+      "28": 0.12853719855750034,
+      "29": 0.03593026547734279,
+      "30": 0.006818869775968239
+    }
+  },
+  "results": {
+    "taker1": {
+      "spentAusd": 10,
+      "yes29": "178392856",
+      "fills": 1,
+      "ask": 0.056
+    },
+    "taker2": {
+      "no30": "40000000",
+      "back30": "39960",
+      "netCost30": "39960040",
+      "bid30": 0.001,
+      "yes28": "174322147",
+      "spend28": 26
+    },
+    "cre": {
+      "settle": {
+        "hash": "0x59c4194d7141e113bfa32283bf2937bd3b7ba4c2038fd1e24df99eff929bfad3",
+        "estimate": "154883",
+        "gasUsed": "220000"
+      },
+      "replay": "0x5ad047c398bbc9e24196d7b1e778748aacb899c113a769821f7f3156b9aa4c8d",
+      "void": "0xc8463e42e8a41b1aff8866cb6518686da7f438840b1640ca14e40283bfba79c8"
+    },
+    "loserPayout": "0",
+    "makerRedeem": {
+      "28": {
+        "yes": "325503356",
+        "no": "500000000",
+        "payout": "325503356"
+      },
+      "29": {
+        "yes": "321428572",
+        "no": "0",
+        "payout": "321428572"
+      },
+      "30": {
+        "yes": "540000000",
+        "no": "500000000",
+        "payout": "500000000"
+      }
+    },
+    "void": {
+      "yesPayout": "50000000",
+      "noPayout": "50000000"
+    },
+    "end": {
+      "deployer": {
+        "ausd": "0.000000",
+        "mon": "0.97715394"
+      },
+      "maker": {
+        "ausd": "19702.891628",
+        "mon": "0.285462412"
+      },
+      "taker1": {
+        "ausd": "19948.392856",
+        "mon": "0.084093766"
+      },
+      "taker2": {
+        "ausd": "348.362107",
+        "mon": "0.111125172"
+      }
+    }
+  },
+  "totals": {
+    "txs": 56,
+    "gasUsed": "26315088",
+    "gasLimit": "26315088",
+    "mon": 2.6841389760000007
+  },
+  "perRoleMonLiveSteps": {
+    "deployer": 1.614667242,
+    "maker": 0.7946022359999997,
+    "taker1": 0.08599467,
+    "taker2": 0.188874828
+  },
+  "budget": {
+    "items": [
+      {
+        "what": "createLadder, 6 strikes (12 token clones)",
+        "n": 1,
+        "gasLimit": "1696294",
+        "mon": 0.173021988
+      },
+      {
+        "what": "Kuru Router.deployProxy, one book per strike",
+        "n": 6,
+        "gasLimit": "1467042",
+        "mon": 0.8978297040000001
+      },
+      {
+        "what": "maker mintSet (inventory per strike)",
+        "n": 6,
+        "gasLimit": "298324",
+        "mon": 0.182574288
+      },
+      {
+        "what": "maker approve new YES -> MarginAccount",
+        "n": 6,
+        "gasLimit": "69770",
+        "mon": 0.04269924
+      },
+      {
+        "what": "maker MarginAccount.deposit YES",
+        "n": 6,
+        "gasLimit": "167259",
+        "mon": 0.102362508
+      },
+      {
+        "what": "maker MarginAccount.deposit AUSD (daily top-up)",
+        "n": 1,
+        "gasLimit": "127950",
+        "mon": 0.0130509
+      },
+      {
+        "what": "maker initial quote (1 bid + 1 ask)",
+        "n": 6,
+        "gasLimit": "592834",
+        "mon": 0.362814408
+      },
+      {
+        "what": "maker HOURLY re-quote (cancel 2 + place 2), 24 x 6",
+        "n": 144,
+        "gasLimit": "526091",
+        "mon": 7.727224607999999
+      },
+      {
+        "what": "maker pulls quotes at close",
+        "n": 6,
+        "gasLimit": "280631",
+        "mon": 0.171746172
+      },
+      {
+        "what": "CRE settlement report (sim forwarder: we pay)",
+        "n": 1,
+        "gasLimit": "220000",
+        "mon": 0.02244
+      },
+      {
+        "what": "maker MarginAccount withdraw",
+        "n": 1,
+        "gasLimit": "301694",
+        "mon": 0.030772788
+      },
+      {
+        "what": "maker redeem",
+        "n": 6,
+        "gasLimit": "189459",
+        "mon": 0.115948908
+      }
+    ],
+    "perCityDay": 9.842485512,
+    "fixed": 2.1152609040000003,
+    "requote": 7.727224607999999
+  },
+  "latency": {
+    "medianMs": 1403,
+    "minMs": 769,
+    "maxMs": 3063
+  }
+}
