@@ -24,3 +24,4 @@ spikes/cre/ref/
 .wrangler/
 .cre/
 
+.wrangler.deploy.toml

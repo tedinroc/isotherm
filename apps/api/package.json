@@ -11,7 +11,7 @@
     "test:fork": "npm run prepare-data && vitest run test/integration",
     "test:all": "npm run prepare-data && vitest run",
     "dev": "npm run prepare-data && wrangler dev --port 8781",
-    "deploy": "npm run prepare-data && wrangler deploy",
+    "deploy": "npm run prepare-data && node scripts/deploy.mjs",
     "size-caps": "node scripts/size-caps.mjs"
   },
   "dependencies": {

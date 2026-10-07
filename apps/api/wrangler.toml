@@ -24,7 +24,9 @@ class_name = "RelayerDO"
 tag = "v1"
 new_sqlite_classes = ["RelayerDO"]
 
-# KV namespace "isotherm-api-ISO_KV" (wrangler kv namespace create ISO_KV); preview_id for wrangler dev.
+# KV namespace "isotherm-api-ISO_KV" (create it with: wrangler kv namespace create ISO_KV).
+# The real id is account-specific and is NOT committed: `npm run deploy` (scripts/deploy.mjs) substitutes it
+# from $ISO_KV_NAMESPACE_ID or ~/.config/isotherm/kv-namespace-id. preview_id is for wrangler dev.
 [[kv_namespaces]]
 binding = "ISO_KV"
 id = "<KV_NAMESPACE_ID>"
