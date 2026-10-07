@@ -10,6 +10,7 @@ import {Resolver} from "../../src/Resolver.sol";
 import {StationTime} from "../../src/lib/StationTime.sol";
 import {IIsothermResolver} from "../../src/interfaces/IIsothermResolver.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import {FeeToken} from "../security/SecUtils.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -358,7 +359,7 @@ contract CollateralVaultTest is IsoTest {
     function test_voidFullSetRedeemsExactly() public {
         bytes32 id = _create(RCSS, D, 30);
         _mint(alice, id, 101);
-        vm.warp(RCSS_DAY_END + 24 hours);
+        vm.warp(RCSS_DAY_END + 48 hours);
         resolver.voidIfStale(RCSS, D);
         vm.prank(alice);
         assertEq(vault.redeem(id, 101, 101), 101); // a full set always pays exactly 1 per set
@@ -454,6 +455,204 @@ contract CollateralVaultTest is IsoTest {
         vm.prank(alice);
         vault.pause();
         assertTrue(vault.paused());
+    }
+
+    // --- challenge window: redemption opens at finalAt --------------------------------------------
+
+    function test_redeemWaitsForChallengeWindow() public {
+        bytes32 id = _create(RCSS, D, 30);
+        _mint(alice, id, 10e6);
+        vm.warp(RCSS_DAY_END);
+        _deliver(_report(RCSS, D, 31, false, keccak256("s")));
+        uint64 finalAt = uint64(RCSS_DAY_END + CHALLENGE);
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(CollateralVault.NotFinal.selector, id, finalAt));
+        vault.redeem(id, 10e6, 0);
+        vm.expectRevert(abi.encodeWithSelector(CollateralVault.NotFinal.selector, id, finalAt));
+        vault.payoutHalves(id);
+        vm.expectRevert(abi.encodeWithSelector(CollateralVault.NotFinal.selector, id, finalAt));
+        vault.previewRedeem(id, 1, 1);
+        // a complete set can always exit at par, even inside the window
+        vm.prank(alice);
+        vault.redeemSet(id, 1e6);
+        vm.warp(finalAt);
+        vm.prank(alice);
+        assertEq(vault.redeem(id, 9e6, 9e6), 9e6);
+    }
+
+    function test_challengedResultPaysHalf() public {
+        bytes32 id = _create(RCSS, D, 30);
+        (, OutcomeToken no) = _tokens(id);
+        _mint(alice, id, 100e6);
+        vm.prank(alice);
+        no.transfer(bob, 100e6);
+        vm.warp(RCSS_DAY_END);
+        _deliver(_report(RCSS, D, 35, false, keccak256("s"))); // a wrong (or compromised) report says YES wins
+        vm.prank(guardian);
+        resolver.challenge(RCSS, D, keccak256("bad report"));
+        (uint256 y, uint256 n) = vault.payoutHalves(id); // final at once
+        assertEq(y, 1);
+        assertEq(n, 1);
+        vm.prank(alice);
+        assertEq(vault.redeem(id, 100e6, 0), 50e6);
+        vm.prank(bob);
+        assertEq(vault.redeem(id, 0, 100e6), 50e6);
+    }
+
+    // --- EIP-3009 gasless mint (series-bound) ------------------------------------------------------
+
+    bytes32 internal constant RECEIVE_TYPEHASH = keccak256(
+        "ReceiveWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
+    );
+
+    function _authSig(uint256 pk, uint256 value, uint256 validAfter, uint256 validBefore, bytes32 nonce)
+        internal
+        view
+        returns (uint8, bytes32, bytes32)
+    {
+        bytes32 sh =
+            keccak256(abi.encode(RECEIVE_TYPEHASH, vm.addr(pk), address(vault), value, validAfter, validBefore, nonce));
+        return vm.sign(pk, keccak256(abi.encodePacked("\x19\x01", ausd.DOMAIN_SEPARATOR(), sh)));
+    }
+
+    function test_mintSetWithAuthorization() public {
+        bytes32 id = _create(RCSS, D, 30);
+        (OutcomeToken yes, OutcomeToken no) = _tokens(id);
+        uint256 pk = 0xD1A;
+        address holder = vm.addr(pk);
+        ausd.mint(holder, 50e6);
+        bytes32 salt = keccak256("salt-1");
+        uint256 vb = block.timestamp + 10 minutes;
+        bytes32 nonce = vault.mintAuthorizationNonce(id, 50e6, salt);
+        assertEq(nonce, keccak256(abi.encode(id, uint256(50e6), salt)));
+        (uint8 v, bytes32 r, bytes32 s) = _authSig(pk, 50e6, 0, vb, nonce);
+
+        address relayer = makeAddr("relayer");
+        vm.prank(relayer);
+        vault.mintSetWithAuthorization(id, 50e6, holder, 0, vb, salt, v, r, s);
+        assertEq(yes.balanceOf(holder), 50e6);
+        assertEq(no.balanceOf(holder), 50e6);
+        assertEq(yes.balanceOf(relayer), 0);
+        assertEq(ausd.balanceOf(holder), 0);
+        assertEq(vault.getSeries(id).collateral, 50e6);
+        assertTrue(ausd.authorizationState(holder, nonce));
+        assertEq(ausd.allowance(holder, address(vault)), 0, "no allowance involved");
+
+        ausd.mint(holder, 50e6);
+        vm.prank(relayer);
+        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vault.mintSetWithAuthorization(id, 50e6, holder, 0, vb, salt, v, r, s); // replay
+    }
+
+    /// The fix for the permit front-run: the series and amount are bound into the 3009 nonce, recomputed by the vault.
+    function test_mintSetWithAuthorizationCannotBeRedirected() public {
+        bytes32 wanted = _create(RCSS, D, 30);
+        bytes32 other = _create(RCSS, D, 25);
+        uint256 pk = 0xD1A;
+        address holder = vm.addr(pk);
+        ausd.mint(holder, 50e6);
+        bytes32 salt = keccak256("salt-2");
+        uint256 vb = block.timestamp + 10 minutes;
+        (uint8 v, bytes32 r, bytes32 s) = _authSig(pk, 50e6, 0, vb, vault.mintAuthorizationNonce(wanted, 50e6, salt));
+
+        vm.startPrank(makeAddr("frontRunner"));
+        vm.expectRevert("FiatTokenV2: invalid signature");
+        vault.mintSetWithAuthorization(other, 50e6, holder, 0, vb, salt, v, r, s); // another series
+        vm.expectRevert("FiatTokenV2: invalid signature");
+        vault.mintSetWithAuthorization(wanted, 40e6, holder, 0, vb, salt, v, r, s); // another amount
+        vm.expectRevert("FiatTokenV2: invalid signature");
+        vault.mintSetWithAuthorization(wanted, 50e6, holder, 0, vb, keccak256("x"), v, r, s); // another salt
+        vm.stopPrank();
+        // nobody but the vault can consume it directly (payee must be the caller)
+        _thiefTriesDirect(holder, vb, vault.mintAuthorizationNonce(wanted, 50e6, salt), v, r, s);
+        vm.prank(makeAddr("relayer"));
+        vault.mintSetWithAuthorization(wanted, 50e6, holder, 0, vb, salt, v, r, s);
+        (OutcomeToken yes,) = _tokens(wanted);
+        assertEq(yes.balanceOf(holder), 50e6);
+    }
+
+    function _thiefTriesDirect(address holder, uint256 vb, bytes32 nonce, uint8 v, bytes32 r, bytes32 s) internal {
+        vm.prank(makeAddr("thief"));
+        vm.expectRevert("FiatTokenV2: caller must be the payee");
+        ausd.receiveWithAuthorization(holder, address(vault), 50e6, 0, vb, nonce, v, r, s);
+    }
+
+    function test_mintSetWithAuthorizationChecks() public {
+        bytes32 id = _create(RCSS, D, 30);
+        uint256 pk = 0xD1A;
+        address holder = vm.addr(pk);
+        ausd.mint(holder, 50e6);
+        bytes32 salt = keccak256("salt-3");
+        uint256 vb = block.timestamp + 10 minutes;
+        (uint8 v, bytes32 r, bytes32 s) = _authSig(pk, 50e6, 0, vb, vault.mintAuthorizationNonce(id, 50e6, salt));
+        vm.warp(vb);
+        vm.expectRevert("FiatTokenV2: authorization is expired");
+        vault.mintSetWithAuthorization(id, 50e6, holder, 0, vb, salt, v, r, s);
+        vm.warp(vb - 1);
+        vm.prank(guardian);
+        vault.pause();
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vault.mintSetWithAuthorization(id, 50e6, holder, 0, vb, salt, v, r, s);
+        vm.prank(owner);
+        vault.unpause();
+        uint64 close = vault.getSeries(id).closeTime;
+        vm.warp(close);
+        vm.expectRevert(abi.encodeWithSelector(CollateralVault.MintClosed.selector, id, close));
+        vault.mintSetWithAuthorization(id, 50e6, holder, 0, type(uint256).max, salt, v, r, s);
+    }
+
+    // --- collateral balance-delta check ------------------------------------------------------------
+
+    function test_feeOnTransferCollateralRejected() public {
+        FeeToken fee = new FeeToken();
+        CollateralVault fv = new CollateralVault(owner, resolver, fee, guardian);
+        vm.prank(owner);
+        bytes32 id = fv.createSeries(RCSS, D, 30, uint64(RCSS_DAY_END - 1 hours));
+        fee.mint(alice, 100e6);
+        vm.startPrank(alice);
+        fee.approve(address(fv), type(uint256).max);
+        vm.expectRevert(abi.encodeWithSelector(CollateralVault.CollateralTransferMismatch.selector, 100e6, 99e6));
+        fv.mintSet(id, 100e6);
+        vm.stopPrank();
+    }
+
+    // --- compliance: gated series ------------------------------------------------------------------
+
+    function test_gatedSeriesMintsOnlyToAllowlisted() public {
+        bytes32 id = _create(RCSS, D, 30);
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
+        vault.setSeriesGated(id, true);
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(StrikeFactory.UnknownSeries.selector, bytes32(uint256(1))));
+        vault.setSeriesGated(bytes32(uint256(1)), true);
+        vm.prank(owner);
+        vault.setSeriesGated(id, true);
+        assertTrue(vault.getSeries(id).gated);
+
+        _fund(alice, 20e6);
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(CollateralVault.NotAllowlisted.selector, id, alice));
+        vault.mintSet(id, 1e6);
+        vm.prank(owner);
+        vault.setAllowlisted(alice, true);
+        vm.prank(alice);
+        vault.mintSet(id, 1e6);
+        vm.prank(alice); // the recipient is what is gated
+        vm.expectRevert(abi.encodeWithSelector(CollateralVault.NotAllowlisted.selector, id, bob));
+        vault.mintSetTo(id, 1e6, bob);
+        // secondary transfers and exits are not gated
+        (OutcomeToken yes, OutcomeToken no) = _tokens(id);
+        vm.startPrank(alice);
+        yes.transfer(bob, 1e6);
+        no.transfer(bob, 1e6);
+        vm.stopPrank();
+        vm.prank(bob);
+        vault.redeemSet(id, 1e6);
+        // ungating opens it to everyone
+        vm.prank(owner);
+        vault.setSeriesGated(id, false);
+        _mint(bob, id, 1e6);
     }
 
     // --- helpers -----------------------------------------------------------------------------------

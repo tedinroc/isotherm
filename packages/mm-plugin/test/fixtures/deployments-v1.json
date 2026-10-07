@@ -1,0 +1,188 @@
+{
+  "network": "monad-testnet",
+  "chainId": 10143,
+  "version": "isotherm-contracts-v1",
+  "mode": "live",
+  "deployBlock": 68884377,
+  "deployedAt": "2026-10-07T05:14:40Z",
+  "ausd": "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC",
+  "ausdFaucet": "0xd236c18D274E54FAccC3dd9DDA4b27965a73ee6C",
+  "kuruRouter": "0x7EFbE105Ca7415dE98F96622173458ac1c054630",
+  "kuruMarginAccount": "0xd029C2D98ff85D8F64799017fE00a59B1159CE02",
+  "mockForwarder": "0xB9F79d863261869B234c481D1f9A7af84AeAd192",
+  "keystoneForwarder": "0xF8344CFd5c43616a4366C34E3EEE75af79a74482",
+  "activeForwarder": "0xB9F79d863261869B234c481D1f9A7af84AeAd192",
+  "resolver": "0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B",
+  "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+  "factory": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+  "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+  "outcomeTokenImpl": "0x5EfaB33DDad0715b66f514Fe12d78Ca23f3e31fC",
+  "roles": {
+    "owner": "0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11",
+    "guardian": "0x30C8E371719Ff00577284dd9c10587Fa89357d50",
+    "attester": "0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9",
+    "operator": "0x602dbf3937558B1d18d76315635fD5410089bd51"
+  },
+  "stations": {
+    "RCSS": {
+      "bytes4": "0x52435353",
+      "utcOffsetSeconds": 28800,
+      "city": "Taipei Songshan",
+      "tz": "Asia/Taipei"
+    },
+    "RJTT": {
+      "bytes4": "0x524a5454",
+      "utcOffsetSeconds": 32400,
+      "city": "Tokyo Haneda",
+      "tz": "Asia/Tokyo"
+    }
+  },
+  "params": {
+    "challengeWindow": 900,
+    "staleWindow": 172800,
+    "resumeGrace": 86400,
+    "maxStaleWindow": 604800,
+    "maxChallengeWindow": 172800,
+    "minTmaxC": -90,
+    "maxTmaxC": 70,
+    "minStrikeC": -90,
+    "maxStrikeC": 70,
+    "settlementTypehash": "0x5bbd6085fa1e132afc3602af7c54c19de8708e48567c4c8e2b19fe541e2a0535",
+    "resolverDomainSeparator": "0xc64adf48d67e70fe0cdb4684052659dfa04258a6dd5536e81ea6176368ece9b5",
+    "eip712": {
+      "name": "Isotherm Resolver",
+      "version": "1",
+      "chainId": 10143,
+      "verifyingContract": "0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B"
+    },
+    "settlementType": "Settlement(bytes4 station,uint32 date,int16 tmaxC,bool isVoid,bytes32 sourcesHash,uint64 validUntil)",
+    "reportEncoding": "abi.encode(bytes4 station,uint32 date,int16 tmaxC,bool isVoid,bytes32 sourcesHash,uint64 validUntil,bytes signature)",
+    "zapKuruMarket": {
+      "type": 0,
+      "pricePrecision": 10000,
+      "sizePrecision": 1000000,
+      "maxTakerFeeBps": 30,
+      "recommended": {
+        "tickSize": 10,
+        "minSize": 1000000,
+        "maxSize": 1000000000000,
+        "takerFeeBps": 10,
+        "makerFeeBps": 0,
+        "kuruAmmSpread": 100
+      }
+    },
+    "ausdEip712": {
+      "name": "Agora Dollar",
+      "version": "1",
+      "chainId": 10143,
+      "verifyingContract": "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC"
+    },
+    "mintAuthorizationNonce": "keccak256(abi.encode(bytes32 seriesId, uint256 amount, bytes32 salt))"
+  },
+  "abi": {
+    "dir": "packages/abi",
+    "files": [
+      "Resolver.json",
+      "CollateralVault.json",
+      "IsothermZap.json",
+      "OutcomeToken.json",
+      "addresses.json"
+    ]
+  },
+  "deployTxs": [
+    {
+      "what": "create Resolver",
+      "hash": "0x80f5f60728502b779578057943759515975ee87e184d35641c8e14b3020cf75e",
+      "block": 68884377,
+      "status": 1,
+      "gasUsed": 3048824,
+      "gasLimit": 3048824,
+      "gasPriceWei": 103000000001
+    },
+    {
+      "what": "create CollateralVault",
+      "hash": "0xc1be9aabe088bbc4d6327b3cbae6c7ed2cc47af6149fb70c9f6b95bc7c7d56f1",
+      "block": 68884386,
+      "status": 1,
+      "gasUsed": 5197792,
+      "gasLimit": 5197792,
+      "gasPriceWei": 103000000001
+    },
+    {
+      "what": "create IsothermZap",
+      "hash": "0xb30472f1911356e911e472df4061fe8995b92c3e0e23f3a26ae7160ca5b6a804",
+      "block": 68884389,
+      "status": 1,
+      "gasUsed": 1870311,
+      "gasLimit": 1870311,
+      "gasPriceWei": 103000000001
+    },
+    {
+      "what": "registerStation",
+      "hash": "0xea018c8c991a5f1dc865a376be77247682db789f4a657c4b9c2af14985a2711c",
+      "block": 68884392,
+      "status": 1,
+      "gasUsed": 66657,
+      "gasLimit": 66657,
+      "gasPriceWei": 103000000001
+    },
+    {
+      "what": "registerStation",
+      "hash": "0xeb126bef5ae91c682344c33e842aec333a1b830cda34ec8ce22e3ebc3ef67ec4",
+      "block": 68884396,
+      "status": 1,
+      "gasUsed": 66657,
+      "gasLimit": 66657,
+      "gasPriceWei": 103000000001
+    },
+    {
+      "what": "setOperator",
+      "hash": "0xc13e88ede7ae999c098d720846cc7a47c516d1c2949abc1fb54f4da12c7c07b4",
+      "block": 68884403,
+      "status": 1,
+      "gasUsed": 65424,
+      "gasLimit": 65424,
+      "gasPriceWei": 103000000001
+    }
+  ],
+  "deployGas": {
+    "used": 10315665,
+    "limitBilled": 10315665,
+    "monBilled": 1.062513
+  },
+  "funding": [
+    {
+      "to": "operator",
+      "hash": "0xf3b482e04860ef237dec3de8d006c5ea44663e7971bbdd6ccf056d629e3ac31d",
+      "status": "0x1",
+      "block": 68884418
+    },
+    {
+      "to": "attester",
+      "hash": "0x5423606823a9131660149575c8db79ecd7ca1e60c0e0c3ffaedbb69f23145dab",
+      "status": "0x1",
+      "block": 68884434
+    }
+  ],
+  "deployerSpentMon": 1.316839,
+  "notes": [
+    "factory == vault: StrikeFactory is inherited by CollateralVault (one address).",
+    "Settled results become redeemable at Resolver.resultOf(...).finalAt (resolvedAt + challengeWindow).",
+    "Zap trades only on zap.canonicalMarket(seriesId), registered once by the operator after Kuru deployProxy."
+  ],
+  "verification": {
+    "sourcify": "exact_match (creation + runtime) for Resolver, CollateralVault, IsothermZap, OutcomeToken impl; verified 2026-10-07",
+    "verifierUrls": [
+      "https://sourcify-api-monad.blockvision.org/",
+      "https://sourcify.dev/server/"
+    ],
+    "command": "script/verify-sourcify.sh  (forge verify-contract <addr> <path:Contract> --chain 10143 --verifier sourcify --verifier-url <url>)",
+    "lookup": "https://sourcify.dev/server/v2/contract/10143/<address>",
+    "compiler": {
+      "solc": "0.8.37",
+      "evmVersion": "osaka",
+      "optimizerRuns": 10000,
+      "viaIR": false
+    }
+  }
+}

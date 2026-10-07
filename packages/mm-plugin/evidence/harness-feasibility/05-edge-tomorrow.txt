@@ -1,0 +1,125 @@
+$ mm weather edge taipei --date tomorrow --json
+{
+  "ok": true,
+  "data": {
+    "city": "Taipei",
+    "station": "RCSS",
+    "date": "2026-10-08",
+    "ladder": {
+      "state": "open",
+      "closeTime": "2026-10-08T15:00:00Z",
+      "dayEnd": "2026-10-08T16:00:00Z",
+      "result": null
+    },
+    "polymarket": {
+      "slug": "highest-temperature-in-taipei-on-october-8-2026",
+      "url": "https://polymarket.com/event/highest-temperature-in-taipei-on-october-8-2026",
+      "volumeUsd": 2408,
+      "sumMid": 1.038,
+      "closed": false
+    },
+    "observed": {
+      "source": "aviationweather.gov",
+      "station": "RCSS",
+      "date": 20261008,
+      "status": "future",
+      "maxC": null,
+      "nReports": 0,
+      "lastReportUtc": null,
+      "note": "local day has not started"
+    },
+    "minGap": 0.03,
+    "rows": [
+      {
+        "strike": "Tmax>=27C",
+        "strikeC": 27,
+        "bestBid": 0.95,
+        "bestAsk": 0.999,
+        "polymarketImplied": 0.983,
+        "v0Guardrail": 0.823,
+        "yesCheapVsPolymarket": -0.017,
+        "yesRichVsPolymarket": -0.034,
+        "observedLocked": false,
+        "guardrailFlag": true,
+        "canonical": true,
+        "suggestion": null
+      },
+      {
+        "strike": "Tmax>=30C",
+        "strikeC": 30,
+        "bestBid": 0.437,
+        "bestAsk": 0.498,
+        "polymarketImplied": 0.468,
+        "v0Guardrail": 0.145,
+        "yesCheapVsPolymarket": -0.03,
+        "yesRichVsPolymarket": -0.031,
+        "observedLocked": false,
+        "guardrailFlag": true,
+        "canonical": true,
+        "suggestion": null
+      },
+      {
+        "strike": "Tmax>=31C",
+        "strikeC": 31,
+        "bestBid": 0.062,
+        "bestAsk": 0.123,
+        "polymarketImplied": 0.092,
+        "v0Guardrail": 0.043,
+        "yesCheapVsPolymarket": -0.031,
+        "yesRichVsPolymarket": -0.03,
+        "observedLocked": false,
+        "guardrailFlag": false,
+        "canonical": true,
+        "suggestion": null
+      },
+      {
+        "strike": "Tmax>=28C",
+        "strikeC": 28,
+        "bestBid": 0.919,
+        "bestAsk": 0.98,
+        "polymarketImplied": 0.95,
+        "v0Guardrail": 0.604,
+        "yesCheapVsPolymarket": -0.031,
+        "yesRichVsPolymarket": -0.032,
+        "observedLocked": false,
+        "guardrailFlag": true,
+        "canonical": true,
+        "suggestion": null
+      },
+      {
+        "strike": "Tmax>=29C",
+        "strikeC": 29,
+        "bestBid": 0.818,
+        "bestAsk": 0.879,
+        "polymarketImplied": 0.849,
+        "v0Guardrail": 0.346,
+        "yesCheapVsPolymarket": -0.031,
+        "yesRichVsPolymarket": -0.032,
+        "observedLocked": false,
+        "guardrailFlag": true,
+        "canonical": true,
+        "suggestion": null
+      }
+    ],
+    "definitions": {
+      "yesCheapVsPolymarket": "Polymarket-implied P minus our best ask grossed up for the taker fee. Positive: YES on our book costs less than the Polymarket-implied probability (also how cheaply NO can be sold).",
+      "yesRichVsPolymarket": "Our best bid net of the taker fee minus Polymarket-implied P. Positive: YES sells (or NO buys) on our book above the Polymarket-implied probability.",
+      "observedLocked": "The observed METAR max so far already reached k, so YES is very likely to win (official settlement still pending). No suggestion is made for locked strikes."
+    },
+    "disclaimer": [
+      "A gap between two venues is not a forecasting edge and not a promise of profit: Polymarket can be wrong, both books can move, and thin books mean small size.",
+      "Testnet only: Monad testnet 10143 with faucet AUSD. Nothing here is real money or financial advice.",
+      "Polymarket-implied P is the normalised mid of Polymarket's bucket prices summed over buckets >= k: a reference price from another venue, not a forecast.",
+      "Isotherm's own v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days); it is shown only as a guardrail. No forecasting edge is claimed.",
+      "Settlement: official integer °C METAR max for the station-local day incl. SPECI and :30 reports; this rule matches Polymarket on 183/184 RCSS days and 209/209 RJTT days."
+    ],
+    "notes": [],
+    "deployment": "env:<repo>/packages/mm-plugin/harness/fork-deployments-feasibility.json",
+    "abiSet": "feasibility",
+    "vault": "0xC83fE722eb5Bd29a0355C090f14CCb0605153713",
+    "zap": "0x1b1d91eBd1590c7814AEdCae66ac6ded492C792e",
+    "rpcSource": "mm-customEvmChains",
+    "rpcUrl": "http://127.0.0.1:19251"
+  },
+  "hint": "0 strike(s) with a gap >= 0.03 vs Polymarket-implied (testnet; not a forecast)"
+}

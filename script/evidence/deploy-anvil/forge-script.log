@@ -1,0 +1,47 @@
+No files changed, compilation skipped
+Script ran successfully.
+
+== Return ==
+resolver: contract Resolver 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B
+vault: contract CollateralVault 0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39
+zap: contract IsothermZap 0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0
+
+== Logs ==
+  chainId           10143
+  Resolver          0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B
+  CollateralVault   0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39
+  IsothermZap       0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0
+  OutcomeToken impl 0x5EfaB33DDad0715b66f514Fe12d78Ca23f3e31fC
+  owner             0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11
+  forwarder         0xB9F79d863261869B234c481D1f9A7af84AeAd192
+  attester          0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9
+  guardian          0x30C8E371719Ff00577284dd9c10587Fa89357d50
+  operator          0x602dbf3937558B1d18d76315635fD5410089bd51
+  challengeWindow   900
+  collateral        0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC
+
+## Setting up 1 EVM.
+
+==========================
+
+Chain 10143
+
+Estimated max fee per gas: 52.615115239 gwei
+Estimated base fee per gas: 26.307557619 gwei
+Estimated max priority fee per gas: 0.000000001 gwei
+
+Estimated total gas used for script: 10105184
+
+Estimated amount required: 0.531685420671298976 MON
+
+==========================
+
+
+==========================
+
+ONCHAIN EXECUTION COMPLETE & SUCCESSFUL.
+
+Transactions saved to: <repo>/script/evidence/deploy-anvil/broadcast/Deploy.s.sol/10143/run-latest.json
+
+Sensitive values saved to: <repo>/script/evidence/deploy-anvil/cache/Deploy.s.sol/10143/run-latest.json
+

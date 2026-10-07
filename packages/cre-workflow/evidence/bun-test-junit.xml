@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="bun test" tests="87" assertions="302" failures="0" skipped="3" time="0.156877">
+  <testsuite name="e2e/fork.e2e.test.ts" file="e2e/fork.e2e.test.ts" tests="3" assertions="0" failures="0" skipped="3" time="0.075932" hostname="localhost">
+    <testsuite name="fork e2e (live v1 bytecode)" file="e2e/fork.e2e.test.ts" line="42" tests="3" assertions="0" failures="0" skipped="3" time="0" hostname="localhost">
+      <testcase name="fork setup: live v1 contracts present; test attester installed via owner impersonation" classname="fork e2e (live v1 bytecode)" time="0" file="e2e/fork.e2e.test.ts" line="73" assertions="0">
+        <skipped />
+      </testcase>
+      <testcase name="A. v1 report accepted through MockKeystoneForwarder; tampered reports rejected" classname="fork e2e (live v1 bytecode)" time="0" file="e2e/fork.e2e.test.ts" line="88" assertions="0">
+        <skipped />
+      </testcase>
+      <testcase name="B. catch-up over the vault: settle 2, keep a disagreeing one PENDING, VOID it after 36 h, vault pays out" classname="fork e2e (live v1 bytecode)" time="0" file="e2e/fork.e2e.test.ts" line="248" assertions="0">
+        <skipped />
+      </testcase>
+    </testsuite>
+  </testsuite>
+  <testsuite name="test/sources.test.ts" file="test/sources.test.ts" tests="22" assertions="68" failures="0" skipped="0" time="0.002122" hostname="localhost">
+    <testsuite name="observe -&gt; toDayStats round trip equals settle-core dayStats on every fixture" file="test/sources.test.ts" line="10" tests="15" assertions="45" failures="0" skipped="0" time="0" hostname="localhost">
+      <testcase name="iem_RCSS_2026-05-04.csv" classname="observe -&gt; toDayStats round trip equals settle-core dayStats on every fixture" time="0.000323" file="test/sources.test.ts" line="12" assertions="3" />
+      <testcase name="awc_RCSS_2026-10-05.json" classname="observe -&gt; toDayStats round trip equals settle-core dayStats on every fixture" time="0.000198" file="test/sources.test.ts" line="12" assertions="3" />
+      <testcase name="awc_RJTT_2026-10-05.json" classname="observe -&gt; toDayStats round trip equals settle-core dayStats on every fixture" time="0.000131" file="test/sources.test.ts" line="12" assertions="3" />
+      <testcase name="ogimet_RCSS_2026-10-06.txt" classname="observe -&gt; toDayStats round trip equals settle-core dayStats on every fixture" time="0.000147" file="test/sources.test.ts" line="12" assertions="3" />
+      <testcase name="ogimet_RCSS_2025-11-15.txt" classname="observe -&gt; toDayStats round trip equals settle-core dayStats on every fixture" time="0.000089" file="test/sources.test.ts" line="12" assertions="3" />
+      <testcase name="iem_RJTT_2026-10-05.csv" classname="observe -&gt; toDayStats round trip equals settle-core dayStats on every fixture" time="0.000085" file="test/sources.test.ts" line="12" assertions="3" />
+      <testcase name="iem_RJTT_2026-10-06.csv" classname="observe -&gt; toDayStats round trip equals settle-core dayStats on every fixture" time="0.000076" file="test/sources.test.ts" line="12" assertions="3" />
+      <testcase name="ogimet_RJTT_2026-10-06.txt" classname="observe -&gt; toDayStats round trip equals settle-core dayStats on every fixture" time="0.000091" file="test/sources.test.ts" line="12" assertions="3" />
+      <testcase name="iem_RCSS_2025-11-15.csv" classname="observe -&gt; toDayStats round trip equals settle-core dayStats on every fixture" time="0.000027" file="test/sources.test.ts" line="12" assertions="3" />
+      <testcase name="iem_RCSS_2026-10-05.csv" classname="observe -&gt; toDayStats round trip equals settle-core dayStats on every fixture" time="0.000081" file="test/sources.test.ts" line="12" assertions="3" />
+      <testcase name="awc_RCSS_2026-05-04.json" classname="observe -&gt; toDayStats round trip equals settle-core dayStats on every fixture" time="0.000022" file="test/sources.test.ts" line="12" assertions="3" />
+      <testcase name="iem_RCSS_2026-10-06.csv" classname="observe -&gt; toDayStats round trip equals settle-core dayStats on every fixture" time="0.000063" file="test/sources.test.ts" line="12" assertions="3" />
+      <testcase name="awc_RJTT_2026-10-06.json" classname="observe -&gt; toDayStats round trip equals settle-core dayStats on every fixture" time="0.000119" file="test/sources.test.ts" line="12" assertions="3" />
+      <testcase name="ogimet_RCSS_2026-05-04.txt" classname="observe -&gt; toDayStats round trip equals settle-core dayStats on every fixture" time="0.000105" file="test/sources.test.ts" line="12" assertions="3" />
+      <testcase name="awc_RCSS_2026-10-06.json" classname="observe -&gt; toDayStats round trip equals settle-core dayStats on every fixture" time="0.00012" file="test/sources.test.ts" line="12" assertions="3" />
+    </testsuite>
+    <testsuite name="failure handling (never throws, never invents data)" file="test/sources.test.ts" line="27" tests="7" assertions="23" failures="0" skipped="0" time="0" hostname="localhost">
+      <testcase name="HTTP error -&gt; no data" classname="failure handling (never throws, never invents data)" time="0.00001" file="test/sources.test.ts" line="28" assertions="2" />
+      <testcase name="HTML error page / garbage JSON -&gt; no data" classname="failure handling (never throws, never invents data)" time="0.000036" file="test/sources.test.ts" line="32" assertions="3" />
+      <testcase name="AWC empty body = no data (aged out), but a healthy answer" classname="failure handling (never throws, never invents data)" time="0.000007" file="test/sources.test.ts" line="37" assertions="1" />
+      <testcase name="AWC beyond its 30-day retention answers HTTP 400 (captured live 2026-10-07): a definitive &quot;no data&quot;, healthy" classname="failure handling (never throws, never invents data)" time="0.000019" file="test/sources.test.ts" line="40" assertions="4" />
+      <testcase name="health: genuine (possibly empty) archive answers vs errors, throttles and timeouts" classname="failure handling (never throws, never invents data)" time="0.000042" file="test/sources.test.ts" line="47" assertions="10" />
+      <testcase name="a DON split (median between two disagreeing nodes) is incomplete, never a half degree" classname="failure handling (never throws, never invents data)" time="0.000019" file="test/sources.test.ts" line="59" assertions="1" />
+      <testcase name="source URLs come from settle-core" classname="failure handling (never throws, never invents data)" time="0.000049" file="test/sources.test.ts" line="63" assertions="2" />
+    </testsuite>
+  </testsuite>
+  <testsuite name="test/plan.test.ts" file="test/plan.test.ts" tests="13" assertions="48" failures="0" skipped="0" time="0.013401" hostname="localhost">
+    <testsuite name="calendar" file="test/plan.test.ts" line="11" tests="2" assertions="11" failures="0" skipped="0" time="0" hostname="localhost">
+      <testcase name="dayEndSec == StationTime.localDayEnd" classname="calendar" time="0.000014" file="test/plan.test.ts" line="12" assertions="4" />
+      <testcase name="invalid dates are rejected (like StationTime.dayStartUtc)" classname="calendar" time="0.000038" file="test/plan.test.ts" line="18" assertions="7" />
+    </testsuite>
+    <testsuite name="planTargets" file="test/plan.test.ts" line="24" tests="6" assertions="11" failures="0" skipped="0" time="0" hostname="localhost">
+      <testcase name="oldest first, dedupe, unknown station skipped, nothing before dayEnd + 2 h" classname="planTargets" time="0.000141" file="test/plan.test.ts" line="26" assertions="3" />
+      <testcase name="settle window opens exactly at dayEnd + settleDelaySec (02:00 local)" classname="planTargets" time="0.000022" file="test/plan.test.ts" line="34" assertions="2" />
+      <testcase name="never earlier than dayEnd + 60 s even if misconfigured" classname="planTargets" time="0.000014" file="test/plan.test.ts" line="38" assertions="2" />
+      <testcase name="void deadline = dayEnd + 36 h (strictly after)" classname="planTargets" time="0.000012" file="test/plan.test.ts" line="43" assertions="2" />
+      <testcase name="extra (replay) targets join the same queue" classname="planTargets" time="0.000019" file="test/plan.test.ts" line="47" assertions="1" />
+      <testcase name="garbage station bytes are skipped, not thrown" classname="planTargets" time="0.000008" file="test/plan.test.ts" line="51" assertions="1" />
+    </testsuite>
+    <testsuite name="ladder cursor" file="test/plan.test.ts" line="57" tests="1" assertions="4" failures="0" skipped="0" time="0" hostname="localhost">
+      <testcase name="scans the newest window, at or above the configured cursor, in pages" classname="ladder cursor" time="0.000021" file="test/plan.test.ts" line="58" assertions="4" />
+    </testsuite>
+    <testsuite name="budget + trigger time" file="test/plan.test.ts" line="70" tests="2" assertions="6" failures="0" skipped="0" time="0" hostname="localhost">
+      <testcase name="budget counts and refuses past the limit" classname="budget + trigger time" time="0.000031" file="test/plan.test.ts" line="71" assertions="2" />
+      <testcase name="anchor = scheduled time on a DON (scheduled &lt;= now), DON time when the scheduled time is in the future" classname="budget + trigger time" time="0.000028" file="test/plan.test.ts" line="78" assertions="4" />
+    </testsuite>
+    <testsuite name="cron schedules" file="test/plan.test.ts" line="106" tests="2" assertions="16" failures="0" skipped="0" time="0.011" hostname="localhost">
+      <testcase name="config.testnet.json: 02:00 local per station, hourly retries, fires &gt;= 30 min apart and TTL below the spacing" classname="cron schedules" time="0.007463" file="test/plan.test.ts" line="108" assertions="8" />
+      <testcase name="config.anvil.json: 02:00 local per station, hourly retries, fires &gt;= 30 min apart and TTL below the spacing" classname="cron schedules" time="0.004757" file="test/plan.test.ts" line="108" assertions="8" />
+    </testsuite>
+  </testsuite>
+  <testsuite name="test/workflow.test.ts" file="test/workflow.test.ts" tests="22" assertions="72" failures="0" skipped="0" time="0.057001" hostname="localhost">
+    <testsuite name="catch-up settlement" file="test/workflow.test.ts" line="22" tests="5" assertions="22" failures="0" skipped="0" time="0.024" hostname="localhost">
+      <testcase name="settles every due ladder, oldest first: RCSS+RJTT 10-05 and 10-06 (4 reports, 8 HTTP calls)" classname="catch-up settlement" time="0.019244" file="test/workflow.test.ts" line="248" assertions="14" />
+      <testcase name="report bytes: v1 encoding, attester signature, validUntil = scheduled trigger time + 1500 s" classname="catch-up settlement" time="0.002838" file="test/workflow.test.ts" line="248" assertions="2" />
+      <testcase name="validUntil comes from the cron schedule, not the DON clock, when the schedule is in the past (DON: +999 s here)" classname="catch-up settlement" time="0.001534" file="test/workflow.test.ts" line="248" assertions="1" />
+      <testcase name="without a scheduled time it falls back to DON time (runtime.now)" classname="catch-up settlement" time="0.001314" file="test/workflow.test.ts" line="248" assertions="1" />
+      <testcase name="simulator passes the NEXT fire time: validUntil stays &lt;= DON time + TTL and the 02:00 gate is not opened early" classname="catch-up settlement" time="0.001404" file="test/workflow.test.ts" line="248" assertions="4" />
+    </testsuite>
+    <testsuite name="the settlement rule inside the workflow" file="test/workflow.test.ts" line="107" tests="9" assertions="29" failures="0" skipped="0" time="0.012" hostname="localhost">
+      <testcase name="IEM and AWC disagree -&gt; PENDING (no report) before the deadline, VOID after it" classname="the settlement rule inside the workflow" time="0.00254" file="test/workflow.test.ts" line="248" assertions="7" />
+      <testcase name="AWC aged out (2026-05-04) -&gt; Ogimet fallback -&gt; SETTLED 25 by 2-of-3" classname="the settlement rule inside the workflow" time="0.001302" file="test/workflow.test.ts" line="248" assertions="2" />
+      <testcase name="IEM outage (2025-11-15: 1 partial report says 20, truth 26) -&gt; PENDING, then VOID only after 36 h" classname="the settlement rule inside the workflow" time="0.002857" file="test/workflow.test.ts" line="248" assertions="2" />
+      <testcase name="past the deadline with the fallback THROTTLED (seen live: Ogimet quota/timeout) -&gt; PENDING, not VOID" classname="the settlement rule inside the workflow" time="0.00184" file="test/workflow.test.ts" line="248" assertions="5" />
+      <testcase name="AWC past its 30-day retention (HTTP 400, as live) + IEM complete + Ogimet complete -&gt; SETTLED 25 by 2-of-3" classname="the settlement rule inside the workflow" time="0.001164" file="test/workflow.test.ts" line="248" assertions="2" />
+      <testcase name="the 46 h backstop voids even with a source still failing (before the 48 h on-chain stale window)" classname="the settlement rule inside the workflow" time="0.001488" file="test/workflow.test.ts" line="248" assertions="3" />
+      <testcase name="at most one Ogimet query per run: a second fallback day waits for the next hourly run" classname="the settlement rule inside the workflow" time="0.002253" file="test/workflow.test.ts" line="248" assertions="4" />
+      <testcase name="IEM HTTP 503 -&gt; treated as incomplete -&gt; AWC + Ogimet settle it" classname="the settlement rule inside the workflow" time="0.001198" file="test/workflow.test.ts" line="248" assertions="2" />
+      <testcase name="a thin day (IEM lagging, last report before 23:00) is not settled on AWC alone" classname="the settlement rule inside the workflow" time="0.001418" file="test/workflow.test.ts" line="248" assertions="2" />
+    </testsuite>
+    <testsuite name="quotas, safety and confirmation" file="test/workflow.test.ts" line="210" tests="8" assertions="21" failures="0" skipped="0" time="0.011" hostname="localhost">
+      <testcase name="resolver paused -&gt; no HTTP, no writes" classname="quotas, safety and confirmation" time="0.000105" file="test/workflow.test.ts" line="248" assertions="3" />
+      <testcase name="backlog of 8 due ladders: HTTP &lt;= 15, reports &lt;= 5, the rest deferred to the next hourly run" classname="quotas, safety and confirmation" time="0.007578" file="test/workflow.test.ts" line="248" assertions="6" />
+      <testcase name="never decides without the fallback: if Ogimet does not fit in the HTTP budget the day is deferred" classname="quotas, safety and confirmation" time="0.001349" file="test/workflow.test.ts" line="248" assertions="2" />
+      <testcase name="nothing before 02:00 local; unknown stations skipped" classname="quotas, safety and confirmation" time="0.000267" file="test/workflow.test.ts" line="248" assertions="2" />
+      <testcase name="forwarder swallows a rejected onReport: tx success but confirmation says not-accepted" classname="quotas, safety and confirmation" time="0.000796" file="test/workflow.test.ts" line="248" assertions="1" />
+      <testcase name="wrong attester key -&gt; the Resolver model rejects (InvalidAttestation)" classname="quotas, safety and confirmation" time="0.001033" file="test/workflow.test.ts" line="248" assertions="2" />
+      <testcase name="replay targets (no ladder) are settled only if the Resolver has no result" classname="quotas, safety and confirmation" time="0.001158" file="test/workflow.test.ts" line="248" assertions="2" />
+      <testcase name="summary stays tiny (CRE response limit 100 KB) and logs stay under 1 KB per line" classname="quotas, safety and confirmation" time="0.001892" file="test/workflow.test.ts" line="248" assertions="3" />
+    </testsuite>
+  </testsuite>
+  <testsuite name="test/config.test.ts" file="test/config.test.ts" tests="6" assertions="51" failures="0" skipped="0" time="0.001287" hostname="localhost">
+    <testsuite name="config files" file="test/config.test.ts" line="12" tests="3" assertions="38" failures="0" skipped="0" time="0" hostname="localhost">
+      <testcase name="config.testnet.json points at the live v1 deployment" classname="config files" time="0.000102" file="test/config.test.ts" line="14" assertions="16" />
+      <testcase name="config.anvil.json points at the live v1 deployment" classname="config files" time="0.000044" file="test/config.test.ts" line="14" assertions="16" />
+      <testcase name="rejects a void deadline at or beyond the on-chain STALE_WINDOW" classname="config files" time="0.000446" file="test/config.test.ts" line="34" assertions="6" />
+    </testsuite>
+    <testsuite name="ABI fragments match packages/abi (exported from forge out by the contracts agent)" file="test/config.test.ts" line="44" tests="3" assertions="13" failures="0" skipped="0" time="0" hostname="localhost">
+      <testcase name="Resolver" classname="ABI fragments match packages/abi (exported from forge out by the contracts agent)" time="0.000213" file="test/config.test.ts" line="55" assertions="6" />
+      <testcase name="CollateralVault" classname="ABI fragments match packages/abi (exported from forge out by the contracts agent)" time="0.000084" file="test/config.test.ts" line="56" assertions="6" />
+      <testcase name="addresses.json agrees" classname="ABI fragments match packages/abi (exported from forge out by the contracts agent)" time="0.00005" file="test/config.test.ts" line="57" assertions="1" />
+    </testsuite>
+  </testsuite>
+  <testsuite name="test/report.test.ts" file="test/report.test.ts" tests="8" assertions="28" failures="0" skipped="0" time="0.002286" hostname="localhost">
+    <testsuite name="attestation vector (script/attestation-vector.json)" file="test/report.test.ts" line="28" tests="3" assertions="11" failures="0" skipped="0" time="0" hostname="localhost">
+      <testcase name="typehash and domain separator match the contract" classname="attestation vector (script/attestation-vector.json)" time="0.000057" file="test/report.test.ts" line="34" assertions="3" />
+      <testcase name="digest, signature and full report bytes are identical" classname="attestation vector (script/attestation-vector.json)" time="0.000445" file="test/report.test.ts" line="41" assertions="5" />
+      <testcase name="the vector and the live deployment agree on the domain" classname="attestation vector (script/attestation-vector.json)" time="0.000037" file="test/report.test.ts" line="49" assertions="3" />
+    </testsuite>
+    <testsuite name="encoding rules" file="test/report.test.ts" line="58" tests="4" assertions="14" failures="0" skipped="0" time="0" hostname="localhost">
+      <testcase name="7 head words + 65-byte signature; viem recovers the attester; signature is low-s with v 27/28" classname="encoding rules" time="0.000935" file="test/report.test.ts" line="63" assertions="5" />
+      <testcase name="negative temperatures round-trip (int16)" classname="encoding rules" time="0.000184" file="test/report.test.ts" line="73" assertions="1" />
+      <testcase name="refuses malformed reports" classname="encoding rules" time="0.000173" file="test/report.test.ts" line="77" assertions="5" />
+      <testcase name="the domain binds chainId and resolver: a signature for another deployment does not verify here" classname="encoding rules" time="0.000197" file="test/report.test.ts" line="85" assertions="3" />
+    </testsuite>
+    <testsuite name="sourcesHash" file="test/report.test.ts" line="93" tests="1" assertions="3" failures="0" skipped="0" time="0" hostname="localhost">
+      <testcase name="canonical string is stable and documented" classname="sourcesHash" time="0.000033" file="test/report.test.ts" line="94" assertions="3" />
+    </testsuite>
+  </testsuite>
+  <testsuite name="test/settle-core.test.ts" file="test/settle-core.test.ts" tests="13" assertions="35" failures="0" skipped="0" time="0.001225" hostname="localhost">
+    <testsuite name="settle-core identity" file="test/settle-core.test.ts" line="16" tests="1" assertions="3" failures="0" skipped="0" time="0" hostname="localhost">
+      <testcase name="settle/settle-core.ts is byte-identical to the validated copy (packages/forecast, spikes/weather)" classname="settle-core identity" time="0.000155" file="test/settle-core.test.ts" line="17" assertions="3" />
+    </testsuite>
+    <testsuite name="METAR parsing and URLs" file="test/settle-core.test.ts" line="27" tests="2" assertions="9" failures="0" skipped="0" time="0" hostname="localhost">
+      <testcase name="temperature group" classname="METAR parsing and URLs" time="0.000022" file="test/settle-core.test.ts" line="28" assertions="6" />
+      <testcase name="exact settlement URLs" classname="METAR parsing and URLs" time="0.000018" file="test/settle-core.test.ts" line="36" assertions="3" />
+    </testsuite>
+    <testsuite name="golden days" file="test/settle-core.test.ts" line="45" tests="10" assertions="23" failures="0" skipped="0" time="0" hostname="localhost">
+      <testcase name="RCSS 2026-10-05: IEM and AWC complete and agree on 29" classname="golden days" time="0.000186" file="test/settle-core.test.ts" line="56" assertions="2" />
+      <testcase name="RJTT 2026-10-05: IEM and AWC complete and agree on 22" classname="golden days" time="0.00009" file="test/settle-core.test.ts" line="56" assertions="2" />
+      <testcase name="RCSS 2026-10-06: IEM and AWC complete and agree on 25" classname="golden days" time="0.000076" file="test/settle-core.test.ts" line="56" assertions="2" />
+      <testcase name="RJTT 2026-10-06: IEM and AWC complete and agree on 26" classname="golden days" time="0.000079" file="test/settle-core.test.ts" line="56" assertions="2" />
+      <testcase name="RCSS/RJTT 2026-10-06: Ogimet (fallback archive) agrees too" classname="golden days" time="0.000095" file="test/settle-core.test.ts" line="62" assertions="2" />
+      <testcase name="AWC window is inclusive of its end: the next-day 00:00 report is excluded (50, not 51)" classname="golden days" time="0.000063" file="test/settle-core.test.ts" line="66" assertions="1" />
+      <testcase name="RCSS 2026-05-04: AWC aged out -&gt; 2-of-3 IEM + Ogimet = 25" classname="golden days" time="0.000105" file="test/settle-core.test.ts" line="69" assertions="2" />
+      <testcase name="RCSS 2025-11-15 (IEM outage): one partial report says 20, truth 26 -&gt; PENDING, VOID only after the deadline" classname="golden days" time="0.000075" file="test/settle-core.test.ts" line="76" assertions="3" />
+      <testcase name="complete primaries that disagree never settle and do not consult the fallback" classname="golden days" time="0.000013" file="test/settle-core.test.ts" line="84" assertions="2" />
+      <testcase name="completeness rule: &gt;= 20 local hours AND last report &gt;= 23:00" classname="golden days" time="0.000063" file="test/settle-core.test.ts" line="89" assertions="5" />
+    </testsuite>
+  </testsuite>
+</testsuites>

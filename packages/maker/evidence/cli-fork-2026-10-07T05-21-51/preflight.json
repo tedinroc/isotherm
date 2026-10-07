@@ -1,0 +1,89 @@
+{
+ "chain": {
+  "rpc": "http://127.0.0.1:19152",
+  "client": "anvil/v1.8.5",
+  "anvil": true,
+  "block": 68886084,
+  "liveBroadcastAllowed": false
+ },
+ "deployment": {
+  "variant": "v1",
+  "source": "<repo>/deployments/testnet.json",
+  "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+  "resolver": "0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B",
+  "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+  "zapRegistry": true,
+  "vaultOwner": "0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11"
+ },
+ "roles": {
+  "maker": {
+   "key": "maker",
+   "address": "0xd572638F07829D1c3636400FB73CF34Ca6c7448a",
+   "mon": 100,
+   "ausd": 19702.891628
+  },
+  "operator": {
+   "key": "operator",
+   "address": "0x602dbf3937558B1d18d76315635fD5410089bd51",
+   "authorised": "operator",
+   "mon": 100,
+   "ausd": 0
+  },
+  "marketCreator": {
+   "key": "operator",
+   "address": "0x602dbf3937558B1d18d76315635fD5410089bd51",
+   "canCreateMarket": "yes (eth_call deployProxy from the market creator succeeds)"
+  }
+ },
+ "station": {
+  "icao": "RCSS",
+  "validated": true,
+  "date": "2026-10-08",
+  "dayEnd": 1791475200,
+  "closeLocal": "17:30",
+  "stopQuotingLocal": "17:20",
+  "basis": "warm (May-Oct) t99 over 368 complete days 2024-10-01..2026-09-30",
+  "closeTimeUtc": "2026-10-08T09:30:00.000Z"
+ },
+ "plan": {
+  "strikes": [
+   28,
+   29,
+   30,
+   31
+  ],
+  "polymarket": {
+   "url": "https://polymarket.com/event/highest-temperature-in-taipei-on-october-8-2026",
+   "ok": true,
+   "median": 29,
+   "ladder": {
+    "28": 0.949422,
+    "29": 0.848266,
+    "30": 0.467726,
+    "31": 0.092004
+   },
+   "volume": 2408
+  },
+  "v0": {
+   "mu": 29.84,
+   "lead": 1
+  },
+  "observedMax": null
+ },
+ "estimatedMon": {
+  "operator": 0.769,
+  "maker": 0.495,
+  "makerQuotingPerDayCap": 2
+ },
+ "budget": {
+  "day": "",
+  "spent": {},
+  "caps": {
+   "maker": 2,
+   "operator": 1.5,
+   "marketCreator": 1.5
+  }
+ },
+ "warnings": [],
+ "ready": true
+}

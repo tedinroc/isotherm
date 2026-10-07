@@ -1,0 +1,23 @@
+# live read-only checks (eth_call only) 2026-10-07T06:41:48Z
+block 68901956
+resolver owner()(address) = 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11
+resolver pendingOwner()(address) = 0x0000000000000000000000000000000000000000
+resolver attester()(address) = 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9
+resolver guardian()(address) = 0x30C8E371719Ff00577284dd9c10587Fa89357d50
+resolver forwarder()(address) = 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+resolver expectedWorkflowId()(bytes32) = 0x0000000000000000000000000000000000000000000000000000000000000000
+resolver paused()(bool) = false
+resolver challengeWindow()(uint256) = 900
+vault owner()(address) = 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11
+vault pendingOwner()(address) = 0x0000000000000000000000000000000000000000
+vault guardian()(address) = 0x30C8E371719Ff00577284dd9c10587Fa89357d50
+vault paused()(bool) = false
+vault ladderCount()(uint256) = 1
+MON 0x30C8E371719Ff00577284dd9c10587Fa89357d50 = 0.050000000000000000
+MON 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9 = 0.100000000000000000
+MON 0x602dbf3937558B1d18d76315635fD5410089bd51 = 0.123732774000000000
+MON 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11 = 0.849604444989663335
+MON 0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f = 0.599171502000000000
+resultOf(RCSS,20261008) = (0, 0, 0, 0, 0x0000000000000000000000000000000000000000000000000000000000000000)
+--- GET <former API host>/api/health
+{"ok":true,"version":"1.0.0","relayer":"0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f","chainId":10143,"head":"68902073","monBalance":"0.599171502","ausdFloat":"57000","dripEnabled":true,"dripReady":true,"dripMon":"0.15","dripAusd":"1000","relayEnabled":true,"relayModes":["authorization","permit"],"relayMaxAusd":"500","deployments":"deployments/testnet.json","vault":"0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39","zap":"0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0","resolver":"0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B","dripsTotal":3,"relayedTotal":0,"snapshotReceivedAt":"2026-10-07T06:41:53.120Z","statsUpdatedAt":"2026-10-07T06:41:47.443Z","statsLagBlocks":0}

@@ -1,0 +1,17 @@
+#!/bin/sh
+# mm 7.0.0 wired to the LOCAL stub backend (harness/stub-backend.mjs) + an anvil fork. TEST HARNESS ONLY:
+# every MetaMask backend URL points at 127.0.0.1, so nothing reaches MetaMask's servers with a fake token.
+H="$(cd "$(dirname "$0")/.." && pwd)"
+STUB="${STUB_URL:-http://127.0.0.1:19288}"
+export HOME="${MM_HOME:-$H/.mmhome-harness}"
+export MM_TELEMETRY_DISABLED=1 DO_NOT_TRACK=1
+export NODE_OPTIONS="--no-deprecation ${NODE_OPTIONS:-}"
+export npm_config_cache="$HOME/.npm-cache"
+for v in MM_AGENTIC_PROXY_HOST MM_OIDC_ISSUER MM_INTROSPECT_URL MM_SERVER_WALLET_BASE_URL \
+         MM_BRIDGE_API_BASE_URL MM_ACCOUNTS_API_BASE_URL MM_PRICE_API_BASE_URL MM_TOKEN_API_BASE_URL \
+         MM_PREDICT_RELAYER_URL MM_LIFI_EARN_API_BASE_URL MM_LIFI_QUOTE_API_BASE_URL; do
+  export "$v=$STUB"
+done
+export MM_INFURA_RPC_BASE_URL="${MM_INFURA_RPC_BASE_URL:-$STUB/gw-real}"
+export MM_INTROSPECT_URL="$STUB/introspect"
+exec node "$H/host/node_modules/@metamask/agent-wallet/dist/index.js" "$@"

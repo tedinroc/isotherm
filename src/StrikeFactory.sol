@@ -20,6 +20,7 @@ abstract contract StrikeFactory is Ownable2Step {
         uint32 date; // station-local date, yyyymmdd
         int16 strikeC; // YES wins iff official daily max (integer degC) >= strikeC
         uint64 closeTime; // minting closes at this UTC timestamp (<= end of the local day)
+        bool gated; // compliance flag: if set, only allowlisted recipients may mint (CollateralVault.setSeriesGated)
         // slot 1, 2
         OutcomeToken yes;
         OutcomeToken no;

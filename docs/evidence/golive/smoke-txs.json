@@ -1,0 +1,10 @@
+[
+ {"t":"2026-10-07T06:03:05Z","who":"relayer (API drip #1)","what":"drip MON leg 0.15 to dev wallet 0xd42A..D79c (AUSD leg failed: nonce bug, fixed)","hash":"0x7f60cdc252c5d892bf53f32922f91b54b5e097ee10a67e1d977dfa4c0d86644d"},
+ {"t":"2026-10-07T06:06:20Z","who":"taker2","what":"fund throwaway 0x2320..dCFe 0.1 MON (two-leg drip check)","hash":"0xafbf4949942577bfcfc11dda325da311dee5e482cffa265c21a1ae25305e3926"},
+ {"t":"2026-10-07T06:06:30Z","who":"relayer (API drip, fixed)","what":"drip MON leg 0.05 to throwaway","hash":"0x9571c94dff91e3f53bcabe58961309636df3bcfce33349f0f9a0ebeffa1ad763"},
+ {"t":"2026-10-07T06:06:31Z","who":"relayer (API drip, fixed)","what":"drip AUSD leg 1000 to throwaway","hash":"0x80aa25919d7545144f6643f3e2fa655e8b582754571562f331f3da95b16664d9"},
+ {"t":"2026-10-07T06:06:45Z","who":"throwaway","what":"return 0.147858 MON to relayer","hash":"0x6ffa3b83dd1ea2ecf9757cae3cdf28b7a5525e037df3bd537a9eda713e09033e"},
+ {"t":"2026-10-07T06:06:57Z","who":"relayer (API drip #2, web)","what":"drip AUSD 1000 to dev wallet","hash":"0x321177830b36b7c1b6dab0c48a8bb114098648cbd22f9155870da694c248a105"},
+ {"t":"2026-10-07T06:07:52Z","who":"dev wallet (web)","what":"approve AUSD -> Zap","hash":"0x42a7a13034f66ec3298b27666a3b5b69412aff396b52867ba372aff8aaed7063"},
+ {"t":"2026-10-07T06:07:54Z","who":"dev wallet (web)","what":"Zap.buyYes >=31C 10 AUSD -> 76.85 YES","hash":"0x065660cc7ef26ba073f0b96d69f0007fec514ff8d6cf34a52a45f23781d3125f"}
+]

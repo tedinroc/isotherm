@@ -1,0 +1,3 @@
+resolver.setAttester(<throwaway harness key 0xEF0Dad3Ff712a00d9Bf99a2cA2B022872F5e59db>) 0xcc6e1ce1b30d028946eb135188ee8f6d99172869507b7b60101fa7ab0df0080c
+fork clock moved from 2026-10-07T05:31:23.000Z to 2026-10-07T16:02:00.000Z (day end + 2 min)
+MockKeystoneForwarder.report 0xca1df9815ce7707d76470ffd54406aec1c61d11ce7d7a685db192d2a46d5ad76 status=success ReportProcessed.result=true resultOf=(status 1, tmaxC 28)

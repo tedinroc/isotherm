@@ -1,0 +1,19 @@
+
+[http] 200 3895B https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=RJTT&data=metar&year1=2026&month1=10&day1=6&year2=2026&month2=10&day2=7&tz=Asia/Tokyo&format=onlycomma&latlon=no&elev=no&missing=M&trace=T&direct=no&report_type=3&report_type=4
+[http] 200 21848B https://aviationweather.gov/api/data/metar?ids=RJTT&format=json&date=2026-10-06T15:00:00Z&hours=24
+[would write] RJTT 20261006 tmaxC=26 isVoid=false validUntil=1791354629 gasLimit=200000 | onReport eth_call with a throwaway key: InvalidAttestation (InvalidAttestation expected; anything else is a real problem)
+[http] 200 4408B https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=RCSS&data=metar&year1=2026&month1=10&day1=6&year2=2026&month2=10&day2=7&tz=Asia/Taipei&format=onlycomma&latlon=no&elev=no&missing=M&trace=T&direct=no&report_type=3&report_type=4
+[http] 200 23099B https://aviationweather.gov/api/data/metar?ids=RCSS&format=json&date=2026-10-06T16:00:00Z&hours=24
+[would write] RCSS 20261006 tmaxC=25 isVoid=false validUntil=1791354629 gasLimit=200000 | onReport eth_call with a throwaway key: InvalidAttestation (InvalidAttestation expected; anything else is a real problem)
+[USER LOG] RJTT 2026-10-06: SETTLED (primary sources agree) | IEM 26C n=48 h=24 last=23:30 complete | AWC 26C n=48 h=24 last=23:30 complete | OGIMET not fetched
+[USER LOG] RJTT 2026-10-06: isotherm-sources-v1|RJTT|20261006|SETTLED|IEM:26,48,24,23:30,1|AWC:26,48,24,23:30,1|OGIMET:- digest=0xb98d2dc830abd3abf826c7fba93f72567dc9505d5de98b76b72a777811261f14 validUntil=1791354629
+[USER LOG] RJTT 2026-10-06: tx 0x0000000000000000000000000000000000000000000000000000000000000000 -> not-accepted
+[USER LOG] RCSS 2026-10-06: SETTLED (primary sources agree) | IEM 25C n=44 h=24 last=23:30 complete | AWC 25C n=44 h=24 last=23:30 complete | OGIMET not fetched
+[USER LOG] RCSS 2026-10-06: isotherm-sources-v1|RCSS|20261006|SETTLED|IEM:25,44,24,23:30,1|AWC:25,44,24,23:30,1|OGIMET:- digest=0x73d0e2c29be7c9a70a496bee3d3520a4276a52b4b26f39cc0386a311376caf2f validUntil=1791354629
+[USER LOG] RCSS 2026-10-06: tx 0x0000000000000000000000000000000000000000000000000000000000000000 -> not-accepted
+[result] {"triggerTime":"2026-10-07T06:05:29.000Z","scheduledTime":"2026-10-07T06:05:29.000Z","resolver":"0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B","outcomes":[{"station":"RJTT","date":20261006,"action":"settled","reason":"primary sources agree","tmaxC":26,"sources":{"IEM":"26C n=48 h=24 last=23:30 complete","AWC":"26C n=48 h=24 last=23:30 complete","OGIMET":"not fetched"},"sourcesHash":"0xed23970c46c12f752f84edba816ff72c7d7095bcfdff835c018b12214dd65c52","validUntil":"1791354629","txHash":"0x0000000000000000000000000000000000000000000000000000000000000000","onchain":{"status":0,"tmaxC":0},"confirmed":"not-accepted"},{"station":"RCSS","date":20261006,"action":"settled","reason":"primary sources agree","tmaxC":25,"sources":{"IEM":"25C n=44 h=24 last=23:30 complete","AWC":"25C n=44 h=24 last=23:30 complete","OGIMET":"not fetched"},"sourcesHash":"0x619444ec96be70169a2af7a583f0a920f2b014341cc73d379ecd321727f95dc4","validUntil":"1791354629","txHash":"0x0000000000000000000000000000000000000000000000000000000000000000","onchain":{"status":0,"tmaxC":0},"confirmed":"not-accepted"}],"skipped":[],"budget":{"http":"4/15","evmReads":"7/15","reports":"2/5","ogimet":"0/1"},"ladders":{"count":1,"scanned":[0,1],"due":0}}
+[time] 12972 ms against https://testnet-rpc.monad.xyz
+
+ 1 pass
+ 0 fail
+Ran 1 test across 1 file. [13.04s]

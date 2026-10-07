@@ -1,0 +1,3 @@
+66897	0	xyz.isotherm.maker
+-	0	xyz.isotherm.roll
+-	0	xyz.isotherm.watchdog

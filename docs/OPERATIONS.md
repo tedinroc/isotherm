@@ -1,0 +1,153 @@
+# Isotherm — live operations (Monad testnet 10143)
+
+Last updated 2026-10-07 14:15 Taipei (06:15 UTC), at go-live. Everything here is **testnet only**. AUSD is free
+faucet test money. Nothing here touches Monad mainnet.
+
+## 1. What is live
+
+| Thing | Where |
+|---|---|
+| Phone web app (PWA) | https://isotherm.pages.dev (Cloudflare Pages project `isotherm`) |
+| API: drip, gasless-mint relayer, stats, snapshot | <former API host> (Worker `isotherm-api`, version `ed0ab137` deployed at go-live) |
+| Contracts (v1, Sourcify exact_match) | Resolver `0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B`, Vault/factory `0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39`, Zap `0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0`. Source of truth: `deployments/testnet.json` |
+| Market maker | launchd jobs on this Mac, running from the **runtime copy** `~/isotherm-live` (see section 3) |
+
+### The first live ladder: Taipei (RCSS), Thursday 2026-10-08
+
+- **Close.** Trading closes at **17:30 Taipei on Oct 8** (`closeTime` 1791451800). The maker stops quoting at **17:20**; its kill switch then cancels every order and withdraws the YES margin.
+- **Settlement.** The day ends at 00:00 Taipei on Oct 9. Settlement comes from the CRE workflow (section 6).
+- **Strikes.** They were chosen from the Polymarket median of 29 for `highest-temperature-in-taipei-on-october-8-2026`. At roll time Polymarket gave P(≥k) = 0.950 / 0.840 / 0.461 / 0.092.
+
+| Strike | seriesId | YES token | NO token | Kuru market (canonical in the Zap) |
+|---|---|---|---|---|
+| ≥28 °C | `0xff739cf1…121064` | `0x67A91138014c30bF5F28A900326971bD08Cd1bc4` | `0x49B7900D282E3f5262Dd712d2e66ff0166d7516D` | `0x171b4cdE3724f2F17576439e6de8c36142A7DBd7` |
+| ≥29 °C | `0xa69ae9d5…2cd3` | `0x9D4c41dcEE377A9C4bd1A8BE20A30f7598f595E8` | `0xc6D967B0e1434f8e81AFC63B9A7Ca719f80CD6f5` | `0x855eF3549eA5ACA5602EAefDD988950f16FCc6c2` |
+| ≥30 °C | `0xb020bdde…0064` | `0xe1f9a759a24e41Bd8A1c7755B8b054f1E7E6D284` | `0xD2b847F236F09f7376A28c617A80e4cFBfEB8687` | `0x702A7a87EDb18D733c624bF766020F3b66eb36DC` |
+| ≥31 °C | `0x28b6d44a…e658` | `0xCC10a4D4f9ec075Fa4299941a9c3F7A720E973F4` | `0x119CC5aC32500789e004B7A98919acA309C85532` | `0x4f5Ef4Bf256BDD88492C1e394B0D0f06A8265813` |
+
+Full seriesIds, every tx hash and the on-chain checks are in `docs/evidence/golive/` (`live-txs.tsv`, `books-verify-*.txt`).
+
+## 2. Keys and wallets (all in `~/.config/isotherm/`, chmod 600, never print them)
+
+| Role | Address | Pays for | MON after go-live |
+|---|---|---|---|
+| deployer = contract owner | `0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11` | owner calls; **funds the others** | 0.85 |
+| operator (also creates Kuru markets) | `0x602dbf3937558B1d18d76315635fD5410089bd51` | daily `createLadder` + 4 × `deployProxy` + 4 × `setCanonicalMarket` (≈0.78 MON) | 0.12 |
+| maker | `0xd572638F07829D1c3636400FB73CF34Ca6c7448a` | mint, margin, quotes, re-quotes, kill switch | 1.73 |
+| relayer (API Worker secret `RELAYER_KEY`) | `0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f` | drips (0.15 MON + 1,000 AUSD each), relayed gasless mints, AUSD float refills | 0.75 |
+| guardian | `0x30C8E371719Ff00577284dd9c10587Fa89357d50` | emergency `pause()` / `challenge()` | 0.05 |
+| attester (CRE secret) | `0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9` | signs settlement reports (no gas) | 0.10 |
+
+`~/.config/isotherm/maker.env` (chmod 600) holds `ISOTHERM_ALLOW_LIVE=1`, `ISOTHERM_API_URL` and `ISOTHERM_SNAPSHOT_TOKEN`.
+The launchd jobs load it through `scripts/run.sh`.
+
+## 3. The maker processes (launchd)
+
+**Why a runtime copy?** launchd-started `bash`/`node` cannot read anything under `~/Documents`. This is macOS
+privacy protection (TCC). The first attempt failed with exit 126, "Operation not permitted". So the maker runs from
+`~/isotherm-live`, a copy of:
+- `packages/maker` and `packages/forecast`;
+- `packages/abi` and `deployments/testnet.json`.
+
+`packages/maker/scripts/deploy-runtime.sh` makes that copy. `packages/maker/config/local.json` points **both** the
+repo copy and the runtime copy at the same state, lock and heartbeat files in `~/isotherm-live/packages/maker/var/`.
+That way the single-writer lock also stops a second writer started from the repo.
+
+| launchd label | What it does | Schedule |
+|---|---|---|
+| `xyz.isotherm.maker` | `loop`: every 60 s it quotes all active ladders around the Polymarket-implied fair, re-quotes when needed, posts the snapshot to the API, and runs queued roll requests. The kill-switch timer runs every 15 s. | KeepAlive (restarted if it dies; throttled to once per 60 s) |
+| `xyz.isotherm.roll` | `roll --station RCSS --date tomorrow --not-before 12:00`. While the loop runs, it queues the request for the loop. It is idempotent: an existing ladder costs 0 txs (verified at 06:14 UTC). | Every hour; acts from 12:00 Taipei |
+| `xyz.isotherm.watchdog` | `watchdog --verify`: an independent kill switch. It acts only if the loop's heartbeat is more than 3 min old. | Every 5 min |
+
+Plist files are in `~/Library/LaunchAgents/xyz.isotherm.{maker,roll,watchdog}.plist`. They load at user login, so
+**the Mac must stay awake and logged in**. `pmset` currently shows `sleep 0`.
+
+### Daily MON caps (config/local.json, metered per Taipei day)
+
+| Role | Cap (MON/day) | Reserve | Notes |
+|---|---|---|---|
+| maker | 0.8 | 0.2 (pulls only) | Includes the next day's roll (≈0.48). A re-quote costs 0.055–0.058 MON. Above the cap, non-urgent re-quotes are refused. An urgent one (fair crosses a resting quote) becomes a pull paid from the reserve. The kill switch is never refused. |
+| operator | 0.5 | 0.05 | `createLadder` 0.1225 + 4 × `setCanonicalMarket` 0.0138 |
+| marketCreator (operator key) | 0.8 | 0.05 | 4 × `deployProxy` 0.1496 |
+
+Every tx also needs balance ≥ gas limit × price + 0.03 MON, or it is refused **before** it is broadcast. An
+underfunded operator therefore makes the roll fail cleanly; it never half-builds a ladder.
+
+### Everyday commands (run from anywhere)
+
+```bash
+M=~/isotherm-live/packages/maker
+launchctl list | grep xyz.isotherm                    # PIDs + last exit codes
+bash $M/scripts/run.sh status                         # ladders, quotes, MON spent today (read-only)
+tail -f $M/var/log/maker.err.log                      # loop log (human readable); JSON lines in $M/var/maker.log
+cat $M/var/snapshot.json | head -50                   # what the API/web sees
+curl -s <former API host>/api/health   # snapshotReceivedAt, relayer MON, AUSD float
+```
+
+### Stop / restart
+
+| Goal | Command |
+|---|---|
+| Restart the loop (e.g. after a config change) | `launchctl kickstart -k gui/$(id -u)/xyz.isotherm.maker` |
+| Ship maker/forecast code or `deployments/testnet.json` changes to the runtime and restart | `packages/maker/scripts/deploy-runtime.sh --restart` (run from the repo) |
+| **Pull all quotes now** (cancel every maker order, pause re-quoting) | `launchctl bootout gui/$(id -u)/xyz.isotherm.maker` (stopping the loop leaves resting quotes up), then `bash $M/scripts/run.sh pull --all`. Restart with `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/xyz.isotherm.maker.plist`. Undo a pull with `run.sh resume --station RCSS --date 2026-10-08` while the loop is stopped. |
+| Stop everything (all 3 jobs) | `bash $M/launchd/install.sh --unload`. **Pull quotes first**, otherwise orders stay on the Kuru books. |
+| Start everything again | `packages/maker/scripts/deploy-runtime.sh --load` (needs `~/.config/isotherm/maker.env`) |
+| Roll a date by hand | `bash $M/scripts/run.sh roll --station RCSS --date 2026-10-09` (it queues to the loop if the loop runs) |
+
+### Emergency (contracts)
+
+- **Guardian pause** (it holds 0.05 MON; pause costs ≈30k gas). Pausing the Resolver blocks reports; pausing the vault blocks mints:
+  `cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B "pause()" --private-key "$(cat ~/.config/isotherm/guardian.key)" --rpc-url https://testnet-rpc.monad.xyz`
+  Use the same call with the vault address `0xae36…7B39`. Only the owner (deployer) can `unpause()`.
+- **Guardian challenge** of a wrong settlement, within 900 s of `resolvedAt`, turns the result to Void (0.5/0.5):
+  `challenge(bytes4 station, uint32 date, bytes32 reasonHash)`.
+- Anyone can call `voidIfStale(0x52435353, 20261008)` after `staleAt` (dayEnd + 48 h = 2026-10-11 00:00 Taipei) if nothing settled it.
+
+## 4. Funding routine (testnet MON is the bottleneck)
+
+A Taipei ladder day costs about:
+
+| Item | MON |
+|---|---|
+| operator roll | 0.78 |
+| maker roll | 0.48 |
+| re-quotes | up to the cap |
+| kill switch + YES withdraw at close | ≈0.26 |
+| drips | 0.16 each (0.15 sent + gas); faucet AUSD refills cost ≈0.013 per 10k |
+
+The human faucet gives about 5 MON/day.
+
+1. Claim testnet MON to the deployer `0xb855…5c11`. Alternatively, claim directly to the role address that is short.
+2. Send from the deployer, one transfer at a time and ≥5 blocks apart. Monad's reserve-balance rule allows an account under 10 MON to send value only in an "emptying" tx, which needs no tx of its own in the previous 3 blocks. The script handles the spacing and checks every receipt:
+   ```bash
+   cd docs/evidence/golive && node fund.mjs operator=0.8 maker=0.8 relayer=1.0      # add --dry to preview
+   ```
+3. **Before 12:00 Taipei on Oct 8** the operator needs about ≥0.85 MON, or the automatic roll of the **Oct 9** ladder is refused. It holds 0.12 now. It retries every hour until funded, and nothing is broadcast while it is short.
+
+## 5. API and web
+
+- **API deploy** (wrangler 3.114 from `apps/api/node_modules`): `cd apps/api && XDG_CONFIG_HOME=<wrangler config dir> npm run deploy`.
+  - Secrets `RELAYER_KEY`, `SNAPSHOT_TOKEN` and `ADMIN_TOKEN` are already set (`npx wrangler secret list`).
+  - Knobs are in `apps/api/wrangler.toml [vars]`: `DRIP_MON`, `DRIP_DAILY_CAP`, `DRIP_ENABLED="0"` to pause drips, `RELAYER_MIN_MON`, `AUSD_FLOAT_TARGET`, `TEAM_ADDRESSES`.
+  - Live logs: `XDG_CONFIG_HOME=<wrangler config dir> npx wrangler tail isotherm-api`.
+- **Go-live change to the API.** The drip's second tx (the AUSD leg) re-read `eth_getTransactionCount('pending')`. Monad's RPC does not count a just-submitted tx there, so the AUSD leg reused the MON tx's nonce and was rejected ("Missing or invalid parameters"). Because nothing was recorded, a retry could also send MON again.
+  - The fix: nonces are counted locally, and if MON went out but AUSD failed, the drip is recorded as AUSD-pending so a retry sends only AUSD.
+  - Verified live: a two-leg drip in 1.3 s, `docs/evidence/golive/drip-two-leg-after-fix.json`.
+- **Web deploy:** `cd apps/web && npm run build && XDG_CONFIG_HOME=<wrangler config dir> npx wrangler@3 pages deploy dist --project-name isotherm --branch main`. The build reads addresses from `deployments/testnet.json`.
+- **Smoke-test wallet.** The go-live smoke test used dev wallet `0xd42A0b394F09df88BB2120D0973569b845f2D79c`, stored in the in-app browser. It is listed in `TEAM_ADDRESSES`, so the public "trading wallets" counter does not count our own test. `/api/stats` classifies its fill as `team`.
+
+## 6. Settlement (not run by the maker)
+
+The Oct 8 ladder is settled by the CRE workflow in `packages/cre-workflow`, through the MockKeystoneForwarder plus the attester signature.
+- **When:** it acts from 02:00 station-local on Oct 9 and retries hourly. It voids itself after 36 h of disagreement.
+- **Status at go-live:** this step did **not** install or run it; that is the CRE workstream's job.
+- **Warning:** its launchd job (`com.isotherm.cre-settle`) runs `scripts/run-official.sh` from `~/Documents/...`. It will hit the same macOS privacy block (exit 126) as the maker did. Run it from a copy outside `~/Documents`, or give `/bin/bash` Full Disk Access in System Settings (a human decision).
+- **Fallback:** if nothing settles, `voidIfStale` pays 0.5/0.5 after 2026-10-11 00:00 Taipei.
+
+## 7. Known limits
+
+- One bid and one ask per strike; quotes follow the Polymarket-implied fair. Our v0 model is only a guardrail (it loses to Polymarket in backtest).
+- No automatic redeem for the maker after settlement; use `vault.redeem` / `redeemSet` by hand.
+- Tokyo (RJTT) is supported in code but not scheduled (MON budget).
+- Kuru books keep matching after `closeTime` for anyone who trades the book directly; the Zap refuses. That is why the kill switch must have MON at 17:20.

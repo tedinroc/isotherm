@@ -1,0 +1,9 @@
+$ mm kuru limit 0x9567594d6d19AfDfBe1dF99d5a7c3191A4E038C2 --side sell --price 0.1305 --size 5 --json
+{
+  "ok": false,
+  "error": {
+    "code": "KURU_OFF_TICK",
+    "message": "price 0.1305 is not on the 0.0010 tick.",
+    "hint": "Nearest valid prices: 0.1300 or 0.1310."
+  }
+}

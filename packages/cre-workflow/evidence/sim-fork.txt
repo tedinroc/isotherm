@@ -1,0 +1,64 @@
+# 2026-10-07T06:05:16Z DEV HARNESS: spike-built cre v1.37.0 with ONLY the client-side login check removed (not the official binary)
+# anvil fork of live Monad testnet at block 68894704, pid 66375, port 19311
+# fork: Resolver.attester -> 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720 (public test key; real attester key not used)
+# replay targets: RCSS:2026-10-06,RJTT:2026-10-06
+## simulate run 1
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...
+✓ Workflow compiled
+✓ Simulation limits enabled
+  HTTP: req=120kb resp=250kb timeout=10s | ConfHTTP: req=125kb resp=500kb timeout=1m30s | Consensus obs=25kb | ChainWrite evm_report=50kb evm_gas=10000000 solana_report=265b solana_cu=300000 | WASM binary=100mb compressed=20mb
+  Binary hash: 413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938
+  Config hash: 67236dc03360c80714cb1397a5a143440c3673cd35f2cd0fa5d9cdda3db65053
+2026-10-06T23:05:19Z [SIMULATION] Simulator Initialized
+
+2026-10-06T23:05:19Z [SIMULATION] Running trigger trigger=cron-trigger@1.0.0
+2026-10-06T23:05:23Z [USER LOG] RJTT 2026-10-06: SETTLED (primary sources agree) | IEM 26C n=48 h=24 last=23:30 complete | AWC 26C n=48 h=24 last=23:30 complete | OGIMET not fetched
+2026-10-06T23:05:23Z [USER LOG] RJTT 2026-10-06: isotherm-sources-v1|RJTT|20261006|SETTLED|IEM:26,48,24,23:30,1|AWC:26,48,24,23:30,1|OGIMET:- digest=0xb87a369cad93420ce0f175902e2c7e194416d462ce9862258f2bb02865424055 validUntil=1791354619
+2026-10-06T23:05:24Z [USER LOG] RJTT 2026-10-06: tx 0xc4e5d98f9a5dc579e0a17245465970edc41b8a021a068e1b84b64f6bd862709c -> resolved
+2026-10-06T23:05:25Z [USER LOG] RCSS 2026-10-06: SETTLED (primary sources agree) | IEM 25C n=44 h=24 last=23:30 complete | AWC 25C n=44 h=24 last=23:30 complete | OGIMET not fetched
+2026-10-06T23:05:25Z [USER LOG] RCSS 2026-10-06: isotherm-sources-v1|RCSS|20261006|SETTLED|IEM:25,44,24,23:30,1|AWC:25,44,24,23:30,1|OGIMET:- digest=0x67182f22bebe61ec1b60287d128f2ff4801b5594f602f819562b707a7f8aa7c4 validUntil=1791354619
+2026-10-06T23:05:26Z [USER LOG] RCSS 2026-10-06: tx 0xa8ea282ca654a4ba1f001658b2ee97bf9828181534cb759984b970b1d33b4e2a -> resolved
+
+✓ Workflow Simulation Result:
+"{\"triggerTime\":\"2026-10-07T06:05:19.000Z\",\"scheduledTime\":\"2026-10-07T06:30:00.000Z\",\"resolver\":\"0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B\",\"outcomes\":[{\"station\":\"RJTT\",\"date\":20261006,\"action\":\"settled\",\"reason\":\"primary sources agree\",\"tmaxC\":26,\"sources\":{\"IEM\":\"26C n=48 h=24 last=23:30 complete\",\"AWC\":\"26C n=48 h=24 last=23:30 complete\",\"OGIMET\":\"not fetched\"},\"sourcesHash\":\"0xed23970c46c12f752f84edba816ff72c7d7095bcfdff835c018b12214dd65c52\",\"validUntil\":\"1791354619\",\"txHash\":\"0xc4e5d98f9a5dc579e0a17245465970edc41b8a021a068e1b84b64f6bd862709c\",\"onchain\":{\"status\":1,\"tmaxC\":26},\"confirmed\":\"resolved\"},{\"station\":\"RCSS\",\"date\":20261006,\"action\":\"settled\",\"reason\":\"primary sources agree\",\"tmaxC\":25,\"sources\":{\"IEM\":\"25C n=44 h=24 last=23:30 complete\",\"AWC\":\"25C n=44 h=24 last=23:30 complete\",\"OGIMET\":\"not fetched\"},\"sourcesHash\":\"0x619444ec96be70169a2af7a583f0a920f2b014341cc73d379ecd321727f95dc4\",\"validUntil\":\"1791354619\",\"txHash\":\"0xa8ea282ca654a4ba1f001658b2ee97bf9828181534cb759984b970b1d33b4e2a\",\"onchain\":{\"status\":1,\"tmaxC\":25},\"confirmed\":\"resolved\"}],\"skipped\":[],\"budget\":{\"http\":\"4/15\",\"evmReads\":\"7/15\",\"reports\":\"2/5\",\"ogimet\":\"0/1\"},\"ladders\":{\"count\":1,\"scanned\":[0,1],\"due\":0}}"
+
+2026-10-06T23:05:26Z [SIMULATION] Execution finished signal received
+2026-10-06T23:05:26Z [SIMULATION] Skipping WorkflowEngineV2
+
+
+resultOf(RCSS, 20261006) = (1, 25, 1791353125 [1.791e9], 1791354025 [1.791e9], 0x619444ec96be70169a2af7a583f0a920f2b014341cc73d379ecd321727f95dc4)
+resultOf(RJTT, 20261006) = (1, 26, 1791353123 [1.791e9], 1791354023 [1.791e9], 0xed23970c46c12f752f84edba816ff72c7d7095bcfdff835c018b12214dd65c52)
+## simulate run 2
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...
+✓ Workflow compiled
+✓ Simulation limits enabled
+  HTTP: req=120kb resp=250kb timeout=10s | ConfHTTP: req=125kb resp=500kb timeout=1m30s | Consensus obs=25kb | ChainWrite evm_report=50kb evm_gas=10000000 solana_report=265b solana_cu=300000 | WASM binary=100mb compressed=20mb
+  Binary hash: 413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938
+  Config hash: 67236dc03360c80714cb1397a5a143440c3673cd35f2cd0fa5d9cdda3db65053
+2026-10-06T23:05:29Z [SIMULATION] Simulator Initialized
+
+2026-10-06T23:05:29Z [SIMULATION] Running trigger trigger=cron-trigger@1.0.0
+2026-10-06T23:05:29Z [USER LOG] nothing to settle (ladders=1, due=0, skipped=2)
+
+✓ Workflow Simulation Result:
+"{\"triggerTime\":\"2026-10-07T06:05:29.000Z\",\"scheduledTime\":\"2026-10-07T06:30:00.000Z\",\"resolver\":\"0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B\",\"outcomes\":[],\"skipped\":[{\"icao\":\"RCSS\",\"date\":20261006,\"reason\":\"already-resolved\"},{\"icao\":\"RJTT\",\"date\":20261006,\"reason\":\"already-resolved\"}],\"budget\":{\"http\":\"0/15\",\"evmReads\":\"5/15\",\"reports\":\"0/5\",\"ogimet\":\"0/1\"},\"ladders\":{\"count\":1,\"scanned\":[0,1],\"due\":0}}"
+
+2026-10-06T23:05:29Z [SIMULATION] Execution finished signal received
+2026-10-06T23:05:29Z [SIMULATION] Skipping WorkflowEngineV2
+
+
+resultOf(RCSS, 20261006) = (1, 25, 1791353125 [1.791e9], 1791354025 [1.791e9], 0x619444ec96be70169a2af7a583f0a920f2b014341cc73d379ecd321727f95dc4)
+resultOf(RJTT, 20261006) = (1, 26, 1791353123 [1.791e9], 1791354023 [1.791e9], 0xed23970c46c12f752f84edba816ff72c7d7095bcfdff835c018b12214dd65c52)
+## confirm the simulator's report txs from their receipts (ReportProcessed.result + LadderResolved)
+0xc4e5d98f9a5dc579e0a17245465970edc41b8a021a068e1b84b64f6bd862709c block 68894786 status=success gasUsed=156383 ReportProcessed.result=true LadderResolved: RJTT 20261006 status=Settled tmaxC=26 OK
+0xa8ea282ca654a4ba1f001658b2ee97bf9828181534cb759984b970b1d33b4e2a block 68894787 status=success gasUsed=139407 ReportProcessed.result=true LadderResolved: RCSS 20261006 status=Settled tmaxC=25 OK
+confirm exit 0
+## replay the first report tx's exact calldata -> the forwarder tx succeeds but the report is NOT accepted
+0x4b257d7e437b8829ca508493ff379586f9231bc169fbba1ad420e048828984d3 block 68894948 status=success gasUsed=98865 ReportProcessed.result=false LadderResolved: - NOT ACCEPTED
+confirm exit 4 (4 = not accepted, as expected for a replay)

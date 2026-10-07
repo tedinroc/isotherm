@@ -1,0 +1,44 @@
+# 2026-10-07T06:09:46Z harness runner on an anvil fork of live testnet, block 68895598 (pid 67020)
+## C. the LIVE attester key on a non-live RPC is refused
+[2026-10-07T06:09:46Z] mode=harness rpc=http://127.0.0.1:19312 cre-login=no broadcast=1
+[2026-10-07T06:09:47Z] REFUSED: the LIVE attester key on a non-live RPC (http://127.0.0.1:19312). Its signatures would be valid on live testnet.
+refused as designed (exit 2)
+## A. replay RCSS + RJTT 2026-10-06 (live METAR data) through the harness
+[2026-10-07T06:09:49Z] mode=harness rpc=http://127.0.0.1:19312 cre-login=no broadcast=1
+[2026-10-07T06:09:49Z] attester 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720 == Resolver.attester(); tx sender 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 has 10000.000000000000000000 MON; vault ladders 1
+[2026-10-07T06:09:49Z] HARNESS (fallback, not the CRE engine): settle/e2e/harness-run.ts
+e2e/harness-run.ts:
+[http] 200 3895B https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=RJTT&data=metar&year1=2026&month1=10&day1=6&year2=2026&month2=10&day2=7&tz=Asia/Tokyo&format=onlycomma&latlon=no&elev=no&missing=M&trace=T&direct=no&report_type=3&report_type=4
+[http] 200 21848B https://aviationweather.gov/api/data/metar?ids=RJTT&format=json&date=2026-10-06T15:00:00Z&hours=24
+[sent] RJTT 20261006 tmaxC=26 isVoid=false tx 0xe4458122d56e086a271668d112c01d264fbd6ffdd68e7bf850483c09094f45bb status=success gasUsed=149875/200000 1073 ms
+[http] 200 4408B https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=RCSS&data=metar&year1=2026&month1=10&day1=6&year2=2026&month2=10&day2=7&tz=Asia/Taipei&format=onlycomma&latlon=no&elev=no&missing=M&trace=T&direct=no&report_type=3&report_type=4
+[http] 200 23099B https://aviationweather.gov/api/data/metar?ids=RCSS&format=json&date=2026-10-06T16:00:00Z&hours=24
+[sent] RCSS 20261006 tmaxC=25 isVoid=false tx 0xf2da7d6848f4804407536aff3f73777f407d4c67dfc5b361a8f5a9a2f243a1e0 status=success gasUsed=149875/200000 297 ms
+[USER LOG] RJTT 2026-10-06: SETTLED (primary sources agree) | IEM 26C n=48 h=24 last=23:30 complete | AWC 26C n=48 h=24 last=23:30 complete | OGIMET not fetched
+[USER LOG] RJTT 2026-10-06: isotherm-sources-v1|RJTT|20261006|SETTLED|IEM:26,48,24,23:30,1|AWC:26,48,24,23:30,1|OGIMET:- digest=0xbd9c8a220041eb8d2769b8f65b88e007181c041230c04f2e262e0df32925f17e validUntil=1791354890
+[USER LOG] RJTT 2026-10-06: tx 0xe4458122d56e086a271668d112c01d264fbd6ffdd68e7bf850483c09094f45bb -> resolved
+[USER LOG] RCSS 2026-10-06: SETTLED (primary sources agree) | IEM 25C n=44 h=24 last=23:30 complete | AWC 25C n=44 h=24 last=23:30 complete | OGIMET not fetched
+[USER LOG] RCSS 2026-10-06: isotherm-sources-v1|RCSS|20261006|SETTLED|IEM:25,44,24,23:30,1|AWC:25,44,24,23:30,1|OGIMET:- digest=0xf8ce43dcc24b72e330ebf7c2645538c27924a25fcbf338101746aea772938d48 validUntil=1791354890
+[USER LOG] RCSS 2026-10-06: tx 0xf2da7d6848f4804407536aff3f73777f407d4c67dfc5b361a8f5a9a2f243a1e0 -> resolved
+[result] {"triggerTime":"2026-10-07T06:09:50.000Z","scheduledTime":"2026-10-07T06:09:50.000Z","resolver":"0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B","outcomes":[{"station":"RJTT","date":20261006,"action":"settled","reason":"primary sources agree","tmaxC":26,"sources":{"IEM":"26C n=48 h=24 last=23:30 complete","AWC":"26C n=48 h=24 last=23:30 complete","OGIMET":"not fetched"},"sourcesHash":"0xed23970c46c12f752f84edba816ff72c7d7095bcfdff835c018b12214dd65c52","validUntil":"1791354890","txHash":"0xe4458122d56e086a271668d112c01d264fbd6ffdd68e7bf850483c09094f45bb","onchain":{"status":1,"tmaxC":26},"confirmed":"resolved"},{"station":"RCSS","date":20261006,"action":"settled","reason":"primary sources agree","tmaxC":25,"sources":{"IEM":"25C n=44 h=24 last=23:30 complete","AWC":"25C n=44 h=24 last=23:30 complete","OGIMET":"not fetched"},"sourcesHash":"0x619444ec96be70169a2af7a583f0a920f2b014341cc73d379ecd321727f95dc4","validUntil":"1791354890","txHash":"0xf2da7d6848f4804407536aff3f73777f407d4c67dfc5b361a8f5a9a2f243a1e0","onchain":{"status":1,"tmaxC":25},"confirmed":"resolved"}],"skipped":[],"budget":{"http":"4/15","evmReads":"7/15","reports":"2/5","ogimet":"0/1"},"ladders":{"count":1,"scanned":[0,1],"due":0}}
+ 1 pass
+ 0 fail
+Ran 1 test across 1 file. [7.88s]
+0xe4458122d56e086a271668d112c01d264fbd6ffdd68e7bf850483c09094f45bb block 68895680 status=success gasUsed=149875 ReportProcessed.result=true LadderResolved: RJTT 20261006 status=Settled tmaxC=26 OK
+0xf2da7d6848f4804407536aff3f73777f407d4c67dfc5b361a8f5a9a2f243a1e0 block 68895681 status=success gasUsed=149875 ReportProcessed.result=true LadderResolved: RCSS 20261006 status=Settled tmaxC=25 OK
+[2026-10-07T06:09:57Z] done; log: var/fork-harness/logs/run-20261007T060948Z.log
+## B. 02:05 Taipei on 2026-10-09: the LIVE maker ladder RCSS 2026-10-08 is due, but its data does not exist yet
+[2026-10-07T06:09:58Z] mode=harness rpc=http://127.0.0.1:19312 cre-login=no broadcast=1
+[2026-10-07T06:09:58Z] attester 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720 == Resolver.attester(); tx sender 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 has 9999.999599340823000000 MON; vault ladders 1
+[2026-10-07T06:09:58Z] HARNESS (fallback, not the CRE engine): settle/e2e/harness-run.ts
+e2e/harness-run.ts:
+[http] 200 20B https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=RCSS&data=metar&year1=2026&month1=10&day1=8&year2=2026&month2=10&day2=9&tz=Asia/Taipei&format=onlycomma&latlon=no&elev=no&missing=M&trace=T&direct=no&report_type=3&report_type=4
+[http] 204 0B https://aviationweather.gov/api/data/metar?ids=RCSS&format=json&date=2026-10-08T16:00:00Z&hours=24
+[http] 200 0B https://www.ogimet.com/cgi-bin/getmetar?icao=RCSS&begin=202610071600&end=202610081559
+[USER LOG] RCSS 2026-10-08: PENDING (insufficient complete sources) | IEM -C n=0 h=0 last=- incomplete | AWC -C n=0 h=0 last=- incomplete | OGIMET UNAVAILABLE (error/timeout/throttle)
+[result] {"triggerTime":"2026-10-08T18:06:20.000Z","scheduledTime":"2026-10-08T18:06:20.000Z","resolver":"0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B","outcomes":[{"station":"RCSS","date":20261008,"action":"pending","reason":"insufficient complete sources","sources":{"IEM":"-C n=0 h=0 last=- incomplete","AWC":"-C n=0 h=0 last=- incomplete","OGIMET":"UNAVAILABLE (error/timeout/throttle)"}}],"skipped":[],"budget":{"http":"3/15","evmReads":"3/15","reports":"0/5","ogimet":"1/1"},"ladders":{"count":1,"scanned":[0,1],"due":1}}
+ 1 pass
+ 0 fail
+Ran 1 test across 1 file. [5.33s]
+[2026-10-07T06:10:04Z] done; log: var/fork-harness/logs/run-20261007T060957Z.log
+resultOf(RCSS,20261008) = (0, 0, 0, 0, 0x0000000000000000000000000000000000000000000000000000000000000000)

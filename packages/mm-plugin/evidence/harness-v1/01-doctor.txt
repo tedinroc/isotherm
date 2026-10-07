@@ -1,0 +1,100 @@
+$ mm weather doctor --json
+{
+  "ok": true,
+  "data": {
+    "plugin": "mm-plugin-isotherm@0.1.0",
+    "chainId": 10143,
+    "ok": true,
+    "checks": [
+      {
+        "check": "mm customEvmChains[10143] (executor nonce/gas/fees)",
+        "ok": true,
+        "detail": "rpcTarget http://127.0.0.1:19251"
+      },
+      {
+        "check": "mm gateway ctx.publicClient(10143)",
+        "ok": false,
+        "detail": "HTTP request failed.",
+        "fix": "optional: the plugin reads through its own RPC fallback. To fix the gateway for other commands too, run scripts/rpc-shim.mjs from this package and export MM_INFURA_RPC_BASE_URL=http://127.0.0.1:18790"
+      },
+      {
+        "check": "read RPC",
+        "ok": true,
+        "detail": "mm-customEvmChains http://127.0.0.1:19251 block 68888686"
+      },
+      {
+        "check": "contract CollateralVault",
+        "ok": true,
+        "detail": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39"
+      },
+      {
+        "check": "contract Resolver",
+        "ok": true,
+        "detail": "0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B"
+      },
+      {
+        "check": "contract IsothermZap",
+        "ok": true,
+        "detail": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0"
+      },
+      {
+        "check": "contract AUSD",
+        "ok": true,
+        "detail": "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC"
+      },
+      {
+        "check": "contract KuruRouter",
+        "ok": true,
+        "detail": "0x7EFbE105Ca7415dE98F96622173458ac1c054630"
+      },
+      {
+        "check": "contract Multicall3",
+        "ok": true,
+        "detail": "0xcA11bde05977b3631167028862bE2a173976CA11"
+      },
+      {
+        "check": "canonical market registry",
+        "ok": true,
+        "detail": "on-chain 0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0.canonicalMarket(seriesId)"
+      },
+      {
+        "check": "wallet MON for gas",
+        "ok": true,
+        "detail": "10.000000000000000000 MON (a Zap trade bills ~0.06-0.10 MON at 102 gwei because Monad bills the gas limit)"
+      },
+      {
+        "check": "wallet AUSD",
+        "ok": true,
+        "detail": "2000.000000 AUSD"
+      }
+    ],
+    "wallet": {
+      "address": "0x9F6AF0b5E8091B867500D9E2a3240Bd92259a543",
+      "source": "mm-wallet-state",
+      "MON": "10.000000000000000000",
+      "AUSD": "2000.000000",
+      "ausdAllowanceToZap": "0.000000"
+    },
+    "guardModeAllowlist": {
+      "note": "If your mm wallet runs Guard Mode with an allowlist, these are the contracts the plugin sends transactions to.",
+      "targets": [
+        "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+        "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+        "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC",
+        "0xd029C2D98ff85D8F64799017fE00a59B1159CE02",
+        "each strike's Kuru market (weather markets), for kuru limit/cancel",
+        "each outcome token (approve to the Zap when selling)"
+      ]
+    },
+    "publicRpc": "https://testnet-rpc.monad.xyz",
+    "deployment": "env:<repo>/packages/mm-plugin/harness/fork-deployments-v1.json",
+    "abiSet": "v1",
+    "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+    "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+    "rpcSource": "mm-customEvmChains",
+    "rpcUrl": "http://127.0.0.1:19251",
+    "deploymentSource": "<repo>/packages/mm-plugin/harness/fork-deployments-v1.json",
+    "deploymentWarnings": []
+  },
+  "hint": "ready to trade on Monad testnet"
+}

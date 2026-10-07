@@ -1,0 +1,125 @@
+{
+ "network": "monad-testnet",
+ "chainId": 10143,
+ "abiSet": "feasibility",
+ "note": "FORK ONLY (anvil http://127.0.0.1:19251, fork block 68887500). Ladders/books created by harness/fork-scenario.mjs.",
+ "contracts": {
+  "Resolver": "0x1c7a8a5df93f7f33c778c2163d8887e9249475f1",
+  "CollateralVault": "0xc83fe722eb5bd29a0355c090f14ccb0605153713",
+  "IsothermZap": "0x1b1d91ebd1590c7814aedcae66ac6ded492c792e"
+ },
+ "external": {
+  "AUSD": "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC",
+  "AUSDFaucet": "0xd236c18D274E54FAccC3dd9DDA4b27965a73ee6C",
+  "KuruRouter": "0x7EFbE105Ca7415dE98F96622173458ac1c054630",
+  "KuruMarginAccount": "0xd029C2D98ff85D8F64799017fE00a59B1159CE02",
+  "Multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11"
+ },
+ "markets": {
+  "0xcb6bf583d9761e49568b11bfc8b69b52f73e24a11fb516c618cb188b2241a9b3": "0x900793BD5091380fe14F2714A7B82de8eA314beB",
+  "0x4f3b3913c0a68e364f4f362cac535f96dd16388e84c4e79fca0eab74aa7311ef": "0x0a75Aff5899A42218e03533d51866C9e0d0B5196",
+  "0x763a7e139a42e88307545caa602932f64a10c69293634d118cd057dfa1259d48": "0xe83dD9a3b5D7f4638b0D1bb7762e505D71F6224b",
+  "0xb9146525d6cd50858bcbdc89d7d4097da068d5292b0885100c6084464b9780be": "0x1bb1aD1D685d043c74a32ca3CaA8518e4bAca417",
+  "0xa200379e31da17cb68427cc2874c316b927926de5612af0c78b39ae231c8de89": "0x2D1C927183384C47173fBD510E8651FB8210971f",
+  "0x0cdce740abc765b64d0fd9f4edbc3e9f83336e84eaa98659eca0064634b53646": "0x535DD1F9E57B927BF4932Ad16378638858F2B7C8",
+  "0x87baeb9b239bda5f152464813fd7e26526541d0f5301bc11d04d65e6e53b45b4": "0x9bD134A062B9eD7f4b8bA3a48e27146156B3C41d",
+  "0x95ce14cb3e443b080f3aaa92b6dc40f72ce20e50cd996cf7ab624c6f5e0799ba": "0x8F6db84be9589665e6a23eCaa02599693535693c",
+  "0xff739cf13e58d95b7a376dde35a7a32b86774508c14e7d3d6c4d47b93c121064": "0x90a5e8B152CeD36558f4006A6e3fB0412CDcA419",
+  "0xa69ae9d5af5141648df6a03de55f960d141e84ccda321efe1c7bb7882cf02cd3": "0x11b8C955c46EF8C59862Cf35591CC0A325031C5d",
+  "0xb020bdde35a3212b69e836e2f78f56b4560e75bc74eb7a6b790342f58de00064": "0x2a221d4614c4408b00444B943be964cA44C6a44a",
+  "0x28b6d44a3bda37f45860480b4dc43046c744f49215a6f12151cbd8ad72a8e658": "0x9567594d6d19AfDfBe1dF99d5a7c3191A4E038C2"
+ },
+ "ladders": [
+  {
+   "date": 20261007,
+   "series": [
+    {
+     "seriesId": "0xb9146525d6cd50858bcbdc89d7d4097da068d5292b0885100c6084464b9780be",
+     "strikeC": 27,
+     "yes": "0x65E66A7bDB4e752e75f35bC172bA0291592EFC64",
+     "no": "0x99548d68213C98175e3Ebf8270Be70663f87B8A8",
+     "market": "0x1bb1aD1D685d043c74a32ca3CaA8518e4bAca417",
+     "fairValue": 0.98,
+     "fairSource": "polymarket-implied"
+    },
+    {
+     "seriesId": "0xa200379e31da17cb68427cc2874c316b927926de5612af0c78b39ae231c8de89",
+     "strikeC": 28,
+     "yes": "0xe83BFfAe54E7846aac69C329a2c82b1892282CC7",
+     "no": "0x27fdDedf10439ccc8b97122c42E93a6C8b836f02",
+     "market": "0x2D1C927183384C47173fBD510E8651FB8210971f",
+     "fairValue": 0.98,
+     "fairSource": "polymarket-implied"
+    },
+    {
+     "seriesId": "0x0cdce740abc765b64d0fd9f4edbc3e9f83336e84eaa98659eca0064634b53646",
+     "strikeC": 29,
+     "yes": "0xf6A2Edcc6aa24540eC1D013DA6822D5F53B681Ac",
+     "no": "0x769b04648c03701c81AE6BBd19f0f2C65c181a90",
+     "market": "0x535DD1F9E57B927BF4932Ad16378638858F2B7C8",
+     "fairValue": 0.031,
+     "fairSource": "polymarket-implied"
+    },
+    {
+     "seriesId": "0x87baeb9b239bda5f152464813fd7e26526541d0f5301bc11d04d65e6e53b45b4",
+     "strikeC": 30,
+     "yes": "0x54dc52fE6E194E81787F1E1a9aCFAf875f7c8d01",
+     "no": "0x8c0D2D715F6CD57675ef023E9dDdA3062106E472",
+     "market": "0x9bD134A062B9eD7f4b8bA3a48e27146156B3C41d",
+     "fairValue": 0.02,
+     "fairSource": "polymarket-implied"
+    }
+   ]
+  },
+  {
+   "date": 20261008,
+   "series": [
+    {
+     "seriesId": "0x95ce14cb3e443b080f3aaa92b6dc40f72ce20e50cd996cf7ab624c6f5e0799ba",
+     "strikeC": 27,
+     "yes": "0x9fA980F2Ef36f49B27aAB240c8816E18Af4283aa",
+     "no": "0x159d67c0fFAe7b42db310120b465DC25b535F43a",
+     "market": "0x8F6db84be9589665e6a23eCaa02599693535693c",
+     "fairValue": 0.98,
+     "fairSource": "polymarket-implied"
+    },
+    {
+     "seriesId": "0xff739cf13e58d95b7a376dde35a7a32b86774508c14e7d3d6c4d47b93c121064",
+     "strikeC": 28,
+     "yes": "0xCAC98c1AC1DE0CeE260eac3f14170B294967F2a2",
+     "no": "0x75DAe984CF2AAed462eBDdDaC08e8A02C2097cF7",
+     "market": "0x90a5e8B152CeD36558f4006A6e3fB0412CDcA419",
+     "fairValue": 0.95,
+     "fairSource": "polymarket-implied"
+    },
+    {
+     "seriesId": "0xa69ae9d5af5141648df6a03de55f960d141e84ccda321efe1c7bb7882cf02cd3",
+     "strikeC": 29,
+     "yes": "0x9E30E89BCF6Cfcc60f44c21fDb7F40F6F30C9da9",
+     "no": "0xc51A0e785E4CE393a8E21101a1155723C3AE3C9b",
+     "market": "0x11b8C955c46EF8C59862Cf35591CC0A325031C5d",
+     "fairValue": 0.849,
+     "fairSource": "polymarket-implied"
+    },
+    {
+     "seriesId": "0xb020bdde35a3212b69e836e2f78f56b4560e75bc74eb7a6b790342f58de00064",
+     "strikeC": 30,
+     "yes": "0x60F2E68C25cfF94c5e9978918516B156db9aD7F3",
+     "no": "0x18f3dF370ddE9409eD487C31e93729f18995C2C9",
+     "market": "0x2a221d4614c4408b00444B943be964cA44C6a44a",
+     "fairValue": 0.468,
+     "fairSource": "polymarket-implied"
+    },
+    {
+     "seriesId": "0x28b6d44a3bda37f45860480b4dc43046c744f49215a6f12151cbd8ad72a8e658",
+     "strikeC": 31,
+     "yes": "0x153942830ee692ff0b4741f57FE54c4951115f59",
+     "no": "0x8f71A4a748C7a4a70A243117e4bE3869D78CFF2e",
+     "market": "0x9567594d6d19AfDfBe1dF99d5a7c3191A4E038C2",
+     "fairValue": 0.092,
+     "fairSource": "polymarket-implied"
+    }
+   ]
+  }
+ ]
+}

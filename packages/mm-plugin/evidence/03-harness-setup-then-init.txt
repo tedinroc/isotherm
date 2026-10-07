@@ -1,0 +1,44 @@
+# harness home: seeded fake session (localhost stub only), then the setup script BEFORE mm init (fresh-home path)
+$ MONAD_RPC=http://127.0.0.1:19251 ISOTHERM_TGZ=./mm-plugin-isotherm-0.1.0.tgz sh scripts/setup-mm-monad.sh
+@metamask/agent-wallet: Installing plugin file:<repo>/packages/mm-plugin/mm-plugin-isotherm-0.1.0.tgz... installed v0.1.0
+ ›   Warning: This plugin may not work as expected because the prepare script 
+ ›   did not produce all the expected files.
+customEvmChains[10143].rpcTarget = http://127.0.0.1:19251  (<repo>/packages/mm-plugin/harness/.mmhome-harness/.metamask/wallets.json, created)
+Done. Check with:   <repo>/packages/mm-plugin/harness/bin/mm-harness weather doctor --json
+Read-only, no sign-in needed:   <repo>/packages/mm-plugin/harness/bin/mm-harness weather markets --json    <repo>/packages/mm-plugin/harness/bin/mm-harness weather quote taipei --json
+Trading needs `mm login` + `mm init` once, testnet MON for gas (https://faucet.monad.xyz) and testnet AUSD.
+Optional, so ctx.publicClient(10143) works too:  node "<repo>/packages/mm-plugin/scripts/rpc-shim.mjs" &  export MM_INFURA_RPC_BASE_URL=http://127.0.0.1:18790
+$ cat ~/.metamask/wallets.json   # before mm init
+{
+  "schemaVersion": "0.0.1",
+  "data": {
+    "customEvmChains": [
+      {
+        "key": "monad-testnet",
+        "chainId": 10143,
+        "caip2": "eip155:10143",
+        "name": "Monad Testnet",
+        "nativeCurrency": {
+          "name": "Monad",
+          "symbol": "MON",
+          "decimals": 18
+        },
+        "blockExplorer": "https://testnet.monadexplorer.com",
+        "rpcTarget": "http://127.0.0.1:19251"
+      }
+    ]
+  }
+}
+$ MM_MNEMONIC=<test mnemonic, not shown> mm init --wallet byok --mode guard --json
+{
+  "ok": true,
+  "data": {
+    "walletMode": "byok",
+    "tradingMode": "guard",
+    "mnemonicEncrypted": false
+  },
+  "hint": "Your seed phrase is stored unencrypted. Run `mm wallet password set` to add a password."
+}
+$ python3 -c 'customEvmChains after mm init'
+byokWallets: ['0x9F6AF0b5E8091B867500D9E2a3240Bd92259a543']
+customEvmChains after init: [(10143, 'http://127.0.0.1:19251')]

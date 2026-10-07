@@ -1,0 +1,1053 @@
+
+
+                             _   _
+                            (_) | |
+      __ _   _ __   __   __  _  | |
+     / _` | | '_ \  \ \ / / | | | |
+    | (_| | | | | |  \ V /  | | | |
+     \__,_| |_| |_|   \_/   |_| |_|
+
+    1.8.5 (51a52c59cf 2026-10-05T17:07:33.315474000Z)
+    https://github.com/foundry-rs/foundry
+
+Available Accounts
+==================
+
+(0) 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 (10000.000000000000000000 ETH)
+(1) 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 (10000.000000000000000000 ETH)
+(2) 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC (10000.000000000000000000 ETH)
+(3) 0x90F79bf6EB2c4f870365E785982E1f101E93b906 (10000.000000000000000000 ETH)
+(4) 0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65 (10000.000000000000000000 ETH)
+(5) 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc (10000.000000000000000000 ETH)
+(6) 0x976EA74026E726554dB657fA54763abd0C3a0aa9 (10000.000000000000000000 ETH)
+(7) 0x14dC79964da2C08b23698B3D3cc7Ca32193d9955 (10000.000000000000000000 ETH)
+(8) 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f (10000.000000000000000000 ETH)
+(9) 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720 (10000.000000000000000000 ETH)
+
+Private Keys
+==================
+
+(0) 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+(1) 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+(2) 0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
+(3) 0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6
+(4) 0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a
+(5) 0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba
+(6) 0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e
+(7) 0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356
+(8) 0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97
+(9) 0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6
+
+Wallet
+==================
+Mnemonic:          test test test test test test test test test test test junk
+Derivation path:   m/44'/60'/0'/0/
+
+
+Fork
+==================
+Endpoint:       https://testnet-rpc.monad.xyz/
+Block number:   68886084
+Block hash:     0x2375a090d8bcc9ff634d722f56e6b57b924c58117a87f48d4de998faf9e61a03
+Chain ID:       10143
+
+Base Fee
+==================
+
+100000000000
+
+Gas Limit
+==================
+
+150000000
+
+Genesis Timestamp
+==================
+
+1791350516
+
+Genesis Number
+==================
+
+0
+
+Listening on 127.0.0.1:19152
+eth_chainId
+eth_blockNumber
+anvil_setBalance
+anvil_setBalance
+eth_chainId
+web3_clientVersion
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_getBalance
+eth_call
+eth_getBalance
+eth_call
+eth_blockNumber
+eth_chainId
+web3_clientVersion
+eth_call
+eth_getBlockByNumber
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_gasPrice
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x4790e6a382f40af22b1f2294b1530a9ddc0a28784ade63ca21677dcb399d90c8
+    Gas used: 1081749
+
+    Block Number: 68886085
+    Block Hash: 0x7a80deebf25ebee63ec3cb6557ee9d14049a917d697bae63fe86cc61617b331d
+    Block Time: "Wed, 7 Oct 2026 05:22:11 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0xf2991f42e1e078a111d7d30fc0e2296ac65d369895c52a165d30e2d3efbc6e6a
+    Gas used: 70585
+
+    Block Number: 68886086
+    Block Hash: 0x8fdb706d72b05b1041da70d7785de6c83de3d013034c122a5c9d80f2efd2e965
+    Block Time: "Wed, 7 Oct 2026 05:22:12 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x9e0d45dd45d4baef45a2899f66680b19f59d41e329e0873fb0f6af84a9cf0b38
+    Gas used: 294093
+
+    Block Number: 68886087
+    Block Hash: 0xe6d26519eb7635cb9f3fd25f04f0fe771a1e55566580bd2f9ccb1a88308e99b7
+    Block Time: "Wed, 7 Oct 2026 05:22:13 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0xd8cdbba0b8ef179da8c566daaf4bdfc31a7dd52418e1aecc4368534ca92464ca
+    Gas used: 277093
+
+    Block Number: 68886088
+    Block Hash: 0x7e3b7814fff099e4da86cf61cbda860b43414631b8b844686aa15cd4c7090956
+    Block Time: "Wed, 7 Oct 2026 05:22:13 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x3144a7f72bbc6944204a066a80b295039d2222f7ce51b99c8bd8ff53fbe89320
+    Gas used: 277081
+
+    Block Number: 68886089
+    Block Hash: 0x434a51fd0f8cabe3435919e1154357f31965c265c9a3894e34535c5cb979b103
+    Block Time: "Wed, 7 Oct 2026 05:22:14 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x8267f3d5dc1b9d67b0872c30808ced0109fbe6d77b0a5b560e059759978a7a8d
+    Gas used: 277093
+
+    Block Number: 68886090
+    Block Hash: 0xe219cd1442e929106c1dbcd367becb7f7885cfefd4f7282a031acfd596c9baf5
+    Block Time: "Wed, 7 Oct 2026 05:22:14 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x2d9eae3e4a3667cd8212dbeea0797d90a88c2f04d6891dd5933c572a294d298a
+    Gas used: 1310524
+
+    Block Number: 68886091
+    Block Hash: 0x5be6742929d63e8e66cde7e81626936eef97c3bc2686dd9fd7d3f0b529293d13
+    Block Time: "Wed, 7 Oct 2026 05:22:16 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x3177733aba3e61a98eb6b34fc895d59b6c283ec4fd5bd4d94578d44e372385fb
+    Gas used: 1310536
+
+    Block Number: 68886092
+    Block Hash: 0xe9e0acc1d6f1614d7c30f943c536cabb351112e248bf33bbe41d054286b6e3ee
+    Block Time: "Wed, 7 Oct 2026 05:22:19 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x3d86e6e505e61b53a8059eb2fadd5ee2641fa485635ad4e349c9f4d18ef15073
+    Gas used: 1310536
+
+    Block Number: 68886093
+    Block Hash: 0xa78856bdd3d93fb472cecbda58bb93a5f601ff5728133b3e34e5d4bd986833a1
+    Block Time: "Wed, 7 Oct 2026 05:22:21 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x7cd80535a7ad48de09d355bd27ccb5885967b5db1f41436d3df3d6c572f88503
+    Gas used: 1310536
+
+    Block Number: 68886094
+    Block Hash: 0x2ef194a10d0bfb53110dc458f31b76269eb22e5012e84731f6e36592672a6c33
+    Block Time: "Wed, 7 Oct 2026 05:22:23 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0xb6cd9988737dff67a238684128a86524a4a12457198d2a149466d357fc7ac73e
+    Gas used: 122039
+
+    Block Number: 68886095
+    Block Hash: 0xc1918c8bc1f6767883ff6623f1f5eb8da3fe54b612538116d3d99aa432dbab3c
+    Block Time: "Wed, 7 Oct 2026 05:22:24 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x89774d167a75765e9e0578c45a2dd60992ff1f168e0256e24f154dcec8e474f8
+    Gas used: 122039
+
+    Block Number: 68886096
+    Block Hash: 0x816d59ea0b14a4895122087c7f9610afbfa39d2e60ec310a1cec3f917d9c7543
+    Block Time: "Wed, 7 Oct 2026 05:22:24 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0xb0d21b087b78b77cdbaa619b99662101fd192f8cb1d778006597505525008862
+    Gas used: 122027
+
+    Block Number: 68886097
+    Block Hash: 0xa24ad43e6e2eba56b67672c93449851f5dc145f07dbe8a01d6b872795951264a
+    Block Time: "Wed, 7 Oct 2026 05:22:24 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0xb822350822f2f79c2972dc4311160fe2d0d4df5a6f90d81bef061226c6f1a14f
+    Gas used: 122039
+
+    Block Number: 68886098
+    Block Hash: 0x12c2179fa50e70ec3074dbee6b1b9b89dacc0da27be01e2aeb2ed70bd8141760
+    Block Time: "Wed, 7 Oct 2026 05:22:24 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x6eda739b08651009a7e589cb71b9c86da8ff8f3917f961bce4174bf214c67664
+    Gas used: 131244
+
+    Block Number: 68886099
+    Block Hash: 0xd379f874cd92f514ed57dbda2f17386b683d381865875b44c379c2b00fdf8690
+    Block Time: "Wed, 7 Oct 2026 05:22:25 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_getBlockByNumber
+eth_call
+eth_call
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x4be71c9368360e602cc775229dec643161a84ad62edcd15353635a51f61cf6df
+    Gas used: 62596
+
+    Block Number: 68886100
+    Block Hash: 0x8c46898b2e552e3f012a872b09d65e64a095fd676fe6dc694257355e55afb602
+    Block Time: "Wed, 7 Oct 2026 05:22:25 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x4028585eefb355ddb1f5221a6391b0bdec8248385c11fd596a4f71dfba091e38
+    Gas used: 149686
+
+    Block Number: 68886101
+    Block Hash: 0xb09b9f213b2b565294f68cf26a769bdd2abffa49b4007385d2f3d2416e8c533d
+    Block Time: "Wed, 7 Oct 2026 05:22:26 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x8de7acb283f366f9e8c15f1a6195a30ef2da7c7ee9ea5379028ec5264594dc8f
+    Gas used: 62596
+
+    Block Number: 68886102
+    Block Hash: 0xf98bc30b9144a0e8c2266c648dc67b5405082a6d94c303d9a7a75c43b1fe4cc4
+    Block Time: "Wed, 7 Oct 2026 05:22:26 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x8da426217f2909e1bb7e31fafb6589c8df205ced0558b601e98f65dfa5478c15
+    Gas used: 149698
+
+    Block Number: 68886103
+    Block Hash: 0xc909353ef7377fc3fa48db910cedf5f5d89376519328cda836a59fbb5269a08d
+    Block Time: "Wed, 7 Oct 2026 05:22:26 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x01186b1641fd1ea06c542f007cbebf8a675a27814aba96e7c6fa4da576dc17bf
+    Gas used: 62596
+
+    Block Number: 68886104
+    Block Hash: 0x1d869c07af532dc6723d243223c164a07c8334b40594f08bc63ec0d68896453d
+    Block Time: "Wed, 7 Oct 2026 05:22:27 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x57b9c0535c9a891662880853e25abf3d2eab15efea01ab5062b2db3f5f154748
+    Gas used: 149698
+
+    Block Number: 68886105
+    Block Hash: 0xbaef46fc727116d41b0c5308f7c2d821b73fb78437da6a26da6a150e7754a614
+    Block Time: "Wed, 7 Oct 2026 05:22:27 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x9f7ae2343a8d9ae27b400dce285ddd2ad7c3c30079f41bef44e85113978748e2
+    Gas used: 62596
+
+    Block Number: 68886106
+    Block Hash: 0x3e827bab75b9a4e4523c0f8b9a42ab4e76dbc4c49c34daf8018acc023af77511
+    Block Time: "Wed, 7 Oct 2026 05:22:28 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0xa64042f1f047c31bb8713a2a50537749981623459e19338c306cb637b7d911e5
+    Gas used: 149698
+
+    Block Number: 68886107
+    Block Hash: 0x32c6fb6f1ba2094df4d1e3118023b28674be5362b5bf8c1f54ae6eaf12cd44fd
+    Block Time: "Wed, 7 Oct 2026 05:22:28 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_getBlockByNumber
+eth_getBlockByNumber
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_gasPrice
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x1d83e9212561bd1fd4b65105a787995c6a98db6678defd5f6e2f28c29f43e001
+    Gas used: 528288
+
+    Block Number: 68886108
+    Block Hash: 0x08a38940a9cd68604210f4551859f2b19ba64ef94a4855b65fef134429778828
+    Block Time: "Wed, 7 Oct 2026 05:22:29 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0xb613b896b003dc9f990aa78b9fd816900c28be164e51e19c7019faf2a8dbd870
+    Gas used: 528348
+
+    Block Number: 68886109
+    Block Hash: 0xf2367ed466f2060f0a1c91abc583ce481132e2dab05e350f91d44f3bbc954b76
+    Block Time: "Wed, 7 Oct 2026 05:22:30 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x0cba8ae56e80a986840ce52eb2110b91513e830fe4e856f909cd68c356e46d36
+    Gas used: 528275
+
+    Block Number: 68886110
+    Block Hash: 0x09c30188fd453a35c1860c154ac55dba879a5d7d06fe3c8430f2bc168184ebb3
+    Block Time: "Wed, 7 Oct 2026 05:22:30 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x6e5620cb83361a15f268cdaa5ba4affd69673fce628d78599dfdb4e07e65d13d
+    Gas used: 528249
+
+    Block Number: 68886111
+    Block Hash: 0xc8316637d83b20525d165e35a0aa4643afa860e30dfbf158c97dcb996447d10a
+    Block Time: "Wed, 7 Oct 2026 05:22:30 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_getBlockByNumber
+eth_call
+eth_getBalance
+eth_call
+eth_call
+eth_chainId
+web3_clientVersion
+eth_call
+eth_getBlockByNumber
+eth_getBlockByNumber
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_getBlockByNumber
+eth_call
+eth_getBalance
+eth_call
+eth_call
+eth_getBlockByNumber
+eth_getBlockByNumber
+eth_getBlockByNumber
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_getBlockByNumber
+eth_call
+eth_getBalance
+eth_call
+eth_call
+eth_getBlockByNumber
+eth_getBlockByNumber
+eth_getBlockByNumber
+eth_getBlockByNumber
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_getBlockByNumber
+eth_call
+eth_call
+eth_getBalance
+eth_call
+eth_getBlockByNumber
+eth_chainId
+web3_clientVersion
+eth_call
+eth_getBlockByNumber
+evm_increaseTime
+evm_mine
+
+    Block Number: 68886112
+    Block Hash: 0x5d59b0b3f0767680019c39a9702993e54b6ae0d99aab8fbaa0efd59228fe9776
+    Block Time: "Thu, 8 Oct 2026 09:20:31 +0000"
+
+eth_chainId
+web3_clientVersion
+eth_call
+eth_getBlockByNumber
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_gasPrice
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x749bad2dd48995aa8814416b749b977d53b05dd323c194b67ed5f74d80a38a06
+    Gas used: 248833
+
+    Block Number: 68886113
+    Block Hash: 0x638982df87e723c1848351465c6ca405e15db32130d62292349ece2b665c2174
+    Block Time: "Thu, 8 Oct 2026 09:20:31 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0xca1336543ff405b1b430b9dee25a2a9f90f7c753543f9ba57c635a8f081fc958
+    Gas used: 248833
+
+    Block Number: 68886114
+    Block Hash: 0xde950486240fd1d6b993bc4686d53212bf9f40c45ebfd5d1925d5ebd072f5373
+    Block Time: "Thu, 8 Oct 2026 09:20:31 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x6ca4612be266cedb94c2a59bff05056102aca8c4169c763003ff5330a325c092
+    Gas used: 248833
+
+    Block Number: 68886115
+    Block Hash: 0xe22e3e2ae7f421710241e1e650bb083c7d758efa657501e6605d590f91a4e306
+    Block Time: "Thu, 8 Oct 2026 09:20:32 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x98c9a983197c5eebf0659b47a1760e70abdc7a9f40e3dae68b81456659af3ec7
+    Gas used: 248833
+
+    Block Number: 68886116
+    Block Hash: 0x860d32cee62d7b573d16033dc33c9a1a6a2926fd85b1f2cc09af7c3074c45219
+    Block Time: "Thu, 8 Oct 2026 09:20:32 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_call
+eth_fillTransaction
+eth_accounts
+eth_getBalance
+eth_getTransactionCount
+eth_fillTransaction
+eth_accounts
+eth_sendRawTransaction
+eth_getTransactionReceipt
+
+    Transaction: 0x06088fcd370db28e0f3055935b1ce6ff7862399142311ae5fb717eeacbfef9be
+    Gas used: 327136
+
+    Block Number: 68886117
+    Block Hash: 0x373a60308df6bc4b734feb7e8481ee9c03665730c6e9489f7c660a433736b453
+    Block Time: "Thu, 8 Oct 2026 09:20:32 +0000"
+
+eth_blockNumber
+eth_getTransactionByHash
+eth_getTransactionReceipt
+eth_getBlockByNumber
+eth_chainId
+web3_clientVersion
+eth_call

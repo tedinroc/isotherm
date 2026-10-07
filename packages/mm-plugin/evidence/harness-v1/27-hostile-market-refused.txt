@@ -1,0 +1,9 @@
+$ mm weather buy taipei --date tomorrow --strike 30 --side yes --amount 5 --max-price 0.6 --market 0x4f5Ef4Bf256BDD88492C1e394B0D0f06A8265813 --json
+{
+  "ok": false,
+  "error": {
+    "code": "ISOTHERM_NONCANONICAL_MARKET",
+    "message": "No canonical Kuru book for Tmax>=30C: --market 0x4f5Ef4Bf256BDD88492C1e394B0D0f06A8265813 is not the canonical book 0x702A7a87EDb18D733c624bF766020F3b66eb36DC (registry); refusing.",
+    "hint": "The plugin only routes funds into the series' own YES/AUSD book with Isotherm's standard parameters. Check `mm weather markets`."
+  }
+}

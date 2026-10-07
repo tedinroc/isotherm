@@ -1,3 +1,8 @@
+> **Status (2026-10-07, contracts v1):** every Medium (#1, #2, #4, #6, #7) and the cheap Lows (#8, #9, #10) are fixed in
+> `src/` and deployed to Monad testnet (see `deployments/testnet.json`). #3 (CRE `decide()`) and #5 (maker kill switch) are
+> off-chain and belong to the workflow and maker owners. The FINDING tests below were turned into `FIXED_*` tests that
+> assert the exploit no longer works. Details: `script/RESULT.md`. The text below is the original review, kept unchanged.
+
 # Isotherm security review: RESULT
 
 Scope: `src/` (CollateralVault, StrikeFactory, OutcomeToken, Resolver, ForecastCommit, StationTime) and the Zap/integration contracts (`spikes/e2e/src/IsothermZap.sol`, plus a lighter look at `spikes/kuru/src/KuruZap.sol` and `spikes/dynamic/contracts/src/GaslessDepositor.sol`). Also the CRE workflow's settle decision, because on-chain results are final.

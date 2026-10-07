@@ -1,0 +1,46 @@
+{
+ "builtAt": "2026-10-07T05:39:34.728Z",
+ "copied": {
+  "deployments.testnet.json": {
+   "from": "<repo>/deployments/testnet.json",
+   "sha256": "e93bc4167b8052346f59d2e5d3230dab8a61e50eb82957b8de400e08b42ea253"
+  },
+  "abi/CollateralVault.json": {
+   "from": "<repo>/packages/abi/CollateralVault.json",
+   "sha256": "d320d7fc19077e1f431289a16ba086ba2780bf4b6a836228a0c65393877630ba"
+  },
+  "abi/ForecastCommit.json": {
+   "from": "<repo>/packages/abi/ForecastCommit.json",
+   "sha256": "96730d30285041fa1af8e2612a341b4b3aeca032dc2711206e94d7fdd239403a"
+  },
+  "abi/IERC3009.json": {
+   "from": "<repo>/packages/abi/IERC3009.json",
+   "sha256": "926cc468e75c6ce110905c204c24456a46b6159e8b6e290f9173f8a41be5fef1"
+  },
+  "abi/IIsothermResolver.json": {
+   "from": "<repo>/packages/abi/IIsothermResolver.json",
+   "sha256": "3daef01427b0828dc40572d3c891d96d39daa9258924fe4abb0a12d31781c01e"
+  },
+  "abi/IKuruOrderBookTaker.json": {
+   "from": "<repo>/packages/abi/IKuruOrderBookTaker.json",
+   "sha256": "8455ebdb50a01f12c201a1fdb3fc43c3cb4393c36c2bb8861aa414a588cb4419"
+  },
+  "abi/IKuruRouterView.json": {
+   "from": "<repo>/packages/abi/IKuruRouterView.json",
+   "sha256": "ee2f8a30750949b1d60d20ea045c72f890a3a83526375e63060ea7e0fd05f1bd"
+  },
+  "abi/IsothermZap.json": {
+   "from": "<repo>/packages/abi/IsothermZap.json",
+   "sha256": "007c7ebf1b3cad47b1c56abb7a5d8ecabd80a6ccfe2ecbff80427674b32e0ff4"
+  },
+  "abi/OutcomeToken.json": {
+   "from": "<repo>/packages/abi/OutcomeToken.json",
+   "sha256": "8e0114a8081a8b41fa0f90211a377e653ce3481440b65412dffea1cc390f784d"
+  },
+  "abi/Resolver.json": {
+   "from": "<repo>/packages/abi/Resolver.json",
+   "sha256": "d5ea4849dc7f14af3fe41ef5041702d2fc2d2421e07d100c57fcc7164760b469"
+  }
+ },
+ "missing": []
+}

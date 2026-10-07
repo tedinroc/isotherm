@@ -76,12 +76,13 @@ contract VaultAttacksTest is IsoTest {
     // Gasless mint (permit) front-running
     // ------------------------------------------------------------------------------------------------
 
-    /// FINDING (Low): the AUSD permit signs (holder, vault, amount, nonce, deadline) but NOT the seriesId, so anyone
-    /// who sees the relayer's pending calldata can submit it first with a different open seriesId. No funds are lost
-    /// (tokens still go to the holder and a complete set redeems at par any time) but the relayed flow fails and the
-    /// holder pays gas to unwind. Fix: bind the intent - e.g. mintSetWithAuthorization over EIP-3009
-    /// receiveWithAuthorization with nonce = keccak256(abi.encode(seriesId, amount, salt)) recomputed by the vault.
-    function test_permitDoesNotBindSeries_frontRunnerChoosesTheSeries() public {
+    /// RESIDUAL on the legacy permit path (was Low #8): the AUSD permit signs (holder, vault, amount, nonce, deadline)
+    /// but NOT the seriesId, so a front-runner can submit it with another open seriesId. No funds are lost (tokens go
+    /// to the holder, a complete set redeems at par). v1 fix: relayers use mintSetWithAuthorization (EIP-3009, nonce =
+    /// keccak256(abi.encode(seriesId, amount, salt)) recomputed by the vault), see
+    /// CollateralVaultTest.test_mintSetWithAuthorizationCannotBeRedirected. mintSetWithPermit is kept for wallets
+    /// that only do EIP-2612.
+    function test_RESIDUAL_permitDoesNotBindSeries_frontRunnerChoosesTheSeries() public {
         bytes32 wanted = _create(RCSS, D, 30);
         bytes32 other = _create(RCSS, D, 25);
         uint256 pk = 0xD1A;
@@ -148,10 +149,10 @@ contract VaultAttacksTest is IsoTest {
     // Collateral assumptions
     // ------------------------------------------------------------------------------------------------
 
-    /// FINDING (Low / assumption): the vault credits `amount`, not what it received. With a fee-on-transfer collateral
-    /// (AUSD is an upgradeable proxy) the books overstate reserves; early exiters drain later ones. The constructor
-    /// only checks decimals == 6, so this is a deploy-time trust assumption on the collateral.
-    function test_feeOnTransferCollateralMakesLastRedeemerInsolvent() public {
+    /// FIXED (was Low #10): the vault used to credit `amount`, not what it received, so a fee-on-transfer collateral
+    /// (AUSD is an upgradeable proxy) made the last redeemer insolvent. v1 checks the balance delta on every deposit:
+    /// a short transfer reverts and the books can never overstate reserves.
+    function test_FIXED_feeOnTransferCollateralCannotOverstateReserves() public {
         FeeToken fee = new FeeToken();
         CollateralVault fv = new CollateralVault(owner, resolver, fee, guardian);
         vm.prank(owner);
@@ -161,16 +162,12 @@ contract VaultAttacksTest is IsoTest {
             fee.mint(users[i], 100e6);
             vm.startPrank(users[i]);
             fee.approve(address(fv), type(uint256).max);
+            vm.expectRevert(abi.encodeWithSelector(CollateralVault.CollateralTransferMismatch.selector, 100e6, 99e6));
             fv.mintSet(id, 100e6);
             vm.stopPrank();
         }
-        assertEq(fv.getSeries(id).collateral, 200e6, "books say 200");
-        assertEq(fee.balanceOf(address(fv)), 198e6, "vault holds 198");
-        vm.prank(alice);
-        fv.redeemSet(id, 100e6);
-        vm.prank(bob);
-        vm.expectRevert(); // ERC20InsufficientBalance: 98 left for a 100 claim
-        fv.redeemSet(id, 100e6);
+        assertEq(fv.getSeries(id).collateral, 0, "nothing credited");
+        assertEq(fee.balanceOf(address(fv)), 0, "nothing held");
     }
 
     // ------------------------------------------------------------------------------------------------
@@ -211,7 +208,7 @@ contract VaultAttacksTest is IsoTest {
         bytes32 id = _create(RCSS, D, 30);
         _mint(alice, id, 10);
         _mint(bob, id, 10);
-        vm.warp(RCSS_DAY_END + 24 hours);
+        vm.warp(RCSS_DAY_END + resolver.STALE_WINDOW());
         resolver.voidIfStale(RCSS, D);
         uint256 got;
         for (uint256 i; i < 10; ++i) {
@@ -317,8 +314,8 @@ contract VaultAttacksTest is IsoTest {
     // ------------------------------------------------------------------------------------------------
 
     /// Owner / guardian / operator have no direct path to collateral; exits keep working with BOTH vault and resolver
-    /// paused (redeemSet before resolution, redeem after a stale void). The owner's real power is over the oracle
-    /// (setAttester / setForwarder), see ResolverAttacks.
+    /// paused (redeemSet before resolution, redeem after the 7-day hard stale bound, which ignores pause). The owner's
+    /// real power is over the oracle (setAttester / setForwarder), see ResolverAttacks.
     function test_adminPowersCannotMoveOrFreezeCollateral() public {
         bytes32 id = _create(RCSS, D, 30);
         _mint(alice, id, 100e6);
@@ -337,7 +334,7 @@ contract VaultAttacksTest is IsoTest {
         vm.prank(alice);
         vault.redeemSet(id, 100e6);
         assertEq(ausd.balanceOf(alice), 100e6);
-        vm.warp(RCSS_DAY_END + 24 hours);
+        vm.warp(RCSS_DAY_END + resolver.MAX_STALE_WINDOW());
         resolver.voidIfStale(RCSS, D);
         vm.prank(bob);
         assertEq(vault.redeem(id, 50e6, 50e6), 50e6);

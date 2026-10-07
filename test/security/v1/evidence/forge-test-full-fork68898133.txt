@@ -1,0 +1,345 @@
+Compiling 1 files with Solc 0.8.37
+Solc 0.8.37 finished in 468.16ms
+Compiler run successful!
+Warning: Failure from "<repo>/cache/invariant/failures/AdversarialInvariantTest/invariants/invariant_noAttackEverSucceeded" file was ignored because invariant test settings have changed: target selectors changed
+Warning: Failure from "<repo>/cache/invariant/failures/AdversarialInvariantTest/invariants/invariant_resultsNeverChange" file was ignored because invariant test settings have changed: target selectors changed
+Warning: Failure from "<repo>/cache/invariant/failures/AdversarialInvariantTest/invariants/invariant_vaultBalanceEqualsBooks" file was ignored because invariant test settings have changed: target selectors changed
+Warning: Failure from "<repo>/cache/invariant/failures/AdversarialInvariantTest/invariants/invariant_everySeriesCoversItsClaims" file was ignored because invariant test settings have changed: target selectors changed
+
+Ran 7 tests for test/unit/OutcomeToken.t.sol:OutcomeTokenTest
+[PASS] test_implementationIsInert() (gas: 117572)
+[PASS] test_metadata() (gas: 733701)
+[PASS] test_negativeStrikeNames() (gas: 525844)
+[PASS] test_onlyVaultMintBurn() (gas: 1035047)
+[PASS] test_permitOnClone() (gas: 1240364)
+[PASS] test_predictedAddresses() (gas: 469966)
+[PASS] test_transferable() (gas: 1043901)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 2.48ms (1.28ms CPU time)
+
+Ran 4 tests for test/unit/IsothermZap.t.sol:IsothermZapTest
+[PASS] test_buyYesSellYesBuyNo() (gas: 1775247)
+[PASS] test_registryAccessAndWriteOnce() (gas: 1547803)
+[PASS] test_tradeGuards() (gas: 1408448)
+[PASS] test_validateMarketRejectsEveryBadParameter() (gas: 1071531)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 2.58ms (1.23ms CPU time)
+
+Ran 4 tests for test/security/v1/V1ZapVaultAttacks.t.sol:V1ZapVaultAttacksTest
+[PASS] test_HOLDS_authorizationBoundToVaultInstanceAcrossRedeploys() (gas: 1065705)
+[PASS] test_INFO_gateIsRecipientBased_anAllowlistedRouterOpensIt() (gas: 975403)
+[PASS] test_RESIDUAL_buyNoSandwich_minAusdBackPassesAtTerriblePrice() (gas: 1606764)
+[PASS] test_mitigation_mintSetPlusSellYesIsProtectedAgainstTheSameSandwich() (gas: 1616511)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 2.67ms (1.21ms CPU time)
+
+Ran 1 test for test/security/MonadGas.t.sol:MonadGasTest
+[PASS] test_gas_duePendingLaddersPerLadderCold() (gas: 16877209)
+Logs:
+  duePendingLadders(0,1) cold gas 43466
+  duePendingLadders(0,40) cold gas 636648
+  marginal gas per ladder 15209
+  ladders per 30M-gas eth_call 1969
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 4.89ms (3.85ms CPU time)
+
+Ran 7 tests for test/unit/StationTime.t.sol:StationTimeTest
+[PASS] testFuzz_consecutiveDays(uint256) (runs: 1000, μ: 41140, ~: 41068)
+[PASS] testFuzz_roundTrip(uint256) (runs: 1000, μ: 25192, ~: 25175)
+[PASS] test_invalidDates() (gas: 246379)
+[PASS] test_knownVectors() (gas: 74927)
+[PASS] test_taipeiDayEnd() (gas: 35499)
+[PASS] test_validateOffset() (gas: 139538)
+[PASS] test_validateStation() (gas: 130878)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 97.90ms (53.94ms CPU time)
+
+Ran 13 tests for test/security/ResolverAttacks.t.sol:ResolverAttacksTest
+[PASS] testFuzz_anySingleFieldMutationRejected(uint8,uint256) (runs: 1000, μ: 107426, ~: 107179)
+[PASS] test_FIXED_compromisedAttesterContainedByChallengeWindow() (gas: 1555099)
+[PASS] test_FIXED_expiredAttestationCannotRaceANewerOne() (gas: 1702351)
+[PASS] test_FIXED_guardianPauseCannotForceStaleVoid() (gas: 1247881)
+[PASS] test_FIXED_staleVoidCannotFrontRunAReportWithinWorkflowDeadline() (gas: 1475427)
+[PASS] test_FIXED_unsignedReportRejectedWhateverTheForwarderConfig() (gas: 664198)
+[PASS] test_RESIDUAL_guardianCanVoidAnHonestResultInsideTheWindow() (gas: 211328)
+[PASS] test_malleableTwinAndCompactSignatureRejected() (gas: 314008)
+[PASS] test_mockForwarderMetadataIsCallerControlled() (gas: 763288)
+[PASS] test_monadSameSecondBlocksAtDayEndBoundary() (gas: 444492)
+[PASS] test_nonCanonicalAbiRejected() (gas: 334556)
+[PASS] test_replayOnAnotherChain() (gas: 141392)
+[PASS] test_replayOnAnotherResolverSameChainSameAttester() (gas: 159226)
+Suite result: ok. 13 passed; 0 failed; 0 skipped; finished in 100.77ms (102.09ms CPU time)
+
+Ran 9 tests for test/security/v1/V1ResolverAttacks.t.sol:V1ResolverAttacksTest
+[PASS] testFuzz_HOLDS_noSecondWhereChallengeAndRedeemBothSucceed(uint256) (runs: 1000, μ: 309971, ~: 266186)
+[PASS] testFuzz_HOLDS_staleVoidScheduleUnderPauseToggles(uint256[4],uint8,uint256) (runs: 1000, μ: 175578, ~: 172141)
+[PASS] test_HOLDS_guardianPowersAreOnlyVoid() (gas: 414337)
+[PASS] test_HOLDS_reportRejectedDuringPauseExpiresBeforeUnpause() (gas: 227915)
+[PASS] test_RESIDUAL_challengedFalseResultStillPaysTheThiefHalf() (gas: 367952)
+[PASS] test_RESIDUAL_compromisedAttesterSignsVoid_finalInstantly_guardianCannotAct() (gas: 561331)
+[PASS] test_RESIDUAL_ownerKeyAloneControlsEveryOutcome() (gas: 445615)
+[PASS] test_RESIDUAL_pauseDoesNotFreezeTheChallengeClockOrRedemption() (gas: 464355)
+[PASS] test_RESIDUAL_validUntilLifetimeIsNotCappedOnChain() (gas: 329520)
+Suite result: ok. 9 passed; 0 failed; 0 skipped; finished in 229.27ms (274.19ms CPU time)
+
+Ran 38 tests for test/unit/Resolver.t.sol:ResolverTest
+[PASS] testFuzz_expiredAttestationNeverAccepted(uint64,uint256) (runs: 1000, μ: 123198, ~: 147946)
+[PASS] testFuzz_onlyAttesterSignatureAccepted(uint256,int16) (runs: 1000, μ: 109589, ~: 109289)
+[PASS] testFuzz_staleVoidNeverBeforeWindow(uint256,bool) (runs: 1000, μ: 117081, ~: 123177)
+[PASS] test_attestationAlwaysRequired() (gas: 162269)
+[PASS] test_attestationExpiry() (gas: 193846)
+[PASS] test_challengeRules() (gas: 497925)
+[PASS] test_challengeWorksWhilePaused() (gas: 263430)
+[PASS] test_constructorValidation() (gas: 19798)
+[PASS] test_dayEnd() (gas: 52343)
+[PASS] test_digestMatchesManualEip712() (gas: 42557)
+[PASS] test_guardianAdmin() (gas: 155468)
+[PASS] test_guardianChallengeConvertsToVoid() (gas: 288325)
+[PASS] test_lateReportStillAcceptedUntilStale() (gas: 208969)
+[PASS] test_metadataIgnoredWhenNotPinned() (gas: 165956)
+[PASS] test_noDoubleSettleOrReplay() (gas: 459812)
+[PASS] test_ownable2Step() (gas: 146280)
+[PASS] test_pause() (gas: 356761)
+[PASS] test_registerStation() (gas: 255646)
+[PASS] test_rejectsBeforeDayEnd() (gas: 212019)
+[PASS] test_rejectsMalformedSignature() (gas: 127492)
+[PASS] test_rejectsNonForwarder() (gas: 88024)
+[PASS] test_rejectsTamperedPayload() (gas: 274974)
+[PASS] test_rejectsTmaxOutOfRange() (gas: 164838)
+[PASS] test_rejectsUnknownStationAndBadDate() (gas: 182089)
+[PASS] test_rejectsWrongSigner() (gas: 96877)
+[PASS] test_resumeGraceAfterUnpause() (gas: 471148)
+[PASS] test_setAttester() (gas: 290414)
+[PASS] test_setForwarder() (gas: 291314)
+[PASS] test_settle() (gas: 226878)
+[PASS] test_settleBoundsInclusive() (gas: 294435)
+[PASS] test_signatureBoundToResolverAndChain() (gas: 317718)
+[PASS] test_staleVoidBlockedWhilePausedUntilHardMax() (gas: 293942)
+[PASS] test_supportsInterface() (gas: 52273)
+[PASS] test_voidIfStale() (gas: 276922)
+[PASS] test_voidIfStaleUnknownStation() (gas: 59677)
+[PASS] test_voidReportIsFinalImmediately() (gas: 178557)
+[PASS] test_workflowMetadataChecks() (gas: 348274)
+[PASS] test_zeroChallengeWindowIsFinalAtOnce() (gas: 278291)
+Suite result: ok. 38 passed; 0 failed; 0 skipped; finished in 293.07ms (376.44ms CPU time)
+
+Ran 4 tests for test/fuzz/VaultFuzz.t.sol:VaultFuzzTest
+[PASS] testFuzz_cannotMintAfterClose(uint256) (runs: 1000, μ: 649896, ~: 650168)
+[PASS] testFuzz_mintRedeemSetRoundTrip(uint256,uint256,bool) (runs: 1000, μ: 1233214, ~: 1338618)
+[PASS] testFuzz_payoutRule(int16,int16) (runs: 1000, μ: 665178, ~: 664991)
+[PASS] testFuzz_setPaysExactlyOne(uint256,uint256,int16,int16,bool) (runs: 1000, μ: 1536369, ~: 1543708)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 307.47ms (865.51ms CPU time)
+
+Ran 7 tests for test/unit/ForecastCommit.t.sol:ForecastCommitTest
+[PASS] testFuzz_commitReveal(int16,uint16,bytes32) (runs: 1000, μ: 187608, ~: 187441)
+[PASS] test_cannotOverwrite() (gas: 163513)
+[PASS] test_commitDeadline() (gas: 85420)
+[PASS] test_commitReveal() (gas: 273886)
+[PASS] test_forecastersAreIndependent() (gas: 245877)
+[PASS] test_misc() (gas: 188387)
+[PASS] test_revealValidation() (gas: 383167)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 307.65ms (307.76ms CPU time)
+
+Ran 31 tests for test/unit/CollateralVault.t.sol:CollateralVaultTest
+[PASS] test_challengedResultPaysHalf() (gas: 1513807)
+[PASS] test_constructorRequires6Decimals() (gas: 653631)
+[PASS] test_createLadder() (gas: 2556495)
+[PASS] test_createSeries() (gas: 501768)
+[PASS] test_createSeriesAccessControl() (gas: 567295)
+[PASS] test_createSeriesValidation() (gas: 793133)
+[PASS] test_duePendingLadders() (gas: 1645947)
+[PASS] test_feeOnTransferCollateralRejected() (gas: 1360342)
+[PASS] test_gatedSeriesMintsOnlyToAllowlisted() (gas: 1954814)
+[PASS] test_guardianAdmin() (gas: 139403)
+[PASS] test_mintSet() (gas: 991990)
+[PASS] test_mintSetReverts() (gas: 798283)
+[PASS] test_mintSetTo() (gas: 1002638)
+[PASS] test_mintSetWithAuthorization() (gas: 1230602)
+[PASS] test_mintSetWithAuthorizationCannotBeRedirected() (gas: 1558345)
+[PASS] test_mintSetWithAuthorizationChecks() (gas: 810784)
+[PASS] test_mintSetWithPermit() (gas: 1192229)
+[PASS] test_mintSetWithPermitExpiredOrFrontRun() (gas: 823173)
+[PASS] test_noDoubleRedeem() (gas: 1400340)
+[PASS] test_noWinsBelowStrike() (gas: 1280965)
+[PASS] test_oneReportSettlesWholeLadder() (gas: 5025061)
+[PASS] test_pauseStopsMintingOnly() (gas: 1690830)
+[PASS] test_redeemRequiresResolution() (gas: 935262)
+[PASS] test_redeemSetBeforeAndAfterResolution() (gas: 1549683)
+[PASS] test_redeemSetNeedsBothLegs() (gas: 1052507)
+[PASS] test_redeemWaitsForChallengeWindow() (gas: 1497528)
+[PASS] test_seriesCollateralIsolated() (gas: 2082045)
+[PASS] test_settlementOfOtherLadderDoesNotLeak() (gas: 1518681)
+[PASS] test_voidFullSetRedeemsExactly() (gas: 1129776)
+[PASS] test_voidPaysHalf() (gas: 1471155)
+[PASS] test_yesWinsAtStrike() (gas: 1567264)
+Suite result: ok. 31 passed; 0 failed; 0 skipped; finished in 307.61ms (10.67ms CPU time)
+
+Ran 11 tests for test/security/VaultAttacks.t.sol:VaultAttacksTest
+[PASS] testFuzz_cannotRedeemAnotherSeriesCollateral(uint256,bool) (runs: 1000, μ: 2285624, ~: 2285878)
+[PASS] testFuzz_monadNoSecondWhereMintAndSettleBothSucceed(uint256,uint256,uint8,uint8) (runs: 1000, μ: 941126, ~: 920889)
+[PASS] testFuzz_voidRoundingNeverOverpays(uint256,uint256[10]) (runs: 1000, μ: 3736976, ~: 3975352)
+[PASS] test_FIXED_feeOnTransferCollateralCannotOverstateReserves() (gas: 1624123)
+[PASS] test_RESIDUAL_permitDoesNotBindSeries_frontRunnerChoosesTheSeries() (gas: 1566698)
+[PASS] test_adminPowersCannotMoveOrFreezeCollateral() (gas: 2277892)
+[PASS] test_monadCloseAtDayEndSameSecondBoundary() (gas: 1146539)
+[PASS] test_operatorCanListAndMintInTheLastSecondsOfTheDay() (gas: 1163694)
+[PASS] test_permitOverwritesStandingAllowance() (gas: 936874)
+[PASS] test_reentrancyFromCollateralCallbackBlockedOnEveryEntryPoint() (gas: 3035700)
+[PASS] test_voidOneUnitRedemptionsPayZeroButCannotHurtOthers() (gas: 2671172)
+Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 307.60ms (794.08ms CPU time)
+
+Ran 2 tests for test/integration/IsothermE2EFork.t.sol:IsothermE2EForkTest
+[PASS] test_e2e_fullLoop() (gas: 19275872)
+Logs:
+  ladder RCSS date 20261007 dayEnd 1791388800
+  series 0 unclaimed winning claims (Kuru fee collector) 36586
+  series 1 unclaimed winning claims (Kuru fee collector) 87720
+  taker1 P&L (AUSD units) 37631578
+  taker2 NO>=30 cost / payout 28811200 40000000
+
+[PASS] test_e2e_zapThinBook() (gas: 7027427)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 2.90s (934.53ms CPU time)
+
+Ran 2 tests for test/security/v1/V1LiveFork.t.sol:V1LiveForkTest
+[PASS] test_live_RESIDUAL_buyNoSandwichOnRealKuruAndDeployedZap() (gas: 5185799)
+Logs:
+  best bid before (1e18 scale) 430000000000000000
+  victim: NO out / AUSD paid 50000000 49950050
+  victim price per NO (1e6) vs quoted 570000 999001
+
+[PASS] test_live_configRolesWiringAndSolvency() (gas: 870853)
+Logs:
+  resolver forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+  resolver paused false
+  pendingOwner resolver/vault 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000
+  live ladders 1
+  strike / collateral / market 28 300000000 0x171b4cdE3724f2F17576439e6de8c36142A7DBd7
+  strike / collateral / market 29 300000000 0x855eF3549eA5ACA5602EAefDD988950f16FCc6c2
+  strike / collateral / market 30 300000000 0x702A7a87EDb18D733c624bF766020F3b66eb36DC
+  strike / collateral / market 31 300000000 0x4f5Ef4Bf256BDD88492C1e394B0D0f06A8265813
+  vault AUSD / sum(collateral) 1200000000 1200000000
+
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 3.05s (961.51ms CPU time)
+
+Ran 4 tests for test/security/ForkAttacks.t.sol:ForkAttacksTest
+[PASS] test_fork_FIXED_realMockForwarderNeverAcceptsUnsignedReports() (gas: 324772)
+[PASS] test_fork_FIXED_zapRejectsHostileSecondBookForSameYes() (gas: 5891940)
+Logs:
+  10 AUSD via canonical book -> YES 19980000
+
+[PASS] test_fork_staleMakerQuotesAfterSettlementAreFreeMoney() (gas: 3539629)
+Logs:
+  sniper bought winning YES after settlement: 99900000
+  sniper profit (AUSD base units): 49900000
+
+[PASS] test_fork_zapStrayBalancesNotClaimableButStuck() (gas: 3930457)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 3.06s (1.93s CPU time)
+
+Ran 2 tests for test/fork/MonadTestnetFork.t.sol:MonadTestnetForkTest
+[PASS] test_fork_criticalPath() (gas: 4642674)
+Logs:
+  faucet.requestFunds gave (AUSD base units) 10000000000
+  ladder RCSS date 20261008
+  YES>=30 token 0x6709C698e6C1Fde8FdC531b56Ec26F8F04f226b4 RCSS-20261008-GE30-Y
+  real AUSD receiveWithAuthorization mint OK, nonce 0xb905cdf2cc458412d26660917d54b09d764374f353f2e7fd7a7ecaaa1e71eac3
+  MockKeystoneForwarder.report (incl. onReport) gas, in-test measure 159844
+
+[PASS] test_fork_liveContracts() (gas: 129486)
+Logs:
+  fork block 68898133 timestamp 1791354150
+
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 3.06s (995.31ms CPU time)
+
+Ran 2 tests for test/security/AdversarialInvariant.t.sol:AdversarialInvariantTest
+[PASS]
+AdversarialInvariantTest invariants:
+[PASS] invariant_everySeriesCoversItsClaims
+[PASS] invariant_noAttackEverSucceeded
+[PASS] invariant_resultsNeverChange
+[PASS] invariant_vaultBalanceEqualsBooks
+ AdversarialInvariantTest invariants (runs: 128, calls: 12288, reverts: 0)
+
+╭---------------+-----------------------------+-------+---------+----------╮
+| Contract      | Selector                    | Calls | Reverts | Discards |
++==========================================================================+
+| AttackHandler | atkAdmin                    | 580   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | atkAuthorizationWithGarbage | 600   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | atkChallenge                | 611   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | atkDirectOnReport           | 620   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | atkEarlyRedeem              | 599   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | atkEarlyVoid                | 612   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | atkExpiredReport            | 604   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | atkForgedReport             | 609   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | atkOverRedeem               | 624   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | atkPermitWithGarbage        | 629   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | atkReplay                   | 561   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | atkTokenMintBurn            | 651   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | mint                        | 626   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | redeem                      | 614   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | redeemSet                   | 584   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | settle                      | 629   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | transfer                    | 662   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | voidStale                   | 640   | 0       | 0        |
+|---------------+-----------------------------+-------+---------+----------|
+| AttackHandler | warp                        | 1233  | 0       | 0        |
+╰---------------+-----------------------------+-------+---------+----------╯
+
+Logs:
+  attack attempts 62 successes 0
+  forged 8 replay 4
+  expired 3 earlyRedeem 0
+  settle 1 voidStale 0
+  redeem 0 mint 2
+
+[PASS] test_handlerPathsAllExecute() (gas: 7425792)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 3.12s (3.12s CPU time)
+
+Ran 1 test for test/invariant/VaultInvariant.t.sol:VaultInvariantTest
+[PASS]
+VaultInvariantTest invariants:
+[PASS] invariant_balanceMatchesAccounting
+[PASS] invariant_conservation
+[PASS] invariant_payoutRules
+[PASS] invariant_resultsFinal
+[PASS] invariant_solvency
+ VaultInvariantTest invariants (runs: 256, calls: 32768, reverts: 0)
+
+╭--------------+-----------+-------+---------+----------╮
+| Contract     | Selector  | Calls | Reverts | Discards |
++=======================================================+
+| VaultHandler | challenge | 4075  | 0       | 0        |
+|--------------+-----------+-------+---------+----------|
+| VaultHandler | mintSet   | 3970  | 0       | 0        |
+|--------------+-----------+-------+---------+----------|
+| VaultHandler | redeem    | 4001  | 0       | 0        |
+|--------------+-----------+-------+---------+----------|
+| VaultHandler | redeemSet | 4195  | 0       | 0        |
+|--------------+-----------+-------+---------+----------|
+| VaultHandler | settle    | 4232  | 0       | 0        |
+|--------------+-----------+-------+---------+----------|
+| VaultHandler | transfer  | 4013  | 0       | 0        |
+|--------------+-----------+-------+---------+----------|
+| VaultHandler | voidStale | 4131  | 0       | 0        |
+|--------------+-----------+-------+---------+----------|
+| VaultHandler | warp      | 4151  | 0       | 0        |
+╰--------------+-----------+-------+---------+----------╯
+
+Logs:
+  executed (all runs): mintSet=1024 redeemSet=979 transfer=856 settle=548 voidStale=380 redeem=553 challenge=75 lateChallenge=246
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 17.77s (17.77s CPU time)
+
+Ran 18 test suites in 17.77s (34.93s CPU time): 149 tests passed, 0 failed, 0 skipped (149 total tests)

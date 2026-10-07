@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Isotherm maker loop: quotes the active ladders every loop.tickSec, kill switch every 15 s, serves roll requests.
+     KeepAlive restarts it if it dies; ThrottleInterval keeps a crash loop from burning MON. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>xyz.isotherm.maker</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__PKG__/scripts/run.sh</string>
+    <string>loop</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>NODE_BIN</key><string>__NODE__</string>
+    <key>PATH</key><string>/usr/bin:/bin:/usr/sbin:/sbin:__NODE_DIR__</string>
+  </dict>
+  <key>WorkingDirectory</key><string>__PKG__</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>60</integer>
+  <key>ProcessType</key><string>Background</string>
+  <key>StandardOutPath</key><string>__LOGDIR__/maker.out.log</string>
+  <key>StandardErrorPath</key><string>__LOGDIR__/maker.err.log</string>
+</dict>
+</plist>

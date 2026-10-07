@@ -1,0 +1,71 @@
+[
+ {
+  "type": "function",
+  "name": "verifiedMarket",
+  "inputs": [
+   {
+    "name": "market",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "pricePrecision",
+    "type": "uint32",
+    "internalType": "uint32"
+   },
+   {
+    "name": "sizePrecision",
+    "type": "uint96",
+    "internalType": "uint96"
+   },
+   {
+    "name": "baseAssetAddress",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "baseAssetDecimals",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "quoteAssetAddress",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "quoteAssetDecimals",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "tickSize",
+    "type": "uint32",
+    "internalType": "uint32"
+   },
+   {
+    "name": "minSize",
+    "type": "uint96",
+    "internalType": "uint96"
+   },
+   {
+    "name": "maxSize",
+    "type": "uint96",
+    "internalType": "uint96"
+   },
+   {
+    "name": "takerFeeBps",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "makerFeeBps",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "stateMutability": "view"
+ }
+]

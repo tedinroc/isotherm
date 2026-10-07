@@ -1,0 +1,51 @@
+$ mm weather buy taipei --date tomorrow --strike 30 --side yes --amount 5 --max-price 0.6 --json
+Intent: Isotherm buyYes Tmax>=30C Taipei 2026-10-08
+c [Error]: Non-200 status code: '400'
+    at a (file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:48:56983)
+    at Object.internal (file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:48:57979)
+    at u (file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:117:112237)
+    at file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:117:113265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:48:76494
+    at async file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:117:115129
+    at async file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:48:76494
+    at async file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:48:76494
+    at async e._handle (file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:48:76075) {
+  cause: undefined,
+  code: -32603,
+  data: { error: 'Invalid chainId' }
+}
+Error: Gas fee/price estimation failed. Message: Non-200 status code: '400'
+    at e.GasFeeController._fetchGasFeeEstimateData (file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:20671:1031748)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e.TransactionController.getGasFeesForSpeed (file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:20684:17176)
+    at async e.TransactionController.prepareTransaction (file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:20684:14652)
+    at async zV.prepareViaController (file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:20684:74035)
+    at async zV.submitTransaction (file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:20684:66209)
+    at async file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/result-B6sxiBVh.js:7:182072
+    at async y.api_name (file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/result-B6sxiBVh.js:7:194467)
+    at async ys (file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/analytics-B_7hBe9K-ikrDyqLX.js:2068:19202)
+    at async S (file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/cliWalletExecutor-BbZHO-6A.js:1:3024)
+c [Error]: Non-200 status code: '400'
+    at a (file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:48:56983)
+    at Object.internal (file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:48:57979)
+    at u (file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:117:112237)
+    at file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:117:113265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:48:76494
+    at async file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:117:115129
+    at async file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:48:76494
+    at async file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:48:76494
+    at async e._handle (file://<repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet/dist/chunks/bridge-D5X0hE1K.js:48:76075) {
+  cause: undefined,
+  code: -32603,
+  data: { error: 'Invalid chainId' }
+}
+{
+  "ok": false,
+  "error": {
+    "code": "ISOTHERM_CHAIN_NOT_CONFIGURED",
+    "message": "mm could not reach Monad testnet (10143) for 'Isotherm buyYes Tmax>=30C Taipei 2026-10-08': Non-200 status code: '400'.",
+    "hint": "MetaMask's hosted RPC gateway rejects 10143. Add the chain once with the bundled script: `curl -fsSL https://unpkg.com/mm-plugin-isotherm/scripts/setup-mm-monad.sh | SKIP_INSTALL=1 sh` (writes customEvmChains[10143]); `mm weather doctor` checks it."
+  }
+}

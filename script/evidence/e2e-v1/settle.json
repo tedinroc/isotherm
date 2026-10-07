@@ -1,0 +1,4 @@
+{"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],
+"Settlement":[{"name":"station","type":"bytes4"},{"name":"date","type":"uint32"},{"name":"tmaxC","type":"int16"},{"name":"isVoid","type":"bool"},{"name":"sourcesHash","type":"bytes32"},{"name":"validUntil","type":"uint64"}]},
+"primaryType":"Settlement","domain":{"name":"Isotherm Resolver","version":"1","chainId":10143,"verifyingContract":"0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B"},
+"message":{"station":"0x524a5454","date":20261010,"tmaxC":25,"isVoid":false,"sourcesHash":"0x2e5b0572f0df25bbd04751ff5715a7b8ec05f0f580e8a2d5defaea7b09e0b39e","validUntil":1791651303}}

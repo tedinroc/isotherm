@@ -1,0 +1,38 @@
+# 2026-10-07T05:39:36Z  final tarball sha256 ed29e4a1214d3283a35e53d3c364668bd1bdfd01184cb28aedf33c261d1f34b2
+$ ls -A $HOME   # truly fresh home: empty
+$ ISOTHERM_TGZ=./mm-plugin-isotherm-0.1.0.tgz sh scripts/setup-mm-monad.sh   # bare relative path + fresh home (both verifier issues)
+@metamask/agent-wallet: Installing plugin file:<repo>/packages/mm-plugin/mm-plugin-isotherm-0.1.0.tgz... installed v0.1.0
+customEvmChains[10143].rpcTarget = https://testnet-rpc.monad.xyz  (<repo>/packages/mm-plugin/harness/.mmhome-fresh/.metamask/wallets.json, created)
+Done. Check with:   <repo>/packages/mm-plugin/harness/bin/mm weather doctor --json
+Read-only, no sign-in needed:   <repo>/packages/mm-plugin/harness/bin/mm weather markets --json    <repo>/packages/mm-plugin/harness/bin/mm weather quote taipei --json
+Trading needs `mm login` + `mm init` once, testnet MON for gas (https://faucet.monad.xyz) and testnet AUSD.
+Optional, so ctx.publicClient(10143) works too: run scripts/rpc-shim.mjs from the plugin package and export MM_INFURA_RPC_BASE_URL=http://127.0.0.1:18790
+exit=0
+$ mm plugins --json | (name, version, commands)
+mm-plugin-isotherm 0.1.0 ['kuru:book', 'kuru:cancel', 'kuru:limit', 'weather:buy', 'weather:doctor', 'weather:edge', 'weather:markets', 'weather:positions', 'weather:quote', 'weather:redeem', 'weather:sell']
+$ python3 -c 'print(config.json#plugins)'
+{
+ "mm-plugin-isotherm": {
+  "version": "0.1.0",
+  "integrity": "",
+  "manifestHash": "c0cfbd61cbe0b16eeaaa3ff131cc30fc0a80a23e3576d5599605014badfe1556",
+  "approvedCapabilities": [
+   "wallet-read",
+   "wallet-submit"
+  ],
+  "approvedCommandIds": [
+   "weather:markets",
+   "weather:quote",
+   "weather:edge",
+   "weather:positions",
+   "weather:doctor",
+   "weather:buy",
+   "weather:sell",
+   "weather:redeem",
+   "kuru:book",
+   "kuru:limit",
+   "kuru:cancel"
+  ],
+  "approvedAt": "2026-10-07T05:39:56.612Z"
+ }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "isotherm-mm-host",
+  "private": true,
+  "description": "Isolated MetaMask Agent Wallet host (mm 7.0.0) used only by the plugin's test harness",
+  "dependencies": { "@metamask/agent-wallet": "7.0.0" }
+}

@@ -1,184 +1,157 @@
-# Isotherm core contracts: RESULT (2026-10-06)
+# Isotherm contracts v1: RESULT (2026-10-07)
 
-**Verdict: it can be built, and the critical path works against live Monad testnet state.** Everything below
-ran on a fork of the live testnet (block 68,693,965) with Monad execution rules: real testnet AUSD and its faucet,
-the real Chainlink CRE `MockKeystoneForwarder`, and the real Kuru v1 Router. It has **not** run on the live chain
-yet. The deployer holds 3.65 MON (rule: go live only at ≥5 MON), and the Kuru spike is using the same key (nonce
-moving), so a parallel live run would collide.
+**Verdict: done.** All 7 Medium findings from the security review and the independent verification are fixed or moved
+off-chain, along with the cheap Lows. 134/134 tests pass. 22/22 injected bugs are caught. The v1 stack is **live on
+Monad testnet 10143** and source-verified (Sourcify `exact_match` on two verifiers). A cast-signed end-to-end run
+against the *deployed* bytecode (on an anvil fork) passes. No ladders and no markets were created on the live chain.
+That is the go-live step.
 
-## What was built (995 lines of Solidity in `src/`, 2,055 lines of tests)
+The v0 feasibility result is kept as `script/RESULT-v0-feasibility.md`.
 
-| File | What it is |
-|---|---|
-| `src/OutcomeToken.sol` | 6-decimal ERC-20 + EIP-2612 permit. Deployed once as an implementation, then as an EIP-1167 clone with immutable args `(seriesId, station, date, strikeC, isYes)`. Only the vault can mint/burn. Name e.g. `Isotherm RCSS 20261007 Tmax>=30C YES`, symbol `RCSS-20261007-GE30-Y`. Permit domain is `{name:"Isotherm Outcome", version:"1", verifyingContract: clone}` (ERC-5267). |
-| `src/StrikeFactory.sol` | Series registry (abstract, inherited by the vault, so there is one address and no deploy cycle). `createSeries` / `createLadder(station, date, int16[] strikes, closeTime)` are operator-only. They deploy the YES/NO pair with CREATE2 clones (address predictable via `predictTokenAddress`) and enforce `now < closeTime <= end of the station-local day`. A ladder is one (station, date). |
-| `src/CollateralVault.sol` | Complete sets backed 1:1 by AUSD. `mintSet`, `mintSetTo`, `mintSetWithPermit` (relayer; AUSD always comes from the holder and tokens always go to the holder; no fallback to a standing allowance). `redeemSet` works at any time and is never paused. After resolution, `redeem(id, yesAmt, noAmt)` pays YES 1 / NO 0 when `tmax >= k`, the reverse otherwise, and 0.5/0.5 when void (rounded down; a full set always pays exactly 1). Collateral is tracked per series with checked subtraction. Guardian pause stops new mints only. `duePendingLadders(start,count)` lists the ladders the CRE workflow should settle. |
-| `src/Resolver.sol` | CRE `IReceiver` (`onReport(bytes,bytes)` + ERC-165, interface id `0x805f2132`). Configurable forwarder. **Every report must carry an EIP-712 attestation** from `attester` over `Settlement(bytes4 station,uint32 date,int16 tmaxC,bool isVoid,bytes32 sourcesHash)`; the domain binds chainId and the resolver address. Results are write-once (no double settle or replay). Reports are only accepted after the local day ends. `voidIfStale` is open to anyone 24 h after day end and works even when paused. Guardian pause covers `onReport`. Optional workflowId/owner pinning reads the 64-byte KeystoneForwarder metadata. Attestation can only be switched off while a workflowId is pinned. Station UTC offsets are write-once. |
-| `src/ForecastCommit.sol` | Mainnet calibration log. `commit(station,date,hash)` must land before local midnight that starts `date`, is keyed by `msg.sender`, and can never be overwritten. `reveal(station,date,int16[] strikes,uint16[] probBps,salt)` checks `keccak256(abi.encode(forecaster,station,date,strikes,probs,salt))`. Anyone can keep a record (Forecast Cup-ready). |
-| `src/lib/StationTime.sol` | yyyymmdd to UTC day boundaries (days_from_civil). Validates ICAO codes and UTC offsets. |
-| `script/Deploy.s.sol` | Testnet stack. Env: `ATTESTER` (required), `FORWARDER` (default mock `0xB9F7…d192`), `AUSD`, `GUARDIAN`, `OPERATOR`, `NEW_OWNER`. Refuses chain 143. Registers RCSS +8h, RJTT +9h, ZGSZ +8h, RKSI +9h. |
-| `script/DeployForecastCommit.s.sol` | Mainnet ForecastCommit (a human broadcasts it). |
-| `script/e2e.sh` | Full critical path as real transactions (anvil fork, or `MODE=live`). Signatures are made with `cast wallet sign --data`, independent of Solidity. |
-| `script/attestation-vector.json` | EIP-712 test vector for the CRE workflow (public test key `0xa11ce`). |
+## Live deployment (single source of truth: `deployments/testnet.json`)
 
-Config: solc 0.8.37 (no known bugs), `evm_version = "osaka"`, `network = "monad"` (Foundry 1.8.5: MIP-8 page
-storage, cold-access repricing, 128 KB code limit). OpenZeppelin v5.7.0 is vendored in `lib/` (trimmed to
-`contracts/`). No upgradeability.
+| | address | deploy tx |
+|---|---|---|
+| Resolver | `0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B` | `0x80f5f607…cf75e` (block 68,884,377) |
+| CollateralVault (= factory) | `0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39` | `0xc1be9aab…d56f1` |
+| IsothermZap | `0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0` | `0xb30472f1…6a804` |
+| OutcomeToken impl | `0x5EfaB33DDad0715b66f514Fe12d78Ca23f3e31fC` | created by the vault constructor |
 
-## Evidence (commands run and their real output)
+- **Stations.** `registerStation` RCSS = +28,800 s (`0xea018c8c…`) and RJTT = +32,400 s (`0xeb126bef…`).
+- **Operator.** `setOperator(operator)` (`0xc13e88ed…`).
+- **Funding.** The operator got 0.15 MON (`0xf3b482e0…`) and the attester 0.1 MON (`0x54236068…`). The full hashes are
+  in the JSON.
+- **Roles.** Each role has its own key in `~/.config/isotherm/*.key` (chmod 600, never printed):
 
-**1. Build.** `forge build --sizes`. Runtime/initcode sizes: Vault 12,122/21,191 B; Resolver 11,034/12,127;
-OutcomeToken 7,140/8,245; ForecastCommit 6,252/6,525. All under Ethereum's 24 KB limit too.
+  | role | address |
+  |---|---|
+  | owner (deployer) | `0xb855…5c11` |
+  | guardian | `0x30C8E371719Ff00577284dd9c10587Fa89357d50` |
+  | attester | `0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9` |
+  | operator | `0x602dbf3937558B1d18d76315635fD5410089bd51` |
 
-**2. Tests.** `MONAD_TESTNET_RPC=https://testnet-rpc.monad.xyz FORK_BLOCK=68693965 forge test`
-```
-Ran 8 test suites: 82 tests passed, 0 failed, 0 skipped (82 total tests)
- VaultInvariantTest invariants (runs: 256, calls: 32768, reverts: 0)
-  executed (all runs): mintSet=1243 redeemSet=1202 transfer=1103 settle=501 voidStale=438 redeem=702
-```
-- 75 unit tests: Resolver 30, Vault 24, OutcomeToken 7, ForecastCommit 7, StationTime 7. They cover the forwarder
-  check, metadata pinning, wrong signer, tampered payload, high-s and short signatures, cross-resolver and
-  cross-chain replay, double settle, settle→void, void→settle, day-not-over, stale void (including while paused),
-  pause roles, permit relay/front-run/expiry, the `tmax == k` boundary, whole-ladder settlement from one report,
-  per-series isolation and the due-ladder view.
-- 4 fuzz tests × 1,000 runs: a set pays exactly 1 for any amount/split/tmax/strike/void; the payout rule;
-  mint→redeemSet round trip; no mint after close. Two date algorithms are cross-checked over 2000–2199.
-- 5 invariants: vault AUSD == Σ per-series collateral; solvency (`2·collateral ≥ yH·YES + nH·NO`, and
-  `YES == NO == collateral` while unresolved); conservation (deposited == held + paid; per-series paid ≤ minted);
-  every full set pays exactly 1 and every redeem follows the rule; results are write-once. Also passes with
-  `--fuzz-seed 0x7` and `0x99`.
-- Offline (`forge test` without the env var) the 2 fork tests are skipped, not failed.
+  The deploy script refuses to run if any role equals the deployer.
+- **Cost.** The deploy was billed **1.0625 MON**: 10,315,665 gas limit at 102 gwei with a 1.08 multiplier, inside the
+  1.3 budget. Including the funding, the deployer spent 1.3168 MON and now holds 4.6603 MON.
+- **Rehearsal.** The same script ran on an anvil fork first (`script/evidence/deploy-anvil/`). It produced the same
+  addresses and a gas limit of 10,229,586.
+- **Verification.** `script/verify-sourcify.sh` reports `Status: exact_match` for all 4 contracts on
+  `https://sourcify-api-monad.blockvision.org/` (MonadVision) and on `https://sourcify.dev/server/`. The sourcify.dev v2
+  lookup shows runtimeMatch `exact_match` for all four. Logs: `script/evidence/sourcify-verify*.txt`.
+- **Exports.** The ABIs are in `packages/abi/*.json`, written by `script/export-abi.sh`. Each file is a plain ABI array
+  ready for viem. Addresses are in `addresses.json`.
 
-**3. Mutation check (do the tests catch bugs?).** 7 deliberate bugs were injected one at a time, then reverted
-(the file hashes were checked afterwards). All 7 were **caught**: no double-settle guard, attestation ignored,
-void overpays YES, payout not debited, report before day end, mint after close, `>` instead of `>=`.
+## Fixes (what changed, and the test that proves each one)
 
-**4. Live-state fork test** (`test/fork/MonadTestnetFork.t.sol`, block 68,693,965):
-```
-faucet.requestFunds gave (AUSD base units) 10000000000
-ladder RCSS date 20261007
-YES>=30 token 0x709C…35F8 RCSS-20261007-GE30-Y
-MockKeystoneForwarder.report (incl. onReport) gas, in-test measure 159394
-```
-Checked in this test: AUSD on-chain `eip712Domain()` = "Agora Dollar"/"1"/10143. `typeAndVersion()` returns
-"MockKeystoneForwarder 1.0.0" at `0xB9F79d863261869B234c481D1f9A7af84AeAd192` and "KeystoneForwarder 1.0.0" at
-`0xF8344CFd5c43616a4366C34E3EEE75af79a74482`. A real AUSD EIP-2612 permit relayed into `mintSetWithPermit`
-works. Through the real mock forwarder, a forged report gives `ReportProcessed(result=false)`, an attested one
-gives `true`, and a replay gives `false`. Redeem then paid 130 AUSD exactly.
-
-**5. Real transactions on an anvil fork** (`anvil --fork-url https://testnet-rpc.monad.xyz --fork-block-number
-68693965`; `anvil_nodeInfo` reports `"network":"monad","hardFork":"MonadTen"`, so no flag is needed). Command:
-`RPC=http://127.0.0.1:18947 script/e2e.sh`, run with the real deployer/maker/taker keys. Full log in
-`script/evidence/e2e-anvil-console.txt`.
-```
-7. EIP-712: cast typed-data signature == signature over contract settlementDigest (0x60c8…f4d0)
-7a. forged report via MockKeystoneForwarder (sent by an arbitrary EOA): ReportProcessed=REJECTED
-7b. attested report: ReportProcessed=success result=(1, 31, 1791303002, 0x1e22…611a)
-7c. replayed report: ReportProcessed=REJECTED
-taker1 burned YES=190000000 NO=130000000 -> +190000000 AUSD units; taker2 burned YES=50000000 NO=110000000 -> +50000000
-vault AUSD left=0 series30 collateral=0
-```
-
-**6. Kuru compatibility** (`script/evidence/kuru-compat-console.txt`). Our real YES clone was used as the base of
-a Kuru v1 YES/AUSD market through Router `0x7EFb…4630`, with the spike's parameters (price precision 1e4,
-tick 10, size precision 1e6). `deployProxy` succeeded. The maker deposited YES into the MarginAccount and posted
-asks at 0.45/0.46; taker1 `placeAndExecuteMarketBuy` 50 AUSD gave **+110.758477 YES**.
-
-**7. Live node cross-check of the gas model** (read-only `eth_estimateGas` on https://testnet-rpc.monad.xyz):
-Resolver deploy 2,555,383 (fork: 2,534,104) and Vault 4,395,602 (fork: 4,359,833). They agree within about 1%.
-
-**8. ForecastCommit mainnet dry-run** (simulation only, no key passed, mainnet nonce still 0):
-`forge script script/DeployForecastCommit.s.sol --rpc-url https://rpc.monad.xyz --sender 0xb855…5c11` gave
-"Estimated total gas used for script: 1982108", about 0.20 MON at 100 gwei (forge reserves 0.40 at max fee).
-
-## Gas (Monad rules; **billed on gas LIMIT**; limit = used × 1.10; MON at 102 gwei)
-
-| Action | gas used | suggested limit | MON |
+| # | Finding | v1 fix | Proof |
 |---|---|---|---|
-| Resolver deploy | 2,534,104 | 2,787,514 | 0.2843 |
-| CollateralVault deploy (+OutcomeToken impl) | 4,359,833 | 4,795,816 | 0.4892 |
-| registerStation / setOperator | 60,851 / 59,746 | 67k | 0.0068 |
-| createLadder, 6 strikes (12 clones) | 1,547,334 | 1,702,067 | 0.1736 |
-| createSeries, 1 strike | 306,574–364,759 | 401,234 | 0.0409 |
-| mintSet first / repeat | 282,367 / 180,367 | 310,603 / 198,403 | 0.032 / 0.020 |
-| mintSetWithPermit (relayed) | 284,019 | 312,420 | 0.0319 |
-| redeemSet | 159,969 | 175,965 | 0.0179 |
-| CRE settle via MockKeystoneForwarder (whole ladder) | 148,685 | 163,553 | 0.0167 |
-| redeem | 181,875 | 200,062 | 0.0204 |
-| OutcomeToken transfer | 56,515 | 62,166 | 0.0063 |
-| Kuru deployProxy YES/AUSD (per strike) | 1,310,524 | 1,441,576 | 0.1470 |
-| Kuru addSellOrder (first / next) | 317,194 / 226,655 | 349k / 249k | 0.036 / 0.025 |
-| Kuru market buy (2 fills) | 357,681 | 393,449 | 0.0401 |
-| ForecastCommit commit / reveal (4 strikes) | 81,287 / 41,526 | 89k / 46k | 0.009 / 0.005 |
+| a | Stale-void free option (24 h < the workflow's 36 h); guardian forces a void via pause | `STALE_WINDOW = 48 h`. While paused, `voidIfStale` is blocked. After any unpause, the workflow gets `RESUME_GRACE = 24 h` before anyone may void. `MAX_STALE_WINDOW = 7 d` is a hard liveness bound that works even while paused. New view `staleAt(station,date)` | `test_FIXED_staleVoidCannotFrontRunAReportWithinWorkflowDeadline`, `test_FIXED_guardianPauseCannotForceStaleVoid`, `test_staleVoidBlockedWhilePausedUntilHardMax`, `test_resumeGraceAfterUnpause`, `testFuzz_staleVoidNeverBeforeWindow` |
+| b | A single attester key is final; no dispute | Deploy-time `challengeWindow` (testnet 900 s, max 2 d). A **Settled** result gets `finalAt = resolvedAt + challengeWindow`. Before then, only the **guardian** can call `challenge(station,date,reasonHash)`, which converts it to Void (0.5/0.5) and makes it final at once. Void results (reported or stale) are final immediately. The vault's `redeem`, `payoutHalves` and `previewRedeem` revert `NotFinal` until `finalAt`. `redeemSet` (a complete set at par) is always open | `test_FIXED_compromisedAttesterContainedByChallengeWindow`, `test_guardianChallengeConvertsToVoid`, `test_challengeRules`, `test_redeemWaitsForChallengeWindow`, `test_challengedResultPaysHalf`, the invariant `challenge`/`lateChallenge` actions |
+| c | The Zap accepts any Kuru-verified book (hostile 90 % fee) | `src/IsothermZap.sol`. A write-once `canonicalMarket[seriesId]` set by a vault operator or the owner. It is validated against `Router.verifiedMarket`: base = series YES, quote = AUSD, 6/6 decimals, pricePrecision 1e4, sizePrecision 1e6, taker fee ≤ 30 bps, maker fee ≤ taker fee. Every flow requires `market == canonical`, a non-zero min-out and a non-zero recipient, and trades only before the series' closeTime | `test_fork_FIXED_zapRejectsHostileSecondBookForSameYes` (real Kuru), `IsothermZapTest` (4 offline tests), live-bytecode e2e step 3/5 |
+| d | A permit does not bind the series (front-run) | `mintSetWithAuthorization(seriesId, amount, holder, validAfter, validBefore, salt, v, r, s)` uses AUSD EIP-3009 `receiveWithAuthorization`, with `nonce = keccak256(abi.encode(seriesId, amount, salt))` recomputed by the vault. Payee == caller, so only the vault can consume it. `mintSetWithPermit` is kept for 2612-only wallets (documented residual) | `test_mintSetWithAuthorizationCannotBeRedirected`, the fork step `_step4b_authorizationMint` on **real AUSD**, live-bytecode e2e step 4 |
+| e | Fee-on-transfer collateral overstates reserves | Every deposit path credits only if the vault's AUSD balance grew by exactly `amount`, else `CollateralTransferMismatch` | `test_FIXED_feeOnTransferCollateralCannotOverstateReserves`, `test_feeOnTransferCollateralRejected` |
+| f | Attestations never expire | `validUntil` (uint64, inclusive) is signed in the EIP-712 struct and checked in `onReport`. **Attestation can no longer be switched off** (`setAttestationRequired` was removed), which also closes finding #1 (attestation off behind the permissionless mock) in every order of go-live steps | `test_FIXED_expiredAttestationCannotRaceANewerOne`, `test_attestationExpiry`, `testFuzz_expiredAttestationNeverAccepted`, `test_FIXED_unsignedReportRejectedWhateverTheForwarderConfig`, `test_fork_FIXED_realMockForwarderNeverAcceptsUnsignedReports` |
+| g | Shared keys | Owner, guardian, attester and operator are 4 different keys, enforced in `Deploy.s.sol` | `deployments/testnet.json` (`roles` is read back from chain) |
+| h | Compliance flag | `Series.gated` (packed in slot 0, so no gas cost for open series), `setSeriesGated` and `setAllowlisted` (owner). A gated series mints only to allowlisted recipients. Secondary transfers and exits are not gated | `test_gatedSeriesMintsOnlyToAllowlisted` |
+| — | Verify D (130 % gas multiplier) and E (source drift) | The deploy uses a 1.08 multiplier. The deployed source equals `src/` (Sourcify exact match) | above |
 
-Budget: a one-time core deploy is about 0.8 MON. A 6-strike Taipei day is about 0.17 (ladder) + 0.88 (6 Kuru
-markets) + about 0.02–0.04 (settlement), roughly **1.1 MON/day before maker quoting**. Kuru market creation
-dominates. Gas is high relative to Ethereum because every mint touches 5 cold accounts (AUSD proxy+impl, two
-clones, token impl) at Monad's 10,100 gas per cold account. Per-test gas: `test/.gas-snapshot`. Latency was not
-measured, because that needs live transactions (no MON).
+Findings #3 (the CRE `decide()` rule) and #5 (maker kill switch) are off-chain. They belong to the workflow and maker
+owners (see the interfaces below).
 
-## Findings other builders need
+### Trust model (also written in the `Resolver` NatSpec)
 
-- **The AUSD faucet has a GLOBAL 60 s cooldown.** `requestFunds` reverts with `MaxFrequencyExceeded()`
-  (`0x20e5bc67`) until 60 s after the previous claim by *anyone*. Measured on the fork: +59 s reverts, +60 s
-  succeeds. The drip/relayer must stockpile AUSD and not call the faucet per user. Each claim gives 10,000 AUSD.
-- **Testnet AUSD supports both EIP-2612** (`permit`, `nonces`, `DOMAIN_SEPARATOR`) **and EIP-3009**
-  (`receiveWithAuthorization`, `transferWithAuthorization`); I checked the selectors in the implementation
-  `0xc1e3…12da`. The domain is "Agora Dollar" v1, chainId 10143. The vault uses 2612.
-- **The MockKeystoneForwarder never reverts when our `onReport` reverts.** The tx succeeds and emits
-  `ReportProcessed(receiver indexed, workflowExecutionId indexed, reportId indexed, bool result)`, topic
-  `0x3617b009…16b5`. The CRE workflow and dashboards must check `result` or our
-  `LadderResolved(bytes4,uint32,uint8,int16,bytes32,address)` event, topic `0xdaba13fd…ca0f`, **not** tx status.
-  The mock is permissionless, which is why attestation is mandatory.
-- The deployed mock reports version "1.0.0" (the `develop` source says "1.0.0-dev"), but its behaviour matched the
-  source in every case tested.
-- `rawReport` layout for the mock: `0x01 | execId(32) | ts(4) | donId(4) | cfgVersion(4) | workflowCid(32) |
-  name(10) | owner(20) | reportId(2) | report`. The header is 109 bytes. See `script/attestation-vector.json`.
-- Foundry 1.8.5 wraps every `--json` output in `{"schema_version","success","data",...}`. Negative ints go to
-  `cast call` after `--` with options first (`cast call --rpc-url X addr sig -- -3`). The Bash tool runs zsh, so
-  `[ a == b ]` fails there.
+- **attester.** Decides the outcome by signing it.
+- **guardian.** Can pause `onReport` and can veto a Settled result to Void during the window. It can never pick a
+  winner. Residual risk (documented): it can void an honest result inside the window
+  (`test_RESIDUAL_guardianCanVoidAnHonestResultInsideTheWindow`).
+- **owner.** Registers stations (write-once), rotates the forwarder, attester and guardian, pins the workflow, and
+  unpauses. Admins have no path to collateral.
+- **Liveness.** Funds are never locked longer than dayEnd + 7 d.
 
-## Interfaces for the other workstreams
+## Tests: 134 passed, 0 failed (with `MONAD_TESTNET_RPC`, fork block 68,886,592)
 
-- Report payload: `abi.encode(bytes4 station, uint32 date, int16 tmaxC, bool isVoid, bytes32 sourcesHash, bytes sig65)`.
-  `sig` is an EIP-712 signature over domain `{name:"Isotherm Resolver",version:"1",chainId:10143,verifyingContract:<Resolver>}`
-  and type `Settlement(bytes4 station,uint32 date,int16 tmaxC,bool isVoid,bytes32 sourcesHash)`. The workflow can
-  also read `settlementDigest(...)` and sign the raw digest; both give identical bytes (verified).
-- `station` is ASCII bytes4 (`"RCSS"` = `0x52435353`) and `date` is local yyyymmdd. A ladder settles any time
-  from `Resolver.dayEnd(station,date)` onward. Due list: `CollateralVault.duePendingLadders(0, 50)`.
-- `seriesId = keccak256(abi.encode(bytes4 station, uint32 date, int16 strikeC))`. Tokens:
-  `getSeries(id).yes/.no` or `predictTokenAddress(station,date,k,isYes)`.
-- Vault: `mintSet(bytes32,uint256)`, `mintSetTo(bytes32,uint256,address)`,
-  `mintSetWithPermit(bytes32,uint256,address holder,uint256 deadline,uint8,bytes32,bytes32)`,
-  `redeemSet(bytes32,uint256)`, `redeem(bytes32,uint256 yes,uint256 no) returns (uint256)`,
-  `previewRedeem`, `payoutHalves(bytes32) -> (2,0)|(0,2)|(1,1)`.
-  Events: `SeriesCreated` (`0xd88d9fa7…a197`), `SetMinted` (`0x6976207c…7de4`), `Redeemed` (`0xc9949b3e…dfc9`).
-- Set the CRE write gas limit to about 250k with the mock (the measured whole tx is 148,685). Add headroom for the
-  production KeystoneForwarder's signature checks.
+Command: `MONAD_TESTNET_RPC=https://testnet-rpc.monad.xyz FORK_BLOCK=68886592 forge test`, which gives
+`Ran 15 test suites: 134 tests passed, 0 failed, 0 skipped`. Full log: `script/evidence/forge-test-full.txt`. Offline it
+gives 126 passed and 8 fork tests skipped.
+
+| Suite | Tests |
+|---|---|
+| unit | 94: Resolver 38, CollateralVault 31, IsothermZap 4 (new, mock Kuru), OutcomeToken 7, ForecastCommit 7, StationTime 7 |
+| fuzz | 4 in `VaultFuzz`. There are 14 `testFuzz_*` across all files, at 1,000 runs each |
+| invariant | `VaultInvariant`: 5 invariants, 256 runs × 128 depth, 32,768 calls, 0 reverts. Actions executed: mint 1069, redeemSet 990, settle 567, voidStale 364, redeem 547, challenge 83, lateChallenge (must fail) 201 |
+| security | 27: ResolverAttacks 13, VaultAttacks 11, AdversarialInvariant (4 invariants + path test; 20 handler selectors, 0 attack successes), MonadGas 1. Every v0 `FINDING` test was rewritten as `FIXED_*` (exploit no longer works) or `RESIDUAL_*` (documented) |
+| fork (live state) | 8: MonadTestnetFork 2 (with a real-AUSD EIP-3009 mint), ForkAttacks 4 (real Kuru, real MockKeystoneForwarder), IsothermE2EFork 2 (full loop with the v1 Zap and canonical markets) |
+
+**Mutation check.** I injected 22 bugs, one at a time, in a scratch copy, ran `forge test` after each, then restored
+the file and checked its sha256. All 22 were caught.
+- **Resolver and vault (14):** validUntil not checked / not signed; pause ignored; no resume grace; no hard max;
+  STALE_WINDOW = 24 h; challenge after final; anyone can challenge; Settled final immediately; vault ignores finalAt;
+  no balance-delta check; nonce ignores the series; gate not enforced; challenge keeps finalAt.
+- **Zap (8):** canonical equality, fee cap, zero min-out, trading after close, write-once, anyone registers, price
+  precision, base token. The first Zap run *missed* 2 of these because of a memory-struct aliasing bug in my test. I
+  fixed the test and both are now caught.
+
+## End-to-end against the deployed bytecode (`script/e2e.sh`)
+
+I ran it on an anvil fork of live testnet taken after the deploy. It uses the real AUSD, faucet, Kuru Router and
+MarginAccount, the real MockKeystoneForwarder, and the role keys. Every EIP-712 Settlement and EIP-3009 signature is
+produced by `cast wallet sign --data`, and each Settlement signature is cross-checked against the on-chain
+`settlementDigest`. Log: `script/evidence/e2e-v1/console.txt`.
+
+```
+createLadder RCSS 20261010 [28,29,30] + RJTT [20] (operator)
+Kuru YES>=29/AUSD market; hostile 90%-fee book on the same YES (validateMarket=false)
+refused: taker2 registers (NotOperator) | operator registers hostile (InvalidMarket) | re-registration (CanonicalMarketAlreadySet)
+refused: front-runner re-targets the 3009 authorization -> AUSD InvalidSignature();  relayed EIP-3009 mint: taker1 YES>=30 = 50000000
+refused: Zap via hostile book (MarketMismatch), minOut 0 (ZeroMinOut);  Zap.buyYes 10 AUSD -> 19980000 YES
+forged REJECTED | expired REJECTED | attested Tmax=29 accepted | replay REJECTED ; resultOf=(1, 29, t, t+900, ...) isFinal=false
+refused: redeem inside the challenge window (NotFinal);  at finalAt: +19980000 AUSD
+RJTT attested 25 -> refused: non-guardian challenge (NotGuardian); guardian challenge -> (2, 0, ...) ; void 10 YES + 10 NO -> +10000000
+vault AUSD 280020000 == pre-run 0 + sum(series collateral) 280020000 : OK
+```
+
+`script/attestation-vector.sh` signs a Settlement with the public test key 0xa11ce and checks that the `cast` typed-data
+signature equals a signature over the **live** Resolver's `settlementDigest` (read with `eth_call`): OK. The output is
+`script/attestation-vector.json` (v1 struct). That signature is rejected on chain, because the attester is a different
+key.
+
+## Gas (Monad bills the gas limit; numbers are gasUsed from the e2e on the live bytecode)
+
+| Action | gasUsed | Notes |
+|---|---|---|
+| createLadder, 3 strikes / 1 strike | 848,818 / 365,957 | |
+| mintSet, first | 297,217 | +15k vs v0: the balance-delta check |
+| mintSetWithAuthorization (relayed EIP-3009) | 309,470 | |
+| setCanonicalMarket | 130,039 | one per strike per day (operator) |
+| Kuru deployProxy | 1,321,336 | |
+| Zap.buyYes | 483,159 | |
+| CRE report via the mock: accepted / forged / expired / replay | 149,863 / 89,840 / 82,333 / 109,345 | set the workflow gas limit to about 200k |
+| redeem / redeemSet | 146,957 / 160,004 | |
+| guardian challenge | 44,432 | |
+| Deploy (Resolver / Vault / Zap) | 3,048,824 / 5,197,792 / 1,870,311 | live limits, ×1.08 |
 
 ## Not done / limits (honest)
 
-- **No live-testnet deployment yet** (deployer 3.65 MON < 5 MON rule; the key is shared with the Kuru spike).
-  Command when ready: `ATTESTER=<addr> OPERATOR=0xd572…448a forge script script/Deploy.s.sol --rpc-url
-  monad_testnet --broadcast --private-key $(cat ~/.config/isotherm/deployer.key) --gas-estimate-multiplier 110 --slow`.
-  Run it only when no other agent is sending from the deployer.
-- The production KeystoneForwarder path was only tested for "direct calls are rejected". Real DON signatures can't
-  be produced on a fork. The workflowId pinning is unit-tested with the documented 64-byte metadata layout.
-- Not in this scope: the Zap (mint + sell the other leg on Kuru), the SeriesConfig allowlist, the 1% settlement
-  fee, and Sourcify verification. Settlement is final: there is no dispute window or admin override (by design),
-  so the attester key is the trust anchor. Mitigations: guardian pause before a bad report lands; stale void
-  after 24 h.
-- Not audited. Static lints were reviewed; the remaining warnings are intentional (calendar math division,
-  `transferFrom(holder)` after a permit).
+- **No live trades yet.** No ladder, Kuru market, mint or report has happened on the live chain with v1, per the task.
+  The go-live step does that. Everything after the deploy was proven on forks.
+- **Production KeystoneForwarder.** Its path is still untested with real DON signatures. The Resolver is on the mock.
+  Attestation is mandatory either way.
+- **Unfunded guardian.** It holds 0 MON, so it cannot pause or challenge until funded (see human actions).
+- **Legacy harnesses.** The spikes (e.g. `spikes/e2e`, `spikes/cre/onchain`) compile or call the v0 ABI. They are kept
+  as evidence and will not work against v1. `script/testnet-e2e.sh` is marked LEGACY.
+- **Still open.**
+  - The Kuru books themselves still match after close. Only the maker can stop that (finding #5).
+  - `mintSetWithPermit` still does not bind the series.
+  - Void rounding dust stays in the vault.
+- **Not audited.**
 
 ## Human actions
 
-1. **Attester key.** Create a dedicated key (not the deployer), e.g. `cast wallet new` saved to
-   `~/.config/isotherm/attester.key` (chmod 600). Pass its address as `ATTESTER`, and give the key to the CRE
-   workflow as a secret.
-2. Testnet MON: about 1 MON for the core deploy, plus about 1.1 MON/day per 6-strike city before quoting. The
-   faucet claim stays a human step.
-3. Mainnet: about 0.2–0.4 MON on the mainnet deployer for `DeployForecastCommit` (broadcast by a human), plus
-   about 0.01 MON/day for commits.
-4. CRE deploy access (`cre account access`) to move from the mock to the production forwarder, then call
-   `setForwarder(0xF834…4482)` and `setExpectedWorkflow(id, owner)`.
+1. **Fund the guardian** `0x30C8…7d50` with about 0.05 MON, so it can `pause` (about 30k gas) or `challenge` (44k gas)
+   in an emergency. The guardian key is `~/.config/isotherm/guardian.key`. It is a hot key on the Mac; move it to
+   hardware or a separate machine if this goes beyond a demo.
+2. **Give the attester key to the CRE workflow** as a secret (`ISOTHERM_ATTESTER_KEY`). Keep it off any machine that
+   also holds the guardian key.
+3. **CRE go-live (optional).** Run `cre login` and `cre account access`, then `setForwarder(0xF834…4482)` and
+   `setExpectedWorkflow(id, owner)` from the owner key. Attestation stays on (it can't be turned off).
+4. **Testnet MON for daily operation.** The deployer holds 4.66 MON after this step.

@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 <repo>/apps/api
+
+ ✓ test/unit/relay-abuse.test.ts (4 tests) 100ms
+ ✓ test/unit/api-units.test.ts (20 tests) 8ms
+
+ Test Files  2 passed (2)
+      Tests  24 passed (24)
+   Start at  23:40:55
+   Duration  456ms (transform 51ms, setup 0ms, collect 184ms, tests 108ms, environment 0ms, prepare 38ms)
+

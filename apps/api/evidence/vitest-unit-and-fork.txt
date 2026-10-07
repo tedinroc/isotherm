@@ -1,0 +1,36 @@
+Wed Oct  7 05:47:20 UTC 2026
+
+ RUN  v3.2.7 <repo>/apps/api
+
+ ✓ test/integration/api.fork.test.ts > isotherm-api on a Monad testnet fork > serves health with the relayer and v1 relay modes; CORS only for allowed origins 1059ms
+ ✓ test/integration/api.fork.test.ts > isotherm-api on a Monad testnet fork > admin endpoints need the bearer token; the cron tick refills the AUSD float from the faucet 2171ms
+ ✓ test/integration/api.fork.test.ts > isotherm-api on a Monad testnet fork > drips MON + AUSD once per address, never to contracts, and enforces the per-IP limit 2827ms
+ ✓ test/integration/api.fork.test.ts > isotherm-api on a Monad testnet fork > accepts a maker snapshot only with the bearer token and serves it normalised 5ms
+ ✓ test/integration/api.fork.test.ts > isotherm-api on a Monad testnet fork > relays a signed EIP-3009 mint (and a permit mint) for a user with no MON; rejects replays and tampering 6170ms
+ ✓ test/integration/api.fork.test.ts > isotherm-api on a Monad testnet fork > counts a non-maker Kuru fill and a CRE settlement in /api/stats and /api/settlements 15135ms
+ ✓ test/unit/api-units.test.ts > CORS origin patterns > allows the Pages origin, preview subdomains and localhost on any port 1ms
+ ✓ test/unit/api-units.test.ts > CORS origin patterns > rejects look-alikes, other schemes and missing origins 0ms
+ ✓ test/unit/api-units.test.ts > bearer compare > is exact 1ms
+ ✓ test/unit/api-units.test.ts > drip rate limits > one drip per address per cooldown, N per IP per day, global daily cap 0ms
+ ✓ test/unit/api-units.test.ts > drip rate limits > an address whose AUSD leg is pending may retry without using new quota 0ms
+ ✓ test/unit/api-units.test.ts > drip rate limits > relay caps per address and per day 0ms
+ ✓ test/unit/api-units.test.ts > drip rate limits > seconds to UTC midnight 0ms
+ ✓ test/unit/api-units.test.ts > struct decoders tolerate the feasibility and v1 layouts > Series: 7 words (feasibility) and 8 words (v1, gated flag) 1ms
+ ✓ test/unit/api-units.test.ts > struct decoders tolerate the feasibility and v1 layouts > Result: 4 words (feasibility) and 5 words (v1, finalAt) 0ms
+ ✓ test/unit/api-units.test.ts > deployments normaliser > finds addresses by key name in any nesting, roles, markets and the deploy block 0ms
+ ✓ test/unit/api-units.test.ts > deployments normaliser > reads the real v1 deployments/testnet.json (when present) 0ms
+ ✓ test/unit/api-units.test.ts > deployments normaliser > falls back to the feasibility deployment 0ms
+ ✓ test/unit/api-units.test.ts > maker snapshot > normalises field-name variants and percentages 1ms
+ ✓ test/unit/api-units.test.ts > maker snapshot > accepts the maker package schema (isotherm.snapshot/v1: series[], observed{}, v0{}) 0ms
+ ✓ test/unit/api-units.test.ts > maker snapshot > rejects malformed input 0ms
+ ✓ test/unit/api-units.test.ts > log scan aggregation > attributes fills to tx.origin and keeps maker/team out of the public wallet count 1ms
+ ✓ test/unit/api-units.test.ts > market discovery from the v1 Zap registry > reads CanonicalMarketSet(seriesId, market, setBy) logs from the zap only 0ms
+ ✓ test/unit/api-units.test.ts > v1 vault interface > mintSetWithAuthorization nonce = keccak256(abi.encode(seriesId, amount, salt)) 0ms
+ ✓ test/unit/api-units.test.ts > v1 vault interface > selector detection in runtime bytecode (PUSH4 and PUSH3 forms) 0ms
+ ✓ test/unit/api-units.test.ts > v1 vault interface > matches the exported ABI when packages/abi provides one 0ms
+
+ Test Files  2 passed (2)
+      Tests  26 passed (26)
+   Start at  22:47:20
+   Duration  31.85s (transform 64ms, setup 0ms, collect 200ms, tests 31.47s, environment 0ms, prepare 40ms)
+

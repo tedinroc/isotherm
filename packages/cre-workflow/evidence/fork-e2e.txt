@@ -1,0 +1,43 @@
+bun test v1.4.2 (744846f84)
+
+e2e/fork.e2e.test.ts:
+fork block 68894624 time 2026-10-07T06:04:50.000Z | live attester 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9 (real key NOT used)
+fork: Resolver.attester -> public test key 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720
+REJECTED  tmaxC byte flipped after signing         tx success gas 89828 ReportProcessed.result=false onReport would revert: InvalidAttestation(0x80BA2D591515a1857DADdAFf79eCd3AAC69a2eF4)
+REJECTED  signed by a non-attester key             tx success gas 89840 ReportProcessed.result=false onReport would revert: InvalidAttestation(0x70997970C51812dc3A010C7d01b50e0d17dc79C8)
+REJECTED  expired (validUntil = now - 1)           tx success gas 82333 ReportProcessed.result=false onReport would revert: AttestationExpired(1791353091)
+REJECTED  signed for chainId 143 (mainnet domain)  tx success gas 89804 ReportProcessed.result=false onReport would revert: InvalidAttestation(0xFc7E1bE57B5CcFeE53C54A9Cb876a94C99bA11C7)
+REJECTED  signed for the v0 Resolver address       tx success gas 89840 ReportProcessed.result=false onReport would revert: InvalidAttestation(0xB80d35E7deB1d5641Ab4f90A5F06BcF9b9aFF84B)
+REJECTED  malleated high-s signature               tx success gas 83472 ReportProcessed.result=false onReport would revert: ECDSAInvalidSignatureS(0xaa63c9f2e4e74e97dbbb278f27d09c82ba3ef75b921e07177423191477322bab)
+REJECTED  day not over (RJTT 20261009)             tx success gas 101065 ReportProcessed.result=false onReport would revert: DayNotOver(0x524a5454,20261009,1791558000)
+REJECTED  tmaxC out of range (71)                  tx success gas 89941 ReportProcessed.result=false onReport would revert: TmaxOutOfRange(71)
+REJECTED  VOID flag flipped after signing          tx success gas 89840 ReportProcessed.result=false onReport would revert: InvalidAttestation(0x0bB6c90ac9f329b54AE9D009A533efBcd07064Ba)
+ACCEPTED  RCSS 20261006 tmax 25  tx 0x345d61e28cf6ddae5b3f31fd88af2046f581cef55f1c949078ca7879767a65ba gasUsed 149875 ReportProcessed.result=true LadderResolved=[{"station":"0x52435353","date":20261006,"status":1,"tmaxC":25,"sourcesHash":"0xef79c8b3af8c880760737ae58ae92d744894e785e02dd18334d8dfd32a7decb8","caller":"0xB9F79d863261869B234c481D1f9A7af84AeAd192"}]
+REJECTED  replay of the accepted RCSS report               ReportProcessed.result=false onReport would revert: AlreadyResolved(0x52435353,20261006)
+ACCEPTED  RJTT 20261006 tmax 26  tx 0x261e313df8fecdce6f12c40c517ef756c38c621098324c950dc60f1ed333e0d0 gasUsed 149863 ReportProcessed.result=true
+REVERTS   direct onReport from an EOA: InvalidSender
+ladder RCSS 20261008 already exists on the live chain (strikes 28,29,30,31); reusing it on the fork
+createLadder RJTT 20261008 strikes 21,22,23 close 2026-10-08T10:30:00.000Z gasUsed 831818
+createLadder RCSS 20261009 strikes 29 close 2026-10-09T09:30:00.000Z gasUsed 365957
+  [USER LOG] RJTT 2026-10-08: SETTLED (primary sources agree) | IEM 22C n=48 h=24 last=23:30 complete | AWC 22C n=48 h=24 last=23:30 complete | OGIMET not fetched
+  [USER LOG] RJTT 2026-10-08: isotherm-sources-v1|RJTT|20261008|SETTLED|IEM:22,48,24,23:30,1|AWC:22,48,24,23:30,1|OGIMET:- digest=0xe13e7b93048e695eb039d576804ff1d09171f5492f329decb213aa17a3a3a200 validUntil=1791570380
+  [USER LOG] RJTT 2026-10-08: tx 0x545be9f0e6f59cf21b948123a2676e7bfe78d49e9be034bed707fbd0be59defd -> resolved
+  [USER LOG] RCSS 2026-10-08: SETTLED (primary sources agree) | IEM 29C n=50 h=24 last=23:30 complete | AWC 29C n=50 h=24 last=23:30 complete | OGIMET not fetched
+  [USER LOG] RCSS 2026-10-08: isotherm-sources-v1|RCSS|20261008|SETTLED|IEM:29,50,24,23:30,1|AWC:29,50,24,23:30,1|OGIMET:- digest=0xc26d4cda0348a8369868291af02e6168e6537fd01d23d757dc1d0f3f9fe25158 validUntil=1791570380
+  [USER LOG] RCSS 2026-10-08: tx 0x62cefe89b0fce1c6bb6e103df8134e6ba45871e2c8518dde01d1a273909c96f6 -> resolved
+  [USER LOG] RCSS 2026-10-09: PENDING (primary sources disagree) | IEM 29C n=50 h=24 last=23:30 complete | AWC 31C n=50 h=24 last=23:30 complete | OGIMET not fetched
+run 1 @ 2026-10-09T18:01:20.000Z: [["RJTT",20261008,"settled",22,"resolved"],["RCSS",20261008,"settled",29,"resolved"],["RCSS",20261009,"pending",null,null]] ladders={"count":3,"scanned":[0,3],"due":3} budget={"http":"6/15","evmReads":"5/15","reports":"2/5","ogimet":"0/1"}
+  forwarder tx 0x545be9f0e6f59cf21b948123a2676e7bfe78d49e9be034bed707fbd0be59defd gasUsed 149875 ReportProcessed.result=true
+  forwarder tx 0x62cefe89b0fce1c6bb6e103df8134e6ba45871e2c8518dde01d1a273909c96f6 gasUsed 149863 ReportProcessed.result=true
+  [USER LOG] RCSS 2026-10-09: PENDING (primary sources disagree) | IEM 29C n=50 h=24 last=23:30 complete | AWC 31C n=50 h=24 last=23:30 complete | OGIMET not fetched
+run 2 (+1 h): [["RCSS",20261009,"pending","primary sources disagree"]], txs=0
+  [USER LOG] RCSS 2026-10-09: VOID (primary sources disagree) | IEM 29C n=50 h=24 last=23:30 complete | AWC 31C n=50 h=24 last=23:30 complete | OGIMET not fetched
+  [USER LOG] RCSS 2026-10-09: isotherm-sources-v1|RCSS|20261009|VOID|IEM:29,50,24,23:30,1|AWC:31,50,24,23:30,1|OGIMET:- digest=0x05dbcb5e116045a3d5654ee0d85dfb90c58640350bbe8308947139cf9578fcec validUntil=1791694580
+  [USER LOG] RCSS 2026-10-09: tx 0x620cdcc4e70d3a034a8b7d11dff967ea043ec934de65217538f9f2925f151e69 -> resolved
+run 3 (dayEnd + 36.5 h): RCSS 20261009 VOID at 1791693079 < staleAt 1791734400 (anyone could void from there)
+vault payoutHalves (YES/NO halves): RCSS 20261008 [k28:2/0,k29:2/0,k30:0/2,k31:0/2] | RJTT 20261008 [k21:2/0,k22:2/0,k23:0/2] | RCSS 20261009 void [k29:1/1]
+
+ 3 pass
+ 0 fail
+ 79 expect() calls
+Ran 3 tests across 1 file. [20.96s]

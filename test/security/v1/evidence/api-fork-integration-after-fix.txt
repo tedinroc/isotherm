@@ -1,0 +1,15 @@
+
+ RUN  v3.2.7 <repo>/apps/api
+
+ ✓ test/.secv1-tmp/api.fork.secv1.test.ts (6 tests) 29927ms
+   ✓ isotherm-api on a Monad testnet fork > serves health with the relayer and v1 relay modes; CORS only for allowed origins  1001ms
+   ✓ isotherm-api on a Monad testnet fork > admin endpoints need the bearer token; the cron tick refills the AUSD float from the faucet  1958ms
+   ✓ isotherm-api on a Monad testnet fork > drips MON + AUSD once per address, never to contracts, and enforces the per-IP limit  2874ms
+   ✓ isotherm-api on a Monad testnet fork > relays a signed EIP-3009 mint (and a permit mint) for a user with no MON; rejects replays and tampering  5071ms
+   ✓ isotherm-api on a Monad testnet fork > counts a non-maker Kuru fill and a CRE settlement in /api/stats and /api/settlements  14913ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  23:40:57
+   Duration  30.12s (transform 31ms, setup 0ms, collect 95ms, tests 29.93s, environment 0ms, prepare 20ms)
+

@@ -1,0 +1,33 @@
+{
+  "name": "isotherm-web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Isotherm phone app: daily max-temperature strike ladders on Monad testnet (Kuru books, CRE settlement).",
+  "scripts": {
+    "prepare-data": "node scripts/copy-deployments.mjs",
+    "dev": "npm run prepare-data && vite --port 5173",
+    "build": "npm run prepare-data && tsc -b && vite build",
+    "preview": "vite preview --port 5174",
+    "typecheck": "npm run prepare-data && tsc -b",
+    "test": "npm run prepare-data && vitest run",
+    "fixture": "tsx scripts/fork-fixture.ts"
+  },
+  "dependencies": {
+    "@dynamic-labs/ethereum": "5.9.4",
+    "@dynamic-labs/sdk-react-core": "5.9.4",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "viem": "2.57.3"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "4.7.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vite": "5.4.21",
+    "vitest": "3.2.7"
+  }
+}

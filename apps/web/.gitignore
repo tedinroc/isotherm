@@ -1,0 +1,7 @@
+node_modules/
+dist/
+src/generated/
+fork-fixture.json
+.env.local
+*.key
+.wrangler/

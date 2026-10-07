@@ -24,6 +24,8 @@ contract VaultHandler is Test {
     MockAUSD public ausd;
     uint256 internal attesterPk;
     address internal forwarder;
+    address internal guardian;
+    uint256 public finalResultChanges; // a challenge that succeeded on a FINAL result (must stay 0)
 
     address[] public actors;
     bytes32[] public seriesIds;
@@ -45,6 +47,7 @@ contract VaultHandler is Test {
         MockAUSD ausd_,
         uint256 attesterPk_,
         address forwarder_,
+        address guardian_,
         bytes32[] memory ids,
         LadderKey[] memory ladders_
     ) {
@@ -53,6 +56,7 @@ contract VaultHandler is Test {
         ausd = ausd_;
         attesterPk = attesterPk_;
         forwarder = forwarder_;
+        guardian = guardian_;
         seriesIds = ids;
         for (uint256 i; i < ladders_.length; ++i) {
             ladders.push(ladders_[i]);
@@ -120,20 +124,25 @@ contract VaultHandler is Test {
             vm.warp(end);
         }
         tmax = int16(bound(tmax, -90, 70));
-        bytes32 src = keccak256(abi.encode(l.station, l.date, tmax));
-        (uint8 v, bytes32 r, bytes32 s) =
-            vm.sign(attesterPk, resolver.settlementDigest(l.station, l.date, tmax, isVoid, src));
-        bytes memory report = abi.encode(l.station, l.date, tmax, isVoid, src, abi.encodePacked(r, s, v));
+        bytes memory report = _signedReport(l, tmax, isVoid);
         vm.prank(forwarder);
         resolver.onReport(new bytes(64), report);
         _snapshot(l);
         calls["settle"]++;
     }
 
+    function _signedReport(LadderKey memory l, int16 tmax, bool isVoid) internal view returns (bytes memory) {
+        bytes32 src = keccak256(abi.encode(l.station, l.date, tmax));
+        uint64 vu = uint64(block.timestamp + 1 hours);
+        (uint8 v, bytes32 r, bytes32 s) =
+            vm.sign(attesterPk, resolver.settlementDigest(l.station, l.date, tmax, isVoid, src, vu));
+        return abi.encode(l.station, l.date, tmax, isVoid, src, vu, abi.encodePacked(r, s, v));
+    }
+
     function voidStale(uint256 ladderSeed, uint8 jump) external {
         LadderKey memory l = ladders[ladderSeed % ladders.length];
         if (resolver.resultOf(l.station, l.date).status != IIsothermResolver.Status.None) return;
-        uint256 staleAt = resolver.dayEnd(l.station, l.date) + resolver.STALE_WINDOW();
+        uint256 staleAt = resolver.staleAt(l.station, l.date);
         if (block.timestamp < staleAt) {
             if (jump % 16 != 0) return;
             vm.warp(staleAt);
@@ -143,10 +152,30 @@ contract VaultHandler is Test {
         calls["voidStale"]++;
     }
 
+    /// @dev Guardian veto. Inside the window it converts Settled -> Void; on a FINAL result it must revert.
+    function challenge(uint256 ladderSeed, bool tryLate) external {
+        LadderKey memory l = ladders[ladderSeed % ladders.length];
+        IIsothermResolver.Result memory r = resolver.resultOf(l.station, l.date);
+        if (r.status != IIsothermResolver.Status.Settled) return;
+        if (block.timestamp >= r.finalAt) {
+            if (!tryLate) return;
+            vm.prank(guardian);
+            try resolver.challenge(l.station, l.date, keccak256("late")) {
+                finalResultChanges++;
+            } catch {}
+            calls["lateChallenge"]++;
+            return;
+        }
+        vm.prank(guardian);
+        resolver.challenge(l.station, l.date, keccak256("veto"));
+        _snapshot(l);
+        calls["challenge"]++;
+    }
+
     function redeem(uint256 actorSeed, uint256 seriesSeed, uint256 yesAmt, uint256 noAmt) external {
         bytes32 id = seriesIds[seriesSeed % seriesIds.length];
         StrikeFactory.Series memory s = vault.getSeries(id);
-        if (resolver.resultOf(s.station, s.date).status == IIsothermResolver.Status.None) return;
+        if (!resolver.isFinal(s.station, s.date)) return;
         address actor = _holder(s, actorSeed, false);
         yesAmt = bound(yesAmt, 0, s.yes.balanceOf(actor));
         noAmt = bound(noAmt, 0, s.no.balanceOf(actor));
@@ -213,7 +242,7 @@ contract VaultInvariantTest is Test {
         address owner = makeAddr("owner");
         address forwarder = makeAddr("forwarder");
         ausd = new MockAUSD();
-        resolver = new Resolver(owner, forwarder, vm.addr(ATTESTER_PK), owner);
+        resolver = new Resolver(owner, forwarder, vm.addr(ATTESTER_PK), owner, 15 minutes);
         vault = new CollateralVault(owner, resolver, ausd, owner);
 
         VaultHandler.LadderKey[] memory ls = new VaultHandler.LadderKey[](4);
@@ -235,9 +264,9 @@ contract VaultInvariantTest is Test {
         }
         vm.stopPrank();
 
-        handler = new VaultHandler(vault, resolver, ausd, ATTESTER_PK, forwarder, ids, ls);
+        handler = new VaultHandler(vault, resolver, ausd, ATTESTER_PK, forwarder, owner, ids, ls);
         targetContract(address(handler));
-        bytes4[] memory sel = new bytes4[](7);
+        bytes4[] memory sel = new bytes4[](8);
         sel[0] = VaultHandler.mintSet.selector;
         sel[1] = VaultHandler.redeemSet.selector;
         sel[2] = VaultHandler.transfer.selector;
@@ -245,6 +274,7 @@ contract VaultInvariantTest is Test {
         sel[4] = VaultHandler.voidStale.selector;
         sel[5] = VaultHandler.redeem.selector;
         sel[6] = VaultHandler.warp.selector;
+        sel[7] = VaultHandler.challenge.selector;
         targetSelector(FuzzSelector({addr: address(handler), selectors: sel}));
     }
 
@@ -266,7 +296,9 @@ contract VaultInvariantTest is Test {
             StrikeFactory.Series memory s = vault.getSeries(id);
             uint256 ys = s.yes.totalSupply();
             uint256 ns = s.no.totalSupply();
-            if (resolver.resultOf(s.station, s.date).status == IIsothermResolver.Status.None) {
+            IIsothermResolver.Result memory r = resolver.resultOf(s.station, s.date);
+            if (r.status == IIsothermResolver.Status.None || block.timestamp < r.finalAt) {
+                // nothing can be redeemed one-sided before the result is final: only complete sets exist
                 assertEq(ys, ns);
                 assertEq(ys, s.collateral);
             } else {
@@ -292,8 +324,10 @@ contract VaultInvariantTest is Test {
         assertEq(handler.payoutMismatches(), 0);
     }
 
-    /// Results are write-once.
+    /// Results only change through the handler's legal actions (settle / stale void / in-window challenge), and a
+    /// final result never changes.
     function invariant_resultsFinal() public view {
+        assertEq(handler.finalResultChanges(), 0);
         for (uint256 i; i < handler.ladderCount(); ++i) {
             (bytes4 st, uint32 d) = handler.ladders(i);
             bytes32 snap = handler.resolvedSnapshot(keccak256(abi.encode(st, d)));
@@ -304,7 +338,8 @@ contract VaultInvariantTest is Test {
     /// Coverage evidence (printed with -vv): how many times each action actually executed (not skipped), summed
     /// over all runs of the campaign. EVM state resets between runs, so the running total is carried in an env var.
     function afterInvariant() external {
-        string[6] memory names = ["mintSet", "redeemSet", "transfer", "settle", "voidStale", "redeem"];
+        string[8] memory names =
+            ["mintSet", "redeemSet", "transfer", "settle", "voidStale", "redeem", "challenge", "lateChallenge"];
         string memory line = "executed (all runs):";
         for (uint256 i; i < names.length; ++i) {
             string memory key = string.concat("ISO_INV_", names[i]);

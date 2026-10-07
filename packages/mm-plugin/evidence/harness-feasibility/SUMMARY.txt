@@ -1,0 +1,39 @@
+== feasibility run 2026-10-07T05:28:57Z  deployments: assets/deployments.feasibility.json
+anvil fork of live Monad testnet at block 68887500 (--network monad) on :19251; stub on :19288
+after mm init: byok ['0x9F6AF0b5E8091B867500D9E2a3240Bd92259a543'] customEvmChains [(10143, 'http://127.0.0.1:19251')]
+wrote <repo>/packages/mm-plugin/harness/fork-deployments-feasibility.json: 9 series, user 0x9F6AF0b5E8091B867500D9E2a3240Bd92259a543 funded with 10 MON + 2000 AUSD
+01 doctor                             ok  txs=0:                                 1s
+02 markets                            ok  txs=0:                                 5s
+03 quote-today                        ok  txs=0:                                 3s
+04 quote-tomorrow                     ok  txs=0:                                 2s
+05 edge-tomorrow                      ok  txs=0:                                 3s
+06 buy-yes-dryrun                     ok  txs=0:                                 0s
+07 buy-yes                            ok  txs=2:CONFIRMED,CONFIRMED              1s
+08 buy-no                             ok  txs=2:CONFIRMED,CONFIRMED              1s
+09 buy-no-locked-refused              ERR ISOTHERM_OUTCOME_LOCKED txs=0:         2s
+10 buy-yes-today-max                  ok  txs=2:CONFIRMED,CONFIRMED              2s
+11 buy-no-today                       ok  txs=1:CONFIRMED                        1s
+12 buy-yes-locked-today               ok  txs=1:CONFIRMED                        2s
+13 sell-yes                           ok  txs=2:CONFIRMED,CONFIRMED              1s
+14 sell-no                            ok  txs=2:CONFIRMED,CONFIRMED              1s
+15 buy-yes-31                         ok  txs=1:CONFIRMED                        1s
+16 buy-no-31                          ok  txs=1:CONFIRMED                        1s
+17 positions                          ok  txs=0:                                 3s
+18 redeem-merge                       ok  txs=1:CONFIRMED                        1s
+19 kuru-book                          ok  txs=0:                                 0s
+20 kuru-limit-buy                     ok  txs=3:CONFIRMED,CONFIRMED,CONFIRMED    0s
+21 kuru-limit-offtick                 ERR KURU_OFF_TICK txs=0:                   1s
+22 kuru-cancel-notmine                ERR KURU_NOT_YOUR_OPEN_ORDER txs=0:        1s
+23 kuru-cancel-all                    ok  txs=2:CONFIRMED,CONFIRMED              0s
+24 kuru-book-spike                    ok  txs=0:                                 7s
+25 kuru-limit-spike                   ok  txs=3:CONFIRMED,CONFIRMED,CONFIRMED    3s
+26 kuru-cancel-spike                  ok  txs=2:CONFIRMED,CONFIRMED              1s
+27 hostile-market-refused             ERR ISOTHERM_NONCANONICAL_MARKET txs=0:    1s
+28 policy-denied                      ERR ISOTHERM_TX_DENIED txs=0:              0s
+29 gateway-400-mapped                 ERR ISOTHERM_CHAIN_NOT_CONFIGURED txs=0:   1s
+30 settle-fork (harness, not a plugin cmd) ReportProcessed.result=true
+31 markets-all-settled                ok  txs=0:                                 1s
+32 positions-redeemable               ok  txs=0:                                 1s
+33 redeem                             ok  txs=2:CONFIRMED,CONFIRMED              0s
+34 positions-after                    ok  txs=0:                                 0s
+stub: 28 signed tx requests, 27 CONFIRMED, 1 denied by the toy Guard allowlist

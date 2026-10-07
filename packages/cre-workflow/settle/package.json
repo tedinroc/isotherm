@@ -1,0 +1,28 @@
+{
+  "name": "isotherm-settle-workflow",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "bun test",
+    "build": "cre workflow build . -T testnet -R ..",
+    "e2e:fork": "../scripts/fork-e2e.sh",
+    "sim:fork": "../scripts/sim-fork.sh",
+    "dry-run": "../scripts/dry-run.sh",
+    "run:official": "../scripts/run-official.sh"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@chainlink/cre-sdk": "1.23.0",
+    "@noble/curves": "1.9.7",
+    "viem": "2.54.2",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/bun": "1.2.21"
+  },
+  "description": "Isotherm CRE settlement workflow (v1): METAR Tmax -> attested report -> Resolver on Monad testnet 10143"
+}

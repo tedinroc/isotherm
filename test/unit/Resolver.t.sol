@@ -22,6 +22,9 @@ contract ResolverTest is IsoTest {
         bytes32 sourcesHash,
         address caller
     );
+    event LadderChallenged(
+        bytes4 indexed station, uint32 indexed date, int16 previousTmaxC, bytes32 reasonHash, address guardian
+    );
 
     function _metadata(bytes32 wfId, address wfOwner) internal pure returns (bytes memory) {
         // production KeystoneForwarder layout: workflowId(32) | workflowName(10) | workflowOwner(20) | reportId(2)
@@ -38,11 +41,17 @@ contract ResolverTest is IsoTest {
         assertFalse(resolver.supportsInterface(0x12345678));
     }
 
-    function test_constructorRejectsZero() public {
+    function test_constructorValidation() public {
         vm.expectRevert(Resolver.ZeroAddress.selector);
-        new Resolver(owner, address(0), attester, guardian);
+        new Resolver(owner, address(0), attester, guardian, CHALLENGE);
         vm.expectRevert(Resolver.ZeroAddress.selector);
-        new Resolver(owner, forwarder, address(0), guardian);
+        new Resolver(owner, forwarder, address(0), guardian, CHALLENGE);
+        vm.expectRevert(abi.encodeWithSelector(Resolver.ChallengeWindowTooLong.selector, 2 days + 1));
+        new Resolver(owner, forwarder, attester, guardian, 2 days + 1);
+        Resolver r = new Resolver(owner, forwarder, attester, guardian, 2 days);
+        assertEq(r.challengeWindow(), 2 days);
+        assertEq(resolver.challengeWindow(), CHALLENGE);
+        assertEq(resolver.STALE_WINDOW(), 48 hours);
     }
 
     // --- happy path --------------------------------------------------------------------------------
@@ -57,7 +66,13 @@ contract ResolverTest is IsoTest {
         assertEq(uint8(r.status), uint8(IIsothermResolver.Status.Settled));
         assertEq(r.tmaxC, 31);
         assertEq(r.resolvedAt, RCSS_DAY_END);
+        assertEq(r.finalAt, RCSS_DAY_END + CHALLENGE, "settled results wait out the challenge window");
         assertEq(r.sourcesHash, SRC);
+        assertFalse(resolver.isFinal(RCSS, D));
+        vm.warp(RCSS_DAY_END + CHALLENGE - 1);
+        assertFalse(resolver.isFinal(RCSS, D));
+        vm.warp(RCSS_DAY_END + CHALLENGE);
+        assertTrue(resolver.isFinal(RCSS, D));
     }
 
     function test_settleBoundsInclusive() public {
@@ -68,12 +83,14 @@ contract ResolverTest is IsoTest {
         assertEq(resolver.resultOf(RJTT, 20261008).tmaxC, -90);
     }
 
-    function test_voidReport() public {
+    function test_voidReportIsFinalImmediately() public {
         vm.warp(RCSS_DAY_END + 3 hours);
         _deliver(_report(RCSS, D, 29, true, SRC)); // tmax is ignored for void
         IIsothermResolver.Result memory r = resolver.resultOf(RCSS, D);
         assertEq(uint8(r.status), uint8(IIsothermResolver.Status.Void));
         assertEq(r.tmaxC, 0);
+        assertEq(r.finalAt, r.resolvedAt);
+        assertTrue(resolver.isFinal(RCSS, D));
     }
 
     // --- forwarder / metadata ----------------------------------------------------------------------
@@ -137,39 +154,41 @@ contract ResolverTest is IsoTest {
     function test_rejectsWrongSigner() public {
         vm.warp(RCSS_DAY_END);
         uint256 evilPk = 0xE71;
-        bytes memory sig = _sign(evilPk, resolver.settlementDigest(RCSS, D, 31, false, SRC));
+        bytes memory sig = _sign(evilPk, _digest(RCSS, D, 31, false, SRC));
         vm.expectRevert(abi.encodeWithSelector(Resolver.InvalidAttestation.selector, vm.addr(evilPk)));
-        _deliver(abi.encode(RCSS, D, int16(31), false, SRC, sig));
+        _deliver(_encode(RCSS, D, 31, false, SRC, VU, sig));
     }
 
     function test_rejectsTamperedPayload() public {
         vm.warp(RCSS_DAY_END);
-        bytes memory sig = _sign(ATTESTER_PK, resolver.settlementDigest(RCSS, D, 31, false, SRC));
-        // same signature, different tmax / void flag / sources / date: recovers some other address
+        bytes memory sig = _sign(ATTESTER_PK, _digest(RCSS, D, 31, false, SRC));
+        // same signature, different tmax / void flag / sources / station / validUntil: recovers some other address
         vm.expectPartialRevert(Resolver.InvalidAttestation.selector);
-        _deliver(abi.encode(RCSS, D, int16(32), false, SRC, sig));
+        _deliver(_encode(RCSS, D, 32, false, SRC, VU, sig));
         vm.expectPartialRevert(Resolver.InvalidAttestation.selector);
-        _deliver(abi.encode(RCSS, D, int16(31), true, SRC, sig));
+        _deliver(_encode(RCSS, D, 31, true, SRC, VU, sig));
         vm.expectPartialRevert(Resolver.InvalidAttestation.selector);
-        _deliver(abi.encode(RCSS, D, int16(31), false, bytes32(0), sig));
+        _deliver(_encode(RCSS, D, 31, false, bytes32(0), VU, sig));
         vm.expectPartialRevert(Resolver.InvalidAttestation.selector);
-        _deliver(abi.encode(RJTT, D, int16(31), false, SRC, sig));
+        _deliver(_encode(RJTT, D, 31, false, SRC, VU, sig));
+        vm.expectPartialRevert(Resolver.InvalidAttestation.selector);
+        _deliver(_encode(RCSS, D, 31, false, SRC, VU + 1, sig)); // cannot extend the expiry
     }
 
     function test_rejectsMalformedSignature() public {
         vm.warp(RCSS_DAY_END);
         vm.expectRevert(abi.encodeWithSelector(ECDSA.ECDSAInvalidSignatureLength.selector, 0));
-        _deliver(abi.encode(RCSS, D, int16(31), false, SRC, bytes("")));
+        _deliver(_encode(RCSS, D, 31, false, SRC, VU, bytes("")));
         // high-s (malleable) signature is rejected
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ATTESTER_PK, resolver.settlementDigest(RCSS, D, 31, false, SRC));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ATTESTER_PK, _digest(RCSS, D, 31, false, SRC));
         bytes32 n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
         bytes32 highS = bytes32(uint256(n) - uint256(s));
         vm.expectRevert(abi.encodeWithSelector(ECDSA.ECDSAInvalidSignatureS.selector, highS));
-        _deliver(abi.encode(RCSS, D, int16(31), false, SRC, abi.encodePacked(r, highS, v == 27 ? 28 : 27)));
+        _deliver(_encode(RCSS, D, 31, false, SRC, VU, abi.encodePacked(r, highS, v == 27 ? 28 : 27)));
     }
 
     function test_signatureBoundToResolverAndChain() public {
-        Resolver other = new Resolver(owner, forwarder, attester, guardian);
+        Resolver other = new Resolver(owner, forwarder, attester, guardian, CHALLENGE);
         vm.prank(owner);
         other.registerStation(RCSS, TPE);
         vm.warp(RCSS_DAY_END);
@@ -197,36 +216,30 @@ contract ResolverTest is IsoTest {
             )
         );
         assertEq(resolver.domainSeparator(), domain);
-        bytes32 structHash = keccak256(
-            abi.encode(
-                keccak256("Settlement(bytes4 station,uint32 date,int16 tmaxC,bool isVoid,bytes32 sourcesHash)"),
-                RCSS,
-                D,
-                int16(-5),
-                false,
-                SRC
-            )
+        bytes32 typehash = keccak256(
+            "Settlement(bytes4 station,uint32 date,int16 tmaxC,bool isVoid,bytes32 sourcesHash,uint64 validUntil)"
         );
+        assertEq(resolver.SETTLEMENT_TYPEHASH(), typehash);
+        bytes32 structHash = keccak256(abi.encode(typehash, RCSS, D, int16(-5), false, SRC, uint64(1_791_400_000)));
         assertEq(
-            resolver.settlementDigest(RCSS, D, -5, false, SRC),
+            resolver.settlementDigest(RCSS, D, -5, false, SRC, 1_791_400_000),
             keccak256(abi.encodePacked("\x19\x01", domain, structHash))
         );
     }
 
-    function test_attestationToggleRequiresWorkflowId() public {
-        vm.startPrank(owner);
-        vm.expectRevert(Resolver.WorkflowIdRequired.selector);
-        resolver.setAttestationRequired(false);
-        resolver.setExpectedWorkflow(keccak256("wf"), address(0));
-        resolver.setAttestationRequired(false);
-        vm.expectRevert(Resolver.WorkflowIdRequired.selector);
-        resolver.setExpectedWorkflow(bytes32(0), address(0)); // cannot unpin while attestation is off
-        vm.stopPrank();
-
+    /// v1: there is no switch to turn attestation off. An unsigned report with a perfectly matching workflow pin is
+    /// still rejected.
+    function test_attestationAlwaysRequired() public {
+        bytes32 wf = keccak256("wf");
+        vm.prank(owner);
+        resolver.setExpectedWorkflow(wf, address(0));
         vm.warp(RCSS_DAY_END);
-        vm.prank(forwarder); // unsigned report accepted only with the pinned workflow id
-        resolver.onReport(_metadata(keccak256("wf"), address(0)), abi.encode(RCSS, D, int16(30), false, SRC, ""));
-        assertEq(resolver.resultOf(RCSS, D).tmaxC, 30);
+        vm.prank(forwarder);
+        vm.expectRevert(abi.encodeWithSelector(ECDSA.ECDSAInvalidSignatureLength.selector, 0));
+        resolver.onReport(_metadata(wf, address(0)), _encode(RCSS, D, 30, false, SRC, VU, ""));
+        assertEq(uint8(_status(RCSS, D)), 0);
+        (bool ok,) = address(resolver).call(abi.encodeWithSignature("setAttestationRequired(bool)", false));
+        assertFalse(ok, "no attestation toggle exists");
     }
 
     function test_setAttester() public {
@@ -237,11 +250,34 @@ contract ResolverTest is IsoTest {
         bytes memory oldRep = _report(RCSS, D, 31, false, SRC);
         vm.expectPartialRevert(Resolver.InvalidAttestation.selector);
         _deliver(oldRep); // old attester rejected
-        bytes memory sig = _sign(newPk, resolver.settlementDigest(RCSS, D, 31, false, SRC));
-        _deliver(abi.encode(RCSS, D, int16(31), false, SRC, sig));
+        bytes memory sig = _sign(newPk, _digest(RCSS, D, 31, false, SRC));
+        _deliver(_encode(RCSS, D, 31, false, SRC, VU, sig));
         vm.prank(owner);
         vm.expectRevert(Resolver.ZeroAddress.selector);
         resolver.setAttester(address(0));
+    }
+
+    // --- attestation expiry (validUntil) -----------------------------------------------------------
+
+    function test_attestationExpiry() public {
+        uint64 vu = uint64(RCSS_DAY_END + 30 minutes);
+        bytes memory rep = _reportVU(RCSS, D, 31, false, SRC, vu);
+        vm.warp(vu + 1);
+        vm.expectRevert(abi.encodeWithSelector(Resolver.AttestationExpired.selector, vu));
+        _deliver(rep);
+        vm.warp(vu); // inclusive
+        _deliver(rep);
+        assertEq(resolver.resultOf(RCSS, D).tmaxC, 31);
+    }
+
+    function testFuzz_expiredAttestationNeverAccepted(uint64 vu, uint256 t) public {
+        vu = uint64(bound(vu, RCSS_DAY_END, RCSS_DAY_END + 10 days));
+        t = bound(t, RCSS_DAY_END, RCSS_DAY_END + 11 days);
+        bytes memory rep = _reportVU(RCSS, D, 31, false, SRC, vu);
+        vm.warp(t);
+        vm.prank(forwarder);
+        (bool ok,) = address(resolver).call(abi.encodeCall(Resolver.onReport, (new bytes(64), rep)));
+        assertEq(ok, t <= vu);
     }
 
     // --- timing / replay ---------------------------------------------------------------------------
@@ -267,7 +303,7 @@ contract ResolverTest is IsoTest {
         bytes memory voidRep = _report(RCSS, D, 0, true, SRC);
         vm.expectRevert(abi.encodeWithSelector(Resolver.AlreadyResolved.selector, RCSS, D));
         _deliver(voidRep); // void after settle
-        vm.warp(RCSS_DAY_END + 2 days);
+        vm.warp(RCSS_DAY_END + 8 days);
         vm.expectRevert(abi.encodeWithSelector(Resolver.AlreadyResolved.selector, RCSS, D));
         resolver.voidIfStale(RCSS, D);
         assertEq(resolver.resultOf(RCSS, D).tmaxC, 31);
@@ -296,7 +332,8 @@ contract ResolverTest is IsoTest {
     // --- stale void --------------------------------------------------------------------------------
 
     function test_voidIfStale() public {
-        uint256 staleAt = RCSS_DAY_END + 24 hours;
+        uint256 staleAt = RCSS_DAY_END + 48 hours;
+        assertEq(resolver.staleAt(RCSS, D), staleAt);
         vm.warp(staleAt - 1);
         vm.expectRevert(abi.encodeWithSelector(Resolver.NotStale.selector, RCSS, D, staleAt));
         resolver.voidIfStale(RCSS, D);
@@ -304,12 +341,16 @@ contract ResolverTest is IsoTest {
         vm.prank(alice); // anyone
         resolver.voidIfStale(RCSS, D);
         assertEq(uint8(_status(RCSS, D)), uint8(IIsothermResolver.Status.Void));
+        assertTrue(resolver.isFinal(RCSS, D), "stale void is final at once");
         vm.expectRevert(abi.encodeWithSelector(Resolver.AlreadyResolved.selector, RCSS, D));
         resolver.voidIfStale(RCSS, D);
     }
 
-    function test_lateReportStillAcceptedIfNotVoided() public {
-        vm.warp(RCSS_DAY_END + 30 hours);
+    /// The workflow's own void deadline is dayEnd + 36h; the on-chain stale window (48h) leaves it 12h of margin.
+    function test_lateReportStillAcceptedUntilStale() public {
+        vm.warp(RCSS_DAY_END + 47 hours);
+        vm.expectPartialRevert(Resolver.NotStale.selector);
+        resolver.voidIfStale(RCSS, D);
         _deliver(_report(RCSS, D, 28, false, SRC));
         assertEq(resolver.resultOf(RCSS, D).tmaxC, 28);
     }
@@ -317,6 +358,135 @@ contract ResolverTest is IsoTest {
     function test_voidIfStaleUnknownStation() public {
         vm.expectRevert(abi.encodeWithSelector(Resolver.UnknownStation.selector, bytes4("ZGSZ")));
         resolver.voidIfStale("ZGSZ", D);
+    }
+
+    /// Pause blocks stale voids (else the guardian could force a void by pausing), up to the 7-day liveness bound.
+    function test_staleVoidBlockedWhilePausedUntilHardMax() public {
+        vm.prank(guardian);
+        resolver.pause();
+        uint256 hardMax = RCSS_DAY_END + 7 days;
+        assertEq(resolver.staleAt(RCSS, D), hardMax);
+        vm.warp(RCSS_DAY_END + 48 hours);
+        vm.expectRevert(abi.encodeWithSelector(Resolver.NotStale.selector, RCSS, D, hardMax));
+        resolver.voidIfStale(RCSS, D);
+        vm.warp(hardMax - 1);
+        vm.expectRevert(abi.encodeWithSelector(Resolver.NotStale.selector, RCSS, D, hardMax));
+        resolver.voidIfStale(RCSS, D);
+        vm.warp(hardMax);
+        resolver.voidIfStale(RCSS, D); // liveness: funds can never be locked forever by a stuck pause
+        assertEq(uint8(_status(RCSS, D)), uint8(IIsothermResolver.Status.Void));
+    }
+
+    /// After an unpause the workflow gets RESUME_GRACE (24h) to deliver before anyone may void.
+    function test_resumeGraceAfterUnpause() public {
+        vm.prank(guardian);
+        resolver.pause();
+        uint256 unpauseAt = RCSS_DAY_END + 60 hours; // past the plain 48h window
+        vm.warp(unpauseAt);
+        vm.prank(owner);
+        resolver.unpause();
+        assertEq(resolver.lastUnpausedAt(), unpauseAt);
+        uint256 expected = unpauseAt + 24 hours;
+        assertEq(resolver.staleAt(RCSS, D), expected);
+        vm.warp(expected - 1);
+        vm.expectRevert(abi.encodeWithSelector(Resolver.NotStale.selector, RCSS, D, expected));
+        resolver.voidIfStale(RCSS, D);
+        vm.warp(expected);
+        resolver.voidIfStale(RCSS, D);
+        // an old unpause does not delay ladders whose own 48h window is later
+        assertEq(resolver.staleAt(RJTT, 20261020), resolver.dayEnd(RJTT, 20261020) + 48 hours);
+        // the grace is capped by the 7-day hard bound
+        vm.warp(resolver.dayEnd(RJTT, 20261008) + 7 days - 1 hours);
+        vm.startPrank(owner);
+        resolver.pause();
+        resolver.unpause();
+        vm.stopPrank();
+        assertEq(resolver.staleAt(RJTT, 20261008), resolver.dayEnd(RJTT, 20261008) + 7 days);
+    }
+
+    function testFuzz_staleVoidNeverBeforeWindow(uint256 t, bool paused_) public {
+        t = bound(t, RCSS_DAY_END, RCSS_DAY_END + 10 days);
+        if (paused_) {
+            vm.prank(guardian);
+            resolver.pause();
+        }
+        vm.warp(t);
+        (bool ok,) = address(resolver).call(abi.encodeCall(Resolver.voidIfStale, (RCSS, D)));
+        uint256 earliest = paused_ ? RCSS_DAY_END + 7 days : RCSS_DAY_END + 48 hours;
+        assertEq(ok, t >= earliest);
+    }
+
+    // --- challenge window --------------------------------------------------------------------------
+
+    function test_guardianChallengeConvertsToVoid() public {
+        vm.warp(RCSS_DAY_END);
+        _deliver(_report(RCSS, D, 31, false, SRC));
+        vm.warp(RCSS_DAY_END + CHALLENGE - 1);
+        bytes32 reason = keccak256("attester key leak suspected");
+        vm.expectEmit(address(resolver));
+        emit LadderChallenged(RCSS, D, 31, reason, guardian);
+        vm.prank(guardian);
+        resolver.challenge(RCSS, D, reason);
+        IIsothermResolver.Result memory r = resolver.resultOf(RCSS, D);
+        assertEq(uint8(r.status), uint8(IIsothermResolver.Status.Void));
+        assertEq(r.tmaxC, 0);
+        assertEq(r.resolvedAt, RCSS_DAY_END);
+        assertEq(r.finalAt, RCSS_DAY_END + CHALLENGE - 1, "a challenged result is final at once");
+        assertEq(r.sourcesHash, SRC);
+        assertTrue(resolver.isFinal(RCSS, D));
+        vm.prank(guardian);
+        vm.expectRevert(abi.encodeWithSelector(Resolver.NotChallengeable.selector, RCSS, D));
+        resolver.challenge(RCSS, D, reason); // only once
+    }
+
+    function test_challengeRules() public {
+        vm.warp(RCSS_DAY_END);
+        vm.prank(guardian);
+        vm.expectRevert(abi.encodeWithSelector(Resolver.NotChallengeable.selector, RCSS, D));
+        resolver.challenge(RCSS, D, 0); // nothing to challenge yet
+        _deliver(_report(RCSS, D, 31, false, SRC));
+        vm.prank(owner);
+        vm.expectRevert(Resolver.NotGuardian.selector);
+        resolver.challenge(RCSS, D, 0); // owner is not the guardian
+        vm.prank(alice);
+        vm.expectRevert(Resolver.NotGuardian.selector);
+        resolver.challenge(RCSS, D, 0);
+        vm.warp(RCSS_DAY_END + CHALLENGE); // window over (same second redemption opens)
+        vm.prank(guardian);
+        vm.expectRevert(abi.encodeWithSelector(Resolver.NotChallengeable.selector, RCSS, D));
+        resolver.challenge(RCSS, D, 0);
+        assertEq(resolver.resultOf(RCSS, D).tmaxC, 31);
+
+        // a void is never challengeable (the guardian can only push toward void)
+        vm.warp(RJTT_DAY_END);
+        _deliver(_report(RJTT, D, 0, true, SRC));
+        vm.prank(guardian);
+        vm.expectRevert(abi.encodeWithSelector(Resolver.NotChallengeable.selector, RJTT, D));
+        resolver.challenge(RJTT, D, 0);
+    }
+
+    function test_zeroChallengeWindowIsFinalAtOnce() public {
+        Resolver r0 = new Resolver(owner, forwarder, attester, guardian, 0);
+        vm.prank(owner);
+        r0.registerStation(RCSS, TPE);
+        vm.warp(RCSS_DAY_END);
+        bytes memory sig = _sign(ATTESTER_PK, r0.settlementDigest(RCSS, D, 31, false, SRC, VU));
+        vm.prank(forwarder);
+        r0.onReport("", _encode(RCSS, D, 31, false, SRC, VU, sig));
+        assertTrue(r0.isFinal(RCSS, D));
+        vm.prank(guardian);
+        vm.expectRevert(abi.encodeWithSelector(Resolver.NotChallengeable.selector, RCSS, D));
+        r0.challenge(RCSS, D, 0);
+    }
+
+    function test_challengeWorksWhilePaused() public {
+        vm.warp(RCSS_DAY_END);
+        _deliver(_report(RCSS, D, 31, false, SRC));
+        vm.startPrank(guardian);
+        resolver.pause();
+        resolver.challenge(RCSS, D, keccak256("x"));
+        vm.stopPrank();
+        assertEq(uint8(_status(RCSS, D)), uint8(IIsothermResolver.Status.Void));
     }
 
     // --- pause -------------------------------------------------------------------------------------
@@ -337,14 +507,6 @@ contract ResolverTest is IsoTest {
         vm.prank(owner);
         resolver.unpause();
         _deliver(rep);
-    }
-
-    function test_staleVoidWorksWhilePaused() public {
-        vm.prank(owner);
-        resolver.pause();
-        vm.warp(RCSS_DAY_END + 24 hours);
-        resolver.voidIfStale(RCSS, D);
-        assertEq(uint8(_status(RCSS, D)), uint8(IIsothermResolver.Status.Void));
     }
 
     // --- stations / admin --------------------------------------------------------------------------
@@ -398,8 +560,8 @@ contract ResolverTest is IsoTest {
         pk = bound(pk, 1, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140);
         tmax = int16(bound(tmax, -90, 70));
         vm.warp(RCSS_DAY_END);
-        bytes memory sig = _sign(pk, resolver.settlementDigest(RCSS, D, tmax, false, SRC));
-        bytes memory rep = abi.encode(RCSS, D, tmax, false, SRC, sig);
+        bytes memory sig = _sign(pk, _digest(RCSS, D, tmax, false, SRC));
+        bytes memory rep = _encode(RCSS, D, tmax, false, SRC, VU, sig);
         if (pk != ATTESTER_PK) {
             vm.expectRevert(abi.encodeWithSelector(Resolver.InvalidAttestation.selector, vm.addr(pk)));
         }

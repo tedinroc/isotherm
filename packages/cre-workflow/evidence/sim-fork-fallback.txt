@@ -1,0 +1,63 @@
+# 2026-10-07T06:02:20Z DEV HARNESS: spike-built cre v1.37.0 with ONLY the client-side login check removed (not the official binary)
+# anvil fork of live Monad testnet at block 68894124, pid 65765, port 19311
+# fork: Resolver.attester -> 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720 (public test key; real attester key not used)
+# replay targets: RCSS:2026-05-04,RCSS:2025-11-15
+## simulate run 1
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...
+✓ Workflow compiled
+✓ Simulation limits enabled
+  HTTP: req=120kb resp=250kb timeout=10s | ConfHTTP: req=125kb resp=500kb timeout=1m30s | Consensus obs=25kb | ChainWrite evm_report=50kb evm_gas=10000000 solana_report=265b solana_cu=300000 | WASM binary=100mb compressed=20mb
+  Binary hash: 413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938
+  Config hash: 8970c66d46aefcb6e2b7f5a25621e089686aa291879a8a71a87ed44427b52ad0
+2026-10-06T23:02:24Z [SIMULATION] Simulator Initialized
+
+2026-10-06T23:02:24Z [SIMULATION] Running trigger trigger=cron-trigger@1.0.0
+2026-10-06T23:02:32Z [USER LOG] RCSS 2025-11-15: VOID (insufficient complete sources) | IEM 20C n=1 h=1 last=05:00 incomplete | AWC -C n=0 h=0 last=- incomplete | OGIMET 26C n=42 h=24 last=23:30 complete
+2026-10-06T23:02:32Z [USER LOG] RCSS 2025-11-15: isotherm-sources-v1|RCSS|20251115|VOID|IEM:20,1,1,05:00,0|AWC:null,0,0,-,0|OGIMET:26,42,24,23:30,1 digest=0xbd9975b68ee5bc3bb8f7a12a931dfa4b2fc0098b74b2392d65f6dbd4dc3f03ee validUntil=1791354444
+2026-10-06T23:02:33Z [USER LOG] RCSS 2025-11-15: tx 0x7900a8b5556a21b474ef49e664d2fd913304a95262ff68206ddbf455e0821674 -> resolved
+
+✓ Workflow Simulation Result:
+"{\"triggerTime\":\"2026-10-07T06:02:24.000Z\",\"scheduledTime\":\"2026-10-07T06:30:00.000Z\",\"resolver\":\"0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B\",\"outcomes\":[{\"station\":\"RCSS\",\"date\":20251115,\"action\":\"voided\",\"reason\":\"insufficient complete sources\",\"tmaxC\":null,\"sources\":{\"IEM\":\"20C n=1 h=1 last=05:00 incomplete\",\"AWC\":\"-C n=0 h=0 last=- incomplete\",\"OGIMET\":\"26C n=42 h=24 last=23:30 complete\"},\"sourcesHash\":\"0xeacb1c3bf6573ab687dd1bc6c0b29c37367b74c07450a83922068a51d63a6919\",\"validUntil\":\"1791354444\",\"txHash\":\"0x7900a8b5556a21b474ef49e664d2fd913304a95262ff68206ddbf455e0821674\",\"onchain\":{\"status\":2,\"tmaxC\":0},\"confirmed\":\"resolved\"},{\"station\":\"RCSS\",\"date\":20260504,\"action\":\"deferred\",\"reason\":\"fallback budget (1 Ogimet call/run; Ogimet throttles)\",\"sources\":{\"IEM\":\"25C n=54 h=24 last=23:30 complete\",\"AWC\":\"-C n=0 h=0 last=- incomplete\"}}],\"skipped\":[],\"budget\":{\"http\":\"5/15\",\"evmReads\":\"6/15\",\"reports\":\"1/5\",\"ogimet\":\"1/1\"},\"ladders\":{\"count\":1,\"scanned\":[0,1],\"due\":0}}"
+
+2026-10-06T23:02:37Z [SIMULATION] Execution finished signal received
+2026-10-06T23:02:37Z [SIMULATION] Skipping WorkflowEngineV2
+
+
+resultOf(RCSS, 20260504) = (0, 0, 0, 0, 0x0000000000000000000000000000000000000000000000000000000000000000)
+resultOf(RCSS, 20251115) = (2, 0, 1791352953 [1.791e9], 1791352953 [1.791e9], 0xeacb1c3bf6573ab687dd1bc6c0b29c37367b74c07450a83922068a51d63a6919)
+## waiting 90s (Ogimet throttles back-to-back queries)
+## simulate run 2
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...
+✓ Workflow compiled
+✓ Simulation limits enabled
+  HTTP: req=120kb resp=250kb timeout=10s | ConfHTTP: req=125kb resp=500kb timeout=1m30s | Consensus obs=25kb | ChainWrite evm_report=50kb evm_gas=10000000 solana_report=265b solana_cu=300000 | WASM binary=100mb compressed=20mb
+  Binary hash: 413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938
+  Config hash: 8970c66d46aefcb6e2b7f5a25621e089686aa291879a8a71a87ed44427b52ad0
+2026-10-06T23:04:09Z [SIMULATION] Simulator Initialized
+
+2026-10-06T23:04:09Z [SIMULATION] Running trigger trigger=cron-trigger@1.0.0
+2026-10-06T23:04:15Z [USER LOG] RCSS 2026-05-04: SETTLED (2-of-3 fallback agree) | IEM 25C n=54 h=24 last=23:30 complete | AWC -C n=0 h=0 last=- incomplete | OGIMET 25C n=54 h=24 last=23:30 complete
+2026-10-06T23:04:15Z [USER LOG] RCSS 2026-05-04: isotherm-sources-v1|RCSS|20260504|SETTLED|IEM:25,54,24,23:30,1|AWC:null,0,0,-,0|OGIMET:25,54,24,23:30,1 digest=0x9ddca223f9335a5ded91751c0500982f62f8f8521b4d70d14d680e66ac2f679c validUntil=1791354549
+2026-10-06T23:04:16Z [USER LOG] RCSS 2026-05-04: tx 0xf54897185906ae989d9ca21e5812da7606baf1e601c670fbeb4bc4d7b6c4f4f1 -> resolved
+
+✓ Workflow Simulation Result:
+"{\"triggerTime\":\"2026-10-07T06:04:09.000Z\",\"scheduledTime\":\"2026-10-07T06:30:00.000Z\",\"resolver\":\"0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B\",\"outcomes\":[{\"station\":\"RCSS\",\"date\":20260504,\"action\":\"settled\",\"reason\":\"2-of-3 fallback agree\",\"tmaxC\":25,\"sources\":{\"IEM\":\"25C n=54 h=24 last=23:30 complete\",\"AWC\":\"-C n=0 h=0 last=- incomplete\",\"OGIMET\":\"25C n=54 h=24 last=23:30 complete\"},\"sourcesHash\":\"0xa659d3f788875a443f590c7c35f8df8debc24216c1dffbb45fd7a9d06bd176c0\",\"validUntil\":\"1791354549\",\"txHash\":\"0xf54897185906ae989d9ca21e5812da7606baf1e601c670fbeb4bc4d7b6c4f4f1\",\"onchain\":{\"status\":1,\"tmaxC\":25},\"confirmed\":\"resolved\"}],\"skipped\":[{\"icao\":\"RCSS\",\"date\":20251115,\"reason\":\"already-resolved\"}],\"budget\":{\"http\":\"3/15\",\"evmReads\":\"6/15\",\"reports\":\"1/5\",\"ogimet\":\"1/1\"},\"ladders\":{\"count\":1,\"scanned\":[0,1],\"due\":0}}"
+
+2026-10-06T23:04:16Z [SIMULATION] Execution finished signal received
+2026-10-06T23:04:16Z [SIMULATION] Skipping WorkflowEngineV2
+
+
+resultOf(RCSS, 20260504) = (1, 25, 1791353056 [1.791e9], 1791353956 [1.791e9], 0xa659d3f788875a443f590c7c35f8df8debc24216c1dffbb45fd7a9d06bd176c0)
+resultOf(RCSS, 20251115) = (2, 0, 1791352953 [1.791e9], 1791352953 [1.791e9], 0xeacb1c3bf6573ab687dd1bc6c0b29c37367b74c07450a83922068a51d63a6919)
+## confirm the simulator's report txs from their receipts (ReportProcessed.result + LadderResolved)
+0x7900a8b5556a21b474ef49e664d2fd913304a95262ff68206ddbf455e0821674 block 68894206 status=success gasUsed=156351 ReportProcessed.result=true LadderResolved: RCSS 20251115 status=Void tmaxC=0 OK
+confirm exit 0
+## replay the first report tx's exact calldata -> the forwarder tx succeeds but the report is NOT accepted
+0x7f83fae4e369bc7c56ac68c09a615880eeaff60b6d57190c8eb352e1aa1e003a block 68894368 status=success gasUsed=98821 ReportProcessed.result=false LadderResolved: - NOT ACCEPTED
+confirm exit 4 (4 = not accepted, as expected for a replay)

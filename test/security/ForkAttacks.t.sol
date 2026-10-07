@@ -7,7 +7,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {Resolver} from "../../src/Resolver.sol";
 import {CollateralVault} from "../../src/CollateralVault.sol";
-import {IsothermZap, IKuruRouterView} from "../../spikes/e2e/src/IsothermZap.sol";
+import {IsothermZap} from "../../src/IsothermZap.sol";
+import {IKuruRouterView} from "../../src/interfaces/IKuru.sol";
 import {CivilDate} from "../utils/CivilDate.sol";
 import {RawReport} from "./SecUtils.sol";
 
@@ -93,7 +94,7 @@ contract ForkAttacksTest is Test {
         forked = true;
         owner = vm.addr(ATTESTER_PK);
         vm.startPrank(owner);
-        resolver = new Resolver(owner, address(MOCK_FWD), owner, owner);
+        resolver = new Resolver(owner, address(MOCK_FWD), owner, owner, 15 minutes);
         vault = new CollateralVault(owner, resolver, AUSD, owner);
         resolver.registerStation("RCSS", 8 hours);
         date = CivilDate.localDate(block.timestamp + 1 days, 8 hours);
@@ -116,29 +117,18 @@ contract ForkAttacksTest is Test {
     // CRE forwarder misconfiguration, against the REAL MockKeystoneForwarder
     // ------------------------------------------------------------------------------------------------
 
-    function test_fork_RESIDUAL_realMockForwarderAttestationOffAnyoneSettles() public onlyFork {
-        vm.startPrank(owner);
-        resolver.setExpectedWorkflow(keccak256("isotherm-settle"), makeAddr("wfOwner"));
-        resolver.setAttestationRequired(false); // wrong order: forwarder is still the permissionless mock
-        vm.stopPrank();
-        vm.warp(dayEnd);
-        bytes memory forged = abi.encode(bytes4("RCSS"), date, int16(70), false, bytes32(0), bytes(""));
-        bytes memory raw =
-            RawReport.build(keccak256("evil"), resolver.expectedWorkflowId(), resolver.expectedWorkflowOwner(), forged);
-        assertTrue(_mockReport(raw, attacker), "real mock forwarder delivered an unsigned forged report");
-        assertEq(resolver.resultOf("RCSS", date).tmaxC, 70);
-    }
-
-    function test_fork_FIXED_switchBackToRealMockRearmsAttestation() public onlyFork {
+    /// FIXED (was Medium #1): attestation cannot be switched off. Through the REAL MockKeystoneForwarder, after the
+    /// documented go-live steps and a switch back to the mock, an unsigned report carrying the pinned workflow
+    /// identity is rejected.
+    function test_fork_FIXED_realMockForwarderNeverAcceptsUnsignedReports() public onlyFork {
         vm.startPrank(owner);
         resolver.setForwarder(PROD_FWD);
         resolver.setExpectedWorkflow(keccak256("isotherm-settle"), makeAddr("wfOwner"));
-        resolver.setAttestationRequired(false);
         resolver.setForwarder(address(MOCK_FWD)); // back to the mock for a `cre workflow simulate --broadcast` demo
         vm.stopPrank();
-        assertTrue(resolver.attestationRequired());
         vm.warp(dayEnd);
-        bytes memory forged = abi.encode(bytes4("RCSS"), date, int16(70), false, bytes32(0), bytes(""));
+        bytes memory forged =
+            abi.encode(bytes4("RCSS"), date, int16(70), false, bytes32(0), uint64(dayEnd + 1 hours), bytes(""));
         bytes memory raw =
             RawReport.build(keccak256("evil"), resolver.expectedWorkflowId(), resolver.expectedWorkflowOwner(), forged);
         assertFalse(_mockReport(raw, attacker), "forged report rejected");
@@ -149,12 +139,11 @@ contract ForkAttacksTest is Test {
     // Zap / Kuru
     // ------------------------------------------------------------------------------------------------
 
-    /// FINDING (Medium): Kuru v1 testnet market creation is permissionless, so anyone can register a SECOND
-    /// YES/AUSD book for our YES token with hostile parameters (here a 90% taker fee). Router.verifiedMarket() reports
-    /// it with base == YES and quote == AUSD, so IsothermZap._market() accepts it. With minYesOut = 0 a victim
-    /// routed there (UI bug, malicious front-end/agent, a plugin that discovers books from MarketRegistered events)
-    /// loses ~90%. Fix: the Zap must accept only the canonical book recorded on-chain per seriesId.
-    function test_fork_zapAcceptsHostileSecondBookForSameYes() public onlyFork {
+    /// FIXED (was Medium #4): Kuru v1 testnet market creation is permissionless, so anyone can register a SECOND
+    /// YES/AUSD book for our YES token with hostile parameters (here a 90% taker fee). The v1 Zap only trades on the
+    /// write-once canonical book an operator registered, refuses to register a book whose fee exceeds 30 bps, and
+    /// requires a non-zero minOut.
+    function test_fork_FIXED_zapRejectsHostileSecondBookForSameYes() public onlyFork {
         _fundAll();
         address canon = _makerBook(10); // canonical book, 0.1% taker fee, ask 100 YES @ 0.50
         // attacker: mints its own YES and lists them on a second book for the SAME token with a 90% taker fee
@@ -167,15 +156,30 @@ contract ForkAttacksTest is Test {
         _ask(hostile, 5000, 100e6);
         vm.stopPrank();
 
+        // the hostile book can never become canonical (fee cap), and nobody but an operator can register at all
+        assertFalse(zap.validateMarket(id, hostile), "90% taker fee fails validation");
+        vm.prank(attacker);
+        vm.expectRevert(IsothermZap.NotOperator.selector);
+        zap.setCanonicalMarket(id, hostile);
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(IsothermZap.InvalidMarket.selector, hostile));
+        zap.setCanonicalMarket(id, hostile);
+        vm.prank(owner);
+        zap.setCanonicalMarket(id, canon);
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(IsothermZap.CanonicalMarketAlreadySet.selector, id, canon));
+        zap.setCanonicalMarket(id, hostile); // write-once
+
         vm.startPrank(victim);
         AUSD.approve(address(zap), type(uint256).max);
-        (uint256 yesHostile,) = zap.buyYes(id, hostile, 10e6, 0, victim); // NOT rejected with MarketMismatch
-        (uint256 yesCanon,) = zap.buyYes(id, canon, 10e6, 0, victim);
+        vm.expectRevert(abi.encodeWithSelector(IsothermZap.MarketMismatch.selector, hostile, canon));
+        zap.buyYes(id, hostile, 10e6, 1, victim);
+        vm.expectRevert(IsothermZap.ZeroMinOut.selector);
+        zap.buyYes(id, canon, 10e6, 0, victim);
+        (uint256 yesCanon,) = zap.buyYes(id, canon, 10e6, 19e6, victim);
         vm.stopPrank();
         console2.log("10 AUSD via canonical book -> YES", yesCanon);
-        console2.log("10 AUSD via hostile book   -> YES", yesHostile);
         assertEq(yesCanon, 19_980_000, "20 YES @0.50 minus 0.1%");
-        assertEq(yesHostile, 2_000_000, "20 YES @0.50 minus 90%");
     }
 
     /// FINDING (Medium, operational): Kuru books keep matching after the day ends and after settlement; Isotherm
@@ -189,6 +193,7 @@ contract ForkAttacksTest is Test {
         uint256 a0 = AUSD.balanceOf(sniper);
         AUSD.approve(canon, 50e6);
         uint256 got = IKuruBookF(canon).placeAndExecuteMarketBuy(50e4, 0, false, false); // 50 AUSD into the 0.50 ask
+        vm.warp(block.timestamp + 15 minutes); // challenge window
         uint256 paid = vault.redeem(id, got, 0);
         vm.stopPrank();
         int256 profit = int256(AUSD.balanceOf(sniper)) - int256(a0);
@@ -203,6 +208,8 @@ contract ForkAttacksTest is Test {
     function test_fork_zapStrayBalancesNotClaimableButStuck() public onlyFork {
         _fundAll();
         address canon = _makerBook(10);
+        vm.prank(owner);
+        zap.setCanonicalMarket(id, canon);
         vm.prank(victim);
         AUSD.transfer(address(zap), 5e6); // fat-finger
         vm.prank(maker);
@@ -210,7 +217,7 @@ contract ForkAttacksTest is Test {
         vm.startPrank(attacker);
         AUSD.approve(address(zap), type(uint256).max);
         yes.approve(address(zap), type(uint256).max);
-        (uint256 y, uint256 refund) = zap.buyYes(id, canon, 3e6, 0, attacker);
+        (uint256 y, uint256 refund) = zap.buyYes(id, canon, 3e6, 1, attacker);
         assertEq(y, 5_994_000);
         assertEq(refund, 0);
         vm.expectRevert(); // no bids on the book: nothing to sell into; stray YES cannot be pulled out either
@@ -260,9 +267,10 @@ contract ForkAttacksTest is Test {
 
     function _settle(int16 tmax) internal returns (bool) {
         bytes32 src = keccak256("iem+awc");
+        uint64 vu = uint64(block.timestamp + 30 minutes);
         (uint8 v, bytes32 r, bytes32 s) =
-            vm.sign(ATTESTER_PK, resolver.settlementDigest("RCSS", date, tmax, false, src));
-        bytes memory payload = abi.encode(bytes4("RCSS"), date, tmax, false, src, abi.encodePacked(r, s, v));
+            vm.sign(ATTESTER_PK, resolver.settlementDigest("RCSS", date, tmax, false, src, vu));
+        bytes memory payload = abi.encode(bytes4("RCSS"), date, tmax, false, src, vu, abi.encodePacked(r, s, v));
         return _mockReport(RawReport.build(keccak256("exec"), SIM_WF, SIM_OWNER, payload), makeAddr("transmitter"));
     }
 

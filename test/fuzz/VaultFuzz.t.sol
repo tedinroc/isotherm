@@ -21,6 +21,7 @@ contract VaultFuzzTest is IsoTest {
         vm.warp(RCSS_DAY_END);
         bytes memory rep = _report(RCSS, D, tmax, isVoid, keccak256("s"));
         _deliver(rep);
+        _finalize(RCSS, D);
 
         uint256 preview = vault.previewRedeem(id, amount, amount);
         assertEq(preview, amount, "full set must preview to exactly 1 AUSD per set");

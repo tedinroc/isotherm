@@ -1,0 +1,9 @@
+$ mm kuru cancel 0x4f5Ef4Bf256BDD88492C1e394B0D0f06A8265813 --order 1 --json
+{
+  "ok": false,
+  "error": {
+    "code": "KURU_NOT_YOUR_OPEN_ORDER",
+    "message": "Order(s) 1 are not open orders of 0x9F6AF0b5E8091B867500D9E2a3240Bd92259a543 on this market (filled, cancelled, or someone else's).",
+    "hint": "See: mm kuru book 0x4f5Ef4Bf256BDD88492C1e394B0D0f06A8265813"
+  }
+}

@@ -1,0 +1,77 @@
+[
+ {
+  "type": "function",
+  "name": "dayEnd",
+  "inputs": [
+   {
+    "name": "station",
+    "type": "bytes4",
+    "internalType": "bytes4"
+   },
+   {
+    "name": "date",
+    "type": "uint32",
+    "internalType": "uint32"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "resultOf",
+  "inputs": [
+   {
+    "name": "station",
+    "type": "bytes4",
+    "internalType": "bytes4"
+   },
+   {
+    "name": "date",
+    "type": "uint32",
+    "internalType": "uint32"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "",
+    "type": "tuple",
+    "internalType": "struct IIsothermResolver.Result",
+    "components": [
+     {
+      "name": "status",
+      "type": "uint8",
+      "internalType": "enum IIsothermResolver.Status"
+     },
+     {
+      "name": "tmaxC",
+      "type": "int16",
+      "internalType": "int16"
+     },
+     {
+      "name": "resolvedAt",
+      "type": "uint64",
+      "internalType": "uint64"
+     },
+     {
+      "name": "finalAt",
+      "type": "uint64",
+      "internalType": "uint64"
+     },
+     {
+      "name": "sourcesHash",
+      "type": "bytes32",
+      "internalType": "bytes32"
+     }
+    ]
+   }
+  ],
+  "stateMutability": "view"
+ }
+]

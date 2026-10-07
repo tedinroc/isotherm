@@ -1,0 +1,24 @@
+seeded stub session at <repo>/packages/mm-plugin/harness/.mmhome-harness/.metamask/session.json
+@metamask/agent-wallet: Installing plugin file:<repo>/packages/mm-plugin/mm-plugin-isotherm-0.1.0.tgz... installed v0.1.0
+npm notice
+npm notice New major version of npm available! 11.21.0 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice
+ ›   Warning: This plugin may not work as expected because the prepare script 
+ ›   did not produce all the expected files.
+customEvmChains[10143].rpcTarget = http://127.0.0.1:19251  (<repo>/packages/mm-plugin/harness/.mmhome-harness/.metamask/wallets.json, created)
+Done. Check with:   <repo>/packages/mm-plugin/harness/bin/mm-harness weather doctor --json
+Read-only, no sign-in needed:   <repo>/packages/mm-plugin/harness/bin/mm-harness weather markets --json    <repo>/packages/mm-plugin/harness/bin/mm-harness weather quote taipei --json
+Trading needs `mm login` + `mm init` once, testnet MON for gas (https://faucet.monad.xyz) and testnet AUSD.
+Optional, so ctx.publicClient(10143) works too:  node "<repo>/packages/mm-plugin/scripts/rpc-shim.mjs" &  export MM_INFURA_RPC_BASE_URL=http://127.0.0.1:18790
+{
+  "ok": true,
+  "data": {
+    "walletMode": "byok",
+    "tradingMode": "guard",
+    "mnemonicEncrypted": false
+  },
+  "hint": "Your seed phrase is stored unencrypted. Run `mm wallet password set` to add a password."
+}
+after mm init: byok ['0x9F6AF0b5E8091B867500D9E2a3240Bd92259a543'] customEvmChains [(10143, 'http://127.0.0.1:19251')]

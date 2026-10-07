@@ -1,0 +1,87 @@
+$ mm weather markets taipei --date 2026-10-07 --json
+{
+  "ok": true,
+  "data": {
+    "chainId": 10143,
+    "network": "Monad testnet (faucet AUSD only, no real money)",
+    "deployment": "env:<repo>/packages/mm-plugin/harness/fork-deployments-v1.json",
+    "abiSet": "v1",
+    "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+    "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+    "rpcSource": "mm-customEvmChains",
+    "rpcUrl": "http://127.0.0.1:19251",
+    "today": "2026-10-07",
+    "ladders": [
+      {
+        "city": "Taipei",
+        "station": "RCSS",
+        "date": "2026-10-07",
+        "state": "settled",
+        "closeTime": "2026-10-07T15:00:00Z",
+        "dayEnd": "2026-10-07T16:00:00Z",
+        "minutesToClose": 0,
+        "result": {
+          "status": "settled",
+          "tmaxC": 28,
+          "redeemableFrom": "2026-10-07T16:17:00Z"
+        },
+        "strikes": [
+          {
+            "strike": "Tmax>=27C",
+            "strikeC": 27,
+            "seriesId": "0xb9146525d6cd50858bcbdc89d7d4097da068d5292b0885100c6084464b9780be",
+            "yes": "0x9AE87bD4111B62eDA7606b110dB1029049088F89",
+            "no": "0x61BC392d06f08381FC4Ab7e03265Af312b2d6DCc",
+            "market": "0x459D2A61A63B5CBf6dc85d0219b1e739fFa07612",
+            "marketSource": "registry",
+            "canonical": true,
+            "bestBid": 0.95,
+            "bestAsk": 0.999
+          },
+          {
+            "strike": "Tmax>=28C",
+            "strikeC": 28,
+            "seriesId": "0xa200379e31da17cb68427cc2874c316b927926de5612af0c78b39ae231c8de89",
+            "yes": "0x19B839656e26698828883670f06BCA1D3C03107F",
+            "no": "0xED6a2A055607Fb6f74347CE4E40B3E02fB5F505a",
+            "market": "0xff088dd75094F99Ff55cCDA578899Bc743B22D8d",
+            "marketSource": "registry",
+            "canonical": true,
+            "bestBid": 0.95,
+            "bestAsk": 0.999
+          },
+          {
+            "strike": "Tmax>=29C",
+            "strikeC": 29,
+            "seriesId": "0x0cdce740abc765b64d0fd9f4edbc3e9f83336e84eaa98659eca0064634b53646",
+            "yes": "0xBB0847f267c86beA626dDE0C043868C9b5520248",
+            "no": "0x270Be120535889bE77155a557AFc046208eF2a72",
+            "market": "0xa14cD9F4c361A1b3c04753D18920AD4fB35cf56B",
+            "marketSource": "registry",
+            "canonical": true,
+            "bestBid": 0.001,
+            "bestAsk": 0.06
+          },
+          {
+            "strike": "Tmax>=30C",
+            "strikeC": 30,
+            "seriesId": "0x87baeb9b239bda5f152464813fd7e26526541d0f5301bc11d04d65e6e53b45b4",
+            "yes": "0xf47E17bC9D6de9A2E84238a75F1d8c83C6a48F37",
+            "no": "0x117408dc4Dd41d826E4FF8b515e19d4C2Eaabc2c",
+            "market": "0xd8D936a99D4c9a21527D83D90095cC7B7523532f",
+            "marketSource": "registry",
+            "canonical": true,
+            "bestBid": 0.001,
+            "bestAsk": 0.05
+          }
+        ]
+      }
+    ],
+    "count": 1,
+    "notes": [
+      "Each strike is a fully collateralized YES/NO pair (1 AUSD per complete set). YES pays 1 AUSD iff the official integer METAR Tmax >= k; a void pays 0.5/0.5.",
+      "Only YES has a Kuru book; NO is bought by minting a set and selling the YES leg (weather buy --side no)."
+    ]
+  },
+  "hint": "1 ladder(s)"
+}

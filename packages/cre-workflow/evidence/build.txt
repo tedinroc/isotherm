@@ -1,0 +1,14 @@
+# 2026-10-07T06:04:34Z cre workflow build (no login needed), CRE CLI CRE CLI version v1.37.0
+  Compiling workflow...
+✓ Workflow compiled successfully
+  Binary hash: 413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938
+✓ Build output written to <repo>/packages/cre-workflow/settle/binary.wasm
+413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938  settle/binary.wasm
+binary.wasm bytes: 2816479
+# second build (determinism)
+  Binary hash: 413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938
+# cre workflow hash (no login)
+✓ Loaded WASM binary from <repo>/packages/cre-workflow/settle/binary.wasm
+  Binary hash:   600f0a3e1a163c2aa1753722558cd9ae5299ab3a553205e108b8638dc45bc676
+  Config hash:   d5686d50ab6b5f3e6736ed6dea92121b3b8fd0f9ce1832e0cf71ebe7655f5b65
+  Workflow hash: 001aaae8bdc6749c813786d86f5a3e7fa82ff4c2f5f4ad62dcb7f40ca4de73ef

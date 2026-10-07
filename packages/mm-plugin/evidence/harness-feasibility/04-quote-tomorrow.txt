@@ -1,0 +1,160 @@
+$ mm weather quote taipei --date tomorrow --json
+{
+  "ok": true,
+  "data": {
+    "city": "Taipei",
+    "station": "RCSS",
+    "date": "2026-10-08",
+    "ladder": {
+      "state": "open",
+      "closeTime": "2026-10-08T15:00:00Z",
+      "dayEnd": "2026-10-08T16:00:00Z",
+      "result": null
+    },
+    "polymarket": {
+      "slug": "highest-temperature-in-taipei-on-october-8-2026",
+      "url": "https://polymarket.com/event/highest-temperature-in-taipei-on-october-8-2026",
+      "volumeUsd": 2408,
+      "sumMid": 1.038,
+      "closed": false
+    },
+    "v0": {
+      "name": "isotherm-v0-lite",
+      "mu": 27.9,
+      "sigma": 1.51,
+      "models": {
+        "ecmwf_ifs025": 27.9,
+        "gfs_seamless": 27.9,
+        "icon_seamless": 27.6,
+        "jma_seamless": 28.2
+      }
+    },
+    "observed": {
+      "source": "aviationweather.gov",
+      "station": "RCSS",
+      "date": 20261008,
+      "status": "future",
+      "maxC": null,
+      "nReports": 0,
+      "lastReportUtc": null,
+      "note": "local day has not started"
+    },
+    "rows": [
+      {
+        "strike": "Tmax>=27C",
+        "strikeC": 27,
+        "seriesId": "0x95ce14cb3e443b080f3aaa92b6dc40f72ce20e50cd996cf7ab624c6f5e0799ba",
+        "market": "0x8F6db84be9589665e6a23eCaa02599693535693c",
+        "canonical": true,
+        "book": {
+          "bestBid": 0.95,
+          "bestAsk": 0.999,
+          "bidSize": 100,
+          "askSize": 100,
+          "mid": 0.9745,
+          "spread": 0.049
+        },
+        "polymarketImplied": 0.983,
+        "v0Guardrail": 0.823,
+        "observedLocked": false,
+        "guardrailFlag": true,
+        "takerFeeBps": 10
+      },
+      {
+        "strike": "Tmax>=28C",
+        "strikeC": 28,
+        "seriesId": "0xff739cf13e58d95b7a376dde35a7a32b86774508c14e7d3d6c4d47b93c121064",
+        "market": "0x90a5e8B152CeD36558f4006A6e3fB0412CDcA419",
+        "canonical": true,
+        "book": {
+          "bestBid": 0.919,
+          "bestAsk": 0.98,
+          "bidSize": 100,
+          "askSize": 100,
+          "mid": 0.9495,
+          "spread": 0.061
+        },
+        "polymarketImplied": 0.95,
+        "v0Guardrail": 0.604,
+        "observedLocked": false,
+        "guardrailFlag": true,
+        "takerFeeBps": 10
+      },
+      {
+        "strike": "Tmax>=29C",
+        "strikeC": 29,
+        "seriesId": "0xa69ae9d5af5141648df6a03de55f960d141e84ccda321efe1c7bb7882cf02cd3",
+        "market": "0x11b8C955c46EF8C59862Cf35591CC0A325031C5d",
+        "canonical": true,
+        "book": {
+          "bestBid": 0.818,
+          "bestAsk": 0.879,
+          "bidSize": 100,
+          "askSize": 100,
+          "mid": 0.8485,
+          "spread": 0.061
+        },
+        "polymarketImplied": 0.849,
+        "v0Guardrail": 0.346,
+        "observedLocked": false,
+        "guardrailFlag": true,
+        "takerFeeBps": 10
+      },
+      {
+        "strike": "Tmax>=30C",
+        "strikeC": 30,
+        "seriesId": "0xb020bdde35a3212b69e836e2f78f56b4560e75bc74eb7a6b790342f58de00064",
+        "market": "0x2a221d4614c4408b00444B943be964cA44C6a44a",
+        "canonical": true,
+        "book": {
+          "bestBid": 0.437,
+          "bestAsk": 0.498,
+          "bidSize": 100,
+          "askSize": 100,
+          "mid": 0.4675,
+          "spread": 0.061
+        },
+        "polymarketImplied": 0.468,
+        "v0Guardrail": 0.145,
+        "observedLocked": false,
+        "guardrailFlag": true,
+        "takerFeeBps": 10
+      },
+      {
+        "strike": "Tmax>=31C",
+        "strikeC": 31,
+        "seriesId": "0x28b6d44a3bda37f45860480b4dc43046c744f49215a6f12151cbd8ad72a8e658",
+        "market": "0x9567594d6d19AfDfBe1dF99d5a7c3191A4E038C2",
+        "canonical": true,
+        "book": {
+          "bestBid": 0.062,
+          "bestAsk": 0.123,
+          "bidSize": 100,
+          "askSize": 100,
+          "mid": 0.0925,
+          "spread": 0.061
+        },
+        "polymarketImplied": 0.092,
+        "v0Guardrail": 0.043,
+        "observedLocked": false,
+        "guardrailFlag": false,
+        "takerFeeBps": 10
+      }
+    ],
+    "notes": [],
+    "fidelity": "183/184 RCSS days match Polymarket",
+    "deployment": "env:<repo>/packages/mm-plugin/harness/fork-deployments-feasibility.json",
+    "abiSet": "feasibility",
+    "vault": "0xC83fE722eb5Bd29a0355C090f14CCb0605153713",
+    "zap": "0x1b1d91eBd1590c7814AEdCae66ac6ded492C792e",
+    "rpcSource": "mm-customEvmChains",
+    "rpcUrl": "http://127.0.0.1:19251",
+    "disclaimer": [
+      "Testnet only: Monad testnet 10143 with faucet AUSD. Nothing here is real money or financial advice.",
+      "Polymarket-implied P is the normalised mid of Polymarket's bucket prices summed over buckets >= k: a reference price from another venue, not a forecast.",
+      "Isotherm's own v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days); it is shown only as a guardrail. No forecasting edge is claimed.",
+      "Settlement: official integer °C METAR max for the station-local day incl. SPECI and :30 reports; this rule matches Polymarket on 183/184 RCSS days and 209/209 RJTT days."
+    ]
+  },
+  "hint": "Isotherm Taipei 2026-10-08: 5 strikes"
+}

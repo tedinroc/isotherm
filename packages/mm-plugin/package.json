@@ -1,0 +1,81 @@
+{
+  "name": "mm-plugin-isotherm",
+  "version": "0.1.0",
+  "description": "MetaMask Agent Wallet plugin: read and trade Isotherm daily max-temperature strike ladders (YES/NO tokens on Kuru v1 order books, Monad testnet) plus generic Kuru v1 limit/cancel.",
+  "license": "MIT",
+  "type": "module",
+  "keywords": [
+    "oclif-plugin",
+    "metamask",
+    "agent-wallet",
+    "mm-plugin",
+    "monad",
+    "kuru",
+    "clob",
+    "weather",
+    "prediction-markets"
+  ],
+  "files": [
+    "dist",
+    "assets",
+    "scripts/setup-mm-monad.sh",
+    "scripts/add-monad-testnet-chain.mjs",
+    "scripts/rpc-shim.mjs",
+    "oclif.manifest.json",
+    "SKILL.md",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "bundle-assets": "node scripts/bundle-assets.mjs",
+    "build": "node scripts/bundle-assets.mjs && rm -rf dist && tsc -p tsconfig.json && oclif manifest",
+    "prepack": "npm run build",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "test": "tsc -p tsconfig.test.json && node --test --test-reporter=spec 'dist-test/test/*.test.js'"
+  },
+  "oclif": {
+    "bin": "mm",
+    "commands": "./dist/commands",
+    "topicSeparator": " ",
+    "topics": {
+      "weather": {
+        "description": "Isotherm: daily Tmax >= k strike ladders for Asian cities on Monad testnet (Kuru v1 books)"
+      },
+      "kuru": {
+        "description": "Kuru v1 order books on Monad testnet: book, limit, cancel"
+      }
+    }
+  },
+  "mm": {
+    "schemaVersion": 1,
+    "minCliVersion": "^7.0.0",
+    "capabilities": [],
+    "commands": [
+      { "id": "weather:markets", "capabilities": ["wallet-read"], "dataAccess": ["network"], "targetChains": [10143] },
+      { "id": "weather:quote", "capabilities": ["wallet-read"], "dataAccess": ["network"], "targetChains": [10143] },
+      { "id": "weather:edge", "capabilities": ["wallet-read"], "dataAccess": ["network"], "targetChains": [10143] },
+      { "id": "weather:positions", "capabilities": ["wallet-read"], "dataAccess": ["accounts", "balances", "network"], "targetChains": [10143] },
+      { "id": "weather:doctor", "capabilities": ["wallet-read"], "dataAccess": ["accounts", "network"], "targetChains": [10143] },
+      { "id": "weather:buy", "capabilities": ["wallet-read", "wallet-submit"], "dataAccess": ["accounts", "balances", "network"], "targetChains": [10143] },
+      { "id": "weather:sell", "capabilities": ["wallet-read", "wallet-submit"], "dataAccess": ["accounts", "balances", "network"], "targetChains": [10143] },
+      { "id": "weather:redeem", "capabilities": ["wallet-read", "wallet-submit"], "dataAccess": ["accounts", "balances", "network"], "targetChains": [10143] },
+      { "id": "kuru:book", "capabilities": ["wallet-read"], "dataAccess": ["accounts", "network"], "targetChains": [10143] },
+      { "id": "kuru:limit", "capabilities": ["wallet-read", "wallet-submit"], "dataAccess": ["accounts", "balances", "network"], "targetChains": [10143] },
+      { "id": "kuru:cancel", "capabilities": ["wallet-read", "wallet-submit"], "dataAccess": ["accounts", "network"], "targetChains": [10143] }
+    ]
+  },
+  "dependencies": {
+    "viem": "^2.21.0"
+  },
+  "peerDependencies": {
+    "@metamask/agent-wallet": "^7.0.0"
+  },
+  "devDependencies": {
+    "@metamask/agent-wallet": "7.0.0",
+    "@types/node": "^22.0.0",
+    "oclif": "^4",
+    "typescript": "^5"
+  }
+}

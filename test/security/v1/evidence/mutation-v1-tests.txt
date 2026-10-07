@@ -1,0 +1,10 @@
+M1 challenge allowed at finalAt: full offline suite fails ['testFuzz_HOLDS_noSecondWhereChallengeAndRedeemBothSucceed', 'test_RESIDUAL_pauseDoesNotFreezeTheChallengeClockOrRedemption', 'test_challengeRules', 'test_zeroChallengeWindowIsFinalAtOnce']
+   CAUGHT by v1 tests: ['testFuzz_HOLDS_noSecondWhereChallengeAndRedeemBothSucceed', 'test_RESIDUAL_pauseDoesNotFreezeTheChallengeClockOrRedemption']
+M2 no resume grace: full offline suite fails ['testFuzz_HOLDS_staleVoidScheduleUnderPauseToggles', 'test_FIXED_guardianPauseCannotForceStaleVoid', 'test_resumeGraceAfterUnpause']
+   CAUGHT by v1 tests: ['testFuzz_HOLDS_staleVoidScheduleUnderPauseToggles']
+M3 onReport not pausable: full offline suite fails ['test_FIXED_guardianPauseCannotForceStaleVoid', 'test_HOLDS_reportRejectedDuringPauseExpiresBeforeUnpause', 'test_pause']
+   CAUGHT by v1 tests: ['test_HOLDS_reportRejectedDuringPauseExpiresBeforeUnpause']
+M4 stale void while paused: full offline suite fails ['testFuzz_HOLDS_staleVoidScheduleUnderPauseToggles', 'testFuzz_staleVoidNeverBeforeWindow', 'test_FIXED_guardianPauseCannotForceStaleVoid', 'test_staleVoidBlockedWhilePausedUntilHardMax']
+   CAUGHT by v1 tests: ['testFuzz_HOLDS_staleVoidScheduleUnderPauseToggles']
+M5 3009 nonce ignores series: full offline suite fails ['test_mintSetWithAuthorization', 'test_mintSetWithAuthorizationCannotBeRedirected']
+   not caught by v1 tests (caught by the existing suite)

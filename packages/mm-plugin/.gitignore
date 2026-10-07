@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-test/
+oclif.manifest.json
+*.tgz
+.mmhome*/
+harness/logs/
+harness/.secrets/
+harness/fork-deployments*.json

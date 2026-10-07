@@ -1,0 +1,16 @@
+{
+  "name": "@isotherm/forecast",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Isotherm forecast core: Polymarket-implied P(Tmax>=k) ladders, METAR observed max, v0 guardrail model, settlement core (CRE-portable), close-time analysis. Zero dependencies; Node >= 22.18 runs the .ts files directly.",
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "test": "node --test test/*.test.ts",
+    "typecheck": "npx -y -p typescript@5.6 tsc -p tsconfig.json",
+    "close-time": "node scripts/close-time.ts",
+    "ladder": "node scripts/ladder.ts",
+    "settle": "node scripts/settle.ts"
+  },
+  "license": "MIT"
+}

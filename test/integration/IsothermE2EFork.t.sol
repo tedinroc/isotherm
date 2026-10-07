@@ -9,7 +9,8 @@ import {Resolver} from "../../src/Resolver.sol";
 import {CollateralVault} from "../../src/CollateralVault.sol";
 import {StrikeFactory} from "../../src/StrikeFactory.sol";
 import {IIsothermResolver} from "../../src/interfaces/IIsothermResolver.sol";
-import {IsothermZap, IKuruRouterView} from "../../spikes/e2e/src/IsothermZap.sol";
+import {IsothermZap} from "../../src/IsothermZap.sol";
+import {IKuruRouterView} from "../../src/interfaces/IKuru.sol";
 
 interface IFaucet {
     function requestFunds(address to) external;
@@ -100,7 +101,7 @@ contract IsothermE2EForkTest is Test {
 
         deployer = vm.addr(ATTESTER_PK);
         vm.startPrank(deployer);
-        resolver = new Resolver(deployer, address(MOCK_FWD), deployer, deployer);
+        resolver = new Resolver(deployer, address(MOCK_FWD), deployer, deployer, 15 minutes);
         vault = new CollateralVault(deployer, resolver, AUSD, deployer);
         resolver.registerStation("RCSS", 8 hours);
         resolver.registerStation("RJTT", 9 hours);
@@ -163,6 +164,10 @@ contract IsothermE2EForkTest is Test {
             address yes = address(vault.getSeries(ids[i]).yes);
             markets[i] = ROUTER.deployProxy(0, yes, address(AUSD), 1e6, 1e4, 10, 1e6, 1e12, 10, 0, 100);
             IERC20(yes).approve(address(MARGIN), type(uint256).max);
+            vm.stopPrank();
+            vm.prank(deployer); // operator registers the canonical book (write-once)
+            zap.setCanonicalMarket(ids[i], markets[i]);
+            vm.startPrank(maker);
             MARGIN.deposit(maker, yes, 300e6);
             _quote(markets[i], fv[i] - 200, fv[i] + 200, new uint40[](0));
         }
@@ -193,8 +198,8 @@ contract IsothermE2EForkTest is Test {
         assertEq(refund, 0, "fully filled");
         assertApproxEqAbs(yes28, 36_548_780, 2, "30 AUSD at the 0.82 ask, minus fee");
         // a market that is not the series' own book is refused
-        vm.expectRevert(abi.encodeWithSelector(IsothermZap.MarketMismatch.selector, markets[1]));
-        zap.buyYes(ids[0], markets[1], 1e6, 0, taker2);
+        vm.expectRevert(abi.encodeWithSelector(IsothermZap.MarketMismatch.selector, markets[1], markets[0]));
+        zap.buyYes(ids[0], markets[1], 1e6, 1, taker2);
         vm.stopPrank();
         _assertZapEmpty();
     }
@@ -229,6 +234,10 @@ contract IsothermE2EForkTest is Test {
         IIsothermResolver.Result memory r = resolver.resultOf("RCSS", date);
         assertEq(uint8(r.status), 1);
         assertEq(r.tmaxC, 29);
+        vm.prank(taker1);
+        vm.expectRevert(); // NotFinal: challenge window
+        vault.redeem(ids[1], 1, 0);
+        vm.warp(r.finalAt);
     }
 
     function _redeemSettled() internal {
@@ -261,8 +270,8 @@ contract IsothermE2EForkTest is Test {
         assertEq(vault.redeem(voidId, 100e6, 0), 50e6, "void: YES pays 0.5");
         assertEq(vault.redeem(voidId, 0, 100e6), 50e6, "void: NO pays 0.5");
         vm.stopPrank();
-        // nobody reported ZGSZ for 24h -> anyone may void it
-        vm.warp(resolver.dayEnd("ZGSZ", date) + 24 hours);
+        // nobody reported ZGSZ for 48h -> anyone may void it
+        vm.warp(resolver.dayEnd("ZGSZ", date) + 48 hours);
         vm.prank(makeAddr("anyone"));
         resolver.voidIfStale("ZGSZ", date);
         vm.prank(maker);
@@ -299,6 +308,7 @@ contract IsothermE2EForkTest is Test {
         uint64 close = uint64(resolver.dayEnd("RCSS", date) - 1 hours);
         vm.prank(deployer);
         bytes32 id = vault.createLadder("RCSS", date, one, close)[0];
+        uint64 closeTime = close;
         ids[0] = id;
         IERC20 yes = IERC20(address(vault.getSeries(id).yes));
         IERC20 no = IERC20(address(vault.getSeries(id).no));
@@ -308,6 +318,10 @@ contract IsothermE2EForkTest is Test {
         AUSD.approve(address(vault), type(uint256).max);
         vault.mintSet(id, 100e6);
         address m = ROUTER.deployProxy(0, address(yes), address(AUSD), 1e6, 1e4, 10, 1e6, 1e12, 10, 0, 100);
+        vm.stopPrank();
+        vm.prank(deployer);
+        zap.setCanonicalMarket(id, m);
+        vm.startPrank(maker);
         AUSD.approve(address(MARGIN), type(uint256).max);
         yes.approve(address(MARGIN), type(uint256).max);
         MARGIN.deposit(maker, address(AUSD), 50e6);
@@ -348,8 +362,17 @@ contract IsothermE2EForkTest is Test {
 
         _thinSellYes(id, m, yes);
         _assertZapEmpty();
+        _zapClosedAfter(id, m, closeTime);
         assertEq(AUSD.allowance(address(zap), m), 0, "no standing approval to the market");
         assertEq(yes.allowance(address(zap), m), 0, "no standing YES approval to the market");
+    }
+
+    /// @dev After closeTime the Zap refuses to trade (the outcome is close to known by then).
+    function _zapClosedAfter(bytes32 id, address m, uint64 closeTime) internal {
+        vm.warp(closeTime);
+        vm.prank(taker2);
+        vm.expectRevert(abi.encodeWithSelector(IsothermZap.TradingClosed.selector, id, closeTime));
+        zap.sellYes(id, m, 1e6, 1, taker2);
     }
 
     /// @dev sellYes on a thin bid: 5 YES @0.25 resting, user sells 9.99 -> 5 sold, 4.99 refunded.
@@ -403,9 +426,10 @@ contract IsothermE2EForkTest is Test {
     ///      a 96-byte report context and 4 signatures (ignored by the mock), from an arbitrary transmitter EOA.
     function _creReport(bytes4 station, uint32 d, int16 tmax, bool isVoid, bytes32 execId) internal returns (bool) {
         bytes32 src = keccak256(abi.encode("iem+awc", station, d, tmax));
+        uint64 vu = uint64(block.timestamp + 30 minutes);
         (uint8 v, bytes32 rr, bytes32 ss) =
-            vm.sign(ATTESTER_PK, resolver.settlementDigest(station, d, tmax, isVoid, src));
-        bytes memory payload = abi.encode(station, d, tmax, isVoid, src, abi.encodePacked(rr, ss, v));
+            vm.sign(ATTESTER_PK, resolver.settlementDigest(station, d, tmax, isVoid, src, vu));
+        bytes memory payload = abi.encode(station, d, tmax, isVoid, src, vu, abi.encodePacked(rr, ss, v));
         bytes memory raw = abi.encodePacked(
             uint8(1),
             execId,

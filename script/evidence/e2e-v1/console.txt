@@ -1,0 +1,58 @@
+[05:19:28] rpc=http://127.0.0.1:19101 resolver=0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B vault=0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39 zap=0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0
+[05:19:31] 1. createLadder RCSS 20261010 [28,29,30] + RJTT 20261010 [20] (operator), dayEnd RCSS=1791648000 RJTT=1791644400
+[05:19:37]    YES>=29 0x30571e664a87bcf7D4FB27361e07b5405c9A4957 "RCSS-20261010-GE29-Y"
+[05:19:39] 2. faucet: maker 29702891628, taker1 29948392856 AUSD units
+[05:19:46] 3. Kuru YES>=29/AUSD market 0xA747e78cd80DF26b57c4d6E264f3bec39892B5EB (pricePrecision 1e4, sizePrecision 1e6, taker fee 10 bps)
+[05:19:49]    hostile 90%-fee book on the same YES: 0x0424435EFbEd972F87d09DD96a96b321b54f48C6 (validateMarket=false)
+[05:19:49]    refused as expected: taker2 registers a canonical market -> 
+[05:19:49]    refused as expected: operator registers the hostile book -> InvalidMarket(0x0424435EFbEd972F87d09DD96a96b321b54f48C6)
+[05:19:50]    refused as expected: re-registration (write-once) -> CanonicalMarketAlreadySet(0x96531067e90ff12fcd563f1a78e7900d211d2bfde19a91f908de15e83c98d20e, 0xA747e78cd80DF26b57c4d6E264f3bec39892B5EB)
+[05:19:50]    canonicalMarket(YES>=29) = 0xA747e78cd80DF26b57c4d6E264f3bec39892B5EB
+[05:19:51]    maker ask: 100 YES @ 0.50
+[05:19:53]    refused as expected: front-runner re-targets the authorization to YES>=29 -> custom error 0x8baa579f
+[05:19:53] 4. relayed EIP-3009 mint: taker1 YES>=30 = 50000000 (taker1 sent no tx)
+[05:19:54]    refused as expected: Zap via the hostile book -> MarketMismatch(0x0424435EFbEd972F87d09DD96a96b321b54f48C6, 0xA747e78cd80DF26b57c4d6E264f3bec39892B5EB)
+[05:19:54]    refused as expected: Zap with minOut = 0 -> custom error 0x2870c094
+[05:19:55] 5. Zap.buyYes 10 AUSD -> taker1 YES>=29 = 19980000 (20 @ 0.50 minus 0.1% fee = 19980000)
+[05:19:55] 6. clock -> dayEnd+600 (1791648600); due ladders: [(0x52435353, 20261010 [2.026e7]), (0x524a5454, 20261010 [2.026e7])]
+[05:19:57]    forged (signed by taker2):        ReportProcessed=REJECTED
+[05:19:58]    expired (attester, validUntil-1): ReportProcessed=REJECTED
+[05:19:58]    attested Tmax=29:                ReportProcessed=accepted
+[05:19:59]    replay (attester, Tmax=35):      ReportProcessed=REJECTED
+[05:19:59]    resultOf(RCSS,20261010) = (1, 29, 1791648603 [1.791e9], 1791649503 [1.791e9], 0xd0eb2461b02bf375ebad1a8fd0b6817f371dad4e3951f5dc198e53413b69af47) ; isFinal=false
+[05:19:59]    refused as expected: redeem inside the challenge window -> NotFinal(0x96531067e90ff12fcd563f1a78e7900d211d2bfde19a91f908de15e83c98d20e, 1791649503 [1.791e9])
+[05:19:59] 7. at finalAt: taker1 redeemed 19980000 YES>=29 (29 >= 29) -> +19980000 AUSD units
+[05:20:00] 8. RJTT attested Tmax=25 (YES>=20 would win): ReportProcessed=accepted
+[05:20:01]    refused as expected: challenge by a non-guardian -> custom error 0xef6d0f02
+[05:20:01]    after challenge: resultOf(RJTT) = (2, 0, 1791649504 [1.791e9], 1791649505 [1.791e9], 0x2e5b0572f0df25bbd04751ff5715a7b8ec05f0f580e8a2d5defaea7b09e0b39e)
+[05:20:02]    void: maker 10 YES + 10 NO -> +10000000 AUSD units (0.5 each)
+[05:20:02] 9. vault AUSD 280020000 == pre-run 0 + sum(this run's series collateral) 280020000 : OK
+
+step                      gasUsed  status  tx
+createLadder3             848818   0x1     0x07ad4d9519a57918237342893d0e8f055ff1b575c862d408455154c186c0ac6e
+createLadderRJTT          365957   0x1     0x4f920ef06a52a4d5b52c479a6fa95277d820f39f873159b8c23b54b1c5f69eeb
+faucet_maker              111414   0x1     0xf3d62722b1017af78f193ae46077f490f4514bfcf435efa454ee0f4e75ccfc74
+faucet_taker1             111414   0x1     0x2ae8595258308e5fe1a0b36a5110f70764122b7fe30c5ecce8fe9ee37be86f56
+approveVault              70249    0x1     0xefbc695242e4a448d6e29199d93b3d19b1c742c921eaa7891e59c6a796744c43
+mintSet29                 297217   0x1     0x6724272ecebf20f547dee0edc9ab95f6d2da2cec1b461c4686fff21d50b3e8f8
+mintSetRJTT               280217   0x1     0x7411a10280816c3fe21d3a4fa13ba85992bb3cc16f554c743995cdb8527a409b
+kuruDeployProxy           1321336  0x1     0x35f345e4a8ca69320ea2c9b03636215c90d7a18d6141921c194951d2c81cf909
+kuruHostileBook           1321348  0x1     0xa825d98f42ae70d8795c090aef3be0442ad7a207e8ab716d4edeff79043499ed
+setCanonicalMarket        130039   0x1     0xbd3fe39a98f1ec541ead4bdcc54f9426e0659c826a390ece181ca5f73894fe5d
+approveMarginYes          62260    0x1     0xb2e033f625b879afbf31b5a4a83f546c6360e8adf0fb1bb19c51b71515e0d88b
+marginDepositYes          152899   0x1     0xb03bdbc98dfaf1fe1575f9f183e9f3152c46de198fc53ade5e59eb1c0be6393d
+makerAsk                  320547   0x1     0xbbcd028ddbdabf145e19982afa917f33932f2dd6a700e6448552007bbaee7ed6
+mintSetWithAuthorization  309470   0x1     0x40fd496b4babbc557572266f620d56f48b0a679247d7354a6f62b5816fa9be67
+approveZap                70249    0x1     0x4ca299f641c02a6635338c41106f2920b879349497dc4800b80375d10f91bf31
+zapBuyYes                 483159   0x1     0xbec001b6ea823b6089f9277fa2cb733aa47147b27e8c1d8f1554229960c0db31
+cre_forged                89840    0x1     0x491fa7d4de6b394d38f89f48566b923b90770232c02f6f553c12e26cf824ae4f
+cre_expired               82333    0x1     0xe5092a6454aaeadb73b4108a756c740cf9200180b0674323f74922885ccc437d
+cre_settle                149863   0x1     0xd5c78aeb97c0dea620881550c7c48a8ca3a7d111994cc583687cdb152be38ffa
+cre_replay                109345   0x1     0x6855c82f2070be50ff162113b96a9f6538cb768e822c2c79c9b7ecde5e12ee16
+redeemYes29               146957   0x1     0x157dc04223dff875a3694bda19580f029071568b1b6cce675fef0367ba0753a7
+redeemSet30               160004   0x1     0xa5d189e2018e6c2a59fae7ea85723ac9049f81a309748d03a60f248681820258
+cre_rjtt                  149875   0x1     0x2bce02831507d692fda99a675346cef57d6afe78efd645f9def878538c3ca806
+guardianChallenge         44432    0x1     0xf91cb4918d51415697ca4eaaa2f635d6bb08ef162ab4899b55b16ef7b66bd325
+redeemVoidYes             146766   0x1     0x6a0a861a2da4cf053e0f7c54fe746e04b2c06bde270c44f7617deb0e3b4750f0
+redeemVoidNo              146774   0x1     0x2e8d5b4ff62c090b2c1021d860313b6ff04de78ab249417d904c1f130f11adf0
+[05:20:02] E2E v1 OK (anvil fork of live testnet, deployed v1 bytecode). Artifacts in <repo>/script/evidence/e2e-v1

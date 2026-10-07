@@ -1,0 +1,12 @@
+.tools/
+node_modules/
+settle/node_modules/
+settle/binary.wasm
+settle/*.wasm
+settle/.cre_build_tmp.js
+.env
+.env.*
+!env.example
+var/
+*.key
+settle/config.anvil-replay.json

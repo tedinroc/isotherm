@@ -1,0 +1,103 @@
+{
+  "rpc": "https://testnet-rpc.monad.xyz",
+  "chainId": 10143,
+  "stations": ["RCSS"],
+  "keysDir": "~/.config/isotherm",
+  "roles": {
+    "maker": "maker",
+    "operator": "operator",
+    "operatorFallback": "deployer",
+    "marketCreator": "operator"
+  },
+  "paths": {
+    "state": "var/state.json",
+    "snapshot": "var/snapshot.json",
+    "log": "var/maker.log",
+    "lock": "var/maker.lock",
+    "heartbeat": "var/heartbeat.json"
+  },
+  "api": {
+    "url": null,
+    "path": "/api/snapshot",
+    "tokenEnv": "ISOTHERM_SNAPSHOT_TOKEN",
+    "timeoutMs": 10000
+  },
+  "gas": {
+    "makerMult": 1.08,
+    "opMult": 1.1,
+    "fixedGasPriceGwei": null
+  },
+  "budget": {
+    "dayUtcOffsetMin": 480,
+    "dailyCapMon": { "maker": 1.5, "operator": 1.5, "marketCreator": 1.5 },
+    "reserveMon": { "maker": 0.4, "operator": 0.1, "marketCreator": 0.1 },
+    "minBalanceMon": 0.03
+  },
+  "quote": {
+    "tick": 0.01,
+    "kuruTick": 0.001,
+    "halfSpreadTicks": 3,
+    "minPrice": 0.01,
+    "maxPrice": 0.99,
+    "pullBelow": 0.03,
+    "pullAbove": 0.97,
+    "guardWidenMult": 2,
+    "fallbackWidenMult": 2,
+    "sizeYes": 100,
+    "maxPositionYes": 300,
+    "skewTicksAtCap": 2,
+    "minOrderYes": 1
+  },
+  "policy": {
+    "requoteTicks": 2,
+    "staleHours": 6,
+    "refillRatio": 0.5,
+    "preStopSec": 90
+  },
+  "fair": {
+    "pmMaxAgeSec": 1200,
+    "guardWarn": 0.15,
+    "guardPull": 0.4,
+    "intradayFromMin": 660,
+    "minCondMass": 0.05
+  },
+  "roll": {
+    "strikePolicy": { "count": 5, "minCount": 4, "mode": "window", "minP": 0.03, "maxP": 0.97 },
+    "mintSets": 300,
+    "marginYes": 300,
+    "marginAusd": 400,
+    "closeMarginMin": 10,
+    "faucetIfAusdBelow": 2000,
+    "maxDaysAhead": 2,
+    "minLeadMin": 120,
+    "kuru": {
+      "type": 0,
+      "sizePrecision": "1000000",
+      "pricePrecision": 10000,
+      "tickSize": 10,
+      "minSize": "1000000",
+      "maxSize": "1000000000000",
+      "takerFeeBps": "10",
+      "makerFeeBps": "0",
+      "kuruAmmSpread": "100"
+    }
+  },
+  "replenish": {
+    "enabled": true,
+    "minFreeYes": 50,
+    "mintSets": 200,
+    "minFreeAusd": 100,
+    "topUpAusd": 400
+  },
+  "afterClose": {
+    "withdrawYes": true
+  },
+  "loop": {
+    "tickSec": 60,
+    "watchdogSec": 15,
+    "v0RefreshSec": 3600,
+    "obsTtlSec": 120,
+    "pmTtlSec": 45,
+    "heartbeatStaleSec": 180
+  }
+}

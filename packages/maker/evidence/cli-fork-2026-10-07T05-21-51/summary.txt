@@ -1,0 +1,26 @@
+anvil pid 56579 on http://127.0.0.1:19152, block 68886084
+preflight: ready=true strikes=[28,29,30,31] warnings=[]
+roll: ok=true strikes=[28,29,30,31] close=17:30 mon={"operator":0.3147,"maker":0.0828}
+  [preflight] done: v1 deployment (<repo>/deployments/testnet.json); operator=operator 0x602dbf3937558B1d18d76315635fD5410089bd51, market creator=operator, maker=0xd572638F07829D1c3636400FB73CF34Ca6c7448a; close 17:30 local (warm (May-Oct) t99 over 368 complete days 2024-10-01..2026-09-30); Zap registry yes
+  [plan] done: strikes [28,29,30,31] (Polymarket median 29 (https://polymarket.com/event/highest-temperature-in-taipei-on-october-8-2026, fetched 2026-10-07T05:22:07.508Z): P(>=k) 28:0.949 29:0.848 30:0.468 31:0.092)
+  [series] sent: createLadder for [28,29,30,31]
+  [mint] sent: minted >=28:300 >=29:300 >=30:300 >=31:300 complete sets
+  [market] sent: >=28: Kuru market 0x171b4cdE3724f2F17576439e6de8c36142A7DBd7
+  [market] sent: >=29: Kuru market 0x855eF3549eA5ACA5602EAefDD988950f16FCc6c2
+  [market] sent: >=30: Kuru market 0x702A7a87EDb18D733c624bF766020F3b66eb36DC
+  [market] sent: >=31: Kuru market 0x4f5Ef4Bf256BDD88492C1e394B0D0f06A8265813
+  [canonical] done: Zap 0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0 canonical market set for [28,29,30,31]
+  [margin] done: margin AUSD >= 400, YES 300 per strike
+  [quotes] done: >=28:quote >=29:quote >=30:quote >=31:quote
+05:22:33 tick 0 done in 1637 ms; no changes; budget {"operator":0.116583897,"maker":0.092964614,"marketCreator":0.198206475}
+05:22:40 tick 1 done in 1137 ms; no changes; budget {"operator":0.116583897,"maker":0.092964614,"marketCreator":0.198206475}
+05:22:48 tick 2 done in 1075 ms; no changes; budget {"operator":0.116583897,"maker":0.092964614,"marketCreator":0.198206475}
+budget day 2026-10-07: {"operator":0.116583897,"maker":0.092964614,"marketCreator":0.198206475} caps {"maker":2,"operator":1.5,"marketCreator":1.5}
+RCSS:20261008 active strikes [28,29,30,31] stop 2026-10-08T09:20:00.000Z (1677 min) >=28:quoting b0.91 a0.98 >=29:quoting b0.81 a0.88 >=30:quoting b0.43 a0.5 >=31:quoting b0.06 a0.13
+time travel to the stop-quoting time (+5 s)
+05:22:57 tx maker         KILL >=31 cancel x2                              used   248833 limit   264725 0.0006 MON 277ms 0x98c9a98319…
+05:22:57 tx maker         withdraw YES margin x4 after close               used   327136 limit   348229 0.0008 MON 297ms 0x06088fcd37…
+[{"key":"RCSS:20261008","cancelled":8,"leftOpen":0}]
+budget day 2026-10-07: {"operator":0.116583897,"maker":0.096677284,"marketCreator":0.198206475} caps {"maker":2,"operator":1.5,"marketCreator":1.5}
+RCSS:20261008 closed strikes [28,29,30,31] stop 2026-10-08T09:20:00.000Z (1677 min) >=28:closed >=29:closed >=30:closed >=31:closed
+snapshot POSTs received by the stand-in API: 3

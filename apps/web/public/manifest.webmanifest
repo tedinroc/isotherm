@@ -1,0 +1,16 @@
+{
+  "name": "Isotherm",
+  "short_name": "Isotherm",
+  "description": "Will Taipei hit 30°C tomorrow? Daily max-temperature ladders on Monad testnet (test dollars only).",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0e1116",
+  "theme_color": "#0e1116",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

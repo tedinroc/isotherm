@@ -1,0 +1,51 @@
+{
+ "Resolver": {
+  "file": "Resolver.json",
+  "source": "src/Resolver.sol",
+  "entries": 80
+ },
+ "CollateralVault": {
+  "file": "CollateralVault.json",
+  "source": "src/CollateralVault.sol",
+  "entries": 77
+ },
+ "IsothermZap": {
+  "file": "IsothermZap.json",
+  "source": "src/interfaces/IsothermZap.sol",
+  "entries": 29
+ },
+ "OutcomeToken": {
+  "file": "OutcomeToken.json",
+  "source": "src/OutcomeToken.sol",
+  "entries": 36
+ },
+ "ForecastCommit": {
+  "file": "ForecastCommit.json",
+  "source": "src/ForecastCommit.sol",
+  "entries": 34
+ },
+ "IIsothermResolver": {
+  "file": "IIsothermResolver.json",
+  "source": "src/interfaces/IIsothermResolver.sol",
+  "entries": 2
+ },
+ "IERC3009": {
+  "file": "IERC3009.json",
+  "source": "src/interfaces/IERC3009.sol",
+  "entries": 2
+ },
+ "IKuruRouterView": {
+  "file": "IKuruRouterView.json",
+  "source": "src/interfaces/IKuru.sol",
+  "entries": 1
+ },
+ "IKuruOrderBookTaker": {
+  "file": "IKuruOrderBookTaker.json",
+  "source": "src/interfaces/IKuru.sol",
+  "entries": 2
+ },
+ "addresses": {
+  "file": "addresses.json",
+  "source": "deployments/testnet.json"
+ }
+}

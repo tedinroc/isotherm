@@ -91,7 +91,7 @@ contract AttackHandler is Test {
         address u = users[who % 3];
         bytes32 id = ids[s % ids.length];
         StrikeFactory.Series memory se = vault.getSeries(id);
-        if (resolver.resultOf(se.station, se.date).status == IIsothermResolver.Status.None) return;
+        if (!resolver.isFinal(se.station, se.date)) return;
         y = bound(y, 0, se.yes.balanceOf(u));
         n = bound(n, 0, se.no.balanceOf(u));
         if (y + n == 0) return;
@@ -117,8 +117,10 @@ contract AttackHandler is Test {
         if (resolver.resultOf(L.station, L.date).status != IIsothermResolver.Status.None) return;
         tmax = int16(bound(tmax, -90, 70));
         bytes32 src = keccak256(abi.encode(L.station, L.date, tmax));
-        bytes memory rep =
-            abi.encode(L.station, L.date, tmax, isVoid, src, _sig(attesterPk, L.station, L.date, tmax, isVoid, src));
+        uint64 vu = uint64(block.timestamp + 1 hours);
+        bytes memory rep = abi.encode(
+            L.station, L.date, tmax, isVoid, src, vu, _sig(attesterPk, L.station, L.date, tmax, isVoid, src, vu)
+        );
         vm.prank(forwarder);
         resolver.onReport(new bytes(64), rep);
         accepted.push(rep);
@@ -129,7 +131,7 @@ contract AttackHandler is Test {
 
     function voidStale(uint256 l) external {
         Ladder memory L = ladders[l % ladders.length];
-        if (block.timestamp < resolver.dayEnd(L.station, L.date) + resolver.STALE_WINDOW()) return;
+        if (block.timestamp < resolver.staleAt(L.station, L.date)) return;
         if (resolver.resultOf(L.station, L.date).status != IIsothermResolver.Status.None) return;
         resolver.voidIfStale(L.station, L.date);
         resultSnapshot[_key(L)] = keccak256(abi.encode(resolver.resultOf(L.station, L.date)));
@@ -149,15 +151,16 @@ contract AttackHandler is Test {
         Ladder memory L = ladders[l % ladders.length];
         tmax = int16(bound(tmax, -90, 70));
         bytes32 src = keccak256("forged");
+        uint64 vu = uint64(block.timestamp + 1 hours);
         bytes memory sig;
         if (useTwin) {
-            sig = _twin(_sig(attesterPk, L.station, L.date, tmax, isVoid, src));
+            sig = _twin(_sig(attesterPk, L.station, L.date, tmax, isVoid, src, vu));
         } else {
             uint256 pk = bound(pkSeed, 1, SECP256K1_N - 1);
             if (pk == attesterPk) pk = attesterPk + 1;
-            sig = _sig(pk, L.station, L.date, tmax, isVoid, src);
+            sig = _sig(pk, L.station, L.date, tmax, isVoid, src, vu);
         }
-        bytes memory rep = abi.encode(L.station, L.date, tmax, isVoid, src, sig);
+        bytes memory rep = abi.encode(L.station, L.date, tmax, isVoid, src, vu, sig);
         _attempt(address(resolver), forwarder, abi.encodeCall(Resolver.onReport, (new bytes(64), rep)));
         calls["atkForged"]++;
     }
@@ -173,14 +176,16 @@ contract AttackHandler is Test {
     function atkReplay(uint256 i, uint256 l) external {
         if (accepted.length == 0) return;
         bytes memory rep = accepted[i % accepted.length];
-        (,, int16 tmax, bool isVoid, bytes32 src, bytes memory sig) =
-            abi.decode(rep, (bytes4, uint32, int16, bool, bytes32, bytes));
+        (,, int16 tmax, bool isVoid, bytes32 src, uint64 vu, bytes memory sig) =
+            abi.decode(rep, (bytes4, uint32, int16, bool, bytes32, uint64, bytes));
         Ladder memory L = ladders[l % ladders.length];
         _attempt(address(resolver), forwarder, abi.encodeCall(Resolver.onReport, (new bytes(64), rep)));
         _attempt(
             address(resolver),
             forwarder,
-            abi.encodeCall(Resolver.onReport, (new bytes(64), abi.encode(L.station, L.date, tmax, isVoid, src, sig)))
+            abi.encodeCall(
+                Resolver.onReport, (new bytes(64), abi.encode(L.station, L.date, tmax, isVoid, src, vu, sig))
+            )
         );
         calls["atkReplay"]++;
     }
@@ -190,10 +195,57 @@ contract AttackHandler is Test {
         Ladder memory L = ladders[l % ladders.length];
         tmax = int16(bound(tmax, -90, 70));
         bytes32 src = keccak256("direct");
-        bytes memory rep =
-            abi.encode(L.station, L.date, tmax, false, src, _sig(attesterPk, L.station, L.date, tmax, false, src));
+        uint64 vu = uint64(block.timestamp + 1 hours);
+        bytes memory rep = abi.encode(
+            L.station, L.date, tmax, false, src, vu, _sig(attesterPk, L.station, L.date, tmax, false, src, vu)
+        );
         _attempt(address(resolver), attacker, abi.encodeCall(Resolver.onReport, (new bytes(64), rep)));
         calls["atkDirect"]++;
+    }
+
+    /// A genuine attester signature that has already expired (validUntil in the past), delivered via the forwarder.
+    function atkExpiredReport(uint256 l, int16 tmax, uint256 age) external {
+        Ladder memory L = ladders[l % ladders.length];
+        tmax = int16(bound(tmax, -90, 70));
+        bytes32 src = keccak256("expired");
+        uint64 vu = uint64(block.timestamp - bound(age, 1, 1 days));
+        bytes memory rep =
+            abi.encode(L.station, L.date, tmax, false, src, vu, _sig(attesterPk, L.station, L.date, tmax, false, src, vu));
+        _attempt(address(resolver), forwarder, abi.encodeCall(Resolver.onReport, (new bytes(64), rep)));
+        calls["atkExpired"]++;
+    }
+
+    /// One-sided redeem while a Settled result is still inside its challenge window.
+    function atkEarlyRedeem(uint256 s) external {
+        bytes32 id = ids[s % ids.length];
+        StrikeFactory.Series memory se = vault.getSeries(id);
+        IIsothermResolver.Result memory r = resolver.resultOf(se.station, se.date);
+        if (r.status == IIsothermResolver.Status.None || block.timestamp >= r.finalAt) return;
+        uint256 y = se.yes.balanceOf(attacker);
+        uint256 n = se.no.balanceOf(attacker);
+        if (y == n) y += 1; // never a pure complete-set amount (that path is redeemSet, always allowed)
+        _attempt(address(vault), attacker, abi.encodeCall(CollateralVault.redeem, (id, y, n)));
+        calls["atkEarlyRedeem"]++;
+    }
+
+    /// Challenge (veto to void) from a non-guardian.
+    function atkChallenge(uint256 l) external {
+        Ladder memory L = ladders[l % ladders.length];
+        _attempt(address(resolver), attacker, abi.encodeCall(Resolver.challenge, (L.station, L.date, bytes32(0))));
+        calls["atkChallenge"]++;
+    }
+
+    /// Gasless EIP-3009 mint of a victim's AUSD with a garbage signature.
+    function atkAuthorizationWithGarbage(uint256 s, bytes32 r, bytes32 sv) external {
+        bytes32 id = ids[s % ids.length];
+        _attempt(
+            address(vault),
+            attacker,
+            abi.encodeCall(
+                CollateralVault.mintSetWithAuthorization, (id, 1e6, users[0], 0, type(uint256).max, r, 27, r, sv)
+            )
+        );
+        calls["atkAuth"]++;
     }
 
     /// Redeem / redeemSet more than held (by 1..1e12 units).
@@ -231,7 +283,7 @@ contract AttackHandler is Test {
     /// Void a ladder before its stale window.
     function atkEarlyVoid(uint256 l) external {
         Ladder memory L = ladders[l % ladders.length];
-        if (block.timestamp >= resolver.dayEnd(L.station, L.date) + resolver.STALE_WINDOW()) return;
+        if (block.timestamp >= resolver.staleAt(L.station, L.date)) return;
         _attempt(address(resolver), attacker, abi.encodeCall(Resolver.voidIfStale, (L.station, L.date)));
         calls["atkEarlyVoid"]++;
     }
@@ -284,8 +336,12 @@ contract AttackHandler is Test {
         assertEq(ausd.balanceOf(attacker), balBefore, "attack moved AUSD");
     }
 
-    function _sig(uint256 pk, bytes4 st, uint32 dt, int16 t, bool v, bytes32 src) internal view returns (bytes memory) {
-        (uint8 vv, bytes32 r, bytes32 s) = vm.sign(pk, resolver.settlementDigest(st, dt, t, v, src));
+    function _sig(uint256 pk, bytes4 st, uint32 dt, int16 t, bool v, bytes32 src, uint64 vu)
+        internal
+        view
+        returns (bytes memory)
+    {
+        (uint8 vv, bytes32 r, bytes32 s) = vm.sign(pk, resolver.settlementDigest(st, dt, t, v, src, vu));
         return abi.encodePacked(r, s, vv);
     }
 
@@ -324,7 +380,7 @@ contract AdversarialInvariantTest is Test {
         address fwd = makeAddr("forwarder");
         address owner = makeAddr("owner");
         ausd = new MockAUSD();
-        resolver = new Resolver(owner, fwd, vm.addr(pk), owner);
+        resolver = new Resolver(owner, fwd, vm.addr(pk), owner, 15 minutes);
         vault = new CollateralVault(owner, resolver, ausd, owner);
         vm.startPrank(owner);
         resolver.registerStation("RCSS", 8 hours);
@@ -344,7 +400,7 @@ contract AdversarialInvariantTest is Test {
         vm.warp(1_791_244_800 + 30 hours); // 9h before the first ladders close: runs reach settlement and staleness
         h = new AttackHandler(vault, resolver, ausd, pk, fwd, ids, ls);
         targetContract(address(h));
-        bytes4[] memory sel = new bytes4[](16);
+        bytes4[] memory sel = new bytes4[](20);
         sel[0] = AttackHandler.mint.selector;
         sel[1] = AttackHandler.redeemSet.selector;
         sel[2] = AttackHandler.redeem.selector;
@@ -361,6 +417,10 @@ contract AdversarialInvariantTest is Test {
         sel[13] = AttackHandler.atkPermitWithGarbage.selector;
         sel[14] = AttackHandler.atkAdmin.selector;
         sel[15] = AttackHandler.warp.selector; // double weight on time so ladders actually resolve
+        sel[16] = AttackHandler.atkExpiredReport.selector;
+        sel[17] = AttackHandler.atkEarlyRedeem.selector;
+        sel[18] = AttackHandler.atkChallenge.selector;
+        sel[19] = AttackHandler.atkAuthorizationWithGarbage.selector;
         targetSelector(FuzzSelector({addr: address(h), selectors: sel}));
     }
 
@@ -412,6 +472,11 @@ contract AdversarialInvariantTest is Test {
         h.atkForgedReport(0, 31, false, 0, true);
         h.warp(12 hours);
         h.settle(0, 29, false); // RCSS 20261007 settled at 29 (strikes 28 YES-wins, 25 YES-wins)
+        h.atkEarlyRedeem(0); // inside the 15-minute challenge window
+        h.atkEarlyRedeem(1);
+        h.atkChallenge(0);
+        h.atkExpiredReport(1, 20, 60);
+        h.atkAuthorizationWithGarbage(2, bytes32(uint256(1)), bytes32(uint256(2)));
         h.atkReplay(0, 0);
         h.atkReplay(0, 1);
         h.atkReplay(0, 2);
@@ -425,15 +490,18 @@ contract AdversarialInvariantTest is Test {
         for (uint256 i; i < 6; ++i) {
             h.atkAdmin(i);
         }
+        h.warp(1 hours); // challenge window over
         h.redeem(2, 0, type(uint256).max, type(uint256).max);
         h.redeem(0, 0, type(uint256).max, 0);
-        h.warp(12 hours);
-        h.warp(12 hours);
-        h.voidStale(1); // RJTT 20261007, no report for 24h
+        for (uint256 i; i < 4; ++i) {
+            h.warp(12 hours);
+        }
+        h.voidStale(1); // RJTT 20261007, no report for 48h
         h.redeem(1, 0, 0, 0);
         assertEq(h.calls("settle"), 1);
         assertEq(h.calls("voidStale"), 1);
         assertEq(h.calls("redeem"), 2, "two redemptions paid");
+        assertEq(h.calls("atkEarlyRedeem"), 2, "early-redeem attacks really ran inside the window");
         assertEq(h.attackSuccesses(), 0);
         assertGt(h.attackAttempts(), 20);
         invariant_vaultBalanceEqualsBooks();
@@ -444,6 +512,7 @@ contract AdversarialInvariantTest is Test {
     function afterInvariant() public view {
         console2.log("attack attempts", h.attackAttempts(), "successes", h.attackSuccesses());
         console2.log("forged", h.calls("atkForged"), "replay", h.calls("atkReplay"));
+        console2.log("expired", h.calls("atkExpired"), "earlyRedeem", h.calls("atkEarlyRedeem"));
         console2.log("settle", h.calls("settle"), "voidStale", h.calls("voidStale"));
         console2.log("redeem", h.calls("redeem"), "mint", h.calls("mint"));
     }

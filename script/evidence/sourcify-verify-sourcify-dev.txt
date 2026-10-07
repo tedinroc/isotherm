@@ -1,0 +1,28 @@
+== src/Resolver.sol:Resolver 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B (https://sourcify.dev/server/)
+	Verification Job ID: `ee67b24b-0a79-4a5e-8bdf-28219174dc61`
+	URL: https://sourcify.dev/server/verify-ui/jobs/ee67b24b-0a79-4a5e-8bdf-28219174dc61
+ee67b24b-0a79-4a5e-8bdf-28219174dc61	https://sourcify.dev/server/verify-ui/jobs/ee67b24b-0a79-4a5e-8bdf-28219174dc61
+Waiting for sourcify verification result...
+Contract successfully verified:
+Status: `exact_match`
+== src/CollateralVault.sol:CollateralVault 0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39 (https://sourcify.dev/server/)
+	URL: https://sourcify.dev/server/verify-ui/jobs/fe735f45-66e7-4ef5-aa6f-3ec814fdb079
+fe735f45-66e7-4ef5-aa6f-3ec814fdb079	https://sourcify.dev/server/verify-ui/jobs/fe735f45-66e7-4ef5-aa6f-3ec814fdb079
+Waiting for sourcify verification result...
+Warning: Verification is still pending...; waiting 5 seconds before trying again (4 tries remaining)
+Contract successfully verified:
+Status: `exact_match`
+== src/IsothermZap.sol:IsothermZap 0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0 (https://sourcify.dev/server/)
+	URL: https://sourcify.dev/server/verify-ui/jobs/f5b4f83b-8d09-4fac-96c7-d8191bc2f648
+f5b4f83b-8d09-4fac-96c7-d8191bc2f648	https://sourcify.dev/server/verify-ui/jobs/f5b4f83b-8d09-4fac-96c7-d8191bc2f648
+Waiting for sourcify verification result...
+Warning: Verification is still pending...; waiting 5 seconds before trying again (4 tries remaining)
+Contract successfully verified:
+Status: `exact_match`
+== src/OutcomeToken.sol:OutcomeToken 0x5EfaB33DDad0715b66f514Fe12d78Ca23f3e31fC (https://sourcify.dev/server/)
+	Verification Job ID: `ade91239-22fc-4c17-9f2f-835d1e6313c8`
+	URL: https://sourcify.dev/server/verify-ui/jobs/ade91239-22fc-4c17-9f2f-835d1e6313c8
+ade91239-22fc-4c17-9f2f-835d1e6313c8	https://sourcify.dev/server/verify-ui/jobs/ade91239-22fc-4c17-9f2f-835d1e6313c8
+Waiting for sourcify verification result...
+Contract successfully verified:
+Status: `exact_match`

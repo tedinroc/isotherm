@@ -39,6 +39,9 @@ contract MonadTestnetForkTest is Test {
     int32 constant TPE = 8 hours;
     bytes32 constant PERMIT_TYPEHASH =
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+    bytes32 constant RECEIVE_TYPEHASH = keccak256(
+        "ReceiveWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
+    );
 
     uint256 constant ATTESTER_PK = 0xA11CE; // test-only key
     uint256 constant USER_PK = 0xB0B0B; // test-only key
@@ -61,7 +64,7 @@ contract MonadTestnetForkTest is Test {
         else vm.createSelectFork(rpc, blk);
         forked = true;
         user = vm.addr(USER_PK);
-        resolver = new Resolver(owner, address(MOCK_FWD), vm.addr(ATTESTER_PK), owner);
+        resolver = new Resolver(owner, address(MOCK_FWD), vm.addr(ATTESTER_PK), owner, 15 minutes);
         vault = new CollateralVault(owner, resolver, AUSD, owner);
         vm.startPrank(owner);
         resolver.registerStation(RCSS, TPE);
@@ -104,6 +107,7 @@ contract MonadTestnetForkTest is Test {
         _step2_ladder();
         _step3_mint();
         _step4_permitMint();
+        _step4b_authorizationMint();
         _step5_redeemSet();
         _step6_settleViaMockForwarder();
         _step7_redeem();
@@ -162,9 +166,49 @@ contract MonadTestnetForkTest is Test {
         assertEq(AUSD.balanceOf(address(vault)), 150e6);
     }
 
+    /// Gasless mint v1: user signs an EIP-3009 ReceiveWithAuthorization on REAL AUSD whose nonce binds the series.
+    function _step4b_authorizationMint() internal {
+        assertEq(IERC20Permit(address(AUSD)).DOMAIN_SEPARATOR(), _ausdDomain(), "AUSD domain = Agora Dollar v1");
+        bytes32 salt = keccak256("fork-salt");
+        uint256 validBefore = block.timestamp + 1 hours;
+        bytes32 nonce = vault.mintAuthorizationNonce(id30, 20e6, salt);
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                IERC20Permit(address(AUSD)).DOMAIN_SEPARATOR(),
+                keccak256(abi.encode(RECEIVE_TYPEHASH, user, address(vault), 20e6, 0, validBefore, nonce))
+            )
+        );
+        (uint8 v, bytes32 r, bytes32 ss) = vm.sign(USER_PK, digest);
+        // a front-runner cannot move it to another series of the ladder
+        vm.prank(makeAddr("frontRunner"));
+        vm.expectRevert();
+        vault.mintSetWithAuthorization(ids[0], 20e6, user, 0, validBefore, salt, v, r, ss);
+        vm.prank(relayer);
+        vault.mintSetWithAuthorization(id30, 20e6, user, 0, validBefore, salt, v, r, ss);
+        assertEq(vault.getSeries(id30).yes.balanceOf(user), 170e6);
+        assertEq(AUSD.balanceOf(address(vault)), 170e6);
+        (bool ok, bytes memory ret) =
+            address(AUSD).staticcall(abi.encodeWithSignature("authorizationState(address,bytes32)", user, nonce));
+        assertTrue(ok && abi.decode(ret, (bool)), "nonce consumed on real AUSD");
+        console2.log("real AUSD receiveWithAuthorization mint OK, nonce", vm.toString(nonce));
+    }
+
+    function _ausdDomain() internal view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256("Agora Dollar"),
+                keccak256("1"),
+                block.chainid,
+                address(AUSD)
+            )
+        );
+    }
+
     function _step5_redeemSet() internal {
         vm.prank(user);
-        vault.redeemSet(id30, 20e6);
+        vault.redeemSet(id30, 40e6);
         assertEq(AUSD.balanceOf(address(vault)), 130e6);
     }
 
@@ -206,6 +250,10 @@ contract MonadTestnetForkTest is Test {
     }
 
     function _step7_redeem() internal {
+        vm.prank(user);
+        vm.expectRevert(); // NotFinal: 15-minute challenge window
+        vault.redeem(id30, 130e6, 130e6);
+        vm.warp(resolver.resultOf(RCSS, date).finalAt);
         uint256 bal0 = AUSD.balanceOf(user);
         vm.prank(user);
         uint256 paid = vault.redeem(id30, 130e6, 130e6); // Tmax 31 >= 30: YES pays 1, NO pays 0
@@ -220,8 +268,10 @@ contract MonadTestnetForkTest is Test {
     // --- helpers -----------------------------------------------------------------------------------
 
     function _payload(uint32 date, int16 tmax, bytes32 src, uint256 signerPk) internal view returns (bytes memory) {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, resolver.settlementDigest(RCSS, date, tmax, false, src));
-        return abi.encode(RCSS, date, tmax, false, src, abi.encodePacked(r, s, v));
+        uint64 vu = uint64(block.timestamp + 30 minutes);
+        (uint8 v, bytes32 r, bytes32 s) =
+            vm.sign(signerPk, resolver.settlementDigest(RCSS, date, tmax, false, src, vu));
+        return abi.encode(RCSS, date, tmax, false, src, vu, abi.encodePacked(r, s, v));
     }
 
     /// @dev Keystone rawReport: version(1) | executionId(32) | timestamp(4) | donId(4) | donConfigVersion(4) |

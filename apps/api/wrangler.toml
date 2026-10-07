@@ -1,0 +1,47 @@
+name = "isotherm-api"
+main = "src/index.ts"
+compatibility_date = "2025-07-18"
+workers_dev = true
+
+# Every minute: refill the relayer's AUSD float (faucet has a global 60 s cooldown) and advance the log scan.
+[triggers]
+crons = ["* * * * *"]
+
+[[durable_objects.bindings]]
+name = "RELAYER"
+class_name = "RelayerDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RelayerDO"]
+
+# KV namespace "isotherm-api-ISO_KV" (wrangler kv namespace create ISO_KV); preview_id for wrangler dev.
+[[kv_namespaces]]
+binding = "ISO_KV"
+id = "<KV_NAMESPACE_ID>"
+preview_id = "isotherm-local-preview"
+
+[vars]
+RPC_URL = "https://testnet-rpc.monad.xyz"
+CHAIN_ID = "10143"
+ALLOWED_ORIGINS = "https://isotherm.pages.dev,https://*.isotherm.pages.dev,http://localhost:*,http://127.0.0.1:*"
+DRIP_ENABLED = "1"
+DRIP_MON = "0.15"
+DRIP_AUSD = "1000"
+DRIP_DAILY_CAP = "40"
+DRIP_PER_IP_PER_DAY = "3"
+DRIP_ADDRESS_COOLDOWN_H = "24"
+RELAYER_MIN_MON = "0.3"
+AUSD_FLOAT_TARGET = "50000"
+RELAY_ENABLED = "1"
+RELAY_MAX_AUSD = "500"
+RELAY_PER_ADDRESS_PER_DAY = "10"
+RELAY_DAILY_CAP = "60"
+GAS_MULTIPLIER_PCT = "108"
+STATS_SCAN_MAX_WINDOWS = "20"
+REAL_STATIONS = "RCSS,RJTT,ZGSZ,RKSI,VHHH"
+# Budget guards (testnet MON is scarce): worst case ≈ 40 × 0.15 MON drips + 60 relayed mints × ~0.03 MON per day.
+# Wallets excluded from the public "non-maker" counts (deployments/testnet.json roles are added automatically).
+MAKER_ADDRESSES = "0xd572638F07829D1c3636400FB73CF34Ca6c7448a"
+# 0xd42A…D79c = the go-live smoke-test dev wallet (docs/evidence/golive), our own, so it is not a "trading wallet".
+TEAM_ADDRESSES = "0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11,0x636D0598E416e5f66acD0F6Ac2Ae96306529b4d5,0x029049a9dA77231dd86A90E52Fd6Db542424e727,0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f,0xd42A0b394F09df88BB2120D0973569b845f2D79c"

@@ -1,0 +1,23 @@
+{
+  "name": "@isotherm/maker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Isotherm market maker: quotes Kuru v1 YES/AUSD books around the Polymarket-implied P(Tmax>=k), observed-max aware, MON-budgeted, with a close-time kill switch and an idempotent daily ladder roll. Monad testnet only.",
+  "engines": { "node": ">=22.18" },
+  "bin": { "isotherm-maker": "src/cli.ts" },
+  "scripts": {
+    "maker": "node src/cli.ts",
+    "test": "node --test test/*.test.ts",
+    "test:fork": "node --test --test-concurrency=1 test/fork/*.test.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "viem": "2.57.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^5.6.0"
+  },
+  "license": "MIT"
+}

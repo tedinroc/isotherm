@@ -1,0 +1,173 @@
+{
+  "network": "monad-testnet",
+  "chainId": 10143,
+  "version": "isotherm-contracts-v1",
+  "mode": "anvil",
+  "deployBlock": 68884130,
+  "deployedAt": "2026-10-07T05:12:29Z",
+  "ausd": "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC",
+  "ausdFaucet": "0xd236c18D274E54FAccC3dd9DDA4b27965a73ee6C",
+  "kuruRouter": "0x7EFbE105Ca7415dE98F96622173458ac1c054630",
+  "kuruMarginAccount": "0xd029C2D98ff85D8F64799017fE00a59B1159CE02",
+  "mockForwarder": "0xB9F79d863261869B234c481D1f9A7af84AeAd192",
+  "keystoneForwarder": "0xF8344CFd5c43616a4366C34E3EEE75af79a74482",
+  "activeForwarder": "0xB9F79d863261869B234c481D1f9A7af84AeAd192",
+  "resolver": "0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B",
+  "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+  "factory": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+  "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+  "outcomeTokenImpl": "0x5EfaB33DDad0715b66f514Fe12d78Ca23f3e31fC",
+  "roles": {
+    "owner": "0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11",
+    "guardian": "0x30C8E371719Ff00577284dd9c10587Fa89357d50",
+    "attester": "0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9",
+    "operator": "0x602dbf3937558B1d18d76315635fD5410089bd51"
+  },
+  "stations": {
+    "RCSS": {
+      "bytes4": "0x52435353",
+      "utcOffsetSeconds": 28800,
+      "city": "Taipei Songshan",
+      "tz": "Asia/Taipei"
+    },
+    "RJTT": {
+      "bytes4": "0x524a5454",
+      "utcOffsetSeconds": 32400,
+      "city": "Tokyo Haneda",
+      "tz": "Asia/Tokyo"
+    }
+  },
+  "params": {
+    "challengeWindow": 900,
+    "staleWindow": 172800,
+    "resumeGrace": 86400,
+    "maxStaleWindow": 604800,
+    "maxChallengeWindow": 172800,
+    "minTmaxC": -90,
+    "maxTmaxC": 70,
+    "minStrikeC": -90,
+    "maxStrikeC": 70,
+    "settlementTypehash": "0x5bbd6085fa1e132afc3602af7c54c19de8708e48567c4c8e2b19fe541e2a0535",
+    "resolverDomainSeparator": "0xc64adf48d67e70fe0cdb4684052659dfa04258a6dd5536e81ea6176368ece9b5",
+    "eip712": {
+      "name": "Isotherm Resolver",
+      "version": "1",
+      "chainId": 10143,
+      "verifyingContract": "0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B"
+    },
+    "settlementType": "Settlement(bytes4 station,uint32 date,int16 tmaxC,bool isVoid,bytes32 sourcesHash,uint64 validUntil)",
+    "reportEncoding": "abi.encode(bytes4 station,uint32 date,int16 tmaxC,bool isVoid,bytes32 sourcesHash,uint64 validUntil,bytes signature)",
+    "zapKuruMarket": {
+      "type": 0,
+      "pricePrecision": 10000,
+      "sizePrecision": 1000000,
+      "maxTakerFeeBps": 30,
+      "recommended": {
+        "tickSize": 10,
+        "minSize": 1000000,
+        "maxSize": 1000000000000,
+        "takerFeeBps": 10,
+        "makerFeeBps": 0,
+        "kuruAmmSpread": 100
+      }
+    },
+    "ausdEip712": {
+      "name": "Agora Dollar",
+      "version": "1",
+      "chainId": 10143,
+      "verifyingContract": "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC"
+    },
+    "mintAuthorizationNonce": "keccak256(abi.encode(bytes32 seriesId, uint256 amount, bytes32 salt))"
+  },
+  "abi": {
+    "dir": "packages/abi",
+    "files": [
+      "Resolver.json",
+      "CollateralVault.json",
+      "IsothermZap.json",
+      "OutcomeToken.json",
+      "addresses.json"
+    ]
+  },
+  "deployTxs": [
+    {
+      "what": "create Resolver",
+      "hash": "0x315fd94763e3e476d618d1a3d2848577b385ee1bce014b2ceaa6d230bda81b7c",
+      "block": 68884130,
+      "status": 1,
+      "gasUsed": 2799600,
+      "gasLimit": 3023568,
+      "gasPriceWei": 20141723804
+    },
+    {
+      "what": "create CollateralVault",
+      "hash": "0xab5a29c1d06d8c23c4ed085038a9f2446af1e1493581ddf43fcf07482cf03a23",
+      "block": 68884131,
+      "status": 1,
+      "gasUsed": 4773717,
+      "gasLimit": 5155614,
+      "gasPriceWei": 17717989612
+    },
+    {
+      "what": "create IsothermZap",
+      "hash": "0x60678a8e4ba15b02402d9864e5e125b6ad25c85cbc9710cb28cbb1647918591c",
+      "block": 68884132,
+      "status": 1,
+      "gasUsed": 1716976,
+      "gasLimit": 1854334,
+      "gasPriceWei": 15644208691
+    },
+    {
+      "what": "registerStation",
+      "hash": "0xafbb975be0220809d9f7d06a5ad795e0f661dd64ef009bf2afe3f28d0f2d2d4e",
+      "block": 68884133,
+      "status": 1,
+      "gasUsed": 60895,
+      "gasLimit": 65766,
+      "gasPriceWei": 13733450490
+    },
+    {
+      "what": "registerStation",
+      "hash": "0xd04c3c567273d8a8ef2c14004b0b55e3af2fc4ea98786245b98208e57a9bd87e",
+      "block": 68884134,
+      "status": 1,
+      "gasUsed": 60895,
+      "gasLimit": 65766,
+      "gasPriceWei": 12018163010
+    },
+    {
+      "what": "setOperator",
+      "hash": "0x0387d555c20b3d9c52a343acd37ee8a9a2de7ef86d19706cac3a26462e4995a5",
+      "block": 68884135,
+      "status": 1,
+      "gasUsed": 59758,
+      "gasLimit": 64538,
+      "gasPriceWei": 10517112378
+    }
+  ],
+  "deployGas": {
+    "used": 9471841,
+    "limitBilled": 10229586,
+    "monBilled": 0.183629
+  },
+  "funding": [
+    {
+      "to": "operator",
+      "hash": "0xf9b5b14e6df223b15153a54bdc8eec02f41da7d1c424a2eed0e8c2e29178cf15",
+      "status": "0x1",
+      "block": 68884140
+    },
+    {
+      "to": "attester",
+      "hash": "0x6b5734a1a8fa5c681b950f9e9fb80f05176632fe4f81dd182e6cf6562d46beae",
+      "status": "0x1",
+      "block": 68884145
+    }
+  ],
+  "deployerSpentMon": 0.4338,
+  "notes": [
+    "factory == vault: StrikeFactory is inherited by CollateralVault (one address).",
+    "Settled results become redeemable at Resolver.resultOf(...).finalAt (resolvedAt + challengeWindow).",
+    "Zap trades only on zap.canonicalMarket(seriesId), registered once by the operator after Kuru deployProxy."
+  ]
+}

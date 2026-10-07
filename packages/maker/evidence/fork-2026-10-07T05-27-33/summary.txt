@@ -1,0 +1,27 @@
+anvil :19150 pid 58063 forking https://testnet-rpc.monad.xyz at block 68887217 (anvil/v1.8.5)
+deployment v1: vault 0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39 resolver 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B zap 0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0 (registry true); operator=operator 0x602dbf3937558B1d18d76315635fD5410089bd51; maker 0xd572638F07829D1c3636400FB73CF34Ca6c7448a
+chain time 2026-10-07T05:27:37.000Z; rolling RCSS 2026-10-08
+dry-run roll: ok=true strikes [28,29,30,31] estimated MON {"operator":0.7533,"maker":0.495}
+  roll [preflight] done: v1 deployment (<repo>/deployments/testnet.json); operator=operator 0x602dbf3937558B1d18d76315635fD5410089bd51, market creator=operator, maker=0xd572638F07829D1c3636400FB73CF34Ca6c7448a; close 17:30 local (warm (May-Oct) t99 over 368 complete days 2024-10-01..2026-09-30); Zap registry yes
+  roll [plan] done: strikes [28,29,30,31] (Polymarket median 29 (https://polymarket.com/event/highest-temperature-in-taipei-on-october-8-2026, fetched 2026-10-07T05:27:41.000Z): P(>=k) 28:0.949 29:0.853 30:0.473 31:0.097)
+  roll [series] sent: createLadder for [28,29,30,31]
+  roll [mint] sent: minted >=28:300 >=29:300 >=30:300 >=31:300 complete sets
+  roll [market] sent: >=28: Kuru market 0x171b4cdE3724f2F17576439e6de8c36142A7DBd7
+  roll [market] sent: >=29: Kuru market 0x855eF3549eA5ACA5602EAefDD988950f16FCc6c2
+  roll [market] sent: >=30: Kuru market 0x702A7a87EDb18D733c624bF766020F3b66eb36DC
+  roll [market] sent: >=31: Kuru market 0x4f5Ef4Bf256BDD88492C1e394B0D0f06A8265813
+  roll [canonical] done: Zap 0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0 canonical market set for [28,29,30,31]
+  roll [margin] done: margin AUSD >= 400, YES 300 per strike
+  roll [quotes] done: >=28:quote >=29:quote >=30:quote >=31:quote
+roll: 27 txs, MON by role {"operator":0.3138,"maker":0.0851}; close 17:30 local (stop 17:20)
+  >=28 market 0x171b4cdE3724f2F17576439e6de8c36142A7DBd7 PM 0.949 -> bid 100@0.91 / ask 100@0.98 (canonical in Zap)
+  >=29 market 0x855eF3549eA5ACA5602EAefDD988950f16FCc6c2 PM 0.853 -> bid 100@0.82 / ask 100@0.89 (canonical in Zap)
+  >=30 market 0x702A7a87EDb18D733c624bF766020F3b66eb36DC PM 0.473 -> bid 100@0.44 / ask 100@0.51 (canonical in Zap)
+  >=31 market 0x4f5Ef4Bf256BDD88492C1e394B0D0f06A8265813 PM 0.097 -> bid 100@0.06 / ask 100@0.13 (canonical in Zap)
+re-roll: 0 txs, same 4 markets (idempotent)
+tick 1: >=28:none >=29:none >=30:none >=31:none (0 txs)
+taker1 market-buys 56 AUSD on >=30 -> 99.9 YES (our ask was 100@0.51) tx 0xa9fd845ce974ff5a9c0cc4bad241756aeca967cd5eb3e63761af5e6df21dd9d0
+tick 2: >=30 requote (ask side empty (filled)) -> bid 100@0.44 / ask 100@0.51, net YES -100
+tick 3: >=28:pull >=29:requote >=30:requote >=31:none; >=29 fair 0.7376 (PM 0.70 conditioned on obs max 28) -> 0.7/0.77; >=28 pulled (certain)
+kill switch at 2026-10-08T09:20:06.000Z (stopAt 2026-10-08T09:20:00.000Z): [{"key":"RCSS:20261008","cancelled":6,"leftOpen":0}]
+35 txs total; meter (anvil-billed) {"operator":0.1163,"maker":0.1018,"marketCreator":0.1977}; at live 102 gwei: roll {"operator":0.1761,"maker":0.4771,"marketCreator":0.5972}, whole run {"operator":0.1761,"maker":0.792,"marketCreator":0.5972}; all books empty after the kill switch

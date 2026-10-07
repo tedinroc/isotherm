@@ -1,0 +1,98 @@
+{
+  "_comment": "Real responses captured with the EXACT URLs from settle-core.ts. '*_2026-10-06.*' were captured for this package on 2026-10-07 (scripts/capture-fixtures.ts); the others are copies of packages/forecast/test/fixtures (captured by spikes/weather). polymarketWinner = the resolved winning bucket on Polymarket (gamma API), for reference.",
+  "polymarketWinner": {
+    "RCSS 2026-10-05": "29C",
+    "RJTT 2026-10-05": "22C",
+    "RCSS 2026-10-06": "25C",
+    "RJTT 2026-10-06": "26C",
+    "RCSS 2026-05-04": "24C (resolver-side miss: IEM and Ogimet both hold the 25/18 METAR at 040530Z)",
+    "RCSS 2025-11-15": "n/a (no market; IEM outage day)"
+  },
+  "awc_RCSS_2026-05-04.json": {
+    "source": "copied from packages/forecast/test/fixtures",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "awc_RCSS_2026-10-05.json": {
+    "source": "copied from packages/forecast/test/fixtures",
+    "bytes": 26653,
+    "sha256": "ab093f129abde018c0e553677a7af758dd602f8743f4f0ad8fcbb17bc73ca274"
+  },
+  "awc_RCSS_2026-10-06.json": {
+    "url": "https://aviationweather.gov/api/data/metar?ids=RCSS&format=json&date=2026-10-06T16:00:00Z&hours=24",
+    "fetchedAt": "2026-10-07T05:34:00.365Z",
+    "bytes": 23099,
+    "sha256": "47cb99a2836a2b3d833b0b5c58b3107e309c45ad308bff4f90d1d563b1b51cde",
+    "ms": 1174
+  },
+  "awc_RJTT_2026-10-05.json": {
+    "source": "copied from packages/forecast/test/fixtures",
+    "bytes": 22909,
+    "sha256": "a857b166b3ec039060aeaf1c141bd67c32ea3a12abf865e59b89155869c668ef"
+  },
+  "awc_RJTT_2026-10-06.json": {
+    "url": "https://aviationweather.gov/api/data/metar?ids=RJTT&format=json&date=2026-10-06T15:00:00Z&hours=24",
+    "fetchedAt": "2026-10-07T05:34:10.444Z",
+    "bytes": 21848,
+    "sha256": "fcd87d2dc8dc30643095b8c656fed8b2bc53b790a1b0a1a802794b06f3cf6ccb",
+    "ms": 1335
+  },
+  "iem_RCSS_2025-11-15.csv": {
+    "source": "copied from packages/forecast/test/fixtures",
+    "bytes": 110,
+    "sha256": "a6a930348be6c80f6044bd631eeddf809c76c486b085dab7c1afd67f64c1a6ae"
+  },
+  "iem_RCSS_2026-05-04.csv": {
+    "source": "copied from packages/forecast/test/fixtures",
+    "bytes": 5536,
+    "sha256": "df57ffa8e5e2088889cf6435ef0dc2d3c0e913d7d6741ef640e117b49299abfe"
+  },
+  "iem_RCSS_2026-10-05.csv": {
+    "source": "copied from packages/forecast/test/fixtures",
+    "bytes": 5279,
+    "sha256": "6739c739e4da6bd075579fe15e5fb86ba46813e0deaf67f45cd7465864458eb2"
+  },
+  "iem_RCSS_2026-10-06.csv": {
+    "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=RCSS&data=metar&year1=2026&month1=10&day1=6&year2=2026&month2=10&day2=7&tz=Asia/Taipei&format=onlycomma&latlon=no&elev=no&missing=M&trace=T&direct=no&report_type=3&report_type=4",
+    "fetchedAt": "2026-10-07T05:33:57.189Z",
+    "bytes": 4408,
+    "sha256": "827548779f2b0da93338039208d989e0a1509e8a1c08c5569e47f6e956d0d7d7",
+    "ms": 1282
+  },
+  "iem_RJTT_2026-10-05.csv": {
+    "source": "copied from packages/forecast/test/fixtures",
+    "bytes": 4015,
+    "sha256": "eabc8a38084107803075effa9ddf080e454b3b88985e09bc2892c31eb7bbccd0"
+  },
+  "iem_RJTT_2026-10-06.csv": {
+    "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=RJTT&data=metar&year1=2026&month1=10&day1=6&year2=2026&month2=10&day2=7&tz=Asia/Tokyo&format=onlycomma&latlon=no&elev=no&missing=M&trace=T&direct=no&report_type=3&report_type=4",
+    "fetchedAt": "2026-10-07T05:34:07.107Z",
+    "bytes": 3895,
+    "sha256": "766c3264b9e72f5c4e63b5d2e8e555b18c25f59badaf0f9782412641329c5850",
+    "ms": 1232
+  },
+  "ogimet_RCSS_2025-11-15.txt": {
+    "source": "copied from packages/forecast/test/fixtures",
+    "bytes": 4425,
+    "sha256": "8d0aa000a0bf8b2022d1ea362172a23defde115da8e1e8f2a23b3e67a587f7b3"
+  },
+  "ogimet_RCSS_2026-05-04.txt": {
+    "source": "copied from packages/forecast/test/fixtures",
+    "bytes": 6170,
+    "sha256": "a2f26d92c79a819ce649c21954d30705d98b4f3bc0e010513008cd032a856e6b"
+  },
+  "ogimet_RCSS_2026-10-06.txt": {
+    "url": "https://www.ogimet.com/cgi-bin/getmetar?icao=RCSS&begin=202610051600&end=202610061559",
+    "fetchedAt": "2026-10-07T05:34:03.872Z",
+    "bytes": 4972,
+    "sha256": "a860a5e51292c0945d5536a55fea7006208031890a7efdd38149720fef54d4ba",
+    "ms": 1504
+  },
+  "ogimet_RJTT_2026-10-06.txt": {
+    "url": "https://www.ogimet.com/cgi-bin/getmetar?icao=RJTT&begin=202610051500&end=202610061459",
+    "fetchedAt": "2026-10-07T05:34:14.052Z",
+    "bytes": 4211,
+    "sha256": "6ac55dc16a4f3e535852c9d8091e7adf379aa546d3bbabf47a200a732406caf2",
+    "ms": 1606
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "isotherm-api",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Isotherm API: Cloudflare Worker for the testnet drip, gasless relayed mint, maker snapshot and public stats.",
+  "scripts": {
+    "prepare-data": "node scripts/copy-deployments.mjs",
+    "typecheck": "npm run prepare-data && tsc --noEmit",
+    "test": "npm run prepare-data && vitest run test/unit",
+    "test:fork": "npm run prepare-data && vitest run test/integration",
+    "test:all": "npm run prepare-data && vitest run",
+    "dev": "npm run prepare-data && wrangler dev --port 8781",
+    "deploy": "npm run prepare-data && wrangler deploy"
+  },
+  "dependencies": {
+    "viem": "2.57.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.20251001.0",
+    "@types/node": "22.20.5",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7",
+    "wrangler": "3.114.17"
+  }
+}
