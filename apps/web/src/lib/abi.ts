@@ -86,6 +86,7 @@ export const forwarderAbi = parseAbi([
 
 export const SELECTORS = {
   canonicalMarket: toFunctionSelector('function canonicalMarket(bytes32)'),
+  challengeWindow: toFunctionSelector('function challengeWindow()'), // v1 resolver only (the feasibility one has none)
   mintSetWithAuthorization: toFunctionSelector(
     'function mintSetWithAuthorization(bytes32,uint256,address,uint256,uint256,bytes32,uint8,bytes32,bytes32)',
   ),

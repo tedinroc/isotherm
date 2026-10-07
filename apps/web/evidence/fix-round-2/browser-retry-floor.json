@@ -1,0 +1,36 @@
+{
+  "note": "anvil fork 127.0.0.1:19601 of Monad testnet; in-app browser at 375 px; fork burner wallet; nothing on the live chain",
+  "sandwich": "see browser-sandwich-step2-reverted.json (step 2 0x5aa078bc\u2026 reverted; bids after = 7.57 YES @ 0.001)",
+  "beforeFix": "retrySell used minOut(today's quote) = 0.01 AUSD for 15.14 YES on the sandwiched book, i.e. ~0.9995 AUSD per No, and the button was enabled",
+  "afterFix_sandwichedBook": {
+    "retryButton": "Sell 15.14 Yes for >= 5.04 AUSD",
+    "disabled": true,
+    "warning": "Today's bids would pay only 0.01 AUSD for the 15.14 Yes, so each No would cost 1.000 AUSD, above your original worst case of 0.67 ...",
+    "screenshot": "01-fork-sandwich-retry-blocked-at-original-floor.jpg"
+  },
+  "bidsRestored": "fork-only: an impersonated account placed 100 YES @ 0.34 (batchUpdate) on market 0x702A7a87EDb18D733c624bF766020F3b66eb36DC",
+  "afterFix_restoredBook": {
+    "retryButton": "Sell 15.14 Yes for >= 5.04 AUSD",
+    "disabled": false,
+    "note": "The sale keeps your original limit: each No costs at most 0.67 AUSD.",
+    "screenshot": "02-fork-bids-restored-retry-offered-at-floor.jpg"
+  },
+  "retryTx": {
+    "hash": "0x1ba2ea3b80ef1c475ee890834ba098a7348eee6a3b50bd045d94fc98448a9396",
+    "status": "true",
+    "to": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+    "block": "68917531",
+    "decoded_sellYes_args": [
+      "0xb020bdde35a3212b69e836e2f78f56b4560e75bc74eb7a6b790342f58de00064",
+      "0x702A7a87EDb18D733c624bF766020F3b66eb36DC",
+      "15143713",
+      "[1.514e7]",
+      "5040838",
+      "[5.04e6]",
+      "0xDC679622d7F75aA8Cf7b8AF64D6906C43cf5D96E"
+    ],
+    "originalPlanMinAusdOut": "5040838",
+    "result": "15.14 No for 10.00 AUSD",
+    "screenshot": "03-fork-retry-filled-at-original-terms.jpg"
+  }
+}

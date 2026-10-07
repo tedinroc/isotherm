@@ -1,0 +1,46 @@
+# apps/api tests, verifier round 2 issue 1 (build a41d37d-dirty.84a823aac98e = deployed Worker ea73ccfa), 2026-10-07T08:03:46Z
+
+ RUN  v3.2.7 <repo>/apps/api
+ ✓ test/unit/relay-abuse.test.ts (16 tests) 247ms
+ ✓ test/unit/size-caps.test.ts (8 tests) 56ms
+ ✓ test/unit/api-units.test.ts (24 tests) 9ms
+ Test Files  3 passed (3)
+      Tests  48 passed (48)
+   Start at  01:03:46
+   Duration  777ms (transform 65ms, setup 0ms, collect 211ms, tests 312ms, environment 0ms, prepare 59ms)
+tsc exit 0
+
+## fork integration (anvil :19650, wrangler dev :19651/:19652; run at 08:00Z on the same build hash)
+> isotherm-api@1.0.0 test:fork
+> npm run prepare-data && vitest run test/integration
+> isotherm-api@1.0.0 prepare-data
+> node scripts/copy-deployments.mjs && node scripts/build-info.mjs
+[copy-deployments] deployments: deployments/testnet.json; ABIs: CollateralVault, ForecastCommit, IERC3009, IIsothermResolver, IKuruOrderBookTaker, IKuruRouterView, IsothermZap, OutcomeToken, Resolver
+[build-info] 1.0.0 build a41d37d-dirty.84a823aac98e (17 files)
+ RUN  v3.2.7 <repo>/apps/api
+stdout | test/integration/api.fork.test.ts > isotherm-api on a Monad testnet fork > relays a signed EIP-3009 mint for a user with no MON; refuses permit mode, dust, tampering and over-limit requests
+[fork] relayed mintSetWithAuthorization: estimate 309470, gas limit 334228, gas used 309470
+ ✓ test/integration/api.fork.test.ts (6 tests) 40888ms
+   ✓ isotherm-api on a Monad testnet fork > serves health with the relayer and v1 relay modes; CORS only for allowed origins  1159ms
+   ✓ isotherm-api on a Monad testnet fork > admin endpoints need the bearer token; the cron tick refills the AUSD float from the faucet  2374ms
+   ✓ isotherm-api on a Monad testnet fork > drips MON + AUSD once per address, never to contracts, and enforces the per-IP limit  2858ms
+   ✓ isotherm-api on a Monad testnet fork > relays a signed EIP-3009 mint for a user with no MON; refuses permit mode, dust, tampering and over-limit requests  8420ms
+   ✓ isotherm-api on a Monad testnet fork > counts a non-maker Kuru fill and a CRE settlement in /api/stats and /api/settlements  15469ms
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  01:00:48
+   Duration  41.09s (transform 35ms, setup 0ms, collect 106ms, tests 40.89s, environment 0ms, prepare 23ms)
+
+## mutation check (each mutant reverts one round-2 change; `vitest run test/unit` must fail; sources restored after each)
+MUTANT no-horizon (perDay = spendable): caught
+MUTANT default-days-1 (DEFAULTS.days = 1): caught
+MUTANT accept-unknown-flag (--day accepted): caught
+MUTANT drop-fairSource: caught
+MUTANT drop-guardSource: caught
+MUTANT no-label-validation (any string passes): caught
+MUTANT fake-deploy-time (deployedAt = now): caught
+MUTANT no-build-id (build = '1.0.0'): caught
+8/8 caught. The deploy's build hash (84a823aac98e) equals the fork run's, so the restored tree is the tested one.
+
+## secret scan
+11 files in ~/.config/isotherm (21 key/token patterns, values never printed) against apps/api (39 files, excluding node_modules and .wrangler): 0 hits.

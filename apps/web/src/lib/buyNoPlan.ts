@@ -38,3 +38,37 @@ export function planBuyNo(
     approveYes: allowance.yesZap < mint,
   };
 }
+
+export interface RetrySellPlan {
+  pairs: bigint; // YES to sell (= the pairs left after step 2 did not go through)
+  floor: bigint; // the original plan's per-unit minimum applied to `pairs` (rounded up)
+  expectedOut: bigint; // what today's bids would pay for `pairs` YES (after Kuru's fee)
+  minAusdOut: bigint; // the retry's sellYes bound: max(today's quote × (1 − slippage), floor)
+  blocked: boolean; // today's bids cannot pay `floor`: the sale would revert, so it is not offered
+  noPriceNow: number; // AUSD per No if the YES leg sold for expectedOut now (1 with no bids)
+  noPriceWorst: number; // the original plan's worst case per No (worstCost / mint)
+}
+
+/**
+ * Retry of step 2 after it did not go through (a sandwich moved the bids, the wallet rejected it, ...).
+ * The retry is quoted on today's book, but its minimum is never below the original plan's per-unit minimum, so
+ * the No can never end up costing more than the worst case the user accepted at tap time. A sandwich that leaves a
+ * dust bid would otherwise fill the retry at ~0.999 per No (the same loss N1 described, one transaction later).
+ * When today's bids cannot meet that floor, the retry is blocked and the UI says why; merging back stays available.
+ */
+export function planRetrySell(original: BuyNoPlan, pairs: bigint, quotedProceeds: number, slippage: number): RetrySellPlan {
+  const floor = original.mint > 0n ? (original.minAusdOut * pairs + original.mint - 1n) / original.mint : 0n;
+  const expectedOut = quotedProceeds > 0 ? toUnits6(quotedProceeds) : 0n;
+  const fresh = minOut(quotedProceeds, slippage);
+  const minAusdOut = fresh > floor ? fresh : floor;
+  const per = (ausd: bigint) => (pairs > 0n ? Number(pairs - (ausd < pairs ? ausd : pairs)) / Number(pairs) : 1);
+  return {
+    pairs,
+    floor,
+    expectedOut,
+    minAusdOut,
+    blocked: pairs <= 0n || minAusdOut <= 0n || expectedOut < floor,
+    noPriceNow: per(expectedOut),
+    noPriceWorst: original.mint > 0n ? Number(original.worstCost) / Number(original.mint) : 1,
+  };
+}

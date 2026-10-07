@@ -31,6 +31,7 @@ import {
 import { generatePrivateKey, privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts';
 import { DEPLOYMENTS as D } from '../../src/deployments';
 import { decodeResult, decodeSeries } from '../../src/abi';
+import buildJson from '../../src/generated/build.json';
 
 const ANVIL_PORT = Number(process.env.ISO_ANVIL_PORT ?? 19200);
 const API_PORT = Number(process.env.ISO_API_PORT ?? 8782);
@@ -201,6 +202,9 @@ describe('isotherm-api on a Monad testnet fork', () => {
     expect(h.relayModes).toEqual(['authorization']); // permit relays are off for the v1 vault (security review v1)
     expect(h.relayMinAusd).toBe('1');
     expect(h.limits).toMatchObject({ reserveMon: '0.1', relayPerIpPerDay: 3, relayPerAddressPerDay: 2, dripsToday: 0, relaysToday: 0 });
+    // build id baked in by scripts/build-info.mjs; wrangler dev has no upload time, so deployedAt stays null
+    expect(h.version).toMatchObject({ app: '1.0.0', build: buildJson.build, builtAt: buildJson.builtAt, deployedAt: null });
+    expect((await (await api('/api')).json<any>()).version.build).toBe(buildJson.build);
     const ok = await api('/api/health', { method: 'OPTIONS', headers: { origin: 'https://isotherm.pages.dev', 'access-control-request-method': 'POST' } });
     expect(ok.status).toBe(204);
     expect(ok.headers.get('access-control-allow-origin')).toBe('https://isotherm.pages.dev');

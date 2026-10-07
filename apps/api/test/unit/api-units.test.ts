@@ -18,6 +18,8 @@ import { applyLogs, discoveredMarkets, emptyCounters, publicStats, type ScanBatc
 import { CANONICAL_MARKET_SET_EVENT } from '../../src/abi';
 import { marketsOf, normalizeSnapshot } from '../../src/snapshot';
 import { HttpError, originAllowed, safeEqual } from '../../src/util';
+import { versionInfo } from '../../src/version';
+import buildJson from '../../src/generated/build.json';
 import bundle from '../../src/generated/abi-bundle.json';
 import deployed from '../../src/generated/deployments.json';
 import { existsSync, readFileSync } from 'node:fs';
@@ -212,6 +214,23 @@ describe('maker snapshot', () => {
     expect(marketsOf(s).length).toBe(rows.filter((x) => x.market).length);
     expect(JSON.stringify(s)).not.toContain('budget');
   });
+  it('passes fairSource / guardSource through (provenance of fair and of the model guardrail)', () => {
+    const file = join(__dirname, '../../../../packages/maker/examples/snapshot.example.json');
+    if (existsSync(file)) {
+      const raw = JSON.parse(readFileSync(file, 'utf8'));
+      const rows = raw.ladders[0].strikes as { strike: number; fairSource: string; guardSource: string }[];
+      const got = normalizeSnapshot(raw).ladders[0].strikes;
+      expect(rows.some((r) => r.fairSource === 'polymarket')).toBe(true);
+      for (const r of rows) expect(got.find((x) => x.k === r.strike)).toMatchObject({ fairSource: r.fairSource, guardSource: r.guardSource });
+    }
+    const one = (st: Record<string, unknown>) => normalizeSnapshot({ ladders: [{ station: 'RCSS', date: 20261008, series: [{ strike: 30, fair: 0.4, ...st }] }] }).ladders[0].strikes[0];
+    expect(one({ fairSource: 'fallback-v0', guardSource: 'v0-truncated' })).toMatchObject({ fairSource: 'fallback-v0', guardSource: 'v0-truncated' });
+    expect(one({ fairSource: 'fallback-intraday', guardSource: 'intraday' })).toMatchObject({ fairSource: 'fallback-intraday', guardSource: 'intraday' });
+    // not reported, or not a short lowercase label -> null (never passed through raw)
+    expect(one({})).toMatchObject({ fairSource: null, guardSource: null });
+    expect(one({ fairSource: '<img src=x onerror=alert(1)>', guardSource: 'V0' })).toMatchObject({ fairSource: null, guardSource: null });
+    expect(one({ fairSource: 'x'.repeat(41), guardSource: 7 })).toMatchObject({ fairSource: null, guardSource: null });
+  });
   it('rejects malformed input', () => {
     expect(() => normalizeSnapshot([])).toThrow(HttpError);
     expect(() => normalizeSnapshot({ ladders: [{ station: 'taipei', date: 20261008, strikes: [] }] })).toThrow(/ICAO/);
@@ -323,5 +342,26 @@ describe('v1 vault interface', () => {
     const fn = vaultAbi.find((x) => x.type === 'function' && x.name === 'mintSetWithAuthorization');
     if (!fn) return;
     expect(toFunctionSelector(fn as never)).toBe(toFunctionSelector(vaultV1Abi[0]));
+  });
+});
+
+describe('/api/health version', () => {
+  it('reports the build id baked in by scripts/build-info.mjs', () => {
+    const v = versionInfo(null);
+    expect(v.app).toBe('1.0.0');
+    expect(v.build).toBe(buildJson.build);
+    expect(v.build).toMatch(/^([0-9a-f]{7,}|nogit)(-dirty)?\.[0-9a-f]{12}$/);
+    expect(Number.isFinite(Date.parse(v.builtAt))).toBe(true);
+    expect([v.workerVersionId, v.deployedAt]).toEqual([null, null]); // outside Cloudflare
+  });
+  it('adds the Cloudflare version id and its upload (deploy) time from the version_metadata binding', () => {
+    const v = versionInfo({ id: 'ce5bfc02-7145-4d8f-b9f0-501e2f9ddcdf', timestamp: '2026-10-07T08:30:01.123Z' });
+    expect(v.workerVersionId).toBe('ce5bfc02-7145-4d8f-b9f0-501e2f9ddcdf');
+    expect(v.deployedAt).toBe('2026-10-07T08:30:01.123Z');
+  });
+  it('wrangler dev (no timestamp) and junk metadata give nulls, never a made-up deploy time', () => {
+    expect(versionInfo({ id: 'ce5bfc02-7145-4d8f-b9f0-501e2f9ddcdf' }).deployedAt).toBeNull();
+    expect(versionInfo({ id: '<b>', timestamp: 'yesterday' })).toMatchObject({ workerVersionId: null, deployedAt: null });
+    expect(versionInfo(null, {})).toMatchObject({ app: 'unknown', build: 'unknown', commit: null, dirty: null });
   });
 });

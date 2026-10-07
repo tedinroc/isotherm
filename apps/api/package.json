@@ -5,13 +5,14 @@
   "type": "module",
   "description": "Isotherm API: Cloudflare Worker for the testnet drip, gasless relayed mint, maker snapshot and public stats.",
   "scripts": {
-    "prepare-data": "node scripts/copy-deployments.mjs",
+    "prepare-data": "node scripts/copy-deployments.mjs && node scripts/build-info.mjs",
     "typecheck": "npm run prepare-data && tsc --noEmit",
     "test": "npm run prepare-data && vitest run test/unit",
     "test:fork": "npm run prepare-data && vitest run test/integration",
     "test:all": "npm run prepare-data && vitest run",
     "dev": "npm run prepare-data && wrangler dev --port 8781",
-    "deploy": "npm run prepare-data && wrangler deploy"
+    "deploy": "npm run prepare-data && wrangler deploy",
+    "size-caps": "node scripts/size-caps.mjs"
   },
   "dependencies": {
     "viem": "2.57.3"

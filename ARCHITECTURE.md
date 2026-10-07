@@ -118,7 +118,7 @@ Only YES has a book. NO is never listed.
 | User intent | Path | Gas in the feasibility live run (billed, MON at 102 gwei) |
 |---|---|---|
 | Buy YES ≥ k | `Zap.buyYes`: market buy on the book, unspent AUSD refunded | 623,629 (0.0636); v1 on the live chain: 518,188 gas used (go-live smoke test) |
-| Buy NO ≥ k | **v1 clients:** `vault.mintSet(seriesId, n)` (n YES + n NO to the user), then `Zap.sellYes(n YES, minAusdOut)`. NO received is exactly n, and `sellYes` reverts if fewer than `minAusdOut` AUSD come back, so the worst-case NO price is fixed before signing. Net NO price = 1 − bid − fee. Used by the web app (`apps/web/src/lib/buyNo.ts`; live from its next deploy after 2026-10-07 07:12 UTC) and the plugin (`mm weather buy --side no`) | v1 `mintSet` 297,217 gas used (fork e2e), plus `sellYes` |
+| Buy NO ≥ k | **v1 clients:** `vault.mintSet(seriesId, n)` (n YES + n NO to the user), then `Zap.sellYes(n YES, minAusdOut)`. NO received is exactly n, and `sellYes` reverts if fewer than `minAusdOut` AUSD come back, so the worst-case NO price is fixed before signing. Net NO price = 1 − bid − fee. Used by the web app (`apps/web/src/lib/buyNo.ts`; live on the site since its 2026-10-07 redeploy) and the plugin (`mm weather buy --side no`) | v1 `mintSet` 297,217 gas used (fork e2e), plus `sellYes` |
 | (not used) | `Zap.buyNo(ausdIn, minAusdBack)`: mints, sells the YES leg, merges unsold YES back at par. Its only bound counts that merged YES at par, so under a partial fill a sandwich can pass it at a terrible NO price: on a fork with real Kuru and the deployed Zap, 0.999 per NO instead of 0.57 for half the NO (`test/security/v1/RESULT.md`, N1). Fixing it needs a Zap redeploy with a `minNoOut` bound | 824,413 (0.0841) in the feasibility build |
 | Sell YES | `Zap.sellYes`, unsold YES refunded | — |
 | Exit with a YES+NO pair | `vault.redeemSet`, never paused | ~160–175k |
@@ -142,7 +142,7 @@ Why: in the backtest over 381 station-days, v0 scored a pooled Brier of 0.0656 a
 - One post-only bid and one ask per strike around fair value: half-spread 3 ticks of 0.01 (Kuru's own tick is 0.001), prices rounded outward and kept in [0.01, 0.99], bid < fair < ask always. Inventory skew up to 2 ticks; position cap ±300 YES per strike. A strike is pulled when fair ≤ 0.03 or ≥ 0.97, and when the guardrail model differs from Polymarket by more than 0.40 (a gap above 0.15 doubles the spread).
 - Size each quote from free margin plus what the cancelled orders release. A fixed-size re-quote after a fill reverts with Kuru `InsufficientBalance()`; this broke the first fork run.
 - Re-quote a strike only when it has no resting quote, a side filled (or less than half is left), the desired price moved by at least 2 ticks, the quote is older than 6 hours, or fair crossed a resting quote (urgent). Each live re-quote (cancel 2 + place 2) billed 0.055–0.058 MON (`docs/evidence/golive/live-txs.tsv`).
-- Daily MON caps per role, metered per Taipei day (live: maker 0.8 MON including the next day's roll). Non-urgent re-quotes over the cap are refused; an urgent one becomes a pull paid from a reserve; the kill switch is never refused.
+- Daily MON caps per role, metered per Taipei day (live, as of 2026-10-07: maker 1.2 MON including the next day's roll). Non-urgent re-quotes over the cap are refused; an urgent one becomes a pull paid from a reserve; the kill switch is never refused.
 - On day D the observed METAR maximum conditions fair value: once a report shows Tmax ≥ k, the strike is certain and is pulled.
 - Pull every quote 10 minutes before `closeTime`, from the loop, a 15-second timer and a separate launchd watchdog every 5 minutes (it acts when the loop's heartbeat is over 3 minutes old). The kill switch cancels tracked order ids plus a scan of the last 300 ids, then withdraws the YES margin.
 - Track order ids from `OrderCreated` events in receipts; the public RPC's `eth_getLogs` is limited to a 100-block range.
@@ -240,7 +240,7 @@ Admins can never move collateral. The contracts never hold or send MON, so Monad
   - `receiveWithAuthorization` is front-run-safe because only the payee can execute it. A plain EIP-2612 permit does not bind the series, so a front-runner could redirect a relayed `mintSetWithPermit` to another open series; the API therefore does not relay permits for the v1 vault (`RELAY_ALLOW_PERMIT = "0"`, N10).
 - **Drip.** The AUSD faucet has one 60-second cooldown shared by every caller on the testnet, so the drip pays from the relayer's own AUSD float and returns HTTP 429 instead of hammering the faucet.
 - **Where the relayer runs.** `apps/api` is a Cloudflare Worker. Its relayer lives in a Durable Object (one sender, so no nonce races) and signs with its own relayer key, not a Dynamic server wallet: Dynamic's server-wallet SDK ships native addons for Linux and macOS only, so it cannot run inside a Worker. The relayer submits `mintSetWithAuthorization` (EIP-3009), and a once-a-minute cron refills its AUSD float and advances the log scan (`apps/RESULT.md`).
-- **Relayer budget.** Testnet MON is scarce and the relayer pays every drip (0.15 MON + gas) and every relayed mint (about 0.034 MON). Its daily caps in `apps/api/wrangler.toml` are sized from its live balance (at the v1 review: 0.599 MON, so 2 drips and 5 relayed mints per day), IPv6 clients are rate-limited per /64, and relayed mints have a 1 AUSD minimum (N5). The caps race (N4) is closed by re-checking them inside the single-sender queue.
+- **Relayer budget.** Testnet MON is scarce and the relayer pays every drip (0.15 MON + gas) and every relayed mint (about 0.034 MON). Its daily caps in `apps/api/wrangler.toml` are sized from its live balance by `apps/api/scripts/size-caps.mjs`, which spreads the spendable MON over several worst-case days (`--days`, default 7) so one day cannot spend it all (at the v1 review the relayer held 0.599 MON, which gave 2 drips and 5 relayed mints per day; it held about 4.6 MON as of 2026-10-07 08:00 UTC, and `/api/health` `limits` shows the live caps), IPv6 clients are rate-limited per /64, and relayed mints have a 1 AUSD minimum (N5). The caps race (N4) is closed by re-checking them inside the single-sender queue.
 - **Gas limits.** Monad bills the gas limit. Every transaction is estimated, then sent with a 1.05–1.10× limit (fixed 200k for CRE reports). On the fork and in the live roll, estimates equalled gas used.
 
 ## 10. Agent access (MetaMask Agent Wallet plugin)
@@ -281,7 +281,7 @@ Projected alternatives: re-quoting only strikes that moved by a tick, ~5.98 MON/
 | **Roll total** (27 txs in 64 s) | 27 | | **1.2568** (operator key 0.7761, maker 0.4805) |
 | Live re-quotes after the roll (cancel 2 + place 2) | 3 | 536,884–567,427 | 0.1705 (0.055–0.058 each) |
 
-The live maker caps itself at 0.8 MON per Taipei day (including the next day's roll), so it re-quotes far less than hourly; see §6 and `docs/OPERATIONS.md`.
+The live maker caps itself at 1.2 MON per Taipei day as of 2026-10-07 (including the next day's roll), so it re-quotes far less than hourly; see §6 and `docs/OPERATIONS.md`.
 
 ## 12. Failure modes
 
@@ -319,7 +319,7 @@ New findings in the v1 review, and what was done:
 
 | ID | Severity | Finding | Status |
 |---|---|---|---|
-| N1 | Medium | `Zap.buyNo`'s slippage bound fails under partial fills (sandwich proven on a fork with the deployed Zap) | Clients route Buy NO through `vault.mintSet` + `Zap.sellYes(minAusdOut)` (§5; the live web app from its next deploy). `minNoOut` needs a Zap redeploy |
+| N1 | Medium | `Zap.buyNo`'s slippage bound fails under partial fills (sandwich proven on a fork with the deployed Zap) | Clients route Buy NO through `vault.mintSet` + `Zap.sellYes(minAusdOut)` (§5; live in the web app since its 2026-10-07 redeploy). `minNoOut` needs a Zap redeploy |
 | N2 | Medium | The challenge window does not contain a stolen attester key: reported voids are final at once, and a challenged result still pays the thief 0.5 | Documented here and in the README; the fix needs a Resolver redeploy (then Vault and Zap) |
 | N3 | Medium | The owner of the Resolver and the Vault is still the deployer hot key | Human action: move ownership to a cold key (4 txs) |
 | N4 | Medium (API) | Relay caps were check-then-act, so parallel requests passed them | Fixed and deployed: re-checked inside the single-sender queue |
@@ -329,7 +329,7 @@ New findings in the v1 review, and what was done:
 | N8, N9 | Low (API) | Uncached `/api/health`; unsanitised Polymarket link | Fixed and deployed |
 | N10 | Info | Recipient-only compliance gate; permit-mode relays; Kuru owner powers; stale pending nonce | Permit relays off; the rest documented |
 
-The Worker was redeployed with the API fixes on 2026-10-07: a read of `/api/health` at 07:12 UTC showed `relayModes: ["authorization"]`, `relayMinAusd: 1` and the new daily caps (2 drips, 5 relays).
+The Worker was redeployed with the API fixes on 2026-10-07: a read of `/api/health` at 07:12 UTC showed `relayModes: ["authorization"]`, `relayMinAusd: 1` and the new daily caps (2 drips, 5 relays, sized from the relayer's 0.599 MON at the time). The caps are re-sized from the live balance after each top-up (`docs/OPERATIONS.md` §5).
 
 Before any real money: redeploy the Resolver, Vault and Zap with the N1, N2, N6 and N7 changes, and leave the live RCSS 2026-10-08 ladder on v1 until it settles.
 

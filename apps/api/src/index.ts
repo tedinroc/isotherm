@@ -1,6 +1,7 @@
 // Isotherm API (Cloudflare Worker, Monad testnet 10143).
 //
-//   GET  /api/health                 relayer address/balances, drip + relay config, deployment source
+//   GET  /api/health                 relayer address/balances, drip + relay config, deployment source, `version`
+//                                    {app, build, commit, dirty, builtAt, workerVersionId, deployedAt}
 //   POST /api/drip {address}         small MON + test AUSD for a new wallet (rate-limited; never to contracts)
 //   POST /api/relay/mint {...}       relays a signed EIP-3009 authorization to the vault (permit mode is off for v1)
 //   GET  /api/snapshot               the maker's latest ladder snapshot (fair value, Polymarket-implied, obs max)
@@ -15,10 +16,9 @@ import { DEPLOYMENTS } from './deployments';
 import { configFrom, type Env } from './env';
 import { marketsOf, normalizeSnapshot } from './snapshot';
 import { HttpError, corsHeaders, errorMessage, ipBucket, ipTag, json, readJson, requireBearer } from './util';
+import { versionInfo } from './version';
 
 export { RelayerDO } from './relayer-do';
-
-const VERSION = '1.0.0';
 
 function stub(env: Env) {
   return env.RELAYER.get(env.RELAYER.idFromName('main'));
@@ -62,7 +62,7 @@ async function route(req: Request, env: Env, ctx: ExecutionContext): Promise<Res
   if (m === 'GET' && (path === '/' || path === '/api')) {
     return json({
       name: 'isotherm-api',
-      version: VERSION,
+      version: versionInfo(env.CF_VERSION_METADATA),
       chainId: 10143,
       network: 'Monad testnet (faucet AUSD only, no real money)',
       endpoints: ['/api/health', '/api/drip', '/api/relay/mint', '/api/snapshot', '/api/stats', '/api/settlements'],
@@ -76,8 +76,9 @@ async function route(req: Request, env: Env, ctx: ExecutionContext): Promise<Res
     const stats = await env.ISO_KV.get('stats:public', 'json').catch(() => null) as { updatedAt?: string; lagBlocks?: number } | null;
     return json({
       ok: true,
-      version: VERSION,
       ...info,
+      // after ...info so the relayer payload can never shadow it: app version, build id, Worker version, deploy time
+      version: versionInfo(env.CF_VERSION_METADATA),
       snapshotReceivedAt: snap?.receivedAt ?? null,
       statsUpdatedAt: stats?.updatedAt ?? null,
       statsLagBlocks: stats?.lagBlocks ?? null,

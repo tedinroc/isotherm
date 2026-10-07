@@ -1,5 +1,7 @@
 # apps/web + apps/api: RESULT (2026-10-07, Taipei afternoon)
 
+> **Superseded in part by the 2026-10-07 fix round** ([web/FIXES.md](web/FIXES.md), [api/FIXES.md](api/FIXES.md)). Buy No no longer calls `Zap.buyNo`: it is `vault.mintSet` + `Zap.sellYes(minAusdOut)`. The API's relay modes, minimums and caps changed (live values in `/api/health`). Since this was written, the relayer has been funded and the RCSS 2026-10-08 ladder has gone live. The rest of this file is the original record; lines that no longer hold are marked.
+
 **Verdict: both are built, tested, and deployed.** The phone app is live at **https://isotherm.pages.dev** and the API
 at **<former API host>** (Cloudflare). Both point at the **live v1
 deployment** in `deployments/testnet.json`: vault `0xae36…7B39`, resolver `0x9c78…962B`, zap `0x1ACa…CFb0`.
@@ -8,14 +10,14 @@ I tested the whole user path in the in-app browser at 375 px, against an **anvil
 real v1 contracts:
 - sign in with the dev wallet;
 - get test funds;
-- buy Yes and buy No through the Zap;
+- buy Yes and buy No through the Zap (Superseded 2026-10-07: Buy No = vault.mintSet + Zap.sellYes(minAusdOut); see apps/web/FIXES.md);
 - mint a gasless pair through the relayer;
 - CRE-shaped settlement, with the attestation verified in the browser;
 - challenge window, then redeem.
 
 Nothing was broadcast to the live chain. The live site and API answer read-only requests.
 
-Two limits on the live service today:
+Two limits on the live service today (both resolved since; see the note at the top):
 - **The drip and relay cannot pay yet.** The new relayer key `0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f` holds 0 MON, and the API answers with a clean 503.
 - **There is no live ladder yet.** On-chain `ladderCount` = 0, so the live Markets screen shows "No open markets".
 
@@ -53,7 +55,7 @@ Two limits on the live service today:
      - Maker-reported stats are stored separately and need the token.
 
 **Live checks** (read-only, or refusals that send nothing):
-- `GET /api/health` reports `relayer 0xb0b9…429f`, `relayModes ["authorization","permit"]`, `deployments "deployments/testnet.json"`, `dripReady false`.
+- `GET /api/health` reports `relayer 0xb0b9…429f`, `relayModes ["authorization","permit"]`, `deployments "deployments/testnet.json"`, `dripReady false`. (Superseded 2026-10-07: `relayModes` is now `["authorization"]` only; see apps/api/FIXES.md.)
 - The scanner caught up from the deploy block 68,884,377 to the head; `lagBlocks 0`, cron running.
 - `POST /api/drip` behaves as follows:
   - a contract address is refused;
@@ -77,7 +79,7 @@ Two limits on the live service today:
   | Drip | 0.1 MON + 1,000 AUSD in **1.7 s** (DRIP_MON was 0.1 then; it is 0.15 now) | 21,000 + 72,049 (relayer) |
   | Approve AUSD → Zap (once) | ok | 70,249 |
   | **Buy Yes ≥29 °C, 10 AUSD** | **15.61 Yes** at 0.64, as quoted (15.625 × 0.999), in 0.6 s | 466,263 |
-  | **Buy No ≥29 °C, 10 AUSD net** | **24.96 No**: minted 24.96 sets and sold Yes at 0.60, so 14.96 AUSD came back, in 0.4 s | 630,693 |
+  | **Buy No ≥29 °C, 10 AUSD net** | **24.96 No**: minted 24.96 sets and sold Yes at 0.60, so 14.96 AUSD came back, in 0.4 s. *Superseded 2026-10-07: Buy No = vault.mintSet + Zap.sellYes(minAusdOut); see apps/web/FIXES.md.* | 630,693 (`Zap.buyNo`) |
   | **Gasless pair ×10** | signed `ReceiveWithAuthorization`; the local API relayer submitted `mintSetWithAuthorization` | 224,470 (relayer pays) |
   | CRE report | `ReportProcessed.result=true`, Tmax 30, `finalAt = resolvedAt + 900 s` | — |
   | **Redeem** | **25.61 AUSD** (Yes won, 30 ≥ 29; No pays 0). AUSD went 970 → 995.61 | 182,237 |
@@ -98,7 +100,7 @@ Two limits on the live service today:
   Tapping a strike opens a sheet with Buy Yes / Buy No / Gasless pair:
   - a quote from walking the live book, including Kuru's 0.1% fee;
   - min-out at 0.5, 1, 2 or 5% slippage, never 0 (the v1 Zap rejects 0);
-  - for No, "spend X" is solved to the set size, capped at the balance;
+  - for No, "spend X" is solved to the set size, capped at the balance (Superseded 2026-10-07: Buy No = vault.mintSet + Zap.sellYes(minAusdOut); see apps/web/FIXES.md);
   - "Pays N AUSD if the max at RCSS is ≥ k°C";
   - max loss, and top-3 book depth.
 
@@ -144,11 +146,11 @@ Two limits on the live service today:
   - Books are discovered from `CanonicalMarketSet` on the Zap, plus snapshot markets.
 - **Relay API (for the mm plugin or others).**
   - `POST /api/relay/mint` with `mode:"authorization"`: the nonce is the vault's `mintAuthorizationNonce(seriesId, amount, salt)` and the AUSD domain is "Agora Dollar" v1.
-  - Caps: 500 AUSD per mint, 10 per address per day, 60 per day in total.
+  - Caps: 500 AUSD per mint, 10 per address per day, 60 per day in total. (Superseded 2026-10-07: 1–500 AUSD per mint, authorization mode only, daily caps sized to the relayer's balance; see apps/api/FIXES.md and `/api/health` `limits`.)
 
 ## Not done / not verified (honest)
 - **Dynamic login is not tested.** There is no environment ID, so the code path builds and is wired but was never run against Dynamic. The dev wallet covers judges in the meantime.
-- **No live-chain trade, redeem, drip or relay has been run.** The rule is reads only; the relayer is unfunded and there is no live ladder. Every write flow has been run only on forks.
+- **No live-chain trade, redeem, drip or relay has been run.** The rule is reads only; the relayer is unfunded and there is no live ladder. Every write flow has been run only on forks. (Superseded 2026-10-07: the go-live smoke test bought YES through the Zap on the live RCSS 2026-10-08 ladder, and the funded relayer had made 3 live drips; as of 08:00 UTC no live relay or redeem had run. See `docs/evidence/golive/` and `/api/health`.)
 - **Monad's reserve-balance rule is untested.** The relayer waits 4 blocks after its last transaction before a MON transfer when it holds under 10 MON + the drip. Anvil does not enforce the rule, so this is unverified.
 - **The relayer signs with a key held as a Worker secret.** It is not a Dynamic server wallet, because Dynamic's native addon cannot run in Workers; this is stated in the spike.
 - **Some features are not built:**
@@ -162,7 +164,7 @@ Two limits on the live service today:
 1. **Fund the relayer** `0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f` with testnet MON.
    - Minimum: ≥ 3 MON. With ≥ 12 MON, MON drips skip the "emptying transaction" wait.
    - Within about 1 minute the cron then claims a 10k AUSD float from the faucet; this needs ≥ 0.3 MON.
-   - Worst-case spend at the current caps (from the per-action gas above):
+   - Worst-case spend at the caps of that time (superseded 2026-10-07: the caps are now sized from the live balance by `apps/api/scripts/size-caps.mjs`; see apps/api/FIXES.md):
      - drips: about 40 × 0.15 = 6 MON/day;
      - relays: about 60 × 0.03 = 1.8 MON/day.
    - Lower `DRIP_DAILY_CAP`, `DRIP_MON` or `RELAY_DAILY_CAP` in `apps/api/wrangler.toml` and redeploy if MON is short.

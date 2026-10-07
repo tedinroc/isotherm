@@ -7,7 +7,7 @@ import { useWallet } from '../wallet/wallet';
 import { zapAbi } from '../lib/abi';
 import { buyYes, ensureAusdAllowance, mergePairs, relayedMint } from '../lib/actions';
 import { fromUnits6, minOut, quoteBuyNoViaSell, quoteBuyYes, quoteSellYes, toUnits6 } from '../lib/book';
-import { planBuyNo, runBuyNo, sellLeg, SellLegFailed, type BuyNoPlan, type StepEvent, type StepId, type StepStatus } from '../lib/buyNo';
+import { planBuyNo, planRetrySell, runBuyNo, sellLeg, SellLegFailed, type BuyNoPlan, type StepEvent, type StepId, type StepStatus } from '../lib/buyNo';
 import { chainNow, type LadderView, type StrikeView } from '../lib/data';
 import { amt, pct, px } from '../lib/format';
 import { formatDate, stationMeta } from '../lib/stations';
@@ -50,7 +50,8 @@ export function TradeSheet({ ladder, strike, onClose }: { ladder: LadderView; st
   const [err, setErr] = useState<string | null>(null);
   // Buy No progress: the plan frozen at tap time, per-step status, and pairs left over if step 2 did not go through.
   const [run, setRun] = useState<{ plan: BuyNoPlan; steps: Steps } | null>(null);
-  const [stranded, setStranded] = useState<{ pairs: bigint; mintHash: Hex | null } | null>(null);
+  // `origin` is the plan the user accepted at tap time: a retry of step 2 never goes below its per-unit minimum.
+  const [stranded, setStranded] = useState<{ pairs: bigint; mintHash: Hex | null; origin: BuyNoPlan } | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -152,11 +153,11 @@ export function TradeSheet({ ladder, strike, onClose }: { ladder: LadderView; st
     setStranded(null);
   }
 
-  function failNo(e: unknown) {
+  function failNo(e: unknown, origin: BuyNoPlan) {
     const msg = (e as Error).message ?? String(e);
     if (e instanceof SellLegFailed) {
       // Step 1 minted; step 2 reverted (price moved past the limit) or was not sent. The user holds complete pairs.
-      setStranded({ pairs: e.pairs, mintHash: e.mintHash });
+      setStranded({ pairs: e.pairs, mintHash: e.mintHash, origin });
       app.log({ label: `Buy No step 2 not filled (${amt(fromUnits6(e.pairs))} pairs kept): ${msg}`, ok: false });
     } else {
       app.log({ label: `Trade failed: ${msg}`, ok: false });
@@ -207,7 +208,7 @@ export function TradeSheet({ ladder, strike, onClose }: { ladder: LadderView; st
           const r = await runBuyNo(client, strike, plan, onStep(plan));
           finishNo(r, r.ms);
         } catch (e) {
-          failNo(e);
+          failNo(e, plan);
           return;
         }
       }
@@ -222,21 +223,25 @@ export function TradeSheet({ ladder, strike, onClose }: { ladder: LadderView; st
     }
   }
 
-  /** Recovery after step 2 did not go through: sell the YES leg again at today's book (fresh, explicit minimum)… */
+  /**
+   * Recovery after step 2 did not go through: sell the YES leg again, quoted on today's book but never below the
+   * original plan's per-unit minimum (lib/buyNoPlan.ts planRetrySell). A sandwich that left a dust bid therefore
+   * cannot fill the retry at ~0.999 per No; when the bids cannot pay that floor, the sale is not offered at all…
+   */
   const retryQuote = stranded ? quoteSellYes(strike.book, fromUnits6(stranded.pairs), strike.takerFeeBps) : null;
-  const retryMin = retryQuote ? minOut(retryQuote.proceeds, slip) : 0n;
+  const retry = stranded && retryQuote ? planRetrySell(stranded.origin, stranded.pairs, retryQuote.proceeds, slip) : null;
   async function retrySell() {
-    if (!stranded || !retryQuote || retryMin <= 0n) return;
+    if (!stranded || !retry || retry.blocked) return;
     setErr(null);
-    const plan: BuyNoPlan = run?.plan ?? { mint: stranded.pairs, expectedOut: 0n, minAusdOut: retryMin, worstCost: 0n, approveAusd: false, approveYes: false };
-    setRun({ plan: { ...plan, minAusdOut: retryMin }, steps: { ...(run?.steps ?? {}), sell: { status: 'todo' } } });
+    const origin = stranded.origin;
+    setRun({ plan: { ...origin, minAusdOut: retry.minAusdOut }, steps: { ...(run?.steps ?? {}), sell: { status: 'todo' } } });
     try {
       const client = await wallet.getClient();
-      const r = await sellLeg(client, strike, stranded.pairs, retryMin, stranded.mintHash, onStep(plan));
+      const r = await sellLeg(client, strike, stranded.pairs, retry.minAusdOut, stranded.mintHash, onStep(origin));
       finishNo(r, null);
       app.toast(t('trade.done'), 'ok');
     } catch (e) {
-      failNo(e);
+      failNo(e, origin);
     } finally {
       setBusy(null);
       await Promise.all([app.refreshBalances(), app.refreshBooksNow()]).catch(() => undefined);
@@ -379,10 +384,23 @@ export function TradeSheet({ ladder, strike, onClose }: { ladder: LadderView; st
               <button className="btn small primary" disabled={!!busy} onClick={mergeBack}>
                 {t('trade.mergeBack', { n: amt(fromUnits6(stranded.pairs)) })}
               </button>
-              <button className="btn small" disabled={!!busy || !open || retryMin <= 0n} onClick={retrySell}>
-                {t('trade.retrySell', { n: amt(fromUnits6(stranded.pairs)), min: amt(fromUnits6(retryMin)) })}
+              <button className="btn small" disabled={!!busy || !open || !retry || retry.blocked} onClick={retrySell}>
+                {t('trade.retrySell', { n: amt(fromUnits6(stranded.pairs)), min: amt(fromUnits6(retry?.minAusdOut ?? 0n)) })}
               </button>
             </div>
+            {retry &&
+              (retry.blocked ? (
+                <p className="warn small" data-testid="retry-blocked">
+                  {t('trade.retryBlocked', {
+                    got: amt(fromUnits6(retry.expectedOut)),
+                    n: amt(fromUnits6(stranded.pairs)),
+                    now: px(retry.noPriceNow),
+                    worst: px(retry.noPriceWorst),
+                  })}
+                </p>
+              ) : (
+                <p className="fine">{t('trade.retryNote', { worst: px(retry.noPriceWorst) })}</p>
+              ))}
           </div>
         )}
 

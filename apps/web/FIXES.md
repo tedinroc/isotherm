@@ -35,7 +35,7 @@ How it was tested:
   - **Max loss row.** It now also shows the worst case at the slippage limit ("10.00 AUSD · ≤ 10.10").
   - **If step 2 does not go through,** a recovery box says the user holds N Yes + N No, which always redeem for N AUSD. It offers two buttons:
     - **Merge back → N AUSD** is the primary button: `redeemSet`, with no price risk.
-    - **Sell N Yes for ≥ M AUSD** sells at a fresh quote.
+    - **Sell N Yes for ≥ M AUSD** sells at a fresh quote. *(Round 2: the minimum can no longer go below the original plan's per-unit minimum; see "Fix round 2" below.)*
 
     New trades are blocked until the user picks one, or closes the sheet; Portfolio still offers Merge and Sell Yes.
   - **The MON check covers the whole flow before step 1,** so a Buy No never stops between its two transactions for lack of gas.
@@ -116,3 +116,62 @@ How it was tested:
 - **`apps/RESULT.md` (shared web + API doc)** still says "buy Yes and buy No through the Zap" and gives the old buyNo gas figure (630,693). It needs: "Buy No = mintSet + sellYes (FIXES.md)".
 - **The mm plugin's `weather buy --side no`** needs the same mintSet + sellYes routing. That is the plugin owner's job; `planBuyNo` / `quoteBuyNoViaSell` can serve as a reference.
 - **The Zap redeploy** (`buyNo` with `minNoOut`) is the contracts' fix before real money. The web app does not depend on it.
+
+---
+
+# Fix round 2 (2026-10-07, verifier item 2)
+
+Live at https://isotherm.pages.dev (Pages deployment `<retired-deployment>`, main bundle `assets/index-sVKTc5nx.js`). Every write ran on an anvil fork (`127.0.0.1:19601`); the live chain got read-only checks only, and no MON or AUSD was spent on it.
+
+## 1. Failed capability reads are no longer cached (`src/lib/data.ts`, `src/state.tsx`)
+- **Before:** `capabilities()` turned a failed `getCode` into `'0x'` and a failed `challengeWindow()` read into `0`, then cached the result for the whole session. One RPC hiccup on first load meant "no canonical registry" (every strike without a book) and "no challenge window" until a full reload.
+- **Now:**
+  - `getCode` errors throw, so nothing is cached and the next refresh asks again.
+  - The resolver's bytecode is checked for the `challengeWindow()` selector (new `SELECTORS.challengeWindow`). Without the selector, as on the feasibility resolver, 0 is the real answer and is cached. With it, a failed read falls back to `DEFAULT_CHALLENGE_WINDOW` for that call only and is retried.
+  - Only a complete read is cached. Concurrent callers share one in-flight read.
+  - `refreshLadders` (every 60 s) calls `capabilities()` before `loadLadders` and pushes the result into app state. The caps state therefore heals as soon as a read succeeds; before, it was set once at mount.
+- **Fallback window = the deployed value, not 0.** `normalizeDeployments` now reads `params.challengeWindow` from `deployments/testnet.json` (900 s), matching that key exactly, so `maxChallengeWindow` is ignored. `DEFAULT_CHALLENGE_WINDOW` is used by `capabilities()` on a failed read and by `HowItWorks` while caps are still loading. The live check confirms that the v1 resolver bytecode has the selector and returns 900, and that the feasibility resolver has no selector.
+
+## 2. A retried step 2 keeps the original per-unit minimum (`src/lib/buyNoPlan.ts`, `src/components/TradeSheet.tsx`)
+- **Before:** after step 2 reverted, `retrySell` used `minOut(today's quote)`. After the N1 sandwich (bids taken, 7.57 YES left at 0.001), the button read "Sell 15.14 Yes for ≥ 0.01 AUSD" and was enabled, so the retry would have paid about 0.9995 per No. That is the N1 loss again, one transaction later.
+- **Now:** `planRetrySell(original, pairs, quotedProceeds, slippage)` (pure, unit-tested) computes:
+  - `floor`: the original `minAusdOut × pairs / mint`, rounded up;
+  - `minAusdOut`: max(today's quote × (1 − slippage), `floor`);
+  - `blocked`: today's bids cannot pay `floor`, so the sale would revert;
+  - the implied No price now and the original worst case per No.
+
+  The stranded state now stores the plan the user accepted at tap time (`origin`). It no longer reads `run.plan`, which a side switch could clear. A failed retry keeps that same origin.
+- **UI:**
+  - **Blocked:** the Sell button is disabled, and a warning (en + 繁中, `trade.retryBlocked`) states today's proceeds, the implied No price and the original worst case, and points to Merge back.
+  - **Not blocked:** a fine-print line reads "The sale keeps your original limit: each No costs at most X AUSD" (`trade.retryNote`).
+  - The stranded-box copy now says "or sell the Yes again, never below your original limit" instead of "at today's price".
+
+## Evidence
+- **Unit tests.** `npm test` passes **20/20**. The 10 new tests are in `test/retry-and-caps.test.ts`:
+  - **getCode failure:** throws, then succeeds, then stays cached.
+  - **challengeWindow failure:** returns 900 and is not cached; the next call reads 1800 and caches it.
+  - **Feasibility resolver:** 0 is cached and `readContract` is never called.
+  - **Concurrent callers:** they share one read.
+  - **`params.challengeWindow` parsing.**
+  - **Retry floor:** sandwiched book (blocked; the old minimum would have meant > 0.99 per No), unchanged book, a slightly worse book inside the slippage (the floor binds), a better book (the fresh minimum is above the floor), and partial pairs with no bids.
+- **Build.** `tsc -b` exits 0 and `npm run build` succeeds (main chunk 551.6 kB, 179.6 kB gzip). The main chunk holds the live API and RPC, no `127.0.0.1`/`localhost`, and no `function buyNo`.
+- **In-app browser, 375 px, anvil fork** (`evidence/fix-round-2/`):
+  - `00`: a real same-block sandwich of the dev wallet's Buy No step 2. Victim `sellYes` `0x5aa078bc…` (minAusdOut 5.040838) **reverted**. Output: `browser-sandwich-step2-reverted.json`.
+  - `01`: the recovery box on the sandwiched book. **"Sell 15.14 Yes for ≥ 5.04 AUSD" is disabled**, with the warning "Today's bids would pay only 0.01 AUSD for the 15.14 Yes, so each No would cost 1.000 AUSD, above your original worst case of 0.67…". Merge back stays enabled, and the main Buy No button is disabled.
+  - `02`: a fork-only bid of 100 YES @ 0.34 was restored. The retry is offered at the 5.04 floor, with the note "each No costs at most 0.67 AUSD".
+  - `03`: the retry filled **15.14 No for 10.00 AUSD**. The on-chain `sellYes` args show `minAusdOut = 5040838`, which is exactly the original plan's minimum (`browser-retry-floor.json`).
+  - `04`: capability retry.
+    1. The fork RPC was stopped and the page freshly loaded. How it works still said "15-minute challenge window" (the deployments fallback), and Markets showed "HTTP request failed".
+    2. The RPC was restarted.
+    3. On the next 60 s refresh, with no reload, the ladder came back with Kuru book prices from `Zap.canonicalMarket` (`browser-caps-retry.json`).
+    4. Because the browser pane was hidden, `document.visibilityState` was overridden to `visible` for this inspection only, so the visibility-gated refresh would run.
+- **Live smoke (read-only), 375 px** (`05`):
+  - The page serves `index-sVKTc5nx.js`.
+  - The RCSS 2026-10-08 ladder loads with all 4 strikes and the snapshot's Fair and Polymarket values, with no horizontal overflow.
+  - How it works shows "15-minute" (en) and "15 分鐘" (繁中), and the new "Who settles" copy.
+  - The ≥30 °C Buy No sheet shows the two-step preview (mint 15.14, sell for ≥ 5.04). The existing burner there is held at "Get test funds first", and that button was not pressed.
+  - The console shows no errors.
+- **Cleanup and key scan.** anvil :19601 and vite :5190 were started by me and are stopped. A key scan of `apps/web` (excluding `node_modules`) against `~/.config/isotherm/*` found 0 hits.
+
+## Note for the docs owner
+This deploy also shipped the "Who settles" copy in `src/components/HowItWorks.tsx` (en + 繁中), exactly as the docs worker had left it in the working tree at build time. If that copy changes again, Pages needs another `npm run build` and deploy.

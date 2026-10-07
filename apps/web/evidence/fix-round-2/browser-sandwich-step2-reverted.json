@@ -1,0 +1,64 @@
+{
+  "note": "anvil fork; deployed v1 contracts + real Kuru book; in-browser dev wallet is the victim",
+  "series": {
+    "station": "RCSS",
+    "date": 20261008,
+    "strike": 30,
+    "seriesId": "0xb020bdde35a3212b69e836e2f78f56b4560e75bc74eb7a6b790342f58de00064",
+    "market": "0x702A7a87EDb18D733c624bF766020F3b66eb36DC"
+  },
+  "bidsBefore": [
+    {
+      "price": 0.34,
+      "size": 100
+    }
+  ],
+  "victim": {
+    "address": "0xDC679622d7F75aA8Cf7b8AF64D6906C43cf5D96E",
+    "sellYes": "0x5aa078bcc52d79cc5918a6ce1b938ec10a5dc49bc5403b66f3ae5dd7dfad07c1",
+    "yesIn": "15143713",
+    "minAusdOut": "5040838",
+    "status": "reverted",
+    "gasUsed": "468831"
+  },
+  "attacker": {
+    "address": "0x02aDC1A8358Dc5B1374bAbC6496140BcBDb57a30",
+    "marketSell": {
+      "hash": "0x6a1fb1d28a4fe5f6716837cf78848f59eb50e942d7be1c392d92a4ebbf0ab5fd",
+      "status": "success"
+    },
+    "dustBid": {
+      "hash": "0xd0276c52a6d725cc00fd9b8166c95d64538a9c616b9e3e4e66b70a18f50f1ff8",
+      "status": "success",
+      "size": "7571856",
+      "price": 0.001
+    }
+  },
+  "block": {
+    "number": "68917493",
+    "order": [
+      {
+        "hash": "0x6a1fb1d28a4fe5f6716837cf78848f59eb50e942d7be1c392d92a4ebbf0ab5fd",
+        "from": "0x02adc1a8358dc5b1374babc6496140bcbdb57a30",
+        "role": "attacker market sell"
+      },
+      {
+        "hash": "0xd0276c52a6d725cc00fd9b8166c95d64538a9c616b9e3e4e66b70a18f50f1ff8",
+        "from": "0x02adc1a8358dc5b1374babc6496140bcbdb57a30",
+        "role": "attacker dust bid 0.001"
+      },
+      {
+        "hash": "0x5aa078bcc52d79cc5918a6ce1b938ec10a5dc49bc5403b66f3ae5dd7dfad07c1",
+        "from": "0xdc679622d7f75aa8cf7b8af64d6906c43cf5d96e",
+        "role": "victim sellYes"
+      }
+    ]
+  },
+  "bidsAfter": [
+    {
+      "price": 0.001,
+      "size": 7.571856
+    }
+  ],
+  "verdict": "PROTECTED: the sandwiched step 2 reverted (Slippage); the victim keeps complete pairs"
+}

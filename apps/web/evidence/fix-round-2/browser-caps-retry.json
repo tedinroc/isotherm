@@ -1,0 +1,13 @@
+{
+  "note": "in-app browser at 375 px against an anvil fork on 127.0.0.1:19601; the RPC was stopped, the page reloaded, then the RPC restarted",
+  "rpcDown_freshLoad_08:06:45Z": {
+    "howItWorks": "After a report there is a 15-minute challenge window ... (DEFAULT_CHALLENGE_WINDOW = deployments/testnet.json params.challengeWindow = 900; before the fix the fallback was 0, which dropped the window sentence)",
+    "markets": "Something went wrong: HTTP request failed. (capabilities() threw; nothing was cached)"
+  },
+  "rpcBack_08:07:08Z": "fork restarted on the same port; the browser pane was hidden, so document.visibilityState was overridden to 'visible' (inspection only) to let the app's visibility-gated 60 s refresh run",
+  "afterNextRefresh_08:09:35Z": {
+    "markets": "RCSS 2026-10-08 ladder, 4 strikes with Kuru book prices (>=30: Yes 0.47 / No 0.66) from Zap.canonicalMarket, no page reload",
+    "beforeTheFix": "getCode(...).catch(() => '0x') cached canonicalRegistry=false for the session, so every strike would have had market=null and no prices until a full reload"
+  },
+  "screenshot": "04-fork-rpc-back-caps-retried-books-loaded.jpg"
+}

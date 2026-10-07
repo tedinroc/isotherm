@@ -74,6 +74,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const log = useCallback((a: Omit<Activity, 't'>) => setActivity((l) => [{ ...a, t: Date.now() }, ...l].slice(0, 30)), []);
 
   const refreshLadders = useCallback(async () => {
+    // Cached once every capability read has succeeded; until then each refresh asks the chain again (and loadLadders
+    // below shares this in-flight read rather than starting its own).
+    capabilities()
+      .then(setCaps)
+      .catch(() => undefined);
     try {
       const v = await loadLadders(snapRef.current);
       laddersRef.current = v;

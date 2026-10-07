@@ -5,6 +5,8 @@ import { DEPLOYMENTS } from './deployments';
 export interface Env {
   ISO_KV: KVNamespace;
   RELAYER: DurableObjectNamespace;
+  /** wrangler.toml [version_metadata]: this Worker version's id and upload (deploy) time, shown in /api/health. */
+  CF_VERSION_METADATA?: WorkerVersionMetadata;
   // vars (wrangler.toml [vars]); all optional, defaults below
   RPC_URL?: string;
   CHAIN_ID?: string;

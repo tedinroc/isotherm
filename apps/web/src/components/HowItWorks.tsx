@@ -1,6 +1,7 @@
 import { useI18n } from '../i18n';
 import { useApp } from '../state';
 import { DEPLOYMENTS } from '../lib/deployments';
+import { DEFAULT_CHALLENGE_WINDOW } from '../lib/data';
 import { addrUrl } from '../config';
 import { short } from '../lib/format';
 
@@ -40,7 +41,8 @@ function content(lang: 'en' | 'zh', challengeSeconds: number): Section[] {
       {
         h: '誰來結算',
         p: [
-          'Chainlink CRE 工作流程讀兩個公開資料來源（Iowa Environmental Mesonet、aviationweather.gov；Ogimet 為備援），套用上面的規則，再把結果連同營運者的 attestation 簽章送上鏈。目前用的是 CRE 模擬 forwarder，它不檢查發送者，所以簽章是必要的。到目前為止，真實日子的結算都是在本機執行 CRE 模擬器（從 MIT 授權的 CRE CLI 原始碼編譯、只移除登入檢查）或 SDK 測試工具，送到先前的可行性驗證合約，而不是由已部署的 Chainlink DON 執行。',
+          'Chainlink CRE 工作流程讀兩個公開資料來源（Iowa Environmental Mesonet、aviationweather.gov；Ogimet 為備援），套用上面的規則，再把結果連同營運者的 attestation 簽章送上鏈。目前經由 CRE 模擬 forwarder 送出，它不檢查發送者，所以簽章是必要的。',
+          '結算在我們自己的機器上執行，不是由已部署的 Chainlink DON 執行：CRE 登入有效時用官方 CRE 模擬器，否則改用標明為備援的 SDK 測試工具（同一條規則、同一個簽章，但不是 CRE 引擎）。每次執行的證據紀錄都寫明用了哪一條路徑。v1 之前的兩個真實日子是在先前的可行性驗證合約上結算的：一次用從 MIT 授權 CRE CLI 原始碼編譯、只移除登入檢查的模擬器，一次用 SDK 測試工具。',
           challengeSeconds > 0
             ? `結果上鏈後有 ${win}挑戰期：期間守護者只能把結果改成「作廢」，不能改成別的溫度；挑戰期只適用於回報的溫度，回報「作廢」會立即生效。挑戰期結束後即可贖回。`
             : '結果上鏈後即可贖回。',
@@ -84,7 +86,8 @@ function content(lang: 'en' | 'zh', challengeSeconds: number): Section[] {
     {
       h: 'Who settles',
       p: [
-        'A Chainlink CRE workflow reads two public archives (Iowa Environmental Mesonet and aviationweather.gov, with Ogimet as fallback), applies the rule, and reports the result on-chain with an operator attestation signature. Today it runs through the CRE simulation forwarder, which does not check who calls it — that is why the signature is mandatory. So far, real days have been settled by the CRE simulator run on our own machine (built from the MIT CRE CLI source with only its login check removed) or an SDK test harness, against the earlier feasibility contracts — not by a deployed Chainlink DON.',
+        'A Chainlink CRE workflow reads two public archives (Iowa Environmental Mesonet and aviationweather.gov, with Ogimet as fallback), applies the rule, and reports the result on-chain with an operator attestation signature. For now it goes through the CRE simulation forwarder, which does not check who calls it — that is why the signature is mandatory.',
+        'Settlement runs on our own machine, not on a deployed Chainlink DON: through the official CRE simulator when our CRE login is active, otherwise through a labelled SDK test-harness fallback (same rule and signature, not the CRE engine). Each run’s evidence record names the path it used. Before v1, two real days were settled on our earlier feasibility contracts: one by a simulator built from the MIT CRE CLI source with only its login check removed, one by the SDK harness.',
         challengeSeconds > 0
           ? `After a report there is a ${win} challenge window in which the guardian can only turn the result into a void (never into a different temperature); it applies to a reported temperature, while a reported void is final at once. Redemption opens when it ends.`
           : 'Redemption opens as soon as the result is on-chain.',
@@ -114,7 +117,7 @@ function content(lang: 'en' | 'zh', challengeSeconds: number): Section[] {
 export function HowItWorks() {
   const { t, lang } = useI18n();
   const { caps } = useApp();
-  const sections = content(lang, caps?.challengeWindow ?? 0);
+  const sections = content(lang, caps?.challengeWindow ?? DEFAULT_CHALLENGE_WINDOW);
   return (
     <div className="screen">
       <section className="card how">

@@ -7,6 +7,11 @@ workers_dev = true
 [triggers]
 crons = ["* * * * *"]
 
+# Worker version id + upload (deploy) time, reported in /api/health `version` next to the build id
+# (src/generated/build.json, written by scripts/build-info.mjs during `npm run prepare-data`).
+[version_metadata]
+binding = "CF_VERSION_METADATA"
+
 [[durable_objects.bindings]]
 name = "RELAYER"
 class_name = "RelayerDO"
@@ -38,22 +43,26 @@ RELAY_ALLOW_PERMIT = "0"
 GAS_MULTIPLIER_PCT = "108"
 # Drip + relay POSTs per client network per minute, enforced in the Durable Object before any RPC work (exact).
 POST_LIMIT_PER_MIN = "30"
-# ---- MON budget (testnet MON is scarce). Sized by `node scripts/size-caps.mjs` from the relayer's LIVE balance:
-#   2026-10-07T07:00Z: balance 0.599171502 MON, gas 102 gwei, reserve 0.1 -> spendable 0.499 MON
+# ---- MON budget (testnet MON is scarce). Sized by `node scripts/size-caps.mjs` (default --days 7) from the relayer's
+# LIVE balance, spread over a HORIZON of 7 UTC days so one worst-case day can never take the whole balance:
+#   2026-10-07T07:59Z: balance 4.599171502 MON, gas 102 gwei, reserve 0.1 -> spendable 4.499 MON; / 7 days -> 0.6427 MON/day
 #   dripCost = 0.15 + 99,752 gas x 102 gwei = 0.1602; relayCost = 335,000 gas x 102 gwei = 0.0342 (fork-measured
-#   limit for a first-time holder: 334,228). DRIP_DAILY_CAP = floor(0.499 x 0.65 / 0.1602) = 2;
-#   RELAY_DAILY_CAP = floor((0.499 - 2 x 0.1602) / 0.0342) = 5; worst-case UTC day = 0.491 MON <= 0.499 spendable.
+#   limit for a first-time holder: 334,228). DRIP_DAILY_CAP = floor(0.6427 x 0.65 / 0.1602) = 2;
+#   RELAY_DAILY_CAP = floor((0.6427 - 2 x 0.1602) / 0.0342) = 9; worst-case UTC day = 0.628 MON <= 0.6427 per day,
+#   so 7 consecutive worst-case days (4.395 MON) fit in the 4.499 spendable: UTC days Oct 7-13 are covered even at
+#   maximum use; top up and re-size before 2026-10-14.
 #   Per network (IPv4 / IPv6 /64): at most half a day's drips and relays.
 # Drips and relays never spend below RELAYER_MIN_MON (the reserve; only the AUSD-float cron refill may use it).
-# After funding the relayer, re-run the script, paste its output here and redeploy (formula: apps/api/README.md).
+# After funding the relayer (or when the time to the next top-up changes), re-run the script with --days set to that
+# horizon, paste its output here and redeploy (formula: apps/api/README.md).
 RELAYER_MIN_MON = "0.1"
 DRIP_GAS_MON = "0.011"
 RELAY_COST_MON = "0.035"
 DRIP_DAILY_CAP = "2"
 DRIP_PER_IP_PER_DAY = "1"
-RELAY_DAILY_CAP = "5"
-RELAY_PER_IP_PER_DAY = "2"
-RELAY_PER_ADDRESS_PER_DAY = "2"
+RELAY_DAILY_CAP = "9"
+RELAY_PER_IP_PER_DAY = "4"
+RELAY_PER_ADDRESS_PER_DAY = "4"
 STATS_SCAN_MAX_WINDOWS = "20"
 REAL_STATIONS = "RCSS,RJTT,ZGSZ,RKSI,VHHH"
 # Wallets excluded from the public "non-maker" counts (deployments/testnet.json roles are added automatically).

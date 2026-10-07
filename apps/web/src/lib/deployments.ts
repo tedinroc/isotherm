@@ -20,6 +20,8 @@ export interface Deployments {
   makers: Address[];
   team: Address[];
   deployBlock: bigint | null;
+  /** Resolver challenge window in seconds as deployed (`params.challengeWindow`, 900 on v1); null when not recorded. */
+  challengeWindow: number | null;
   /** seriesId -> canonical Kuru market, when the deployment file records them. */
   markets: Record<string, Address>;
 }
@@ -103,6 +105,14 @@ export function normalizeDeployments(input: unknown): Deployments {
       }
     }
   }
+  let challengeWindow: number | null = null;
+  for (const f of flat) {
+    // exact key only: `maxChallengeWindow` is the resolver's upper bound, not the deployed value
+    if (/^challengeWindow(Seconds)?$/i.test(f.key) && challengeWindow === null) {
+      const n = typeof f.value === 'number' || typeof f.value === 'string' ? Number(f.value) : NaN;
+      if (Number.isFinite(n) && n >= 0) challengeWindow = n;
+    }
+  }
   const markets: Record<string, Address> = {};
   for (const f of flat) {
     // e.g. { markets: { "0x<seriesId>": "0x<market>" } } or [{ seriesId, market }]
@@ -137,6 +147,7 @@ export function normalizeDeployments(input: unknown): Deployments {
     makers,
     team,
     deployBlock,
+    challengeWindow,
     markets,
   };
 }

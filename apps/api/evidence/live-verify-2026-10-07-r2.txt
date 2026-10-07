@@ -1,0 +1,47 @@
+# Live verification of Worker version ea73ccfa-8f6d-41f7-b1fd-b52f015b050b (verifier round 2, issue 1), 2026-10-07T08:03:19Z
+# Read-only plus refused requests: no drip or relay was broadcast (relayer MON before/after, dripsTotal/relayedTotal below).
+
+## relayer MON before the deploy (eth_getBalance, read-only; 07:59Z)
+4.599171502
+## /api/health before the deploy (Worker ce5bfc02)
+before 1.0.0 3 0 {'reserveMon': '0.1', 'dripDailyCap': 2, 'dripPerIpPerDay': 1, 'dripAddressCooldownH': 24, 'relayDailyCap': 5, 'relayPerAddressPerDay': 2, 'relayPerIpPerDay': 2, 'dripsToday': 3, 'relaysToday': 0}
+
+## GET /api/health (Origin: https://isotherm.pages.dev)
+HTTP/2 200 
+access-control-allow-origin: https://isotherm.pages.dev
+cache-control: no-store
+{"ok":true,"relayer":"0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f","chainId":10143,"head":"68917972","monBalance":"4.599171502","ausdFloat":"57000","dripEnabled":true,"dripReady":false,"dripMon":"0.15","dripAusd":"1000","relayEnabled":true,"relayReady":true,"relayModes":["authorization"],"relayMinAusd":"1","relayMaxAusd":"500","limits":{"reserveMon":"0.1","dripDailyCap":2,"dripPerIpPerDay":1,"dripAddressCooldownH":24,"relayDailyCap":9,"relayPerAddressPerDay":4,"relayPerIpPerDay":4,"dripsToday":3,"relaysToday":0},"deployments":"deployments/testnet.json","vault":"0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39","zap":"0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0","resolver":"0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B","dripsTotal":3,"relayedTotal":0,"version":{"app":"1.0.0","build":"a41d37d-dirty.84a823aac98e","commit":"a41d37d","dirty":true,"builtAt":"2026-10-07T08:02:11.033Z","workerVersionId":"ea73ccfa-8f6d-41f7-b1fd-b52f015b050b","deployedAt":"2026-10-07T08:02:18.233Z"},"snapshotReceivedAt":"2026-10-07T08:02:54.125Z","statsUpdatedAt":"2026-10-07T08:02:47.794Z","statsLagBlocks":0}
+
+## GET /api (root): version
+{"app": "1.0.0", "build": "a41d37d-dirty.84a823aac98e", "commit": "a41d37d", "dirty": true, "builtAt": "2026-10-07T08:02:11.033Z", "workerVersionId": "ea73ccfa-8f6d-41f7-b1fd-b52f015b050b", "deployedAt": "2026-10-07T08:02:18.233Z"}
+
+## CORS preflight OPTIONS /api/relay/mint from https://isotherm.pages.dev
+HTTP/2 204 
+access-control-allow-origin: https://isotherm.pages.dev
+## CORS from a look-alike origin https://isotherm.pages.dev.evil.com (no allow-origin expected)
+HTTP/2 204 
+
+## GET /api/snapshot: fairSource / guardSource per strike (maker post after the deploy)
+receivedAt 2026-10-07T08:02:54.125Z
+{"station": "RCSS", "date": 20261008, "k": 28, "fair": 0.9604, "fairSource": "polymarket", "pmImplied": 0.9604, "model": 0.9633, "guardSource": "v0"}
+{"station": "RCSS", "date": 20261008, "k": 29, "fair": 0.8541, "fairSource": "polymarket", "pmImplied": 0.8541, "model": 0.8693, "guardSource": "v0"}
+{"station": "RCSS", "date": 20261008, "k": 30, "fair": 0.4097, "fairSource": "polymarket", "pmImplied": 0.4097, "model": 0.5952, "guardSource": "v0"}
+{"station": "RCSS", "date": 20261008, "k": 31, "fair": 0.0667, "fairSource": "polymarket", "pmImplied": 0.0667, "model": 0.2251, "guardSource": "v0"}
+
+## Refused requests (each is rejected before anything is signed or sent)
+$ POST /api/drip {"address":"0x1234"}
+{"ok":false,"error":"bad address"} [HTTP 400]
+$ POST /api/drip {"address":"0x0000000000000000000000000000000000000001"}
+{"ok":false,"error":"bad address (zero / precompile range)"} [HTTP 400]
+$ POST /api/relay/mint {"mode":"authorization","chainId":10143,"seriesId":"0xabababababababababababababababababababababababababababababababab","amount":"1","holder":"0x000000000000000000000000000000000000dEaD","validAfter":"0","validBefore":"9999999999","salt":"0x1111111111111111111111111111111111111111111111111111111111111111","signature":"0x2222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222"}
+{"ok":false,"error":"amount must be between 1 and 500 AUSD"} [HTTP 400]
+$ POST /api/relay/mint {"mode":"permit","chainId":10143,"seriesId":"0xabababababababababababababababababababababababababababababababab","amount":"5000000","holder":"0x000000000000000000000000000000000000dEaD","deadline":"9999999999","signature":"0x2222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222"}
+{"ok":false,"error":"permit-mode relays are disabled for this vault; sign an EIP-3009 authorization (mode \"authorization\")"} [HTTP 400]
+$ POST /api/relay/mint {"mode":"authorization","chainId":10143,"seriesId":"0xabababababababababababababababababababababababababababababababab","amount":"5000000","holder":"0x000000000000000000000000000000000000dEaD","validAfter":"0","validBefore":"9999999999","salt":"0x1111111111111111111111111111111111111111111111111111111111111111","signature":"0x2222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222"}
+{"ok":false,"error":"unknown series"} [HTTP 400]
+$ POST /api/relay/mint {"mode":"authorization","chainId":1,"seriesId":"0x00","amount":"5000000","holder":"0x000000000000000000000000000000000000dEaD","signature":"0x00"}
+{"ok":false,"error":"wrong chain 1"} [HTTP 400]
+
+## after: relayer MON (eth_getBalance) and counters (health memo is 5 s)
+4.599171502
+{"monBalance": "4.599171502", "dripsTotal": 3, "relayedTotal": 0} {"dripsToday": 3, "relaysToday": 0}

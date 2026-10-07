@@ -59,30 +59,56 @@ export interface Capabilities {
   canonicalRegistry: boolean; // v1 Zap: canonicalMarket(seriesId), min-out required
   mintWithAuthorization: boolean; // v1 vault: EIP-3009 relayed mint
   mintWithPermit: boolean;
-  challengeWindow: number; // seconds (0 on the feasibility resolver)
+  challengeWindow: number; // seconds (0 on the feasibility resolver, which has no window)
 }
 
+/**
+ * Challenge window to show while the resolver's own value has not been read: the deployed value recorded in
+ * deployments/testnet.json (`params.challengeWindow`, 900 s on v1), never 0 (which would read as "no window").
+ */
+export const DEFAULT_CHALLENGE_WINDOW = DEPLOYMENTS.challengeWindow ?? 0;
+
+// Only a complete, successful read is cached. A failed read is never frozen into the cache: getCode failures throw
+// (the caller's next refresh asks again), and a failed challengeWindow read falls back to DEFAULT_CHALLENGE_WINDOW
+// for this call only. Before this, an RPC hiccup on first load cached "no canonical registry" / "window 0" for the
+// whole session.
 let capsCache: Capabilities | null = null;
-export async function capabilities(): Promise<Capabilities> {
-  if (capsCache) return capsCache;
-  const [zapCode, vaultCode] = await Promise.all([
-    pub.getCode({ address: DEPLOYMENTS.zap }).catch(() => '0x'),
-    pub.getCode({ address: DEPLOYMENTS.vault }).catch(() => '0x'),
+let capsInflight: Promise<Capabilities> | null = null;
+export function capabilities(): Promise<Capabilities> {
+  if (capsCache) return Promise.resolve(capsCache);
+  capsInflight ??= readCapabilities().finally(() => {
+    capsInflight = null;
+  });
+  return capsInflight;
+}
+
+async function readCapabilities(): Promise<Capabilities> {
+  // No .catch here: a transport error must not read as "this contract lacks the function".
+  const [zapCode, vaultCode, resolverCode] = await Promise.all([
+    pub.getCode({ address: DEPLOYMENTS.zap }),
+    pub.getCode({ address: DEPLOYMENTS.vault }),
+    pub.getCode({ address: DEPLOYMENTS.resolver }),
   ]);
-  let challengeWindow = 0;
-  try {
-    challengeWindow = Number(await pub.readContract({ address: DEPLOYMENTS.resolver, abi: resolverAbi, functionName: 'challengeWindow' }));
-  } catch {
-    /* feasibility resolver: no challenge window */
+  let complete = true;
+  let challengeWindow = 0; // feasibility resolver: the function does not exist, so 0 is the real answer
+  if (bytecodeHasSelector(resolverCode ?? '0x', SELECTORS.challengeWindow)) {
+    try {
+      challengeWindow = Number(await pub.readContract({ address: DEPLOYMENTS.resolver, abi: resolverAbi, functionName: 'challengeWindow' }));
+    } catch {
+      challengeWindow = DEFAULT_CHALLENGE_WINDOW;
+      complete = false;
+    }
   }
-  capsCache = {
+  const caps: Capabilities = {
     canonicalRegistry: bytecodeHasSelector(zapCode ?? '0x', SELECTORS.canonicalMarket),
     mintWithAuthorization: bytecodeHasSelector(vaultCode ?? '0x', SELECTORS.mintSetWithAuthorization),
     mintWithPermit: bytecodeHasSelector(vaultCode ?? '0x', SELECTORS.mintSetWithPermit),
     challengeWindow,
   };
-  return capsCache;
+  if (complete) capsCache = caps;
+  return caps;
 }
+
 
 /** Chain clock (anvil forks can be ahead of the wall clock after time travel). */
 let clockOffset = 0;

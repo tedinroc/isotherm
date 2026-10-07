@@ -14,8 +14,13 @@ export interface SnapshotStrike {
   market: Address | null;
   marketBlock: number | null;
   fair: number | null;
+  /** Where `fair` came from (packages/forecast FairSource): "polymarket", "certain", "fallback-v0",
+   *  "fallback-intraday" or "none"; null when the maker did not say. */
+  fairSource: string | null;
   pmImplied: number | null;
   model: number | null;
+  /** Which guardrail produced `model`: "v0", "v0-truncated", "intraday" or "certain"; null when none / not reported. */
+  guardSource: string | null;
   bid: number | null;
   ask: number | null;
   /** YES size of the maker's bid / ask as placed, and what is still resting on the book (null = not reported). */
@@ -82,6 +87,12 @@ const pickAddr = (o: Record<string, unknown>, keys: string[]): Address | null =>
   for (const k of keys) if (typeof o[k] === 'string' && isAddress(o[k] as string)) return getAddress(o[k] as string);
   return null;
 };
+/** A provenance label such as "fallback-v0": a short lowercase token, so it is safe to show or use as a CSS class;
+ *  anything else (or a future label in another shape) is dropped to null rather than passed through. */
+const label = (o: Record<string, unknown>, keys: string[]): string | null => {
+  const v = pickStr(o, keys);
+  return v !== null && /^[a-z0-9][a-z0-9-]{0,39}$/.test(v) ? v : null;
+};
 const prob = (x: number | null) => (x === null ? null : x > 1 && x <= 100 ? x / 100 : x >= 0 && x <= 1 ? x : null);
 const size = (x: number | null) => (x === null || x < 0 || x > 1e12 ? null : x);
 
@@ -140,8 +151,10 @@ export function normalizeSnapshot(input: unknown): Snapshot {
         market: pickAddr(so, ['market', 'book', 'kuruMarket']),
         marketBlock: pickNum(so, ['marketBlock', 'createdBlock']),
         fair: prob(pickNum(so, ['fair', 'fairValue', 'fv', 'mid', 'quoteMid'])),
+        fairSource: label(so, ['fairSource']),
         pmImplied: prob(pickNum(so, ['pmImplied', 'polymarket', 'pm', 'pmProb', 'polymarketImplied'])),
         model: prob(pickNum(so, ['model', 'guard', 'v0', 'modelProb', 'forecast']) ?? (typeof v0k === 'number' ? v0k : null)),
+        guardSource: label(so, ['guardSource']),
         bid: prob(pickNum(so, ['bid', 'quoteBid'])),
         ask: prob(pickNum(so, ['ask', 'quoteAsk'])),
         bidSize: size(pickNum(so, ['bidSize']) ?? pickNum(quote, ['bidSize'])),
