@@ -9,6 +9,7 @@ import { IconExternal, IconThermo } from './icons';
 import { TradeSheet } from './TradeSheet';
 import { useWallet } from '../wallet/wallet';
 import { useUi } from '../ui';
+import { OpenMeteoCredit } from './DataCredit';
 
 export function useNow(ms = 1000) {
   const [now, setNow] = useState(chainNow());
@@ -210,6 +211,7 @@ function LadderCard({ l, now, booksAt, lang, onPick }: { l: LadderView; now: num
           {t('mk.updated')} {new Date(booksAt).toLocaleTimeString(lang === 'zh' ? 'zh-TW' : 'en-US', { hour12: false })}
         </p>
       )}
+      <OpenMeteoCredit lang={lang} />
     </section>
   );
 }

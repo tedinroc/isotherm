@@ -2,6 +2,7 @@
 // Minimal Kuru v1 interfaces, derived from github.com/Kuru-Labs/Kuru-contracts-dex-public
 // (contracts/interfaces/*.sol, commit 2060bb2, GPL-2.0-or-later). Every selector below was checked
 // against the bytecode of the live Monad-testnet implementations (see spikes/kuru/RESULT.md).
+// Full license text: LICENSES/GPL-2.0-or-later.txt at the repository root.
 pragma solidity ^0.8.20;
 
 /// @dev OrderBookType: 0 = NO_NATIVE (ERC20/ERC20), 1 = NATIVE_IN_BASE, 2 = NATIVE_IN_QUOTE.

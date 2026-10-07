@@ -160,7 +160,7 @@ needs MFA approval.
   plugin no longer calls `buyNo` at all; if a redeployed Zap gains `minNoOut`, switching Buy NO back to one
   transaction is a deliberate code change, not automatic.
 
-## Evidence: every command in the real mm 7.0.0 host
+## Evidence: every command in the real mm 7.0.0 host (local stand-in for MetaMask's backend, no signed-in session yet)
 
 **How the harness works.** `harness/run-all.sh` runs:
 - the real `@metamask/agent-wallet@7.0.0` binary;

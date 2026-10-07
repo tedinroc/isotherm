@@ -24,7 +24,7 @@
   "resolver": "0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B",
   "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
   "kuruRouter": "0x7EFbE105Ca7415dE98F96622173458ac1c054630",
-  "source": "<repo>/deployments/testnet.json"
+  "source": "deployments/testnet.json"
  },
  "budget": {
   "day": "2026-10-07",

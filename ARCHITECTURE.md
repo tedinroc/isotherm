@@ -256,7 +256,7 @@ Admins can never move collateral. The contracts never hold or send MON, so Monad
 
 ## 10. Agent access (MetaMask Agent Wallet plugin)
 
-- An oclif user plugin for `mm` 7.x, loaded with `experimentalPlugins=true`. Each command declares `wallet-read` or `wallet-submit`; submissions go through `ctx.walletExecutor`, which signs locally and posts to MetaMask's policy service, which decides and broadcasts.
+- An oclif user plugin for `mm` 7.x, loaded with `experimentalPlugins=true`. Each command declares `wallet-read` or `wallet-submit`; submissions go through `ctx.walletExecutor`, which signs locally and posts to MetaMask's policy service, which decides and broadcasts. That signed-in path has not run yet: the plugin's evidence so far runs the real `mm` 7.0.0 binary against a local stand-in for MetaMask's backend (`harness/stub-backend.mjs`, with an unsigned test session) on an anvil fork (`packages/mm-plugin/README.md`).
 - MetaMask's hosted RPC gateway rejects chain 10143 (`HTTP 400 {"error":"Invalid chainId"}`), while its signing service lists 10143 with `guardSupported: true`. The setup script adds a `customEvmChains` entry for 10143; read commands fall back to a direct RPC.
 - Installing by npm name uninstalls itself in 7.0.0, and a `file:` install fails with `PLUGIN_INVALID_BASE`; install from a tarball URL.
 

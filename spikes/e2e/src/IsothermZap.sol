@@ -1,4 +1,9 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-2.0-or-later
+// The inline IKuruRouterView and IKuruOrderBookTaker declarations below are the same declarations as in
+// spikes/kuru/src/interfaces/IKuru.sol, derived from github.com/Kuru-Labs/Kuru-contracts-dex-public
+// (contracts/interfaces/IRouter.sol + IOrderBook.sol, commit 2060bb2, GPL-2.0-or-later), so this file is labelled
+// GPL-2.0-or-later as a whole. Full license text: LICENSES/GPL-2.0-or-later.txt at the repository root.
+// Relabelled from "MIT" on 2026-10-07; only this header changed (feasibility-build evidence, otherwise unchanged).
 pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";

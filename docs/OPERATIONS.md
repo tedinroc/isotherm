@@ -101,11 +101,12 @@ curl -s <former API host>/api/health   # snapshotReceivedAt, relayer MON, AUSD f
 
 **Wrong result: challenge first, then pause.** `pause()` neither stops nor extends the 900 s challenge clock, and the vault does not follow the Resolver's pause, so a guardian who pauses instead of challenging lets a false *Settled* result pay out in full (`test/security/v1/RESULT.md`, N6). A reported *Void* is final at once and cannot be challenged (N2). `xyz.isotherm.challenge-watch` now watches the window every 120 s, but it runs on this Mac next to the attester key, so it catches a wrong report, not a compromise of this Mac; a watcher on a separate machine holding only the guardian key is still to do.
 
+- **Key handling for these commands.** Do not pass a key as `--private-key "$(cat …)"`: the raw key then shows up in the process list (`ps`) while cast runs. Import the guardian key once into an encrypted Foundry keystore, `cast wallet import isotherm-guardian --interactive` (paste the key at the prompt and set a password), then use `--account isotherm-guardian`, which asks for that password. Without a keystore, `--interactive` prompts for the raw key instead.
 - **Guardian pause** (it held 0.05 MON at 2026-10-07 07:55 UTC; pause costs ≈30k gas). Pausing the Resolver blocks reports; pausing the vault blocks mints:
-  `cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B "pause()" --private-key "$(cat ~/.config/isotherm/guardian.key)" --rpc-url https://testnet-rpc.monad.xyz`
+  `cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B "pause()" --account isotherm-guardian --rpc-url https://testnet-rpc.monad.xyz`
   Use the same call with the vault address `0xae36…7B39`. Only the owner (deployer) can `unpause()`.
 - **Guardian challenge** of a wrong settlement, within 900 s of `resolvedAt`, turns the result to Void (0.5/0.5); about 44k gas:
-  `cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B "challenge(bytes4,uint32,bytes32)" 0x52435353 20261008 <reasonHash> --private-key "$(cat ~/.config/isotherm/guardian.key)" --rpc-url https://testnet-rpc.monad.xyz`
+  `cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B "challenge(bytes4,uint32,bytes32)" 0x52435353 20261008 <reasonHash> --account isotherm-guardian --rpc-url https://testnet-rpc.monad.xyz`
 - Anyone can call `voidIfStale(0x52435353, 20261008)` after `staleAt` (dayEnd + 48 h = 2026-10-11 00:00 Taipei) if nothing settled it.
 
 ## 4. Funding routine (testnet MON is the bottleneck)

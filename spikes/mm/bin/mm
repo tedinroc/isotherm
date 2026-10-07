@@ -1,9 +1,10 @@
 #!/bin/sh
 # Isolated mm host for the Isotherm spike: never touches the real ~/.metamask or oclif data dir.
 SPIKE="$(cd "$(dirname "$0")/.." && pwd)"
+REAL_HOME="$HOME"   # captured before HOME is redirected, for the shared npm cache below
 export HOME="$SPIKE/.mmhome"
 export MM_TELEMETRY_DISABLED=1
 export DO_NOT_TRACK=1
 export NODE_OPTIONS="--no-deprecation ${NODE_OPTIONS:-}"
-export npm_config_cache="${ISO_NPM_CACHE:-~/.npm}"
+export npm_config_cache="${ISO_NPM_CACHE:-$REAL_HOME/.npm}"
 exec node "$SPIKE/node_modules/@metamask/agent-wallet/dist/index.js" "$@"

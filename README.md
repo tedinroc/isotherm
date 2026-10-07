@@ -19,8 +19,8 @@ Polymarket already trades daily high-temperature markets for dozens of cities, b
 | First live ladder | Taipei Songshan (RCSS), Thu 2026-10-08, strikes ≥ 28 / 29 / 30 / 31 °C, trading closes 17:30 Taipei. Opened 2026-10-07 13:55 Taipei by [`createLadder`](https://testnet.monadvision.com/tx/0x84e4689412a3467bc71ec6cacb48a5b9fa7062c5e5273c1762619bff2a5e93c7) |
 | Settlement of that ladder | From 02:05 Taipei on Oct 9 (2026-10-08 18:05 UTC), hourly, by a launchd job running the CRE workflow. The team logged in to CRE on 2026-10-07, so the job now runs the unmodified CRE CLI (`cre workflow simulate --broadcast`); its first official run against live testnet, at 08:05 UTC, found nothing due yet and sent no report. If the CRE session lapses, the job falls back to the labelled SDK-harness path (same handler and attestation, not the CRE engine), and each run's evidence record names the path. [docs/OPERATIONS.md §6](docs/OPERATIONS.md#6-settlement-not-run-by-the-maker) |
 | Contracts (v1, Sourcify `exact_match`) | [table below](#contracts-and-testnet-addresses) |
-| Demo video (≤ 3 min) | `TODO(ship)` |
-| Pitch video (≤ 2 min) | `TODO(ship)` |
+| Demo video (≤ 3 min) | Not published yet; linked here once recorded |
+| Pitch video (≤ 2 min) | Not published yet; linked here once recorded |
 | MetaMask Agent Wallet plugin | `mm-plugin-isotherm` 0.1.0 in [`packages/mm-plugin`](packages/mm-plugin/README.md); not on npm yet |
 | Logo and video cover | [`brand/`](brand/) |
 
@@ -141,7 +141,7 @@ Source of truth: [`deployments/testnet.json`](deployments/testnet.json) (v1, dep
 | OutcomeToken implementation (every YES/NO is an EIP-1167 clone of it) | [`0x5EfaB33DDad0715b66f514Fe12d78Ca23f3e31fC`](https://testnet.monadvision.com/address/0x5EfaB33DDad0715b66f514Fe12d78Ca23f3e31fC) |
 | ForecastCommit (Monad mainnet 143) | not deployed |
 
-All four are Sourcify `exact_match` on `sourcify-api-monad.blockvision.org` and `sourcify.dev`. One later change: on 2026-10-07 the header comment of `src/interfaces/IKuru.sol` was relabelled from MIT to GPL-2.0-or-later (see [Third-party code](#third-party-code)). That changes only IsothermZap's CBOR metadata hash; the executable bytecode is identical (`docs/evidence/docs-pass/ikuru-header-bytecode-check.txt`). Sourcify keeps the verified copy with the earlier header.
+All four are Sourcify `exact_match` on `sourcify-api-monad.blockvision.org` and `sourcify.dev`. One later change: on 2026-10-07 the header comment of `src/interfaces/IKuru.sol` was relabelled from MIT to GPL-2.0-or-later (see [Third-party code](#third-party-code)). That changes only IsothermZap's CBOR metadata hash; the executable bytecode is identical (`docs/evidence/docs-pass/ikuru-header-bytecode-check.txt`; re-checked after a second comment-only header line pointing to the GPL text, `ikuru-header-bytecode-check-2.txt`). Sourcify keeps the verified copy with the earlier header.
 
 Deployed parameters: guardian challenge window 900 s, stale void 48 h after the local day ends, 24 h resume grace after an unpause, 7-day hard bound. Roles, each its own key: owner `0xb855…5c11` (still the deployer key; see Limitations), guardian `0x30C8E371719Ff00577284dd9c10587Fa89357d50`, attester `0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9`, operator `0x602dbf3937558B1d18d76315635fD5410089bd51`.
 
@@ -188,9 +188,9 @@ packages/cre-workflow/  Chainlink CRE settlement workflow (TypeScript → WASM)
 packages/mm-plugin/  MetaMask Agent Wallet (mm) plugin
 apps/web/            Phone PWA (burner dev wallet; Dynamic email login built, not yet deployed)
 apps/api/            Cloudflare Worker: drip / relayer, snapshot and stats API
-docs/                Operations runbook, go-live evidence
+docs/                Operations runbook, go-live evidence, docs fix log
 brand/               Logo (SVG + PNG) and the 16:9 video cover
-spikes/              Feasibility spikes from 2026-10-06, kept unchanged as evidence
+spikes/              Feasibility spikes from 2026-10-06, kept as evidence (later edits: license headers, one local path in spikes/mm/bin)
 ```
 
 Each package is its own npm project (no workspaces). Shared values come from `deployments/testnet.json` and `packages/abi/*.json`.
@@ -273,7 +273,7 @@ mm weather quote taipei --json
 | | What it is | Difference |
 |---|---|---|
 | Polymarket daily city highs | Off-chain-matched books, ~11 mutually exclusive buckets per city-day, optimistic-oracle resolution | Isotherm: "≥ k" strikes as ERC-20s, one onchain book per strike, redemption 15 minutes after the CRE report. Same station rule. Isotherm uses Polymarket's public prices as its quoting reference |
-| Kalshi international temperature contracts | CFTC-regulated venue; per our Oct 2026 research, contracts for Asian cities were self-certified in Dec 2025 but no events are listed (`TODO(verify)` before submission) | Regulated and centralized; Isotherm is a testnet prototype |
+| Kalshi temperature contracts | CFTC-regulated exchange with daily high-temperature markets, mainly for US cities | Regulated and centralized; Isotherm is a testnet prototype |
 | hunch-book (Metropolis) | General prediction markets that graduate from pools to Kuru books | Same complete-set mechanics. Isotherm is narrow: station-exact settlement with void rules, a weather fair-value maker, and a public fidelity table |
 | Covenant (Metropolis) | Vault-enforced market-maker mandates on Kuru | Market-making infrastructure, not a new asset class |
 
@@ -290,7 +290,7 @@ mm weather quote taipei --json
 - **Gas budget.** Monad bills the gas limit and testnet MON is scarce. Hourly re-quotes of all 6 strikes are projected at 9.84 MON per city-day; re-quoting only strikes that moved brings this to about 5.98 MON. The live maker caps itself at 1.2 MON per Taipei day (as of 2026-10-07).
 - **Data dependencies.** IEM, aviationweather.gov and Ogimet are free services with no SLA; aviationweather.gov keeps only recent days. Open-Meteo's free API is for non-commercial use only.
 - **Not audited.** No external audit. Two internal adversarial reviews; their findings and status are in [ARCHITECTURE.md §13](ARCHITECTURE.md#13-security-review-status).
-- **Regulation.** Event contracts are restricted in many jurisdictions, including Taiwan, where the team is based. Isotherm will not offer real-money markets to retail users without legal advice. The commercial path is calibrated data for traders and hedges sold through licensed partners.
+- **Regulation.** Event contracts are restricted in many jurisdictions. Isotherm will not offer real-money markets to retail users without legal advice. The commercial path is calibrated data for traders and hedges sold through licensed partners.
 
 ## Disclosures
 
@@ -311,9 +311,9 @@ All Isotherm code was written from 2026-10-06 onward, inside the Metropolis buil
 
 | Component | License | Where and how it is used |
 |---|---|---|
-| OpenZeppelin Contracts 5.7.0 | MIT | Vendored in `lib/openzeppelin-contracts` (trimmed to `contracts/`): ERC-20, EIP-2612, EIP-712, clones, SafeERC20, reentrancy guards |
+| OpenZeppelin Contracts 5.7.0 | MIT | Vendored in `lib/openzeppelin-contracts`: `contracts/` plus upstream's top-level files (LICENSE, README, changelog and tooling config); upstream's `test/`, `scripts/` and `docs/` folders are not included. Used: ERC-20, EIP-2612, EIP-712, clones, SafeERC20, reentrancy guards |
 | forge-std 1.17.0 | MIT or Apache-2.0 | `lib/forge-std`, tests and scripts only |
-| Kuru v1 contract interfaces and ABIs | GPL-2.0-or-later (Kuru-Labs/Kuru-contracts-dex-public, commit `2060bb2`, `contracts/interfaces/`) | `spikes/kuru/src/interfaces/IKuru.sol` is derived from Kuru's public interfaces. `src/interfaces/IKuru.sol` (the two declarations the Zap calls) was trimmed from that spike file, not written independently: the `verifiedMarket` return list is copied from it and the market-order signatures match Kuru's, with parameter names and comments rewritten. Both files are labelled GPL-2.0-or-later with attribution; `IsothermZap.sol` itself stays MIT and imports the interface. `@kuru-labs/kuru-sdk` 0.0.95 (ISC) was used in the spike for ABI reference |
+| Kuru v1 contract interfaces and ABIs | GPL-2.0-or-later (Kuru-Labs/Kuru-contracts-dex-public, commit `2060bb2`, `contracts/interfaces/`) | `spikes/kuru/src/interfaces/IKuru.sol` is derived from Kuru's public interfaces. `src/interfaces/IKuru.sol` (the two declarations the Zap calls) was trimmed from that spike file, not written independently: the `verifiedMarket` return list is copied from it and the market-order signatures match Kuru's, with parameter names and comments rewritten. Both files are labelled GPL-2.0-or-later with attribution. The feasibility Zap `spikes/e2e/src/IsothermZap.sol` declares the same two interfaces inline, so it is GPL-2.0-or-later as a whole. `src/IsothermZap.sol` itself is MIT and imports the interface, so the compiled and deployed IsothermZap is a combined work distributed under GPL-2.0-or-later terms (full source here and on Sourcify). License text: [`LICENSES/GPL-2.0-or-later.txt`](LICENSES/GPL-2.0-or-later.txt). `@kuru-labs/kuru-sdk` 0.0.95 (ISC) was used in the spike for ABI reference |
 | Chainlink CRE TypeScript SDK `@chainlink/cre-sdk` 1.23.0 | BUSL-1.1 (non-production use; changes to MIT on 2029-05-20) | npm dependency of the CRE workflow, not vendored |
 | Chainlink CRE CLI v1.37.0 | MIT | Build and simulate the workflow; installed from the checksum-verified GitHub release |
 | Chainlink KeystoneForwarder / MockKeystoneForwarder / IReceiver | MIT (chainlink-evm) | Called on chain; our `IReceiver` interface follows Chainlink's |
@@ -323,14 +323,16 @@ All Isotherm code was written from 2026-10-06 onward, inside the Metropolis buil
 
 ### Data sources and their terms
 
+Attribution and licences for the data committed in this repository (forecast results, backtests, evidence snapshots) are collected in [DATA-NOTICE.md](DATA-NOTICE.md).
+
 | Source | Used for | Terms |
 |---|---|---|
 | Iowa Environmental Mesonet (Iowa State University), ASOS METAR archive | Settlement source A, history | Free public archive; we cache responses and keep request rates low |
 | aviationweather.gov Data API (NOAA / NWS Aviation Weather Center) | Settlement source B (recent days only) | US government public data; observe the API's usage limits |
 | Ogimet | Settlement fallback C | Free service that asks for gentle use; at most one query per workflow run |
-| Open-Meteo | v0 forecast model (guardrail) | Data CC BY 4.0, "Weather data by Open-Meteo.com"; the free API is for non-commercial use, so a commercial product needs a paid plan |
+| Open-Meteo | v0 forecast model (guardrail), shown as "Model" in the app | [Weather data by Open-Meteo.com](https://open-meteo.com/), licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); Isotherm bias-corrects and combines the forecasts, so the values shown and the committed result files are modified. Web builds from this tree credit Open-Meteo next to the Model figures and in "How it works". The free API is for non-commercial use, so a commercial product needs a paid plan |
 | Polymarket public Gamma and CLOB price APIs | Reference fair value; fidelity check against resolved events | Read-only public market data, subject to Polymarket's Terms of Use. Isotherm sends no orders to Polymarket and is not affiliated with it |
 
 ## License
 
-MIT, see [LICENSE](LICENSE). Files derived from Kuru's public contracts (`spikes/kuru/src/interfaces/IKuru.sol`, `src/interfaces/IKuru.sol`) carry GPL-2.0-or-later headers, and third-party code keeps its own license.
+MIT, see [LICENSE](LICENSE). Files derived from Kuru's public contracts (`spikes/kuru/src/interfaces/IKuru.sol`, `src/interfaces/IKuru.sol`, `spikes/e2e/src/IsothermZap.sol`) carry GPL-2.0-or-later headers; the GPL-2.0 text is in [`LICENSES/GPL-2.0-or-later.txt`](LICENSES/GPL-2.0-or-later.txt), and the compiled IsothermZap, which includes those interface declarations, is distributed under GPL-2.0-or-later terms. Third-party code keeps its own license. Data licences and attribution: [DATA-NOTICE.md](DATA-NOTICE.md).

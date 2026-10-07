@@ -4,6 +4,7 @@ import { DEPLOYMENTS } from '../lib/deployments';
 import { DEFAULT_CHALLENGE_WINDOW } from '../lib/data';
 import { addrUrl } from '../config';
 import { short } from '../lib/format';
+import { OpenMeteoCredit } from './DataCredit';
 
 interface Section {
   h: string;
@@ -130,6 +131,25 @@ export function HowItWorks() {
             ))}
           </div>
         ))}
+        <div className="how-sec">
+          <h3>{lang === 'zh' ? '資料來源' : 'Data sources'}</h3>
+          <p>
+            {lang === 'zh' ? '結算觀測：' : 'Settlement observations: '}
+            <a href="https://mesonet.agron.iastate.edu/" target="_blank" rel="noreferrer">
+              Iowa Environmental Mesonet
+            </a>
+            {', '}
+            <a href="https://aviationweather.gov/" target="_blank" rel="noreferrer">
+              aviationweather.gov
+            </a>
+            {lang === 'zh' ? '，備援 ' : ', fallback '}
+            <a href="https://www.ogimet.com/" target="_blank" rel="noreferrer">
+              Ogimet
+            </a>
+            {lang === 'zh' ? '。參考價格：Polymarket 公開市場資料（與 Isotherm 無關聯）。' : '. Reference prices: Polymarket public market data (not affiliated with Isotherm).'}
+          </p>
+          <OpenMeteoCredit lang={lang} />
+        </div>
         <div className="how-sec">
           <h3>{lang === 'zh' ? '合約地址（Monad 測試網 10143）' : 'Contracts (Monad testnet 10143)'}</h3>
           <dl className="kv">

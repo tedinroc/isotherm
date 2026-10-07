@@ -14,3 +14,13 @@ spikes/dynamic/docs-cache/
 spikes/cre/docs/
 spikes/cre/ref/
 .mmhome-*/
+
+# Secrets, defense in depth (real keys live in ~/.config/isotherm/, outside the repo)
+*.env
+*.token
+*.pem
+*.mnemonic
+.dev.vars
+.wrangler/
+.cre/
+
