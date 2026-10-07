@@ -1,14 +1,14 @@
 # Isotherm — live operations (Monad testnet 10143)
 
-Written 2026-10-07 14:15 Taipei (06:15 UTC), at go-live; balances and versions below are from then. Revised the same day after the v1 security review (attester gas, guardian runbook, owner key, API caps, settlement status). Balances and caps re-read at 2026-10-07 07:55 UTC (15:55 Taipei) are marked with that time. Revised again at 08:40 UTC (16:40 Taipei) for the CRE login, the re-sized API caps and the Dynamic build, and at 13:30 UTC (21:30 Taipei) for the Dynamic go-live (web app row and section 5). Everything here is **testnet only**. AUSD is free
+Written 2026-10-07 14:15 Taipei (06:15 UTC), at go-live; balances and versions below are from then. Revised the same day after the v1 security review (attester gas, guardian runbook, owner key, API caps, settlement status). Balances and caps re-read at 2026-10-07 07:55 UTC (15:55 Taipei) are marked with that time. Revised again at 08:40 UTC (16:40 Taipei) for the CRE login, the re-sized API caps and the Dynamic build, and at 13:30 UTC (21:30 Taipei) for the Dynamic go-live (web app row and section 5), and at 16:30 UTC (00:30 Taipei, Oct 8) for the same-origin API at `https://isotherm.pages.dev/api/*` (sections 1, 2 and 5). Everything here is **testnet only**. AUSD is free
 faucet test money. Nothing here touches Monad mainnet.
 
 ## 1. What is live
 
 | Thing | Where |
 |---|---|
-| Phone web app (PWA) | https://isotherm.pages.dev (Cloudflare Pages project `isotherm`). Dynamic is enabled: the deployed build (Pages deployment `<retired-deployment>`, 2026-10-07 13:21 UTC, main chunk `assets/index-Dl6lo4gH.js`) makes "Sign in with email" through Dynamic the default, keeps the labelled dev (burner) wallet as fallback, and shows the Open-Meteo CC BY credit. The first embedded-wallet login, relayed mint and Buy Yes (a team test wallet) are in section 5. |
-| API: drip, gasless-mint relayer, stats, snapshot | <former API host> (Worker `isotherm-api`; version `ea73ccfa` deployed 2026-10-07 08:02 UTC with the re-sized caps; the go-live version was `ed0ab137`) |
+| Phone web app (PWA) | https://isotherm.pages.dev (Cloudflare Pages project `isotherm`). Dynamic is enabled since Pages deployment `<retired-deployment>` (2026-10-07 13:21 UTC). The deployed build (Pages deployment `6b18d972`, about 16:24 UTC, main chunk `assets/index-Cd8KBz0E.js`, same app plus the same-origin API) makes "Sign in with email" through Dynamic the default, keeps the labelled dev (burner) wallet as fallback, and shows the Open-Meteo CC BY credit. The first embedded-wallet login, relayed mint and Buy Yes (a team test wallet) are in section 5. |
+| API: drip, gasless-mint relayer, stats, snapshot | https://isotherm.pages.dev/api/* (Pages Function `apps/web/functions/api/[[path]].ts` → service binding `API` → Worker `isotherm-api`; the Worker has no public hostname of its own since 2026-10-07 16:05 UTC). Worker version `60f3a919` deployed 16:24 UTC; its source equals `0c112836` (13:27 UTC, stats classification), and the re-sized caps are live since `ea73ccfa` (08:02 UTC); the go-live version was `ed0ab137` |
 | Contracts (v1, Sourcify exact_match) | Resolver `0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B`, Vault/factory `0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39`, Zap `0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0`. Source of truth: `deployments/testnet.json` |
 | Market maker | launchd jobs on this Mac, running from the **runtime copy** `~/isotherm-live` (see section 3) |
 
@@ -38,7 +38,7 @@ Full seriesIds, every tx hash and the on-chain checks are in `docs/evidence/goli
 | guardian | `0x30C8E371719Ff00577284dd9c10587Fa89357d50` | emergency `pause()` / `challenge()` | 0.05 | 0.05 |
 | attester (CRE secret) | `0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9` | signs settlement reports, and as the CRE workflow's default transaction sender **pays about 0.0204 MON per report tx** (200,000 gas limit at 102 gwei; `packages/cre-workflow/RESULT.md` §2), so 0.40 MON covers about 19 reports | 0.10 | 0.40 |
 
-`~/.config/isotherm/maker.env` (chmod 600) holds `ISOTHERM_ALLOW_LIVE=1`, `ISOTHERM_API_URL` and `ISOTHERM_SNAPSHOT_TOKEN`.
+`~/.config/isotherm/maker.env` (chmod 600) holds `ISOTHERM_ALLOW_LIVE=1`, `ISOTHERM_API_URL` (`https://isotherm.pages.dev`; it overrides `api.url` in `config/local.json`) and `ISOTHERM_SNAPSHOT_TOKEN`.
 The launchd jobs load it through `scripts/run.sh`.
 
 ## 3. The maker processes (launchd)
@@ -83,7 +83,7 @@ launchctl list | grep xyz.isotherm                    # PIDs + last exit codes
 bash $M/scripts/run.sh status                         # ladders, quotes, MON spent today (read-only)
 tail -f $M/var/log/maker.err.log                      # loop log (human readable); JSON lines in $M/var/maker.log
 cat $M/var/snapshot.json | head -50                   # what the API/web sees
-curl -s <former API host>/api/health   # snapshotReceivedAt, relayer MON, AUSD float
+curl -s https://isotherm.pages.dev/api/health   # snapshotReceivedAt, relayer MON, AUSD float
 ```
 
 ### Stop / restart
@@ -132,7 +132,8 @@ The human faucet gives about 5 MON/day.
 
 ## 5. API and web
 
-- **API deploy** (wrangler 3.114 from `apps/api/node_modules`): `cd apps/api && XDG_CONFIG_HOME=<wrangler config dir> npm run deploy`.
+- **API deploy** (wrangler 3.114 from `apps/api/node_modules`, on the Cloudflare account that owns the Pages project; set `XDG_CONFIG_HOME` to your wrangler config dir if you use several): `cd apps/api && npm run deploy`.
+  - **How requests arrive.** The Worker has no public hostname (`workers_dev = false`, `preview_urls = false` in `apps/api/wrangler.toml`). The public API is `https://isotherm.pages.dev/api/*`: the Pages Function `apps/web/functions/api/[[path]].ts` forwards each request unchanged over the service binding `API` (`apps/web/wrangler.toml`), and `CF-Connecting-IP` passes through, so the per-network limits still see the client. The cron trigger needs no route. Deploying the Worker does not require a web redeploy, and the binding resolves only while the Worker and the Pages project are on the same account.
   - Secrets `RELAYER_KEY`, `SNAPSHOT_TOKEN` and `ADMIN_TOKEN` are already set (`npx wrangler secret list`).
   - Knobs are in `apps/api/wrangler.toml [vars]`: `DRIP_MON`, `DRIP_DAILY_CAP`, `DRIP_ENABLED="0"` to pause drips, `RELAY_DAILY_CAP`, `RELAY_PER_IP_PER_DAY`, `RELAY_PER_ADDRESS_PER_DAY`, `RELAY_MIN_AUSD`, `RELAY_ALLOW_PERMIT`, `RELAYER_MIN_MON`, `AUSD_FLOAT_TARGET`, `TEAM_ADDRESSES`.
   - **Size the caps to the relayer's MON** (v1 review N5): anyone can otherwise use up the day's drips and relays. `node apps/api/scripts/size-caps.mjs` computes the caps from the live balance, spread over several worst-case days (`--days N`, default 7) so one day can never spend the whole balance. The first values were sized from 0.599 MON (2 drips and 5 relayed mints per day). At 07:59 UTC on 2026-10-07 they were re-sized from 4.599 MON over 7 days (`apps/api/evidence/size-caps-2026-10-07-r2.txt`), and the Worker was redeployed at 08:02 UTC. `/api/health` `limits` at 08:40 UTC shows those values live:
@@ -142,11 +143,12 @@ The human faucet gives about 5 MON/day.
 
     At maximum use that covers UTC days Oct 7–13, so **top up and re-size before 2026-10-14**. Re-run it and redeploy after every top-up, with `--days` covering the time until the next top-up (judging runs Oct 14–27). Permit-mode relays stay off for the v1 vault (`RELAY_ALLOW_PERMIT = "0"`, N10).
   - After a deploy, check `/api/health`: `relayModes` should be `["authorization"]`, and `monBalance` should cover the caps.
-  - Live logs: `XDG_CONFIG_HOME=<wrangler config dir> npx wrangler tail isotherm-api`.
+  - Live logs: `npx wrangler tail isotherm-api` (requests that come in through the Pages Function show up here too).
 - **Go-live change to the API.** The drip's second tx (the AUSD leg) re-read `eth_getTransactionCount('pending')`. Monad's RPC does not count a just-submitted tx there, so the AUSD leg reused the MON tx's nonce and was rejected ("Missing or invalid parameters"). Because nothing was recorded, a retry could also send MON again.
   - The fix: nonces are counted locally, and if MON went out but AUSD failed, the drip is recorded as AUSD-pending so a retry sends only AUSD.
   - Verified live: a two-leg drip in 1.3 s, `docs/evidence/golive/drip-two-leg-after-fix.json`.
-- **Web deploy:** `cd apps/web && npm run build && XDG_CONFIG_HOME=<wrangler config dir> npx wrangler@3 pages deploy dist --project-name isotherm --branch main`. The build reads addresses from `deployments/testnet.json`.
+- **Web deploy:** `cd apps/web && npm run build && npx wrangler@3 pages deploy --branch main` (same account as the Worker). `apps/web/wrangler.toml` names the project (`isotherm`), the output directory (`dist`) and the `API` service binding, and the upload includes `functions/` (the `/api/*` proxy) and `public/_routes.json`, which keeps every other static file off Functions. The build reads addresses from `deployments/testnet.json`.
+  - Old deployments stay reachable at their own `https://<hash>.isotherm.pages.dev` URLs and keep serving the bundle they were built with. Delete superseded ones in the Pages dashboard (the project's deployment list) or with the Cloudflare API's delete-deployment call; wrangler 3.114 has no delete command (`npx wrangler@3 pages deployment list` shows the ids).
   - **Dynamic.** `npm run build` also reads the public Dynamic Sandbox environment ID from `apps/web/.env.production`, so the build makes "Sign in with email" through Dynamic the default. That build is live since 2026-10-07.
   - **The embedded-wallet proof passed on the live site** (2026-10-07 12:36 UTC). A team member signed in with email and got embedded wallet `0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427`, a team test wallet. The deployer funded it (0.25 MON `0x6ed02038…90be`, 10,000 AUSD `0xf4f38886…e664`). The wallet then made a relayed mint (`0xca08d0150c228c16f9841b00244654ec39f96551c52a0e063584d2adabb6bf04`) and a Zap Buy Yes (`0x361668d832a2acd47180b8875c9ce44ce0ff6f7dec9a071755e7c8d9dcb4681c`), both `success`. Details: `apps/web/evidence/dynamic/RESULT.md` §5.
   - Monad Testnet and Monad Mainnet are enabled in the Sandbox environment. Check with `curl -s https://app.dynamicauth.com/api/v0/sdk/3eaae4f7-b9bb-4a0a-a578-00ff7008a460/settings`; at 13:24 UTC it listed chains 1, 143 and 10143.

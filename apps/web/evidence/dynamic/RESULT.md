@@ -141,7 +141,7 @@ The app adds 10143 and 143 itself through `overrides.evmNetworks` with `mergeNet
 8. Only after steps 2–6 pass, deploy, then check the live site **read-only** (the widget renders; do not log in there):
 
    ```sh
-   npm run build && XDG_CONFIG_HOME=<wrangler config dir> npx wrangler@3 pages deploy dist --project-name isotherm --branch main
+   npm run build && npx wrangler@3 pages deploy --branch main
    ```
 
 ## Housekeeping

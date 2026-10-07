@@ -22,6 +22,9 @@ value (Polymarket-implied) and label the guardrail; the plugin's crude v0-lite i
 
 ## 1. What works, with evidence (all in `packages/mm-plugin/evidence/`)
 
+In the transcripts, `<repo>` is the repository root and `<former API host>` is the API's hostname at the time of the
+run. Since 2026-10-07 16:06 UTC the API is served at `https://isotherm.pages.dev/api/*`, the plugin's default.
+
 | Claim | Evidence |
 |---|---|
 | **Unit tests pass.** 34 tests cover pure logic. The integer book walk reproduces three recorded fills to the unit: the live Kuru spike's `20 AUSD @0.44 -> 45.409090 YES`, and the e2e's `50 @0.57 -> 87,631,578` and `40 YES into 0.28 -> 11,188,800 AUSD`. New: the Buy-NO planner reproduces the earlier e2e numbers (`8.171820` back, min `8.130960`), a pure N1 test shows the old bound passing and the new one failing on a drained book, and the snapshot parser runs on a captured live API response. | `npm test` -> `tests 34, pass 34, fail 0` |
@@ -92,7 +95,7 @@ value (Polymarket-implied) and label the guardrail; the plugin's crude v0-lite i
 
 1. **Publish to npm.** The name was free on 2026-10-06; re-check it.
    ```sh
-   cd <repo>/packages/mm-plugin
+   cd packages/mm-plugin                  # from the repo root
    npm ci && npm test && npm run build
    npm view mm-plugin-isotherm            # expect E404
    npm login                              # npm account, 2FA

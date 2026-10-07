@@ -107,16 +107,16 @@ Why `src/` was not changed: a fix there could not be deployed in this task, and 
 | API unit tests + typecheck | `cd apps/api && npx vitest run test/unit && npx tsc --noEmit` | 24/24 pass (20 existing + 4 new); tsc exit 0 |
 | API fork integration after the fixes (real Durable Object, KV, anvil fork) | Copy of `test/integration/api.fork.test.ts` on ports 19410/19411/19412, deleted afterwards | 6/6 pass (`api-fork-integration-after-fix.txt`) |
 | Relay race before the fix | `vitest -t "caps hold"` | `expected 8 to be 2` (`api-relay-race-before-fix.txt`) |
-| Live reads | `cast call` / `cast balance` / `GET /api/health` | `live-readonly-checks.txt` |
+| Live reads | `cast call` / `cast balance` / `GET /api/health` | `live-readonly-checks.txt` (`<former API host>` is the API's hostname at the time; it is now served at `https://isotherm.pages.dev/api/*`) |
 
 ## Human actions
 
 1. **Redeploy the Worker** so N4, N5 (IPv6), N8 and N9 go live:
    ```
-   cd apps/api && XDG_CONFIG_HOME=<wrangler config dir> npm run deploy
+   cd apps/api && npm run deploy
    ```
    `npm run deploy` uses the local wrangler 3.114. Then check `/api/health`.
-2. **Size the relayer caps to its MON (N5).** Set `RELAY_DAILY_CAP`, `RELAY_PER_ADDRESS_PER_DAY` and `DRIP_DAILY_CAP` in `apps/api/wrangler.toml`. Add a Cloudflare dashboard rate-limit rule on `<former API host>/api/*`. Permit-mode relays can only be turned off in code (`relayModes()` in `relayer.ts`); there is no config switch for it, and the web app already uses authorization mode against v1.
+2. **Size the relayer caps to its MON (N5).** Set `RELAY_DAILY_CAP`, `RELAY_PER_ADDRESS_PER_DAY` and `DRIP_DAILY_CAP` in `apps/api/wrangler.toml`. Add a Cloudflare dashboard rate-limit rule on the API's `/api/*` route. Permit-mode relays can only be turned off in code (`relayModes()` in `relayer.ts`); there is no config switch for it, and the web app already uses authorization mode against v1.
 3. **Move ownership of the Resolver and the Vault to a cold key (N3)**: `transferOwnership(cold)` from the deployer key, then `acceptOwnership()` from the cold key.
 4. **Web app and mm-plugin owners (N1):** make "Buy No" use `vault.mintSet` followed by `zap.sellYes(minAusdOut)`, or cap buyNo at the top-of-book bid size. Before real money, redeploy the Zap with `minNoOut`.
 5. **Guardian runbook (N6):** challenge first, then pause. Set up a watcher on a separate machine that holds only the guardian key.

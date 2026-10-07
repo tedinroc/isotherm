@@ -407,7 +407,7 @@ test("chooseReference prefers the maker snapshot, labels the guardrail, and neve
 });
 
 test("apiBaseUrl: default, override, off, and no plain http except localhost", () => {
-  assert.equal(apiBaseUrl({}), "<former API host>");
+  assert.equal(apiBaseUrl({}), "https://isotherm.pages.dev");
   assert.equal(apiBaseUrl({ ISOTHERM_API_URL: "https://api.example.org/" }), "https://api.example.org");
   assert.equal(apiBaseUrl({ ISOTHERM_API_URL: "off" }), null);
   assert.equal(apiBaseUrl({ ISOTHERM_API_URL: "http://evil.example" }), null);

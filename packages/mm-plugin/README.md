@@ -273,7 +273,7 @@ time. Users can always point at a newer file with `ISOTHERM_DEPLOYMENTS`.
   matches Polymarket's resolved bucket on 183/184 RCSS days and 209/209 RJTT days. Shenzhen and Seoul are listed as
   cities, but their fidelity is not measured.
 - **What the plugin talks to.** Polymarket's public gamma API, aviationweather.gov, Open-Meteo, and the Isotherm
-  API's public `GET /api/snapshot` (display only; `ISOTHERM_API_URL` overrides it, `ISOTHERM_API_URL=off` disables
+  API's public `GET https://isotherm.pages.dev/api/snapshot` (display only; `ISOTHERM_API_URL` overrides it, `ISOTHERM_API_URL=off` disables
   it), all keyless. Plugins cannot call `mm predict`.
 - **Not exercised yet.** Real MetaMask sign-in, Mimir broadcasting a 10143 transaction, and Guard Mode email
   approvals. All three need a human sign-in. See `RESULT.md`.

@@ -7,7 +7,9 @@ export const DYNAMIC_ENABLED = UUID.test(DYNAMIC_ENVIRONMENT_ID) && !/^0{8}-/.te
 
 export const CHAIN_ID = Number(env.VITE_CHAIN_ID ?? 10143);
 export const RPC_URL = (env.VITE_RPC_URL ?? 'https://testnet-rpc.monad.xyz').trim();
-export const API_URL = (env.VITE_API_URL ?? '<former API host>').replace(/\/$/, '');
+/** API origin. Empty (the default) = same origin: on https://isotherm.pages.dev a Pages Function forwards /api/* to the
+ *  API Worker (functions/api/[[path]].ts), and `npm run dev` / `npm run preview` proxy /api to the live site. */
+export const API_URL = (env.VITE_API_URL ?? '').trim().replace(/\/$/, '');
 export const EXPLORER = (env.VITE_EXPLORER ?? 'https://testnet.monadvision.com').replace(/\/$/, '');
 /** e.g. "anvil fork" while testing locally; shown in the header so screenshots are never mistaken for live. */
 export const ENV_LABEL = (env.VITE_ENV_LABEL ?? '').trim();

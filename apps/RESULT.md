@@ -3,7 +3,7 @@
 > **Superseded in part by the 2026-10-07 fix round** ([web/FIXES.md](web/FIXES.md), [api/FIXES.md](api/FIXES.md)). Buy No no longer calls `Zap.buyNo`: it is `vault.mintSet` + `Zap.sellYes(minAusdOut)`. The API's relay modes, minimums and caps changed (live values in `/api/health`). Since this was written, the relayer has been funded and the RCSS 2026-10-08 ladder has gone live. The rest of this file is the original record; lines that no longer hold are marked.
 
 **Verdict: both are built, tested, and deployed.** The phone app is live at **https://isotherm.pages.dev** and the API
-at **<former API host>** (Cloudflare). Both point at the **live v1
+at **https://isotherm.pages.dev/api/** (the `isotherm-api` Worker behind a Pages Function service binding). Both point at the **live v1
 deployment** in `deployments/testnet.json`: vault `0xae36…7B39`, resolver `0x9c78…962B`, zap `0x1ACa…CFb0`.
 
 I tested the whole user path in the in-app browser at 375 px, against an **anvil fork** of the live testnet with the
@@ -137,7 +137,7 @@ Two limits on the live service today (both resolved since; see the note at the t
 
 ## Interfaces for the other workstreams
 - **Maker → API.**
-  - Request: `POST <former API host>/api/snapshot` with `Authorization: Bearer $(cat ~/.config/isotherm/api-snapshot.token)`. In maker config, set `api.url` = the Worker URL and `ISOTHERM_SNAPSHOT_TOKEN` = that file.
+  - Request: `POST https://isotherm.pages.dev/api/snapshot` with `Authorization: Bearer $(cat ~/.config/isotherm/api-snapshot.token)`. In maker config, set `api.url` = https://isotherm.pages.dev and `ISOTHERM_SNAPSHOT_TOKEN` = that file.
   - Format: the maker's `isotherm.snapshot/v1` is accepted as is. Both `strikes[{strike,pmImplied|pm,model|guard,fair,market,marketBlock,mode,flags}]` and the older `series[]` work; ladder-level `observedMaxC`/`observed.tmaxC`, `polymarket.url`, `forecast.mu`/`v0.mu` are read too.
   - Payloads up to 512 kB. Only the normalised fields are stored (`budget` and `events` are dropped).
 - **Stats definitions.**
@@ -168,7 +168,7 @@ Two limits on the live service today (both resolved since; see the note at the t
      - drips: about 40 × 0.15 = 6 MON/day;
      - relays: about 60 × 0.03 = 1.8 MON/day.
    - Lower `DRIP_DAILY_CAP`, `DRIP_MON` or `RELAY_DAILY_CAP` in `apps/api/wrangler.toml` and redeploy if MON is short.
-2. **Point the maker at the API.** Set `ISOTHERM_SNAPSHOT_TOKEN` from `~/.config/isotherm/api-snapshot.token` and `api.url` = <former API host>.
+2. **Point the maker at the API.** Set `ISOTHERM_SNAPSHOT_TOKEN` from `~/.config/isotherm/api-snapshot.token` and `api.url` = https://isotherm.pages.dev.
 3. **Dynamic.**
    - Put the Sandbox environment ID in `apps/web/.env.local` as `VITE_DYNAMIC_ENVIRONMENT_ID=…`, then run `npm run build` and the `wrangler@3 pages deploy` command in `apps/web/README.md`.
    - In the Dynamic dashboard, add `https://isotherm.pages.dev` (and `https://*.isotherm.pages.dev`) to the CORS origins and enable Monad Testnet 10143.

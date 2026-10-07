@@ -1,6 +1,6 @@
 # apps/api: fixes from the verifier rounds (2026-10-07)
 
-**Live now:** Worker `isotherm-api`, version `0c112836-34d6-49ce-a719-f29bfa511479`, build `dfd0c41-dirty.045f16cadb36`, deployed 2026-10-07T13:27:31Z (wrangler 3.114.17), at <former API host>. `/api/health` `version` says so itself.
+**Live now:** Worker `isotherm-api`, version `60f3a919-9a31-4ed5-ab14-89f855846d2f`, build `24f390e-dirty.7af37257dba5`, deployed 2026-10-07T16:24:51Z (wrangler 3.114.17; the public route was switched off at 16:05:56Z by version `3e822652`), served at https://isotherm.pages.dev/api/* through the Pages Function's service binding; the Worker has no public hostname of its own (`workers_dev = false`, `preview_urls = false`). Its source is the same as version `0c112836-34d6-49ce-a719-f29bfa511479` (build `dfd0c41-dirty.045f16cadb36`, 13:27:31Z): only `wrangler.toml` changed. `/api/health` `version` says so itself.
 
 ## Round 3: stats classification at publish time (2026-10-07)
 
@@ -98,5 +98,5 @@ CORS: the Pages origin is allowed; a look-alike origin gets no allow-origin head
 
 ## Human actions
 
-1. **Before 2026-10-14 (judging runs Oct 14–27):** top up the relayer, run `node apps/api/scripts/size-caps.mjs --days N` with N reaching past the next top-up (from Oct 14 to past Oct 27 is about 14–21 days), paste its vars into `wrangler.toml` and redeploy (`cd apps/api && XDG_CONFIG_HOME=<wrangler config dir> npm run deploy`). Roughly 0.64 MON per day keeps 2 drips + 9 relays a day. At today's 4.6 MON with `--days 21`, the script gives 0 drips and 6 relays a day.
+1. **Before 2026-10-14 (judging runs Oct 14–27):** top up the relayer, run `node apps/api/scripts/size-caps.mjs --days N` with N reaching past the next top-up (from Oct 14 to past Oct 27 is about 14–21 days), paste its vars into `wrangler.toml` and redeploy (`cd apps/api && npm run deploy`). Roughly 0.64 MON per day keeps 2 drips + 9 relays a day. At today's 4.6 MON with `--days 21`, the script gives 0 drips and 6 relays a day.
 2. Optional: Turnstile on `/api/drip`. Requests from many IPs can still use up a day's caps, but no longer the reserve, and never more than one day at a time.

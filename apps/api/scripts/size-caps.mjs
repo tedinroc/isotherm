@@ -116,7 +116,7 @@ async function main() {
     return;
   }
   const RPC = args.rpc ?? 'https://testnet-rpc.monad.xyz';
-  const API = args.api ?? '<former API host>';
+  const API = args.api ?? 'https://isotherm.pages.dev';
   const num = (k) => (args[k] === undefined ? undefined : Number(args[k]));
   const rpc = async (method, params) => {
     const r = await fetch(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });

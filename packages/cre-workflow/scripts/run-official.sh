@@ -77,7 +77,7 @@ One-time human steps:
   1. Create an account: https://app.chain.link/cre/discover -> "Create an account"
      (email + 6-digit code, password, authenticator-app 2FA).
   2. Log in on this Mac (opens a browser, asks for the 2FA code):
-       cd <repo>/packages/cre-workflow
+       cd packages/cre-workflow        # from the repository root
        export PATH="$PWD/.tools/bin:$PWD/.tools/node_modules/.bin:$PATH"
        cre login && cre whoami
   3. Optional, for a real DON deployment later: `cre account access` (request deploy access).

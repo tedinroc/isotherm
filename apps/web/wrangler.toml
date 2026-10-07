@@ -1,0 +1,11 @@
+# Cloudflare Pages project `isotherm` (https://isotherm.pages.dev). Deploy from apps/web:
+#   npm run build && npx wrangler@3 pages deploy
+# The Pages Function in functions/api/[[path]].ts serves /api/* by forwarding each request to the `isotherm-api`
+# Worker through the service binding below, so the app, the maker and the mm plugin all use https://isotherm.pages.dev.
+name = "isotherm"
+pages_build_output_dir = "./dist"
+compatibility_date = "2025-07-18"
+
+[[services]]
+binding = "API"
+service = "isotherm-api"

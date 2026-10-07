@@ -192,7 +192,7 @@ On the second run, the EVM read saw the result and skipped: no HTTP calls and no
    - Set a password and set up 2FA (authenticator app).
 2. **Log in on this Mac.** This opens a browser and asks for the 2FA code:
    ```bash
-   cd <repo>/spikes/cre
+   cd spikes/cre   # from the repository root
    export PATH="$PWD/.tools/bin:$PWD/.tools/node_modules/.bin:$PATH"
    cre login && cre whoami
    ```

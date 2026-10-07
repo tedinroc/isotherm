@@ -15,7 +15,7 @@ Polymarket already trades daily high-temperature markets for dozens of cities, b
 | What | Link |
 |---|---|
 | Phone app (PWA) | https://isotherm.pages.dev |
-| API (drip, gasless-mint relayer, maker snapshot, stats) | <former API host> (`/api/health`, `/api/snapshot`, `/api/stats`, `/api/settlements`) |
+| API (drip, gasless-mint relayer, maker snapshot, stats) | https://isotherm.pages.dev/api/ (`/api/health`, `/api/snapshot`, `/api/stats`, `/api/settlements`), same origin as the app: a Pages Function forwards `/api/*` to the API Worker over a service binding ([ARCHITECTURE.md §2](ARCHITECTURE.md#2-components)) |
 | First live ladder | Taipei Songshan (RCSS), Thu 2026-10-08, strikes ≥ 28 / 29 / 30 / 31 °C, trading closes 17:30 Taipei. Opened 2026-10-07 13:55 Taipei by [`createLadder`](https://testnet.monadvision.com/tx/0x84e4689412a3467bc71ec6cacb48a5b9fa7062c5e5273c1762619bff2a5e93c7) |
 | Settlement of that ladder | From 02:05 Taipei on Oct 9 (2026-10-08 18:05 UTC), hourly, by a launchd job running the CRE workflow. The team logged in to CRE on 2026-10-07, so the job now runs the unmodified CRE CLI (`cre workflow simulate --broadcast`); its first official run against live testnet, at 08:05 UTC, found nothing due yet and sent no report. If the CRE session lapses, the job falls back to the labelled SDK-harness path (same handler and attestation, not the CRE engine), and each run's evidence record names the path. [docs/OPERATIONS.md §6](docs/OPERATIONS.md#6-settlement-not-run-by-the-maker) |
 | Contracts (v1, Sourcify `exact_match`) | [table below](#contracts-and-testnet-addresses) |
@@ -117,7 +117,7 @@ We replayed this rule against every Polymarket daily-high event that resolved on
 
 ## What is proven so far
 
-All evidence below is from commands we ran; logs are in the linked folders. Every wallet involved belongs to the team: these are test transactions, **not traction**.
+All evidence below is from commands we ran; logs are in the linked folders. Every wallet involved belongs to the team: these are test transactions, **not traction**. In committed logs, `<repo>` stands for the repository root on the machine that ran the command, and `<former API host>` for the API's hostname before 2026-10-07 16:06 UTC; since then the API is served at `https://isotherm.pages.dev/api/*`.
 
 | Claim | Evidence |
 |---|---|
@@ -201,7 +201,7 @@ apps/web/            Phone PWA (Dynamic email login + embedded wallet; labelled 
 apps/api/            Cloudflare Worker: drip / relayer, snapshot and stats API
 docs/                Operations runbook, go-live evidence, docs fix log
 brand/               Logo (SVG + PNG) and the 16:9 video cover
-spikes/              Feasibility spikes from 2026-10-06, kept as evidence (later edits: license headers, one local path in spikes/mm/bin)
+spikes/              Feasibility spikes from 2026-10-06, kept as evidence (later edits: license headers, local paths in spikes/mm/bin and spikes/cre/RESULT.md)
 ```
 
 Each package is its own npm project (no workspaces). Shared values come from `deployments/testnet.json` and `packages/abi/*.json`.
@@ -257,7 +257,7 @@ npm test && npm run build
 
 Optional environment (`apps/web/env.example`): `VITE_DYNAMIC_ENVIRONMENT_ID` turns on Dynamic login; without it the app offers only the labelled burner wallet. Production builds read the public Sandbox environment ID from `apps/web/.env.production`, so `npm run build` makes Dynamic the default sign-in, as on the live site; `npm run dev` does not read that file and takes the ID from `.env.local` instead. For a dev-wallet-only build, run `VITE_DYNAMIC_ENVIRONMENT_ID= npm run build`. Monad Testnet and Mainnet are enabled in the environment's dashboard. If CORS origins are ever added there, `https://isotherm.pages.dev` must be one of them. `VITE_API_URL`, `VITE_RPC_URL` and `VITE_ENV_LABEL` point a build at a fork.
 
-**API** (`apps/api`, Cloudflare Worker with a SQLite-backed Durable Object relayer and KV): `cd apps/api && npm ci && npm test` (unit), `npm run test:fork` (anvil fork + `wrangler dev`, throwaway keys only), `npm run dev` (port 8781). The relayer key is a Worker secret (`RELAYER_KEY`), never a file in the repo. Deploy: `XDG_CONFIG_HOME=<wrangler config dir> npm run deploy`.
+**API** (`apps/api`, Cloudflare Worker with a SQLite-backed Durable Object relayer and KV): `cd apps/api && npm ci && npm test` (unit), `npm run test:fork` (anvil fork + `wrangler dev`, throwaway keys only), `npm run dev` (port 8781). The relayer key is a Worker secret (`RELAYER_KEY`), never a file in the repo. Deploy: `cd apps/api && npm run deploy`, on the Cloudflare account that owns the Pages project (set `XDG_CONFIG_HOME` to your wrangler config dir if you use several accounts). The Worker has no public hostname of its own (`workers_dev = false`); the public API is `https://isotherm.pages.dev/api/*`, served by `apps/web/functions/api/[[path]].ts` through the service binding in `apps/web/wrangler.toml`.
 
 **CRE workflow** (`packages/cre-workflow`):
 

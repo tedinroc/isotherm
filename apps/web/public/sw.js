@@ -1,5 +1,5 @@
 // Minimal app-shell service worker. Never caches RPC, relayer or Dynamic API
-// traffic (cross-origin requests pass straight through).
+// traffic (cross-origin requests and the same-origin /api/* pass straight through).
 const CACHE = 'isotherm-shell-v2';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png'];
 
@@ -13,7 +13,7 @@ self.addEventListener('activate', (e) => {
 });
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
-  if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (e.request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
   // Network-first for navigations so a redeploy is picked up; cache-first for hashed assets.
   if (e.request.mode === 'navigate') {
     e.respondWith(fetch(e.request).catch(() => caches.match('/index.html')));

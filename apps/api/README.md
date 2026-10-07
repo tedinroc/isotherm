@@ -1,7 +1,16 @@
 # apps/api — Isotherm API (Cloudflare Worker)
 
-Live: <former API host> (Worker `isotherm-api`; Durable Object `RelayerDO`
-(SQLite-backed) + KV `isotherm-api-ISO_KV`; cron every minute). Status and evidence: [`../RESULT.md`](../RESULT.md).
+Live: https://isotherm.pages.dev/api/* (Worker `isotherm-api`; Durable Object `RelayerDO` (SQLite-backed) + KV
+`isotherm-api-ISO_KV`; cron every minute). Status and evidence: [`../RESULT.md`](../RESULT.md).
+
+**How requests reach the Worker.** The Worker has no public hostname of its own (`workers_dev = false`,
+`preview_urls = false` in `wrangler.toml`). `https://isotherm.pages.dev/api/*` runs the Pages Function
+`../web/functions/api/[[path]].ts`, which hands the incoming Request, unchanged, to this Worker over the service
+binding `API` (`../web/wrangler.toml`); the cron trigger needs no route either. Cloudflare's edge sets
+`CF-Connecting-IP` on the Pages request and it passes through the binding untouched, so the per-network limits below
+see the real client network. Checked live on 2026-10-07: a `wrangler tail` showed the client's own address in
+`cf-connecting-ip` for a request made through Pages, and a burst of 31 bad-address drips through Pages got 400 × 30
+then 429, although every request carried a different spoofed `X-Real-IP` / `X-Forwarded-For`.
 
 | Route | What |
 |---|---|
@@ -35,9 +44,9 @@ npm install
 npm test            # unit tests
 npm run test:fork   # spawns anvil (:19200) + wrangler dev (:8782); ISO_ANVIL_PORT / ISO_API_PORT / ISO_INSPECTOR_PORT override; throwaway keys only
 npm run dev         # wrangler dev :8781 (pass --var RPC_URL:… --var RELAYER_KEY:… for a fork)
-XDG_CONFIG_HOME=<wrangler config dir> npm run deploy     # prepare-data (deployments, ABIs, build id) + wrangler 3 deploy
+npm run deploy                                              # prepare-data (deployments, ABIs, build id) + wrangler 3 deploy
 npm run size-caps -- --days 7                               # read-only: size the MON budget vars (below)
-tr -d '\n' < ~/.config/isotherm/relayer.key | XDG_CONFIG_HOME=<wrangler config dir> npx wrangler@3 secret put RELAYER_KEY
+tr -d '\n' < ~/.config/isotherm/relayer.key | npx wrangler@3 secret put RELAYER_KEY
 ```
 
 Secrets: `RELAYER_KEY` (~/.config/isotherm/relayer.key), `SNAPSHOT_TOKEN` (~/.config/isotherm/api-snapshot.token),
@@ -106,7 +115,8 @@ Other guards:
 - The relay caps are checked before any RPC read and again inside the single-sender queue (exact under concurrency).
 - `POST_LIMIT_PER_MIN` (30): drip + relay POSTs per network per minute, counted in the Durable Object's memory (one
   instance, so exact) before any storage or RPC work; a flood gets 429 instead of turning into public-RPC reads.
-  (A Workers Rate Limiting binding was tried first: deployed with wrangler 3 on workers.dev it never limited, even
-  at 150 requests in a few seconds, so it was removed. workers.dev has no zone, so there is no dashboard WAF rule.)
+  (A Workers Rate Limiting binding was tried first: deployed with wrangler 3 on the Worker's default Cloudflare
+  subdomain it never limited, even at 150 requests in a few seconds, so it was removed. There is no zone of ours in
+  front of the API, so there is no dashboard WAF rule.)
 - `RELAY_MIN_AUSD` (1 AUSD) stops dust mints; `RELAY_ALLOW_PERMIT=0` keeps permit relays off (they only ever apply to
   a vault without the EIP-3009 path).

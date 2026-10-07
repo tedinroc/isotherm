@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "include": [
+    "/api/*",
+    "/assets/index-BJ2g1e3Y.js",
+    "/assets/index-CIjHIjYB.js",
+    "/assets/index-ChjCNmYB.js",
+    "/assets/index-D6Cfp9Hz.js",
+    "/assets/index-Dl6lo4gH.js",
+    "/assets/index-sVKTc5nx.js"
+  ],
+  "exclude": []
+}

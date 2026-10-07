@@ -6,7 +6,7 @@
 import { shortErr, withTimeout } from "./util.js";
 import { GUARDRAIL_GAP } from "./weather.js";
 
-export const DEFAULT_API_URL = "<former API host>";
+export const DEFAULT_API_URL = "https://isotherm.pages.dev";
 /** The maker posts about every 60 s; older than this and the plugin falls back to its own live Polymarket read. */
 export const SNAPSHOT_MAX_AGE_S = 600;
 
