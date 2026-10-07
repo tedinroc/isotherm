@@ -4,7 +4,7 @@ import { DEPLOYMENTS } from './deployments';
 import { configFrom, type Config, type Env } from './env';
 import { makeClients, type Pub } from './chain';
 import { createRelayer, type Relayer, type RelayMintWire } from './relayer';
-import { addMarkets, loadBatch, publicStats, refreshSettlements, scanOnce, scanRange, type ScanOptions } from './scan';
+import { addMarkets, loadBatch, makeClassifier, publicStats, refreshSettlements, scanOnce, scanRange, type MigrationInfo, type ScanOptions } from './scan';
 import { WindowLimiter, type Store } from './limits';
 import { HttpError, errorMessage, json } from './util';
 import { getAddress, isAddress, type Address } from 'viem';
@@ -42,10 +42,6 @@ export class RelayerDO {
       resolver: DEPLOYMENTS.resolver,
       zap: DEPLOYMENTS.zap,
       multicall: DEPLOYMENTS.multicall3,
-      classifier: {
-        makers: new Set(this.cfg.makerAddresses.map((a) => a.toLowerCase())),
-        team: new Set(this.cfg.teamAddresses.map((a) => a.toLowerCase())),
-      },
       startBlock: this.cfg.statsStartBlock,
       maxWindows,
       realStations: this.cfg.realStations,
@@ -129,12 +125,19 @@ export class RelayerDO {
     await this.store.put('scan:settlements', b.settlements);
     const h = head ?? (await this.pub.getBlockNumber());
     const c = cursor ?? BigInt((await this.store.get<string>('scan:cursor')) ?? (h + 1n).toString());
-    const stats = publicStats(b, this.cfg.realStations, {
-      head: h,
-      cursor: c,
-      drips: (await this.store.get<number>('drip:total')) ?? 0,
-      relayed: (await this.store.get<number>('relay:total')) ?? 0,
-    });
+    // maker / team / external is decided here, from the lists in this deploy's config, not when the fill was scanned
+    const stats = publicStats(
+      b,
+      this.cfg.realStations,
+      {
+        head: h,
+        cursor: c,
+        drips: (await this.store.get<number>('drip:total')) ?? 0,
+        relayed: (await this.store.get<number>('relay:total')) ?? 0,
+        migration: (await this.store.get<MigrationInfo>('scan:migration')) ?? null,
+      },
+      makeClassifier(this.cfg.makerAddresses, this.cfg.teamAddresses),
+    );
     await this.env.ISO_KV.put('stats:public', JSON.stringify(stats));
     await this.env.ISO_KV.put(
       'settlements:public',

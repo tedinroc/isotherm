@@ -1,13 +1,13 @@
 # Isotherm — live operations (Monad testnet 10143)
 
-Written 2026-10-07 14:15 Taipei (06:15 UTC), at go-live; balances and versions below are from then. Revised the same day after the v1 security review (attester gas, guardian runbook, owner key, API caps, settlement status). Balances and caps re-read at 2026-10-07 07:55 UTC (15:55 Taipei) are marked with that time. Revised again at 08:40 UTC (16:40 Taipei) for the CRE login, the re-sized API caps and the Dynamic build. Everything here is **testnet only**. AUSD is free
+Written 2026-10-07 14:15 Taipei (06:15 UTC), at go-live; balances and versions below are from then. Revised the same day after the v1 security review (attester gas, guardian runbook, owner key, API caps, settlement status). Balances and caps re-read at 2026-10-07 07:55 UTC (15:55 Taipei) are marked with that time. Revised again at 08:40 UTC (16:40 Taipei) for the CRE login, the re-sized API caps and the Dynamic build, and at 13:30 UTC (21:30 Taipei) for the Dynamic go-live (web app row and section 5). Everything here is **testnet only**. AUSD is free
 faucet test money. Nothing here touches Monad mainnet.
 
 ## 1. What is live
 
 | Thing | Where |
 |---|---|
-| Phone web app (PWA) | https://isotherm.pages.dev (Cloudflare Pages project `isotherm`). The deployed build signs with the labelled dev (burner) wallet only: its main bundle `assets/index-sVKTc5nx.js` holds no Dynamic environment ID (curl, 08:40 UTC). Builds from this tree would enable Dynamic (section 5). |
+| Phone web app (PWA) | https://isotherm.pages.dev (Cloudflare Pages project `isotherm`). Dynamic is enabled: the deployed build (Pages deployment `<retired-deployment>`, 2026-10-07 13:21 UTC, main chunk `assets/index-Dl6lo4gH.js`) makes "Sign in with email" through Dynamic the default, keeps the labelled dev (burner) wallet as fallback, and shows the Open-Meteo CC BY credit. The first embedded-wallet login, relayed mint and Buy Yes (a team test wallet) are in section 5. |
 | API: drip, gasless-mint relayer, stats, snapshot | <former API host> (Worker `isotherm-api`; version `ea73ccfa` deployed 2026-10-07 08:02 UTC with the re-sized caps; the go-live version was `ed0ab137`) |
 | Contracts (v1, Sourcify exact_match) | Resolver `0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B`, Vault/factory `0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39`, Zap `0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0`. Source of truth: `deployments/testnet.json` |
 | Market maker | launchd jobs on this Mac, running from the **runtime copy** `~/isotherm-live` (see section 3) |
@@ -147,11 +147,11 @@ The human faucet gives about 5 MON/day.
   - The fix: nonces are counted locally, and if MON went out but AUSD failed, the drip is recorded as AUSD-pending so a retry sends only AUSD.
   - Verified live: a two-leg drip in 1.3 s, `docs/evidence/golive/drip-two-leg-after-fix.json`.
 - **Web deploy:** `cd apps/web && npm run build && XDG_CONFIG_HOME=<wrangler config dir> npx wrangler@3 pages deploy dist --project-name isotherm --branch main`. The build reads addresses from `deployments/testnet.json`.
-  - **Dynamic gate.** `npm run build` now also reads the public Dynamic Sandbox environment ID from `apps/web/.env.production`, so the build makes "Sign in with email" through Dynamic the default.
-  - **Do not deploy that build until the embedded-wallet proof passes.** The runbook is `apps/web/evidence/dynamic/RESULT.md`: a person signs in on localhost with a `+dynamic_test` account, then the embedded wallet does one relayed mint and one Buy Yes on testnet.
-  - Monad Testnet must also be enabled and saved in the Sandbox environment (Chains & Networks → EVM). Check with `curl -s https://app.dynamicauth.com/api/v0/sdk/3eaae4f7-b9bb-4a0a-a578-00ff7008a460/settings`; at 08:40 UTC it still listed only Ethereum Mainnet.
-  - To redeploy before then, build dev-wallet-only with `VITE_DYNAMIC_ENVIRONMENT_ID= npm run build` (a shell variable beats the file).
-- **Smoke-test wallet.** The go-live smoke test used dev wallet `0xd42A0b394F09df88BB2120D0973569b845f2D79c`, stored in the in-app browser. It is listed in `TEAM_ADDRESSES`, so the public "trading wallets" counter does not count our own test. `/api/stats` classifies its fill as `team`.
+  - **Dynamic.** `npm run build` also reads the public Dynamic Sandbox environment ID from `apps/web/.env.production`, so the build makes "Sign in with email" through Dynamic the default. That build is live since 2026-10-07.
+  - **The embedded-wallet proof passed on the live site** (2026-10-07 12:36 UTC). A team member signed in with email and got embedded wallet `0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427`, a team test wallet. The deployer funded it (0.25 MON `0x6ed02038…90be`, 10,000 AUSD `0xf4f38886…e664`). The wallet then made a relayed mint (`0xca08d0150c228c16f9841b00244654ec39f96551c52a0e063584d2adabb6bf04`) and a Zap Buy Yes (`0x361668d832a2acd47180b8875c9ce44ce0ff6f7dec9a071755e7c8d9dcb4681c`), both `success`. Details: `apps/web/evidence/dynamic/RESULT.md` §5.
+  - Monad Testnet and Monad Mainnet are enabled in the Sandbox environment. Check with `curl -s https://app.dynamicauth.com/api/v0/sdk/3eaae4f7-b9bb-4a0a-a578-00ff7008a460/settings`; at 13:24 UTC it listed chains 1, 143 and 10143.
+  - Emergency dev-wallet-only build: `VITE_DYNAMIC_ENVIRONMENT_ID= npm run build` (a shell variable beats the file).
+- **Smoke-test wallet.** The go-live smoke test used dev wallet `0xd42A0b394F09df88BB2120D0973569b845f2D79c`, stored in the in-app browser. It is listed in `TEAM_ADDRESSES`, so the public "trading wallets" counter does not count our own test. `/api/stats` classifies its fill as `team`. The team's Dynamic embedded wallet `0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427` is in `TEAM_ADDRESSES` too; at 13:28 UTC `/api/stats` classified its Buy Yes as `team`, with `nonMakerWallets 0`.
 
 ## 6. Settlement (not run by the maker)
 

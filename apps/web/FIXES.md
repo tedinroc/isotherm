@@ -197,3 +197,17 @@ Not deployed: the live site still serves `<retired-deployment>`.
 - **Dashboard:** the environment's public settings still list only Ethereum Mainnet (08:37Z); Monad Testnet must be
   enabled in the *Sandbox* environment `3eaae4f7-…`.
 - `npm test` 35/35 (15 new), `tsc -b` exit 0.
+
+---
+
+# Dynamic live (2026-10-07, 13:21–13:30 UTC)
+
+- **Redeployed** with the Dynamic environment ID and the Open-Meteo CC BY credit (`DataCredit.tsx`, from `dfd0c41`):
+  `npm run build` → `wrangler@3 pages deploy` → `https://<retired-deployment>.isotherm.pages.dev`, live main chunk `index-Dl6lo4gH.js`
+  (was `index-CIjHIjYB.js`, which had the environment ID but not the credit). `vitest` 35/35.
+- **Read-only smoke check of the live site** (no login): credit rendered, `dynamic-DKA4llTK.js` lazy-loaded, no console
+  errors; "Sign in with email" / `dynamic-login` confirmed in the served main chunk.
+- **Live proof (team test wallet):** email login on the live site → embedded wallet
+  `0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427` → relayed mint `0xca08d015…bf04` and Zap Buy Yes `0x361668d8…681c`, both
+  `success`, re-read on chain. Table and decoded values: [`evidence/dynamic/RESULT.md`](evidence/dynamic/RESULT.md) §5,
+  [`evidence/dynamic/live-proof-2026-10-07.json`](evidence/dynamic/live-proof-2026-10-07.json).

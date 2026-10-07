@@ -14,7 +14,8 @@ import { LADDER_RESOLVED_EVENT, SELECTORS, TRADE_EVENT, decodeResult, decodeSeri
 import { normalizeDeployments } from '../../src/deployments';
 import { MemStore, checkDrip, checkRelay, recordDrip, recordRelay, secondsToUtcMidnight } from '../../src/limits';
 import { authorizationNonce, bytecodeHasSelector } from '../../src/relayer';
-import { applyLogs, discoveredMarkets, emptyCounters, publicStats, type ScanBatch } from '../../src/scan';
+import { applyLogs, discoveredMarkets, emptyBatch, loadBatch, makeClassifier, migrateV1, publicStats, saveBatch, type V1Batch } from '../../src/scan';
+import { configFrom, type Env } from '../../src/env';
 import { CANONICAL_MARKET_SET_EVENT } from '../../src/abi';
 import { marketsOf, normalizeSnapshot } from '../../src/snapshot';
 import { HttpError, originAllowed, safeEqual } from '../../src/util';
@@ -266,8 +267,10 @@ describe('log scan aggregation', () => {
       logIndex: 1,
     }) as unknown as Log;
 
+  const meta = { head: 1000n, cursor: 990n, drips: 4, relayed: 1 };
+
   it('attributes fills to tx.origin and keeps maker/team out of the public wallet count', () => {
-    const b: ScanBatch = { counters: emptyCounters(), wallets: {}, teamWallets: {}, trades: [], settlements: {} };
+    const b = emptyBatch();
     const ext1 = A(0x901);
     const ext2 = A(0x902);
     applyLogs(
@@ -282,24 +285,197 @@ describe('log scan aggregation', () => {
         resolved('ZZZZ', 20261006, 1, 29),
         resolved('RJTT', 20261008, 2, 0),
       ],
-      { makers: new Set([maker.toLowerCase()]), team: new Set([team.toLowerCase()]) },
       resolver,
     );
-    expect(b.counters.fills).toBe(5);
-    expect(b.counters.externalFills).toBe(3);
-    expect(b.counters.teamFills).toBe(1);
-    expect(b.counters.makerTakerFills).toBe(1);
-    expect(Object.keys(b.wallets).sort()).toEqual([ext1.toLowerCase(), ext2.toLowerCase()].sort());
+    // the scan keeps raw per-origin data for every origin, maker and team included, and no class
+    expect(Object.keys(b.origins).sort()).toEqual([ext1, ext2, team, maker].map((a) => a.toLowerCase()).sort());
+    expect(b.origins[ext1.toLowerCase()]).toEqual({ fills: 2, volumeAusd6: String(19_999_999 + 5_000_000) });
+    expect(b.trades.every((t) => t.kind === undefined)).toBe(true);
     // 45.454545 YES @ 0.44 = 19.999999 AUSD (6 dp, floored)
     expect(b.trades.find((t) => t.size === 45.454545)?.price).toBe(0.44);
-    expect(BigInt(b.counters.externalVolumeAusd6)).toBe(19_999_999n + 5_000_000n + 100_000n);
-    const st = publicStats(b, ['RCSS', 'RJTT'], { head: 1000n, cursor: 990n, drips: 4, relayed: 1 });
-    expect(st.nonMakerWallets).toBe(2);
+    const st = publicStats(b, ['RCSS', 'RJTT'], meta, makeClassifier([maker], [team]));
+    expect(st.fills).toBe(5);
     expect(st.nonMakerFills).toBe(3);
+    expect(st.teamFills).toBe(1);
+    expect(st.makerTakerFills).toBe(1);
+    expect(st.nonMakerWallets).toBe(2);
+    expect(st.teamWallets).toBe(1);
+    expect(st.nonMakerVolumeAusd).toBe((19_999_999 + 5_000_000 + 100_000) / 1e6);
     expect(st.settledCityDays).toBe(1);
     expect(st.voidCityDays).toBe(1);
     expect(st.testLadders).toBe(1);
     expect(st.lagBlocks).toBe(11);
+    expect(st.classification).toMatchObject({ appliedAt: 'publish', makerAddresses: 1, teamAddresses: 1, v1Migration: null });
+  });
+
+  it('classifies at publish time: a wallet added to the team list later moves to team with all its past fills', () => {
+    const b = emptyBatch();
+    const ext = A(0x901);
+    const late = A(0x903); // e.g. our own embedded wallet, identified after it traded
+    applyLogs(b, [trade(ext, 1_000_000n, 500_000_000_000_000_000n, true, 1), trade(late, 5_050_505n, 990_000_000_000_000_000n, true, 2), trade(late, 1_000_000n, 990_000_000_000_000_000n, false, 3)], resolver);
+    const before = publicStats(b, [], meta, makeClassifier([maker], [team]));
+    expect(before).toMatchObject({ nonMakerWallets: 2, nonMakerFills: 3, teamFills: 0, teamWallets: 0, fills: 3 });
+    expect(before.nonMakerVolumeAusd).toBe((500_000 + 4_999_999 + 990_000) / 1e6);
+    const after = publicStats(b, [], meta, makeClassifier([maker], [team, late]));
+    expect(after).toMatchObject({ nonMakerWallets: 1, nonMakerFills: 1, teamFills: 2, teamWallets: 1, makerTakerFills: 0, fills: 3 });
+    expect(after.nonMakerVolumeAusd).toBe(0.5);
+    expect(after.volumeAusd).toBe(before.volumeAusd); // moved, not added: nothing counted twice
+    expect(after.recentTrades.filter((t) => t.origin === late).map((t) => t.kind)).toEqual(['team', 'team']);
+    expect(after.recentTrades.find((t) => t.origin === ext)?.kind).toBe('external');
+    // the stored rows are untouched (publishing is pure), and lowercase / checksum list entries behave the same
+    expect(b.trades.every((t) => t.kind === undefined)).toBe(true);
+    expect(publicStats(b, [], meta, makeClassifier([], [late.toLowerCase()])).nonMakerWallets).toBe(1);
+    // an address on both lists is the maker; dropping a wallet from the team list makes it external again
+    expect(publicStats(b, [], meta, makeClassifier([late], [late])).makerTakerFills).toBe(2);
+    expect(publicStats(b, [], meta, makeClassifier([maker], [team])).nonMakerWallets).toBe(2);
+  });
+});
+
+/** A Kuru Trade log (filled through the Zap) on market 0x…111, tx.origin = `origin`. */
+const tradeLog = (origin: string, size: bigint, price: bigint, n: number, isBuy = true): Log =>
+  ({
+    address: A(0x111),
+    topics: encodeEventTopics({ abi: [TRADE_EVENT], eventName: 'Trade' }),
+    data: encodeAbiParameters(
+      [{ type: 'uint40' }, { type: 'address' }, { type: 'bool' }, { type: 'uint256' }, { type: 'uint96' }, { type: 'address' }, { type: 'address' }, { type: 'uint96' }],
+      [5, A(0x222), isBuy, price, 0n, A(0x444), origin as Hex, size],
+    ),
+    transactionHash: padHex(`0x${n.toString(16)}`, { size: 32 }),
+    blockNumber: BigInt(100 + n),
+    logIndex: 0,
+  }) as unknown as Log;
+
+describe('v1 stats store (classified at scan time) -> raw per-origin data', () => {
+  // The live v1 store on 2026-10-07 13:17Z: one team fill (0xd42A smoke test, 76.923076 YES @ 0.13 = 9.999999 AUSD)
+  // and the Dynamic embedded wallet's Zap buy (5.050505 YES @ 0.99 = 4.999999 AUSD), scanned as "external".
+  const smoke = getAddress('0xd42A0b394F09df88BB2120D0973569b845f2D79c');
+  const dyn = getAddress('0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427');
+  const v1Live = (): V1Batch => ({
+    counters: { fills: 2, externalFills: 1, teamFills: 1, makerTakerFills: 0, volumeAusd6: '14999998', externalVolumeAusd6: '4999999' },
+    wallets: { [dyn.toLowerCase()]: 1 },
+    teamWallets: { [smoke.toLowerCase()]: 1 },
+    trades: [
+      { tx: padHex('0x2', { size: 32 }), block: '68971890', market: A(0x171), origin: dyn, side: 'buy', price: 0.99, size: 5.050505, kind: 'external' },
+      { tx: padHex('0x1', { size: 32 }), block: '68895232', market: A(0x4f5), origin: smoke, side: 'buy', price: 0.13, size: 76.923076, kind: 'team' },
+    ],
+  });
+  const meta = { head: 2000n, cursor: 2001n, drips: 3, relayed: 1 };
+  const oldTeam = makeClassifier([A(0x222)], [smoke]);
+  const newTeam = makeClassifier([A(0x222)], [smoke, dyn]);
+  const putV1 = async (st: MemStore, v: V1Batch) => {
+    await st.put('scan:counters', v.counters);
+    await st.put('scan:wallets', v.wallets);
+    await st.put('scan:teamWallets', v.teamWallets);
+    await st.put('scan:trades', v.trades);
+    await st.put('scan:settlements', {});
+  };
+
+  it('migrates exactly when the trade list holds every fill: fills and volume per origin, reconciled with v1', () => {
+    const m = migrateV1(v1Live());
+    expect(m.exact).toBe(true);
+    expect(m.legacy).toBeNull();
+    expect(m.origins).toEqual({
+      [dyn.toLowerCase()]: { fills: 1, volumeAusd6: '4999999' },
+      [smoke.toLowerCase()]: { fills: 1, volumeAusd6: '9999999' },
+    });
+  });
+
+  it('with the old lists it publishes what v1 published; with the embedded wallet on the team list it is team', async () => {
+    const st = new MemStore();
+    await putV1(st, v1Live());
+    const b = await loadBatch(st);
+    const old = publicStats(b, [], meta, oldTeam);
+    expect(old).toMatchObject({ nonMakerWallets: 1, nonMakerFills: 1, fills: 2, teamFills: 1, teamWallets: 1, volumeAusd: 14.999998, nonMakerVolumeAusd: 4.999999 });
+    const now = publicStats(b, [], { ...meta, migration: await st.get('scan:migration') }, newTeam);
+    expect(now).toMatchObject({ nonMakerWallets: 0, nonMakerFills: 0, fills: 2, teamFills: 2, teamWallets: 2, makerTakerFills: 0, volumeAusd: 14.999998, nonMakerVolumeAusd: 0, relayedMints: 1 });
+    expect(now.recentTrades.map((t) => [t.origin, t.kind])).toEqual([[dyn, 'team'], [smoke, 'team']]);
+    expect(now.classification.v1Migration).toBe('exact');
+  });
+
+  it('migrates once, keeps the v1 keys as they were, and never counts a v1 fill twice', async () => {
+    const st = new MemStore();
+    const v1 = v1Live();
+    await putV1(st, v1);
+    const b = await loadBatch(st);
+    expect(await st.get('scan:origins')).toEqual(b.origins); // persisted by the load itself
+    expect(await st.get('scan:migration')).toMatchObject({ from: 'v1', exact: true });
+    // a new fill from the embedded wallet, scanned and saved the v2 way
+    applyLogs(b, [tradeLog(dyn, 1_000_000n, 500_000_000_000_000_000n, 3)], A(0x5e5));
+    await saveBatch(st, b);
+    const again = await loadBatch(st); // v2 store now: no second migration on top of the new data
+    expect(again.origins[dyn.toLowerCase()]).toEqual({ fills: 2, volumeAusd6: '5499999' });
+    const stats = publicStats(again, [], meta, newTeam);
+    expect(stats).toMatchObject({ fills: 3, teamFills: 3, teamWallets: 2, nonMakerWallets: 0, volumeAusd: 15.499998 });
+    // raw v1 data stays where it was
+    expect(await st.get('scan:counters')).toEqual(v1.counters);
+    expect(await st.get('scan:wallets')).toEqual(v1.wallets);
+    expect(await st.get('scan:teamWallets')).toEqual(v1.teamWallets);
+  });
+
+  it('falls back when the trade list is incomplete: wallets and fills reclassify, volume stays in its v1 class', () => {
+    const v = v1Live();
+    v.counters = { fills: 41, externalFills: 30, teamFills: 6, makerTakerFills: 5, volumeAusd6: '100000000', externalVolumeAusd6: '70000000' };
+    v.wallets = { [dyn.toLowerCase()]: 20, [A(0x901).toLowerCase()]: 10 };
+    v.teamWallets = { [smoke.toLowerCase()]: 6 };
+    const m = migrateV1(v);
+    expect(m.exact).toBe(false);
+    expect(m.legacy).toEqual({ makerFills: 5, externalVolumeAusd6: '70000000', otherVolumeAusd6: '30000000' });
+    const b = { ...emptyBatch(), origins: m.origins, legacy: m.legacy };
+    const old = publicStats(b, [], meta, oldTeam);
+    expect(old).toMatchObject({ fills: 41, nonMakerFills: 30, nonMakerWallets: 2, teamFills: 6, makerTakerFills: 5, volumeAusd: 100, nonMakerVolumeAusd: 70 });
+    const now = publicStats(b, [], meta, newTeam);
+    expect(now).toMatchObject({ fills: 41, nonMakerFills: 10, nonMakerWallets: 1, teamFills: 26, teamWallets: 2, makerTakerFills: 5, volumeAusd: 100, nonMakerVolumeAusd: 70 });
+  });
+
+  it('an origin in both v1 maps (team list changed mid-scan) is one wallet with its fills summed once', () => {
+    const v = v1Live();
+    v.counters = { fills: 31, externalFills: 20, teamFills: 11, makerTakerFills: 0, volumeAusd6: '31000000', externalVolumeAusd6: '20000000' };
+    v.wallets = { [dyn.toLowerCase()]: 20 };
+    v.teamWallets = { [dyn.toLowerCase()]: 3, [smoke.toLowerCase()]: 8 };
+    const m = migrateV1(v);
+    expect(m.origins[dyn.toLowerCase()].fills).toBe(23);
+    const b = { ...emptyBatch(), origins: m.origins, legacy: m.legacy };
+    expect(publicStats(b, [], meta, newTeam)).toMatchObject({ fills: 31, teamFills: 31, teamWallets: 2, nonMakerWallets: 0 });
+    expect(publicStats(b, [], meta, oldTeam)).toMatchObject({ fills: 31, nonMakerFills: 23, nonMakerWallets: 1, teamWallets: 1 });
+  });
+
+  it('does not trust a trade list that disagrees with the v1 counters (exact path needs a full reconciliation)', () => {
+    const v = v1Live();
+    v.counters = { ...v.counters, externalVolumeAusd6: '4999998' };
+    expect(migrateV1(v).exact).toBe(false);
+    const u = v1Live();
+    u.counters = { ...u.counters, volumeAusd6: '14999999' };
+    expect(migrateV1(u).exact).toBe(false);
+    const x = v1Live();
+    x.counters = { ...x.counters, makerTakerFills: 1 };
+    expect(migrateV1(x).exact).toBe(false);
+    const y = v1Live(); // counters agree, but v1's external map names a different wallet than the trade list
+    y.wallets = { [A(0x901).toLowerCase()]: 1 };
+    expect(migrateV1(y).exact).toBe(false);
+    const z = v1Live(); // same for the team map
+    z.teamWallets = { [smoke.toLowerCase()]: 2 };
+    expect(migrateV1(z).exact).toBe(false);
+    const w = v1Live();
+    w.trades[0] = { ...w.trades[0], kind: 'team' };
+    expect(migrateV1(w).exact).toBe(false);
+  });
+
+  it('a fresh store has nothing to migrate', async () => {
+    const st = new MemStore();
+    expect(await loadBatch(st)).toEqual(emptyBatch());
+    expect(await st.get('scan:migration')).toBeUndefined();
+  });
+
+  it('wrangler.toml lists the Dynamic embedded wallet as team, so its Zap buy is not traction', () => {
+    const toml = readFileSync(join(__dirname, '../../wrangler.toml'), 'utf8');
+    const vars: Record<string, string> = {};
+    for (const m of toml.slice(toml.indexOf('[vars]')).matchAll(/^([A-Z_0-9]+)\s*=\s*"([^"]*)"/gm)) vars[m[1]] = m[2];
+    const cfg = configFrom(vars as unknown as Env);
+    expect(cfg.teamAddresses).toContain(dyn);
+    expect(cfg.teamAddresses).toContain(smoke);
+    expect(cfg.makerAddresses).not.toContain(dyn);
+    const b = { ...emptyBatch(), origins: migrateV1(v1Live()).origins, trades: v1Live().trades };
+    expect(publicStats(b, [], meta, makeClassifier(cfg.makerAddresses, cfg.teamAddresses))).toMatchObject({ nonMakerWallets: 0, nonMakerFills: 0, teamWallets: 2 });
   });
 });
 

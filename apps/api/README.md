@@ -10,7 +10,7 @@ Live: <former API host> (Worker `isotherm-api`; Durable Object `RelayerDO`
 | `POST /api/relay/mint` | gasless complete-set mint, **authorization mode only**: `{mode:"authorization", chainId, seriesId, amount, holder, validAfter, validBefore, salt, signature}` (EIP-3009 ReceiveWithAuthorization to the vault, nonce = `keccak256(abi.encode(seriesId, amount, salt))`). 1–500 AUSD; `RELAY_PER_ADDRESS_PER_DAY`, `RELAY_PER_IP_PER_DAY`, `RELAY_DAILY_CAP`. Permit mode is refused for the v1 vault (a permit can be front-run and redirected to another series) |
 | `GET /api/snapshot` | latest maker snapshot, normalised (accepts `packages/maker` "isotherm.snapshot/v1"). Per strike: `fair`, `pmImplied`, `model` (guardrail), `bid`/`ask`, `bidSize`/`askSize` (as placed), `bidRemaining`/`askRemaining` (resting now), `mode`, `action` + `reason` (this tick's decision), `lastChangeReason` + `lastQuoteAt` (why/when the quote last changed), `fairSource` (`polymarket` / `certain` / `fallback-v0` / `fallback-intraday` / `none`) and `guardSource` (`v0` / `v0-truncated` / `intraday` / `certain`), null when not reported or not a short lowercase label |
 | `POST /api/snapshot` | `Authorization: Bearer <SNAPSHOT_TOKEN>` |
-| `GET /api/stats` | non-maker wallets, fills, volume, settled city-days, drips, relayed mints (own log scan) + `maker` (maker-reported, separate) |
+| `GET /api/stats` | non-maker wallets, fills, volume, settled city-days, drips, relayed mints (own log scan; maker / team / external decided at publish time, see "Who counts as traction") + `maker` (maker-reported, separate) |
 | `POST /api/stats` | `Bearer <SNAPSHOT_TOKEN>`: maker-reported stats |
 | `GET /api/settlements` | resolved ladders with report tx hashes |
 | `POST /api/admin/tick`, `/api/admin/rescan {fromBlock,toBlock,markets?}` | `Bearer <ADMIN_TOKEN>` |
@@ -42,6 +42,34 @@ tr -d '\n' < ~/.config/isotherm/relayer.key | XDG_CONFIG_HOME=<wrangler config d
 
 Secrets: `RELAYER_KEY` (~/.config/isotherm/relayer.key), `SNAPSHOT_TOKEN` (~/.config/isotherm/api-snapshot.token),
 `ADMIN_TOKEN` (~/.config/isotherm/api-admin.token). Budget knobs are plain vars in `wrangler.toml`.
+
+## Who counts as traction (`/api/stats` classification)
+
+The log scan stores **raw** data per `tx.origin` (fills and AUSD volume for every wallet that filled on an Isotherm
+book, ours included) in the Durable Object. It does not decide who is who. Each time stats are published (every cron
+tick), `publicStats` classifies every origin from the **current** lists: `MAKER_ADDRESSES` (+ deployment `maker`
+roles) → maker, else `TEAM_ADDRESSES` (+ deployer / operator / taker / owner / guardian / attester / relayer roles) →
+team, else external. Only external origins count toward `nonMakerWallets`, `nonMakerFills` and `nonMakerVolumeAusd`.
+`fills` = `nonMakerFills` + `teamFills` + `makerTakerFills`; each wallet is in exactly one class. `recentTrades[].kind`
+is recomputed the same way, and `classification` says when and from how many listed addresses.
+
+So **adding a wallet to `TEAM_ADDRESSES` and redeploying reclassifies its past fills too.** You do not need a rescan.
+Removing it makes them external again.
+
+Current team wallets that are not deployment roles:
+- `0xd42A…D79c`: the go-live smoke-test dev wallet (`docs/evidence/golive`).
+- `0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427`: a team test **Dynamic embedded wallet**. It was created by email login on the live site
+  (Dynamic Sandbox environment) on 2026-10-07. The deployer funded it with 0.25 MON and 10,000 faucet AUSD. Its
+  gasless relayed mint (`0xca08d015…`) and its Zap "Buy YES" (`0x361668d8…`, RCSS 2026-10-08 ≥28) are our own
+  testing, so they are team, not traction.
+  Any further wallet a team member creates through Dynamic (or any other login) must be added here as well.
+
+Upgrade from the v1 scanner (which classified at scan time): on first load, the v1 keys are migrated once into the
+raw per-origin map and are then left as they were (`scan:counters`, `scan:wallets`, `scan:teamWallets`). The
+migration is **exact** when v1's trade list still held every fill and the rebuilt per-origin fills and volume
+reconcile with all of v1's counters and maps. That was the case live: 2 fills, `classification.v1Migration: "exact"`.
+Otherwise it is **approximate**. Per-origin fills still come from v1's maps, so wallets and fills reclassify. v1 kept
+volume and maker fills only per class, so those stay in their scan-time class. Totals are unchanged either way.
 
 ## MON budget (who can spend the relayer's test MON, and how much)
 

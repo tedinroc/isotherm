@@ -6,7 +6,8 @@
 //   POST /api/relay/mint {...}       relays a signed EIP-3009 authorization to the vault (permit mode is off for v1)
 //   GET  /api/snapshot               the maker's latest ladder snapshot (fair value, Polymarket-implied, obs max)
 //   POST /api/snapshot               (Bearer SNAPSHOT_TOKEN) maker publishes a snapshot
-//   GET  /api/stats                  non-maker wallets, fills, settled city-days (from our own log scan)
+//   GET  /api/stats                  non-maker wallets, fills, settled city-days (own log scan; maker/team/external
+//                                    decided at publish time from the current MAKER_/TEAM_ADDRESSES)
 //   POST /api/stats                  (Bearer SNAPSHOT_TOKEN) maker-reported stats, shown separately
 //   GET  /api/settlements            resolved ladders with tx hashes (for the settlement history screen)
 //   POST /api/admin/rescan|tick      (Bearer ADMIN_TOKEN) backfill a block range / run the cron now

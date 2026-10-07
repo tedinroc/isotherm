@@ -4,7 +4,7 @@
 |---|---|---|
 | [OPERATIONS.md](OPERATIONS.md) | Runbook for the live testnet deployment: keys, launchd jobs, caps, stop/restart, emergency (challenge first, then pause), funding, API/web deploy, settlement | Operators |
 | [evidence/](evidence/) | `golive/`: go-live evidence (read-only). `docs-pass/`: the forge re-run and the IKuru header bytecode check from the 2026-10-07 docs pass | — |
-| [FIXES.md](FIXES.md) | The 2026-10-07 docs + logo pass, its round 2 (verifier item 3) and round 3 (Dynamic round, CRE login, live API caps): each change with its evidence | — |
+| [FIXES.md](FIXES.md) | The 2026-10-07 docs + logo pass, its round 2 (verifier item 3), round 3 (Dynamic round, CRE login, live API caps) and round 4 (Dynamic live, web redeploy): each change with its evidence | — |
 
 
 

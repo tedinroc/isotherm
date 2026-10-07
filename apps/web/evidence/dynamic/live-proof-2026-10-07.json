@@ -1,0 +1,85 @@
+{
+  "label": "TEAM TEST WALLET (Dynamic embedded wallet). Not a user, not traction.",
+  "wallet": "0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427",
+  "wallet_kind": "Dynamic embedded wallet (Sandbox environment 3eaae4f7-b9bb-4a0a-a578-00ff7008a460, email login on https://isotherm.pages.dev, smart wallets off = plain EOA)",
+  "chain": "Monad testnet (10143)",
+  "rpc": "https://testnet-rpc.monad.xyz",
+  "relayer": "0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f",
+  "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+  "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+  "outcome_tokens": {
+    "yes": "0x67a91138014c30bf5f28a900326971bd08cd1bc4 (RCSS-20261008-GE28-Y)",
+    "no": "0x49b7900d282e3f5262dd712d2e66ff0166d7516d (RCSS-20261008-GE28-N)"
+  },
+  "txs": [
+    {
+      "step": "fund-mon",
+      "what": "Deployer sends 0.25 testnet MON to the embedded wallet (gas money for its own trades)",
+      "tx": "0x6ed02038b3473da721713530783e8e31957bdb92f412c26fc349345d885b90be",
+      "from": "0xb855f2bca7c12db2aa9d70740c6cf40808325c11",
+      "to": "0xf4a3377d1200584d8ab7d7e64c6b17dc6c792427",
+      "nonce": 42,
+      "block": 68970676,
+      "time_utc": "2026-10-07T12:30:46Z",
+      "status": "success",
+      "explorer": "https://testnet.monadvision.com/tx/0x6ed02038b3473da721713530783e8e31957bdb92f412c26fc349345d885b90be"
+    },
+    {
+      "step": "fund-ausd",
+      "what": "Deployer calls the AUSD faucet requestFunds for the embedded wallet: 10,000 test AUSD",
+      "tx": "0xf4f388864bf2e3d6d386c024a76d6c2b6ffbd4f481ef05376d0c44c1ccf1e664",
+      "from": "0xb855f2bca7c12db2aa9d70740c6cf40808325c11",
+      "to": "0xd236c18d274e54faccc3dd9dda4b27965a73ee6c",
+      "nonce": 43,
+      "block": 68970687,
+      "time_utc": "2026-10-07T12:30:49Z",
+      "status": "success",
+      "explorer": "https://testnet.monadvision.com/tx/0xf4f388864bf2e3d6d386c024a76d6c2b6ffbd4f481ef05376d0c44c1ccf1e664"
+    },
+    {
+      "step": "gasless-mint",
+      "what": "Embedded wallet signed an EIP-3009 ReceiveWithAuthorization (5 AUSD); the live API relayer submitted vault.mintSetWithAuthorization: 5 YES + 5 NO of RCSS 2026-10-08 >=28C, 0 MON paid by the wallet",
+      "tx": "0xca08d0150c228c16f9841b00244654ec39f96551c52a0e063584d2adabb6bf04",
+      "from": "0xb0b9f5e93c4d4bb448ec96191393bf35c9e8429f",
+      "to": "0xae36cf0a163bafcde4d40a6ab7b5e3c762ad7b39",
+      "nonce": 12,
+      "block": 68971790,
+      "time_utc": "2026-10-07T12:36:22Z",
+      "status": "success",
+      "explorer": "https://testnet.monadvision.com/tx/0xca08d0150c228c16f9841b00244654ec39f96551c52a0e063584d2adabb6bf04"
+    },
+    {
+      "step": "approve",
+      "what": "Embedded wallet's own tx (nonce 0): AUSD approve(Zap, 100,000)",
+      "tx": "0x99b2ad622d55ff700a60bc6f403983051a9d73220123bd6ffda13d3617556e52",
+      "from": "0xf4a3377d1200584d8ab7d7e64c6b17dc6c792427",
+      "to": "0xa9012a055bd4e0edff8ce09f960291c09d5322dc",
+      "nonce": 0,
+      "block": 68971859,
+      "time_utc": "2026-10-07T12:36:43Z",
+      "status": "success",
+      "explorer": "https://testnet.monadvision.com/tx/0x99b2ad622d55ff700a60bc6f403983051a9d73220123bd6ffda13d3617556e52"
+    },
+    {
+      "step": "buy-yes",
+      "what": "Embedded wallet's own tx (nonce 1): Zap.buyYes 5 AUSD on RCSS 2026-10-08 >=28C -> 5.045454 YES (min 4.944544), filled on Kuru",
+      "tx": "0x361668d832a2acd47180b8875c9ce44ce0ff6f7dec9a071755e7c8d9dcb4681c",
+      "from": "0xf4a3377d1200584d8ab7d7e64c6b17dc6c792427",
+      "to": "0x1acaf47987fe570df5d136ae1cac0d45e2b8cfb0",
+      "nonce": 1,
+      "block": 68971890,
+      "time_utc": "2026-10-07T12:36:52Z",
+      "status": "success",
+      "explorer": "https://testnet.monadvision.com/tx/0x361668d832a2acd47180b8875c9ce44ce0ff6f7dec9a071755e7c8d9dcb4681c"
+    }
+  ],
+  "wallet_state_after": {
+    "nonce": 2,
+    "mon": "0.191115400000000000",
+    "ausd_raw": "9990000000",
+    "yes_ge28_raw": "10045454",
+    "no_ge28_raw": "5000000"
+  },
+  "re_read_at_block": 68981655,
+  "re_read_at_utc": "2026-10-07T13:26:01Z"
+}

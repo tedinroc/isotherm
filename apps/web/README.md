@@ -17,9 +17,10 @@ Environment (all optional, see `env.example`): `VITE_DYNAMIC_ENVIRONMENT_ID`, `V
 **Login:** builds read the public Dynamic Sandbox environment ID from `.env.production` (committed; `npm run dev` reads
 `.env.local` instead, generated from `~/.config/isotherm/dynamic.env`). With it, "Sign in with email" (Dynamic, embedded
 wallet) is the default and the labelled dev wallet (a testnet burner key in browser storage) is the fallback;
-`VITE_DYNAMIC_ENVIRONMENT_ID= npm run build` makes a dev-wallet-only build. Status: the Dynamic login renders on
-localhost with the real environment, but the embedded-wallet proof (login, relayed mint, Buy Yes) has not run yet and
-the live site still serves the previous dev-wallet-only deployment: see [`evidence/dynamic/RESULT.md`](evidence/dynamic/RESULT.md).
+`VITE_DYNAMIC_ENVIRONMENT_ID= npm run build` makes a dev-wallet-only build. Status: Dynamic is enabled on the live site
+(redeployed 2026-10-07 13:21 UTC with the Open-Meteo credit, main chunk `index-Dl6lo4gH.js`). The first embedded-wallet
+login, relayed mint (`0xca08d015…bf04`) and Zap Buy Yes (`0x361668d8…681c`) ran on Monad testnet from the team's own
+wallet `0xF4a3…2427`, a team wallet, not traction: see [`evidence/dynamic/RESULT.md`](evidence/dynamic/RESULT.md) §5.
 
 **Buy No** is two transactions behind one tap: `vault.mintSet(seriesId, n)`, then `zap.sellYes(seriesId, market, n,
 minAusdOut)`, with a progress list in the trade sheet (`src/lib/buyNo.ts`, `src/lib/buyNoPlan.ts`). The app never calls

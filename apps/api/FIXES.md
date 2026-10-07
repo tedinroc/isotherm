@@ -1,6 +1,30 @@
 # apps/api: fixes from the verifier rounds (2026-10-07)
 
-**Live now:** Worker `isotherm-api`, version `ea73ccfa-8f6d-41f7-b1fd-b52f015b050b`, build `a41d37d-dirty.84a823aac98e`, deployed 2026-10-07T08:02:18Z (wrangler 3.114.17), at <former API host>. `/api/health` `version` says so itself.
+**Live now:** Worker `isotherm-api`, version `0c112836-34d6-49ce-a719-f29bfa511479`, build `dfd0c41-dirty.045f16cadb36`, deployed 2026-10-07T13:27:31Z (wrangler 3.114.17), at <former API host>. `/api/health` `version` says so itself.
+
+## Round 3: stats classification at publish time (2026-10-07)
+
+**No MON was spent.** The relayer's balance (4.570345078 MON) and nonce (13) were the same before and after the deploy, as were `dripsTotal` 3 and `relayedTotal` 1. The cron did the publish; no admin tick was called (`evidence/stats-reclassify-2026-10-07.txt`).
+
+| # | Change | Evidence |
+|---|---|---|
+| R3-1 | **Maker / team / external is decided at publish time, from the current lists.**<br>Before: the scanner classified each fill when it scanned it and kept per-class counters and maps, so adding a wallet to `TEAM_ADDRESSES` did not move its earlier fills.<br>Now: the scan keeps raw per-`tx.origin` fills and volume for every origin (`scan:origins`). `publicStats` classifies them on each publish (maker, then team, then external) and also recomputes `recentTrades[].kind`. Each origin lands in exactly one class, so `fills` = `nonMakerFills` + `teamFills` + `makerTakerFills`. New fields: `makerTakerFills`, `classification {appliedAt, makerAddresses, teamAddresses, v1Migration}`. | Unit tests (9 new): reclassification, maker precedence, removal, no double count. Fork test asserts `classification` and the fills identity through the real Durable Object. |
+| R3-2 | **One-time v1 migration.**<br>A v1 store is migrated on first load and the result is written to storage. v1's own keys are kept unchanged and never read again.<br>• Exact: when the v1 trade list held every fill and the rebuilt per-origin fills and volume match all of v1's counters and maps.<br>• Approximate otherwise: per-origin fills still come from v1's maps, so they reclassify, and volume / maker fills stay in their v1 class.<br>Totals are unchanged either way. | Live: `v1Migration: "exact"`. Unit tests cover the exact path, a reconciliation mismatch, the fallback, an origin present in both v1 maps (counted once), and migrate-once followed by a new fill. |
+| R3-3 | **`TEAM_ADDRESSES` += `0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427`**, the team's Dynamic embedded wallet (email login on the live site). Its relayed mint `0xca08d015…` and Zap buy `0x361668d8…` (RCSS 2026-10-08 ≥28, 5.050505 YES @ 0.99) are our own testing. README "Who counts as traction" documents this. | Unit test parses `wrangler.toml` through `configFrom`. Live `/api/stats`:<br>• before: `nonMakerWallets` 1, `nonMakerVolumeAusd` 4.999999, that trade `external`<br>• after: `nonMakerWallets` 0, `nonMakerFills` 0, `teamFills` 2, `teamWallets` 2, `nonMakerVolumeAusd` 0, the trade `team`, `relayedMints` 1<br>Three consecutive publishes gave the same numbers. |
+
+Tests: unit **57/57**, `tsc` 0, fork **6/6** on anvil :19660 and wrangler dev :19661/:19662, all exited afterwards (`evidence/stats-reclassify-2026-10-07-tests.txt`). Mutation: **15/15** mutants caught. They covered:
+- the stored kind published;
+- the team list ignored;
+- re-migration on every load;
+- the fallback dropping team wallets, or overwriting instead of summing;
+- each of the five reconciliation checks skipped (total volume, external volume, maker fills, external map, team map);
+- the legacy remainder ignored;
+- team volume counted as external;
+- the wallet missing from `wrangler.toml`;
+- v1 keys overwritten on save;
+- the raw per-origin map not saved.
+
+The tests were tightened after two mutants survived the first pass (the total-volume check skipped, v1 keys overwritten on save), and a third survived the second pass (the map checks skipped).
 
 ## Round 2 (verifier issue 1)
 

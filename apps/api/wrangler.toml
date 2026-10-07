@@ -68,4 +68,6 @@ REAL_STATIONS = "RCSS,RJTT,ZGSZ,RKSI,VHHH"
 # Wallets excluded from the public "non-maker" counts (deployments/testnet.json roles are added automatically).
 MAKER_ADDRESSES = "0xd572638F07829D1c3636400FB73CF34Ca6c7448a"
 # 0xd42A…D79c = the go-live smoke-test dev wallet (docs/evidence/golive), our own, so it is not a "trading wallet".
-TEAM_ADDRESSES = "0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11,0x636D0598E416e5f66acD0F6Ac2Ae96306529b4d5,0x029049a9dA77231dd86A90E52Fd6Db542424e727,0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f,0xd42A0b394F09df88BB2120D0973569b845f2D79c"
+# 0xF4a3…2427 = the team's Dynamic embedded wallet (email login on the live site, 2026-10-07), our own as well.
+# The stats classify at publish time from this list, so adding a wallet here also reclassifies its earlier fills.
+TEAM_ADDRESSES = "0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11,0x636D0598E416e5f66acD0F6Ac2Ae96306529b4d5,0x029049a9dA77231dd86A90E52Fd6Db542424e727,0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f,0xd42A0b394F09df88BB2120D0973569b845f2D79c,0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427"

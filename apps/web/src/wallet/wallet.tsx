@@ -1,5 +1,5 @@
 // Wallet layer. Two sources feed one context:
-//   - Dynamic (email/Google login, embedded MPC wallet) when VITE_DYNAMIC_ENVIRONMENT_ID is set (lazy-loaded SDK);
+//   - Dynamic (email login, embedded MPC wallet) when VITE_DYNAMIC_ENVIRONMENT_ID is set (lazy-loaded SDK);
 //   - a clearly-labelled dev wallet: a testnet burner key in this browser's localStorage, so judges and testers can
 //     use the app without an account.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';

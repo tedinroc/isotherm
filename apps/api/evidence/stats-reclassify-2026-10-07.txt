@@ -1,0 +1,33 @@
+# /api/stats publish-time classification — live verification (2026-10-07T13:27:16Z)
+## BEFORE deploy
+relayer 0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f balance_wei=4570345078000000000 nonce=13
+health version: {"app": "1.0.0", "build": "a41d37d-dirty.84a823aac98e", "commit": "a41d37d", "dirty": true, "builtAt": "2026-10-07T08:02:11.033Z", "workerVersionId": "ea73ccfa-8f6d-41f7-b1fd-b52f015b050b", "deployedAt": "2026-10-07T08:02:18.233Z"} dripsTotal 3 relayedTotal 1
+stats: {"nonMakerWallets": 1, "nonMakerFills": 1, "fills": 2, "teamFills": 1, "teamWallets": 1, "volumeAusd": 14.999998, "nonMakerVolumeAusd": 4.999999, "relayedMints": 1, "drips": 3, "scannedToBlock": "68981803", "updatedAt": "2026-10-07T13:26:47.482Z"}
+  trade 0x361668d832a2acd47180b8875c9ce44ce0ff6f7dec9a071755e7c8d9dcb4681c 0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427 external 5.050505 @ 0.99
+  trade 0x065660cc7ef26ba073f0b96d69f0007fec514ff8d6cf34a52a45f23781d3125f 0xd42A0b394F09df88BB2120D0973569b845f2D79c team 76.923076 @ 0.13
+
+## Deploy
+XDG_CONFIG_HOME=<wrangler config dir> npm run deploy  ->  Current Version ID: 0c112836-34d6-49ce-a719-f29bfa511479
+TEAM_ADDRESSES += 0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427 (Dynamic embedded wallet, team test wallet)
+
+## AFTER deploy: first cron publish (13:27:47Z, the tick that ran the v1 -> raw per-origin migration)
+health: ok True {"app": "1.0.0", "build": "dfd0c41-dirty.045f16cadb36", "commit": "dfd0c41", "dirty": true, "builtAt": "2026-10-07T13:27:25.779Z", "workerVersionId": "0c112836-34d6-49ce-a719-f29bfa511479", "deployedAt": "2026-10-07T13:27:31.554Z"} dripsTotal 3 relayedTotal 1
+stats: {"nonMakerWallets": 0, "nonMakerFills": 0, "fills": 2, "teamFills": 2, "teamWallets": 2, "makerTakerFills": 0, "volumeAusd": 14.999998, "nonMakerVolumeAusd": 0, "relayedMints": 1, "drips": 3, "scannedToBlock": "68982003", "classification": {"appliedAt": "publish", "makerAddresses": 1, "teamAddresses": 9, "v1Migration": "exact"}, "updatedAt": "2026-10-07T13:27:47.654Z"}
+  trade 0x361668d832a2acd47180b8875c9ce44ce0ff6f7dec9a071755e7c8d9dcb4681c 0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427 team 5.050505 @ 0.99
+  trade 0x065660cc7ef26ba073f0b96d69f0007fec514ff8d6cf34a52a45f23781d3125f 0xd42A0b394F09df88BB2120D0973569b845f2D79c team 76.923076 @ 0.13
+later publishes, same numbers (no double count after the migration): 13:28:47Z (scannedToBlock 68982201), and 13:30:49Z:
+stats: {"nonMakerWallets": 0, "nonMakerFills": 0, "fills": 2, "teamFills": 2, "teamWallets": 2, "makerTakerFills": 0, "volumeAusd": 14.999998, "nonMakerVolumeAusd": 0, "relayedMints": 1, "drips": 3, "scannedToBlock": "68982603", "lagBlocks": 0, "classification": {"appliedAt": "publish", "makerAddresses": 1, "teamAddresses": 9, "v1Migration": "exact"}, "updatedAt": "2026-10-07T13:30:49.428Z"}
+  trade 0x361668d832a2acd47180b8875c9ce44ce0ff6f7dec9a071755e7c8d9dcb4681c 0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427 team 5.050505 @ 0.99
+  trade 0x065660cc7ef26ba073f0b96d69f0007fec514ff8d6cf34a52a45f23781d3125f 0xd42A0b394F09df88BB2120D0973569b845f2D79c team 76.923076 @ 0.13
+relayer 0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f balance_wei=4570345078000000000 nonce=13
+embedded wallet 0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427 nonce=2
+No MON spent: relayer balance 4570345078000000000 wei and nonce 13 identical before and after; drips 3 / relayed 1 unchanged; no admin tick was called (the cron did the publish).
+
+## On-chain facts re-verified (cast receipt on https://testnet-rpc.monad.xyz)
+0x6ed02038b3473da721713530783e8e31957bdb92f412c26fc349345d885b90be from 0xb855f2bca7c12db2aa9d70740c6cf40808325c11 to 0xf4a3377d1200584d8ab7d7e64c6b17dc6c792427 block 68970676 status 0x1
+0xf4f388864bf2e3d6d386c024a76d6c2b6ffbd4f481ef05376d0c44c1ccf1e664 from 0xb855f2bca7c12db2aa9d70740c6cf40808325c11 to 0xd236c18d274e54faccc3dd9dda4b27965a73ee6c block 68970687 status 0x1
+0xca08d0150c228c16f9841b00244654ec39f96551c52a0e063584d2adabb6bf04 from 0xb0b9f5e93c4d4bb448ec96191393bf35c9e8429f to 0xae36cf0a163bafcde4d40a6ab7b5e3c762ad7b39 block 68971790 status 0x1
+0x361668d832a2acd47180b8875c9ce44ce0ff6f7dec9a071755e7c8d9dcb4681c from 0xf4a3377d1200584d8ab7d7e64c6b17dc6c792427 to 0x1acaf47987fe570df5d136ae1cac0d45e2b8cfb0 block 68971890 status 0x1
+  0x6ed0… = deployer -> 0xF4a3 0.25 MON; 0xf4f3… = AUSD faucet -> 0xF4a3 10,000 AUSD (Transfer log);
+  0xca08… = relayer -> vault mintSetWithAuthorization (0xF4a3 -> vault 5 AUSD, 5 YES + 5 NO minted to 0xF4a3);
+  0x3616… = 0xF4a3 -> Zap buy; Kuru Trade on 0x171b…DBd7 with txOrigin 0xF4a3, 5.050505 YES @ 0.99.

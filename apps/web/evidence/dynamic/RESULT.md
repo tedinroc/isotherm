@@ -1,6 +1,8 @@
 # Dynamic round: RESULT (2026-10-07)
 
-**Status: partly done. The code is ready, but the Dynamic proof has not run.**
+> **Update, 2026-10-07 13:30 UTC: the proof has now run, on the live site.** A team member signed in with Dynamic email login on https://isotherm.pages.dev, and the resulting embedded wallet made a relayed (gasless) mint and a Zap Buy Yes on Monad testnet. It is a team test wallet, so this is a team test, not traction. See [§5](#5-live-proof-on-2026-10-07). Sections 1–4 and the runbook are the original record from before the login.
+
+**Status (original, 08:40 UTC): partly done. The code is ready, but the Dynamic proof has not run.**
 
 - **Done.** The two code fixes; Dynamic is wired into every build and is the default sign-in; Dynamic loads and its login renders on localhost (dev build and production build).
 - **Not done.**
@@ -147,3 +149,65 @@ The app adds 10143 and 143 itself through `overrides.evmNetworks` with `mergeNet
 - Servers this round started have all been stopped: vite :5201, :5203, preview :5202, anvil :19701.
 - Key scan of `apps/web`, excluding `node_modules`, against every value of 20+ characters in `~/.config/isotherm/*` except `dynamic.env`: **0 secrets found**. The only matches are the public API URL from `maker.env`, which also appears in `env.example`, `src/config.ts` and the bundle.
 - No git commits.
+
+## 5. Live proof on 2026-10-07
+
+**Status: done on the live site, with a team test wallet. This is a team test, not traction.**
+
+**Who and where.**
+- A team member signed in with Dynamic email login on **https://isotherm.pages.dev** (Sandbox environment `3eaae4f7-b9bb-4a0a-a578-00ff7008a460`), then traded from a phone.
+- This was not the localhost `+dynamic_test` login in the runbook above. The Dynamic build was already live: before this round's redeploy, the live main chunk was `index-CIjHIjYB.js`, the production build from §2, which carries the environment ID.
+- Dynamic created embedded wallet **`0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427`**. It is a team test wallet, so it counts as a **team wallet**. The API counts it as one: it is in `TEAM_ADDRESSES` (`apps/api/wrangler.toml`), and live `/api/stats` at 13:28 UTC shows its fill as `team`, with `nonMakerWallets 0`.
+
+**Dashboard.** Monad Testnet and Monad Mainnet are now enabled in the Sandbox environment. The public settings, re-read at 13:24 UTC, show:
+
+| Setting | Value |
+|---|---|
+| `environmentName` | `sandbox` |
+| EVM networks | `1 Ethereum Mainnet`, `143 Monad Mainnet`, `10143 Monad Testnet` |
+| Embedded wallets | automatic creation on, EVM primary, `defaultWalletVersion V3` |
+| Smart wallets | off |
+
+The copy is in [`public-sdk-settings-2026-10-07T1324Z.json`](public-sdk-settings-2026-10-07T1324Z.json).
+
+**Transactions.** All are on Monad testnet and all have status `success`. They were re-read with `cast receipt` / `cast tx` on `https://testnet-rpc.monad.xyz` at 13:26 UTC (block 68,981,655). The machine-readable copy is [`live-proof-2026-10-07.json`](live-proof-2026-10-07.json).
+
+| # | Time (UTC) | Tx | Block | From → to | What happened |
+|---|---|---|---|---|---|
+| 1 | 12:30:46 | [`0x6ed02038b3473da721713530783e8e31957bdb92f412c26fc349345d885b90be`](https://testnet.monadvision.com/tx/0x6ed02038b3473da721713530783e8e31957bdb92f412c26fc349345d885b90be) | 68,970,676 | deployer `0xb855…5c11` (nonce 42) → embedded wallet | Funding: 0.25 testnet MON, for the wallet's own trades |
+| 2 | 12:30:49 | [`0xf4f388864bf2e3d6d386c024a76d6c2b6ffbd4f481ef05376d0c44c1ccf1e664`](https://testnet.monadvision.com/tx/0xf4f388864bf2e3d6d386c024a76d6c2b6ffbd4f481ef05376d0c44c1ccf1e664) | 68,970,687 | deployer (nonce 43) → AUSD faucet `requestFunds` | Funding: 10,000 test AUSD to the embedded wallet |
+| 3 | 12:36:22 | [`0xca08d0150c228c16f9841b00244654ec39f96551c52a0e063584d2adabb6bf04`](https://testnet.monadvision.com/tx/0xca08d0150c228c16f9841b00244654ec39f96551c52a0e063584d2adabb6bf04) | 68,971,790 | relayer `0xb0b9…429f` (nonce 12) → vault `mintSetWithAuthorization` | **Gasless mint.** The embedded wallet signed an EIP-3009 `ReceiveWithAuthorization` for 5 AUSD (domain "Agora Dollar" v1, chain 10143). AUSD emitted `AuthorizationUsed(authorizer = embedded wallet)` and moved 5 AUSD from the wallet to the vault. The vault minted 5 `RCSS-20261008-GE28-Y` and 5 `RCSS-20261008-GE28-N` to the wallet. The relayer paid the gas (282,612 × 102 gwei = 0.0288 MON); the wallet paid none. `/api/health` afterwards reported `relayedTotal 1`, so this was the live API's first relayed mint. |
+| 4 | 12:36:43 | [`0x99b2ad622d55ff700a60bc6f403983051a9d73220123bd6ffda13d3617556e52`](https://testnet.monadvision.com/tx/0x99b2ad622d55ff700a60bc6f403983051a9d73220123bd6ffda13d3617556e52) | 68,971,859 | **embedded wallet** (nonce 0) → AUSD `approve` | The wallet approved the Zap for 100,000 AUSD; 99,995 is left |
+| 5 | 12:36:52 | [`0x361668d832a2acd47180b8875c9ce44ce0ff6f7dec9a071755e7c8d9dcb4681c`](https://testnet.monadvision.com/tx/0x361668d832a2acd47180b8875c9ce44ce0ff6f7dec9a071755e7c8d9dcb4681c) | 68,971,890 | **embedded wallet** (nonce 1) → Zap `buyYes` | **Buy YES**, sent and paid for by the wallet itself. Calldata: `ausdIn 5,000,000`, `minYesOut 4,944,544` (2% below the quote). On the ≥ 28 °C Kuru book `0x171b…DBd7`, Kuru's `Trade` event shows `price 0.99` and `filledSize 5.050505`. The Zap's event shows `yesOut 5,045,454` and `refund 0`. The difference between the two sizes is Kuru's 0.1% taker fee. |
+
+**Wallet after the proof** (re-read at 13:26 UTC):
+
+| Field | Value |
+|---|---|
+| Nonce | 2 |
+| MON | 0.1911154. That is 0.0588846 spent on its two own transactions: (78,223 + 499,077) gas × 102 gwei, because Monad bills the gas limit. |
+| AUSD | 9,990 |
+| YES ≥ 28 °C | 10.045454 |
+| NO ≥ 28 °C | 5 |
+
+**What this proves.**
+- The Dynamic embedded wallet works on chain 10143. It signs EIP-712 typed data, and AUSD's `receiveWithAuthorization` accepts that signature, which means it is a plain EOA as expected with smart wallets off.
+- The same wallet also sends ordinary transactions to our contracts.
+- The relay path that had been proven only with a burner wallet on a fork is now proven on live testnet.
+
+**What it does not prove.**
+- The proof does not say whether the wallet relied on the dashboard's 10143 entry or on the app's `overrides.evmNetworks` injection, because both are now present.
+- There is no screenshot or recording of the phone session in the repo.
+- The Portfolio view was not checked independently. The on-chain balances above are the check.
+- Delegated access and server wallets are still not built or used.
+- No non-team user has signed in yet, as far as we know.
+
+**Redeploy (this round, 13:21 UTC).** `npm run build` read the environment ID from `.env.production`, then `wrangler@3 pages deploy dist --project-name isotherm --branch main` ran. Deployment `https://<retired-deployment>.isotherm.pages.dev`.
+- New main chunk: `index-Dl6lo4gH.js`. It contains the environment ID once, "Sign in with email" with the `dynamic-login` button, and the Open-Meteo CC BY credit (`open-meteo-credit`, added in `dfd0c41` and not in the previous live build). The Dynamic SDK chunk is `dynamic-DKA4llTK.js`.
+- `vitest`: 35/35.
+
+**Read-only smoke check of the live site (13:21–13:25 UTC, in-app browser; no login).**
+- The page served `index-Dl6lo4gH.js`.
+- The credit rendered: "“Model” is built from Open-Meteo forecasts, bias-corrected by Isotherm (modified). Weather data by Open-Meteo.com (CC BY 4.0)."
+- The page lazy-loaded `dynamic-DKA4llTK.js`, which happens only when an environment ID is configured. There were no console errors.
+- The sign-in sheet itself was not opened. That browser profile already holds a dev wallet, so the header shows an address rather than "Sign in". The Dynamic button's presence was therefore checked in the served main chunk instead (`curl`): "Sign in with email" and `data-testid="dynamic-login"` are both there.

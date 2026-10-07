@@ -1,4 +1,4 @@
-// Dynamic (email/Google login + embedded wallet), loaded only when VITE_DYNAMIC_ENVIRONMENT_ID is set.
+// Dynamic (email login + embedded wallet), loaded only when VITE_DYNAMIC_ENVIRONMENT_ID is set.
 // Monad testnet and mainnet are injected with overrides.evmNetworks (our definitions win over the dashboard's);
 // they must also be enabled in the Dynamic dashboard. Dynamic's gas sponsorship does not cover Monad, so new
 // users get MON from our own drip (apps/api).

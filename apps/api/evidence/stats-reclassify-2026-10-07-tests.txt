@@ -1,0 +1,22 @@
+# unit + typecheck, 2026-10-07T13:32:29Z (fork run: see the end of this file)
+[build-info] 1.0.0 build dfd0c41-dirty.045f16cadb36 (17 files)
+> node scripts/copy-deployments.mjs && node scripts/build-info.mjs
+[build-info] 1.0.0 build dfd0c41-dirty.045f16cadb36 (17 files)
+ ✓ test/unit/relay-abuse.test.ts (16 tests) 245ms
+ ✓ test/unit/size-caps.test.ts (8 tests) 58ms
+ ✓ test/unit/api-units.test.ts (33 tests) 12ms
+ Test Files  3 passed (3)
+      Tests  57 passed (57)
+
+# fork (anvil :19660, wrangler dev :19661/:19662; exited afterwards), run at 13:26Z before the deploy; src identical to the deploy except the index.ts header comment
+> node scripts/copy-deployments.mjs && node scripts/build-info.mjs
+[build-info] 1.0.0 build dfd0c41-dirty.ecd8f8281daa (17 files)
+[fork] relayed mintSetWithAuthorization: estimate 309470, gas limit 334228, gas used 309470
+ ✓ test/integration/api.fork.test.ts (6 tests) 35205ms
+   ✓ isotherm-api on a Monad testnet fork > serves health with the relayer and v1 relay modes; CORS only for allowed origins  1005ms
+   ✓ isotherm-api on a Monad testnet fork > admin endpoints need the bearer token; the cron tick refills the AUSD float from the faucet  1938ms
+   ✓ isotherm-api on a Monad testnet fork > drips MON + AUSD once per address, never to contracts, and enforces the per-IP limit  2893ms
+   ✓ isotherm-api on a Monad testnet fork > relays a signed EIP-3009 mint for a user with no MON; refuses permit mode, dust, tampering and over-limit requests  6459ms
+   ✓ isotherm-api on a Monad testnet fork > counts a non-maker Kuru fill and a CRE settlement in /api/stats and /api/settlements  14318ms
+ Test Files  1 passed (1)
+      Tests  6 passed (6)

@@ -1,0 +1,616 @@
+{
+  "chains": [
+    {
+      "enabled": false,
+      "name": "aleo",
+      "networks": [
+        {
+          "chainName": "Mainnet",
+          "enabled": true,
+          "networkId": 0
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "algorand",
+      "networks": []
+    },
+    {
+      "enabled": false,
+      "name": "aptos",
+      "networks": [
+        {
+          "chainName": "Mainnet",
+          "enabled": true,
+          "networkId": 1
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "bitcoin",
+      "networks": [
+        {
+          "chainName": "Mainnet",
+          "enabled": true,
+          "networkId": 1
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "cosmos",
+      "networks": []
+    },
+    {
+      "enabled": false,
+      "name": "eclipse",
+      "networks": [
+        {
+          "chainName": "mainnet",
+          "enabled": true,
+          "networkId": 1
+        }
+      ]
+    },
+    {
+      "enabled": true,
+      "name": "ethereum",
+      "networks": []
+    },
+    {
+      "enabled": true,
+      "name": "evm",
+      "networks": [
+        {
+          "chainName": "Ethereum Mainnet",
+          "enabled": true,
+          "networkId": 1
+        },
+        {
+          "chainName": "Monad Mainnet",
+          "enabled": true,
+          "networkId": 143
+        },
+        {
+          "chainName": "Monad Testnet",
+          "enabled": true,
+          "networkId": 10143
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "flow",
+      "networks": []
+    },
+    {
+      "enabled": false,
+      "name": "solana",
+      "networks": [
+        {
+          "chainName": "Mainnet",
+          "enabled": true,
+          "networkId": 101
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "spark",
+      "networks": [
+        {
+          "chainName": "Mainnet",
+          "enabled": true,
+          "networkId": 301
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "starknet",
+      "networks": [
+        {
+          "chainName": "Mainnet",
+          "enabled": true,
+          "networkId": 410
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "stellar",
+      "networks": [
+        {
+          "chainName": "Mainnet",
+          "enabled": true,
+          "networkId": 800
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "sui",
+      "networks": [
+        {
+          "chainName": "Mainnet",
+          "enabled": true,
+          "networkId": 501
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "ton",
+      "networks": [
+        {
+          "chainName": "Mainnet",
+          "enabled": true,
+          "networkId": -239
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "tron",
+      "networks": [
+        {
+          "chainName": "Mainnet",
+          "enabled": true,
+          "networkId": 728126428
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "tempo",
+      "networks": [
+        {
+          "chainName": "Tempo Mainnet",
+          "enabled": true,
+          "networkId": 4217
+        }
+      ]
+    },
+    {
+      "enabled": false,
+      "name": "midnight",
+      "networks": [
+        {
+          "chainName": "Mainnet",
+          "enabled": true,
+          "networkId": 1
+        }
+      ]
+    }
+  ],
+  "checkouts": [],
+  "customFields": [],
+  "design": {
+    "button": {
+      "background": "#4779FF",
+      "fontColor": "#FFFFFF",
+      "paddingHeight": 16,
+      "paddingWidth": 50,
+      "radius": 16
+    },
+    "modal": {
+      "border": "square",
+      "brand": "bold",
+      "displayOrder": [
+        "email",
+        "wallet"
+      ],
+      "emailOnly": false,
+      "emailSubmitButtonInsideInput": false,
+      "primaryColor": "#4779FF",
+      "radius": 24,
+      "showWalletsButton": false,
+      "socialAboveEmail": false,
+      "splitEmailAndSocial": false,
+      "template": "default",
+      "theme": "light",
+      "view": "extended"
+    },
+    "widget": {
+      "backgroundColor": "",
+      "border": "square",
+      "radius": 24,
+      "textColor": "",
+      "theme": "light"
+    }
+  },
+  "environmentName": "sandbox",
+  "exchanges": [],
+  "general": {
+    "displayName": "Isotherm",
+    "skipOptionalKYCFieldDuringOnboarding": true,
+    "supportUrls": {}
+  },
+  "kyc": [
+    {
+      "enabled": true,
+      "label": "E-mail",
+      "name": "email",
+      "required": true,
+      "type": "standard",
+      "unique": true,
+      "verify": true
+    }
+  ],
+  "networks": [
+    {
+      "chainName": "evm",
+      "networks": [
+        {
+          "blockExplorerUrls": [
+            "https://etherscan.io/"
+          ],
+          "chain": "ETH",
+          "chainId": "1",
+          "chainName": "Ethereum Mainnet",
+          "iconUrls": [
+            "https://app.dynamic.xyz/assets/networks/eth.svg"
+          ],
+          "isTestnet": false,
+          "key": "ethereum",
+          "name": "Ethereum Mainnet",
+          "nameService": {
+            "registry": "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
+          },
+          "nativeCurrency": {
+            "decimals": 18,
+            "iconUrl": "https://app.dynamic.xyz/assets/networks/eth.svg",
+            "name": "Ether",
+            "pricingProviderTokenId": "ethereum",
+            "symbol": "ETH"
+          },
+          "networkId": "1",
+          "rpcUrls": [
+            "https://ethereum.publicnode.com"
+          ],
+          "shortName": "eth",
+          "vanityName": "Ethereum"
+        },
+        {
+          "blockExplorerUrls": [
+            "https://monadscan.com"
+          ],
+          "chain": "Monad Mainnet",
+          "chainId": "143",
+          "chainName": "Monad Mainnet",
+          "iconUrls": [
+            "https://app.dynamic.xyz/assets/networks/monad.svg"
+          ],
+          "isTestnet": false,
+          "key": "monad-mainnet",
+          "name": "Monad Mainnet",
+          "nativeCurrency": {
+            "decimals": 18,
+            "iconUrl": "https://app.dynamic.xyz/assets/networks/eth.svg",
+            "name": "MONAD",
+            "pricingProviderTokenId": "MONAD",
+            "symbol": "MON"
+          },
+          "networkId": "143",
+          "rpcUrls": [
+            "https://rpc-mainnet.monadinfra.com"
+          ],
+          "shortName": "monad mainnet",
+          "vanityName": "Monad Mainnet"
+        },
+        {
+          "blockExplorerUrls": [
+            "https://testnet.monadexplorer.com"
+          ],
+          "chain": "Monad Testnet",
+          "chainId": "10143",
+          "chainName": "Monad Testnet",
+          "iconUrls": [
+            "https://app.dynamic.xyz/assets/networks/monad.svg"
+          ],
+          "isTestnet": true,
+          "key": "monad",
+          "name": "Monad Testnet",
+          "nativeCurrency": {
+            "decimals": 18,
+            "iconUrl": "https://app.dynamic.xyz/assets/networks/eth.svg",
+            "name": "MONAD",
+            "pricingProviderTokenId": "MONAD",
+            "symbol": "MON"
+          },
+          "networkId": "10143",
+          "rpcUrls": [
+            "https://testnet-rpc.monad.xyz"
+          ],
+          "shortName": "monad testnet",
+          "vanityName": "Monad Testnet"
+        }
+      ]
+    }
+  ],
+  "privacy": {
+    "collectIp": true
+  },
+  "providers": [
+    {
+      "createNewAccounts": true,
+      "enabledAt": "2026-10-07T08:04:01.801Z",
+      "id": "c1e60345-2dc6-4cfc-b8ae-645679703981",
+      "provider": "emailOnly",
+      "scopes": ""
+    }
+  ],
+  "sdk": {
+    "accountAbstraction": {
+      "allUsers": false,
+      "allWallets": false,
+      "enablePasskeys": false,
+      "separateSmartWalletAndSigner": false
+    },
+    "automaticEmbeddedWalletCreation": true,
+    "blockEmailSubaddresses": false,
+    "confirmEmailProviderForVerify": true,
+    "confirmWalletTransfers": true,
+    "disabledWalletConnectors": [],
+    "displayDynamicMessaging": true,
+    "emailSignIn": {
+      "signInProvider": "dynamic"
+    },
+    "embeddedWalletSecurityMethods": [],
+    "embeddedWallets": {
+      "allowSkippingAuthenticatorAtSignup": false,
+      "automaticEmbeddedWalletCreation": true,
+      "automaticEmbeddedWalletCreationForExternal": false,
+      "chainConfigurations": [
+        {
+          "enabled": false,
+          "name": "ALEO",
+          "primary": false
+        },
+        {
+          "enabled": false,
+          "name": "APTOS",
+          "primary": false
+        },
+        {
+          "enabled": false,
+          "name": "BTC",
+          "primary": false
+        },
+        {
+          "enabled": true,
+          "name": "EVM",
+          "primary": true
+        },
+        {
+          "enabled": false,
+          "name": "MIDNIGHT",
+          "primary": false
+        },
+        {
+          "enabled": false,
+          "name": "SOL",
+          "primary": false
+        },
+        {
+          "enabled": false,
+          "name": "SPARK",
+          "primary": false
+        },
+        {
+          "enabled": false,
+          "name": "STELLAR",
+          "primary": false
+        },
+        {
+          "enabled": false,
+          "name": "SUI",
+          "primary": false
+        },
+        {
+          "enabled": false,
+          "name": "TEMPO",
+          "primary": false
+        },
+        {
+          "enabled": false,
+          "name": "TON",
+          "primary": false
+        },
+        {
+          "enabled": false,
+          "name": "TRON",
+          "primary": false
+        }
+      ],
+      "defaultWalletVersion": "V3",
+      "domainEnabledByProvider": false,
+      "emailRecoveryEnabled": true,
+      "evmGasSponsorshipEnabled": false,
+      "evmGasSponsorshipNetworks": [
+        "mainnet",
+        "testnet"
+      ],
+      "evmGasSponsorshipRelayMode": "clientAndServer",
+      "forceAuthenticatorAtSignup": false,
+      "promptForKeyExport": false,
+      "sessionKeyDuration": {
+        "amount": 30,
+        "unit": "minutes"
+      },
+      "showEmbeddedWalletActionsUI": true,
+      "supportedSecurityMethods": {
+        "email": {
+          "isDefault": false,
+          "isEnabled": false,
+          "isPermanentAuthenticator": false,
+          "listPosition": 1
+        },
+        "passkey": {
+          "isDefault": true,
+          "isEnabled": true,
+          "isPermanentAuthenticator": true,
+          "listPosition": 0
+        },
+        "password": {
+          "isDefault": false,
+          "isEnabled": false,
+          "isPermanentAuthenticator": true,
+          "listPosition": 2
+        }
+      },
+      "svmGasSponsorshipEnabled": false,
+      "transactionSimulation": false
+    },
+    "enableMultiAsset": true,
+    "exchangeOptions": [
+      {
+        "exchange": "coinbase",
+        "onRampProvider": "coinbaseOnramp",
+        "socialProvider": "coinbasesocial"
+      },
+      {
+        "exchange": "kraken",
+        "socialProvider": "kraken"
+      }
+    ],
+    "featureFlags": {
+      "connectOnlyMultiAsset": false,
+      "enableExchanges": true,
+      "enableExternalWalletOnTransactionSanctions": true
+    },
+    "funding": {
+      "externalWallets": {
+        "defaultSettings": {
+          "chainSettings": [
+            {
+              "chain": "EVM",
+              "token": {
+                "rule": "recommended",
+                "value": "USDC"
+              }
+            }
+          ]
+        },
+        "enabled": false,
+        "minAmount": {}
+      },
+      "onramps": []
+    },
+    "hideNetworkInDynamicWidget": false,
+    "minApiVersion": "2026_04_01",
+    "mobile": {
+      "deeplinkUrlsEnabled": false
+    },
+    "multiWallet": true,
+    "multiWalletUnlinkDisabled": false,
+    "nameService": {
+      "evm": {}
+    },
+    "onrampFunding": false,
+    "passkeyEmbeddedWalletEnabled": false,
+    "passkeyEmbeddedWalletRecoveryEnabled": true,
+    "preventOrphanedAccounts": true,
+    "showFiat": true,
+    "socialSignIn": {
+      "providers": [],
+      "signInProvider": "dynamic"
+    },
+    "views": [],
+    "waas": {
+      "allowMultipleWaasWalletsPerChain": false,
+      "backupOptions": [],
+      "customKeyshareRelayBaseUrl": "undefined",
+      "delegatedAccess": {
+        "enabled": false,
+        "promptUsersOnSignIn": false,
+        "requiresDelegation": false
+      },
+      "enableForwardMPCClient": true,
+      "exportDisabled": false,
+      "fireblocksMigration": {},
+      "iCloud": {},
+      "offlineRecovery": {
+        "enabled": false
+      },
+      "onSignUp": {
+        "promptBackupOptions": false,
+        "promptClientShareExport": false
+      },
+      "passcodeRequired": false,
+      "relayUrl": "relay.dynamicauth.com"
+    },
+    "walletConnect": {
+      "projectId": "b636e2e52500af4a2f8715d5764824d8",
+      "v2Enabled": true,
+      "walletProjectId": "b636e2e52500af4a2f8715d5764824d8"
+    }
+  },
+  "security": {
+    "addressScreening": {},
+    "auth": {
+      "allowMultipleCredentialsForSignIn": false,
+      "storage": [
+        "localstorage"
+      ]
+    },
+    "deviceRegistrationRequired": false,
+    "environmentLocked": false,
+    "externalAuth": {
+      "enabled": false,
+      "stepUpEnabled": true
+    },
+    "hCaptcha": {
+      "enabled": false
+    },
+    "mfa": {
+      "actions": [
+        {
+          "action": "wallet.waas.reshare",
+          "required": false
+        },
+        {
+          "action": "wallet.waas.sign",
+          "required": false
+        },
+        {
+          "action": "wallet.waas.export",
+          "required": false
+        },
+        {
+          "action": "wallet.waas.offline_recovery_trigger",
+          "required": false
+        },
+        {
+          "action": "wallet.waas.refresh",
+          "required": false
+        },
+        {
+          "action": "user.update",
+          "required": false
+        },
+        {
+          "action": "business_account.link_wallet",
+          "required": true
+        }
+      ],
+      "enabled": false,
+      "enrollment": "none",
+      "methods": [
+        {
+          "allowBackupCodes": true,
+          "enabled": false,
+          "type": "totp"
+        },
+        {
+          "allowBackupCodes": false,
+          "enabled": false,
+          "type": "passkey"
+        }
+      ],
+      "required": false
+    }
+  }
+}

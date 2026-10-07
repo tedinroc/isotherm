@@ -411,7 +411,11 @@ describe('isotherm-api on a Monad testnet fork', () => {
     const stats = await (await api("/api/stats")).json<any>();
     expect(stats.nonMakerFills).toBeGreaterThanOrEqual(1);
     expect(stats.nonMakerWallets).toBeGreaterThanOrEqual(1);
-    expect(stats.recentTrades.some((x: { origin: string }) => x.origin === taker.address)).toBe(true);
+    expect(stats.recentTrades.find((x: { origin: string }) => x.origin === taker.address)?.kind).toBe('external');
+    // classified when published, from the Worker's current lists; every fill lands in exactly one class
+    expect(stats.classification).toMatchObject({ appliedAt: 'publish', v1Migration: null });
+    expect(stats.classification.teamAddresses).toBeGreaterThanOrEqual(6);
+    expect(stats.fills).toBe(stats.nonMakerFills + stats.teamFills + stats.makerTakerFills);
     expect(stats.settledCityDays).toBeGreaterThanOrEqual(1);
     expect(stats.drips).toBeGreaterThanOrEqual(3);
     expect(stats.relayedMints).toBeGreaterThanOrEqual(2);
