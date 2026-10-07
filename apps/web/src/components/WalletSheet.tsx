@@ -22,26 +22,33 @@ export function WalletSheet({ onClose }: { onClose: () => void }) {
 
         {!w.address && (
           <div className="stack">
+            {/* With an environment id, Dynamic (email -> embedded wallet) is the default; the dev wallet is the
+                labelled fallback. Without one, the dev wallet is the only option and the sheet says why. */}
             {w.dynamicAvailable && (
-              <button
-                className="btn primary"
-                disabled={w.dynamicLoading}
-                onClick={() => {
-                  w.openDynamicLogin();
-                  onClose();
-                }}
-              >
-                {w.dynamicLoading ? t('misc.loading') : t('wallet.signinEmail')}
-              </button>
+              <>
+                <button
+                  className="btn primary"
+                  disabled={w.dynamicLoading}
+                  data-testid="dynamic-login"
+                  onClick={() => {
+                    w.openDynamicLogin();
+                    onClose();
+                  }}
+                >
+                  {w.dynamicLoading ? t('misc.loading') : t('wallet.signinEmail')}
+                </button>
+                <p className="fine">{t('wallet.dynamicExplain')}</p>
+              </>
             )}
             <button
               className={`btn ${w.dynamicAvailable ? '' : 'primary'}`}
+              data-testid="dev-wallet"
               onClick={() => {
                 w.useDevWallet();
                 onClose();
               }}
             >
-              {t('wallet.useDev')}
+              {w.dynamicAvailable ? t('wallet.useDevInstead') : t('wallet.useDev')}
             </button>
             <div className="devnote">
               <b>{t('wallet.devLabel')}</b>

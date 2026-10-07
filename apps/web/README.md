@@ -14,9 +14,12 @@ XDG_CONFIG_HOME=<wrangler config dir> npx wrangler@3 pages deploy dist --project
 Environment (all optional, see `env.example`): `VITE_DYNAMIC_ENVIRONMENT_ID`, `VITE_API_URL`, `VITE_RPC_URL`,
 `VITE_EXPLORER`, `VITE_ENV_LABEL` (red banner, use it for fork builds).
 
-**Login:** Dynamic login is wired but not enabled; the demo uses a testnet burner wallet until it is. Dynamic switches
-on only when `VITE_DYNAMIC_ENVIRONMENT_ID` holds a Dynamic Sandbox environment ID, which has not been created yet.
-Without it the app offers only the labelled dev wallet (a testnet burner key in browser storage).
+**Login:** builds read the public Dynamic Sandbox environment ID from `.env.production` (committed; `npm run dev` reads
+`.env.local` instead, generated from `~/.config/isotherm/dynamic.env`). With it, "Sign in with email" (Dynamic, embedded
+wallet) is the default and the labelled dev wallet (a testnet burner key in browser storage) is the fallback;
+`VITE_DYNAMIC_ENVIRONMENT_ID= npm run build` makes a dev-wallet-only build. Status: the Dynamic login renders on
+localhost with the real environment, but the embedded-wallet proof (login, relayed mint, Buy Yes) has not run yet and
+the live site still serves the previous dev-wallet-only deployment: see [`evidence/dynamic/RESULT.md`](evidence/dynamic/RESULT.md).
 
 **Buy No** is two transactions behind one tap: `vault.mintSet(seriesId, n)`, then `zap.sellYes(seriesId, market, n,
 minAusdOut)`, with a progress list in the trade sheet (`src/lib/buyNo.ts`, `src/lib/buyNoPlan.ts`). The app never calls

@@ -1,0 +1,16 @@
+{
+  "what": "Portfolio 'Sell Yes' now shows the quote and sends only after the user confirms the exact minimum (fix 1a).",
+  "where": "anvil fork of Monad testnet at 127.0.0.1:19701 (forked at block 68923694); in-app browser 375 px; dev build on 127.0.0.1:5203 with VITE_RPC_URL pointing at the fork and the red 'Local anvil fork' banner. NOT the live chain.",
+  "wallet": "dev burner 0x49e90dF2CAb5fDB0D6ad4BFa1d4c4C8354F9adbf, funded on the fork only (anvil_setBalance 50 MON; 100 AUSD transferred from the impersonated relayer on the fork)",
+  "strike": "RCSS 2026-10-08 >=29 C, series 0xa69ae9d5af5141648df6a03de55f960d141e84ccda321efe1c7bb7882cf02cd3, Kuru market 0x855eF3549eA5ACA5602EAefDD988950f16FCc6c2 (live book state copied into the fork)",
+  "fork_txs": {
+    "approve_ausd_to_zap": "0xfb7b…fe74 (session log)",
+    "buy_yes_5_ausd": "0xc41ba102bda1f2e0db13fc3a16315090e8e44fba87a1e81e454026c10d19afad",
+    "approve_yes_to_zap": "0x6e7245750edec523fad7e43fa5927c1e2cc5cda8f9c0672837cae630854a4693",
+    "sell_yes": "0xa931ca63be7177e10dbae8ce4a93e9a348184516d84e7de3b96049a835ee4ccb"
+  },
+  "ui_before_confirm": "Sell Yes · ≈ 4.60 AUSD at 0.82  ->  'Sell 5.61 Yes at about 0.82 AUSD each, for about 4.60 AUSD. The sale is sent with a minimum of 4.51 AUSD (2% below this quote) and reverts if the bids pay less.'  [Sell for ≥ 4.51 AUSD] [Cancel]",
+  "sellYes_calldata_decoded": { "seriesId": "0xa69ae9d5…2cd3", "market": "0x855eF354…c6c2", "yesIn": 5612359, "minAusdOut": 4505581, "to": "0x49e90dF2CAb5fDB0D6ad4BFa1d4c4C8354F9adbf" },
+  "result": "Sold 5.61 Yes for 4.60 AUSD (min 4.51); the position closed; AUSD 95.00 -> 99.60",
+  "screenshots": ["04-fork-portfolio-sell-yes-shows-price.jpg", "05-fork-portfolio-sell-confirm-minimum.jpg", "06-fork-portfolio-sold-at-confirmed-minimum.jpg"]
+}

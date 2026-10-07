@@ -600,6 +600,17 @@ button {
 .flag {
   color: var(--gold);
 }
+/* "Fair 41% · our model": the fair value is not Polymarket-sourced (lib/fairSource.ts) */
+.src-tag {
+  margin-left: 5px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  color: var(--gold);
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
 .bar {
   grid-area: bar;
   position: relative;
@@ -1375,6 +1386,26 @@ button {
 }
 .stranded-actions .btn {
   flex: 1 1 140px;
+}
+/* Portfolio "Sell Yes": quote + minimum, sent only after an explicit confirm */
+.sell-confirm {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 13px;
+}
+.sell-confirm p {
+  margin: 0 0 8px;
+}
+.sell-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sell-confirm-actions .btn {
+  flex: 1 1 120px;
 }
 .muted.small {
   font-size: 12px;

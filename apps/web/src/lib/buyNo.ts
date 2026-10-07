@@ -21,7 +21,18 @@ import type { BuyNoPlan, StepEvent } from './buyNoPlan';
 import { DEPLOYMENTS } from './deployments';
 import type { StrikeView } from './data';
 
-export { planBuyNo, planRetrySell, type BuyNoPlan, type RetrySellPlan, type StepEvent, type StepId, type StepStatus } from './buyNoPlan';
+export {
+  planBuyNo,
+  planPortfolioSell,
+  planRetrySell,
+  type BuyNoPlan,
+  type PortfolioSellPlan,
+  type RetrySellPlan,
+  type StepEvent,
+  type StepId,
+  type StepStatus,
+  type StrandedBuyNo,
+} from './buyNoPlan';
 
 /** Step 2 (or a retry of it) failed after step 1 minted: the user holds `pairs` YES + `pairs` NO. Nothing is lost. */
 export class SellLegFailed extends Error {

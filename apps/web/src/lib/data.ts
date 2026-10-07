@@ -21,7 +21,7 @@ import {
 } from './abi';
 import { EMPTY_BOOK, decodeL2, type Book } from './book';
 import { dec, enc, multicall, pub, type Call } from './chain';
-import type { Snapshot, SnapshotLadder, SnapshotStrike } from './api';
+import type { FairSource, GuardSource, Snapshot, SnapshotLadder, SnapshotStrike } from './api';
 import { stationMeta } from './stations';
 
 export interface StrikeView {
@@ -36,8 +36,10 @@ export interface StrikeView {
   takerFeeBps: number;
   book: Book;
   fair: number | null;
+  fairSource: FairSource | null; // null: the snapshot did not say (older API) or there is no snapshot
   pmImplied: number | null;
   model: number | null;
+  guardSource: GuardSource | null;
   flags: string[];
   makerMode: string | null;
   divergence: number | null;
@@ -209,8 +211,10 @@ export async function loadLadders(snapshot: Snapshot | null, limit = 24): Promis
         takerFeeBps: 10,
         book: EMPTY_BOOK,
         fair: ss?.fair ?? null,
+        fairSource: ss?.fairSource ?? null,
         pmImplied: ss?.pmImplied ?? null,
         model: ss?.model ?? null,
+        guardSource: ss?.guardSource ?? null,
         flags: ss?.flags ?? [],
         makerMode: ss?.mode ?? null,
         divergence: ss?.divergence ?? null,

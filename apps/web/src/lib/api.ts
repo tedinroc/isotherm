@@ -52,13 +52,24 @@ export interface DripResult {
   latencyMs: number;
 }
 
+/**
+ * Where the maker's fair value came from (packages/forecast/src/fair.ts `FairSource`): the Polymarket-implied
+ * probability, certainty from the observed max, or a fallback to our own guard model when Polymarket is stale, off-grid
+ * or missing. Older snapshots carry no field at all.
+ */
+export type FairSource = 'polymarket' | 'certain' | 'fallback-v0' | 'fallback-intraday' | 'none';
+/** The guardrail model behind `model` (v0 climatology, v0 truncated at the observed max, the intraday table). */
+export type GuardSource = 'v0' | 'v0-truncated' | 'intraday' | 'certain';
+
 export interface SnapshotStrike {
   k: number;
   seriesId: string | null;
   market: Address | null;
   fair: number | null;
+  fairSource?: FairSource | null;
   pmImplied: number | null;
   model: number | null;
+  guardSource?: GuardSource | null;
   bid: number | null;
   ask: number | null;
   flags: string[];

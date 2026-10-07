@@ -72,3 +72,75 @@ export function planRetrySell(original: BuyNoPlan, pairs: bigint, quotedProceeds
     noPriceWorst: original.mint > 0n ? Number(original.worstCost) / Number(original.mint) : 1,
   };
 }
+
+/** What Portfolio's "Sell Yes" will send, frozen when the user opens the confirmation. */
+export interface PortfolioSellPlan {
+  kind: 'retry' | 'quote';
+  sellUnits: bigint; // YES passed to zap.sellYes (6 dp)
+  heldUnits: bigint; // YES the wallet holds for this strike
+  expectedOut: bigint; // AUSD today's bids should pay for sellUnits (after Kuru's fee)
+  avgPrice: number | null; // AUSD per YES at today's quote
+  minAusdOut: bigint; // the sellYes bound; never 0 when a sale is offered
+  floor: bigint; // retry: the original Buy No plan's per-unit minimum × sellUnits; quote: 0
+  blocked: boolean; // nothing to sell, no bids, or (retry) today's bids cannot pay the floor
+  noPriceNow: number | null; // retry only: AUSD per No if the YES leg sold for expectedOut now
+  noPriceWorst: number | null; // retry only: the worst case per No the user accepted at tap time
+}
+
+/** A Buy No whose step 2 did not go through: the plan accepted at tap time and the pairs it left in the wallet. */
+export interface StrandedBuyNo {
+  origin: BuyNoPlan;
+  pairs: bigint;
+}
+
+type SellQuoteFn = (yes: number) => { sold: number; proceeds: number; avgPrice: number | null };
+
+/**
+ * Portfolio "Sell Yes". Two cases:
+ * - The YES is the unsold leg of a Buy No whose step 2 did not go through (`stranded`): this is the same retry the
+ *   trade sheet offers, so it sells at most those pairs and keeps the original plan's per-unit minimum
+ *   (planRetrySell). When today's bids cannot pay that floor the sale is blocked; merging back stays available.
+ * - Otherwise the minimum is today's quote × (1 − slippage), and the UI makes the user confirm that number (with the
+ *   average price) before anything is sent. Only what today's bids can absorb is offered.
+ */
+export function planPortfolioSell(
+  quote: SellQuoteFn,
+  heldUnits: bigint,
+  slippage: number,
+  stranded: StrandedBuyNo | null,
+): PortfolioSellPlan {
+  const held = heldUnits > 0n ? heldUnits : 0n;
+  if (stranded && stranded.pairs > 0n && stranded.origin.mint > 0n) {
+    const sellUnits = stranded.pairs < held ? stranded.pairs : held;
+    const q = quote(Number(sellUnits) / 1e6);
+    const r = planRetrySell(stranded.origin, sellUnits, q.proceeds, slippage);
+    return {
+      kind: 'retry',
+      sellUnits,
+      heldUnits: held,
+      expectedOut: r.expectedOut,
+      avgPrice: q.avgPrice,
+      minAusdOut: r.minAusdOut,
+      floor: r.floor,
+      blocked: r.blocked,
+      noPriceNow: r.noPriceNow,
+      noPriceWorst: r.noPriceWorst,
+    };
+  }
+  const q = quote(Number(held) / 1e6);
+  const sold = toUnits6(q.sold);
+  const sellUnits = sold < held ? sold : held;
+  const min = q.proceeds > 0 ? minOut(q.proceeds, slippage) : 0n;
+  return {
+    kind: 'quote',
+    sellUnits,
+    heldUnits: held,
+    expectedOut: q.proceeds > 0 ? toUnits6(q.proceeds) : 0n,
+    avgPrice: q.avgPrice,
+    minAusdOut: min,
+    floor: 0n,
+    blocked: sellUnits <= 0n || min <= 0n,
+    noPriceNow: null,
+    noPriceWorst: null,
+  };
+}

@@ -7,9 +7,11 @@ import { useWallet } from '../wallet/wallet';
 import { vaultAbi, zapAbi } from '../lib/abi';
 import { ensureYesAllowance, mergePairs, redeem, sellYes } from '../lib/actions';
 import { api, ApiError } from '../lib/api';
-import { fromUnits6, minOut, quoteSellYes, toUnits6 } from '../lib/book';
+import { fromUnits6, quoteSellYes } from '../lib/book';
+import { planPortfolioSell, sellLeg, type PortfolioSellPlan } from '../lib/buyNo';
+import { clearStranded, rememberStranded, strandedFor } from '../lib/stranded';
 import { chainNow, type Holding } from '../lib/data';
-import { amt, localTime, short } from '../lib/format';
+import { amt, localTime, pct, px, short } from '../lib/format';
 import { formatDate, stationMeta } from '../lib/stations';
 import { addrUrl, txUrl } from '../config';
 import { phaseOf, useNow } from './Markets';
@@ -160,6 +162,13 @@ function Position({ h }: { h: Holding }) {
     yes * (s.book.bestBid ?? 0) * (1 - s.takerFeeBps / 10_000) + no * (s.book.bestAsk !== null ? 1 - s.book.bestAsk : 0);
   const pairs = h.yes < h.no ? h.yes : h.no;
   const canSell = ph === 'open' && h.yes > 0n && s.market && s.book.bids.length > 0;
+  // YES left by a Buy No whose step 2 did not go through: a sale keeps that plan's per-unit limit (lib/stranded.ts).
+  const rec = strandedFor(wallet.address, s.seriesId);
+  const stranded = rec && pairs > 0n ? { origin: rec.origin, pairs: rec.pairs < pairs ? rec.pairs : pairs } : null;
+  const quoteFn = (y: number) => quoteSellYes(s.book, y, s.takerFeeBps);
+  const live = canSell ? planPortfolioSell(quoteFn, h.yes, SELL_SLIPPAGE, stranded) : null;
+  // The plan the user is asked to confirm is frozen when the confirmation opens: that minimum is what gets sent.
+  const [confirm, setConfirm] = useState<PortfolioSellPlan | null>(null);
 
   async function run(label: string, fn: () => Promise<{ hash: Hex; ms: number }>) {
     setErr(null);
@@ -186,17 +195,34 @@ function Position({ h }: { h: Holding }) {
       return res;
     });
   const doMerge = () =>
-    run(`Merge ${amt(fromUnits6(pairs))} pairs`, async () => mergePairs(await wallet.getClient(), s.seriesId, pairs));
-  const doSell = () =>
+    run(`Merge ${amt(fromUnits6(pairs))} pairs`, async () => {
+      const res = await mergePairs(await wallet.getClient(), s.seriesId, pairs);
+      clearStranded(wallet.address, s.seriesId); // every pair is merged, the stranded ones included
+      return res;
+    });
+  const doSell = (plan: PortfolioSellPlan) =>
     run(`Sell Yes ≥${s.k}°C`, async () => {
+      if (plan.blocked || plan.sellUnits <= 0n || plan.minAusdOut <= 0n) throw new Error(t('pf.sellNone'));
       const c = await wallet.getClient();
-      const q = quoteSellYes(s.book, yes, s.takerFeeBps);
-      const sellUnits = toUnits6(q.sold);
-      const a = await ensureYesAllowance(c, s, sellUnits, app.balances?.yesAllowanceZap[s.seriesId] ?? 0n);
+      const a = await ensureYesAllowance(c, s, plan.sellUnits, app.balances?.yesAllowanceZap[s.seriesId] ?? 0n);
       if (a) app.log({ label: `Approve Yes ≥${s.k}°C → Zap`, hash: a.hash, ok: true });
-      const res = await sellYes(c, s, sellUnits, minOut(q.proceeds, 0.02));
+      if (plan.kind === 'retry' && rec) {
+        // Same as the trade sheet's retry: sell with the original limit, merge any unsold Yes back with No.
+        const t0 = performance.now();
+        const r = await sellLeg(c, s, plan.sellUnits, plan.minAusdOut, null, () => undefined);
+        const left = rec.pairs - plan.sellUnits + (r.mergeHash ? 0n : r.yesUnsold);
+        rememberStranded(wallet.address!, s.seriesId, rec.origin, left > 0n ? left : 0n, 'set');
+        app.log({ label: `Sold ${amt(fromUnits6(plan.sellUnits - r.yesUnsold))} Yes for ${amt(fromUnits6(r.ausdOut))} AUSD (min ${amt(fromUnits6(plan.minAusdOut))})`, ok: true });
+        if (r.mergeHash) app.log({ label: `Merged ${amt(fromUnits6(r.yesUnsold))} unsold Yes back`, hash: r.mergeHash, ok: true });
+        return { hash: r.sellHash, ms: Math.round(performance.now() - t0) };
+      }
+      const res = await sellYes(c, s, plan.sellUnits, plan.minAusdOut);
       const ev = parseEventLogs({ abi: zapAbi, logs: res.receipt.logs, eventName: 'ZapSellYes' })[0];
-      if (ev) app.log({ label: `Sold ${amt(fromUnits6(ev.args.yesIn - ev.args.yesRefund))} Yes for ${amt(fromUnits6(ev.args.ausdOut))} AUSD`, ok: true });
+      if (ev)
+        app.log({
+          label: `Sold ${amt(fromUnits6(ev.args.yesIn - ev.args.yesRefund))} Yes for ${amt(fromUnits6(ev.args.ausdOut))} AUSD (min ${amt(fromUnits6(plan.minAusdOut))})`,
+          ok: true,
+        });
       return res;
     });
 
@@ -237,9 +263,11 @@ function Position({ h }: { h: Holding }) {
             {busy ?? t('pf.redeem', { n: amt(payout ?? 0) })}
           </button>
         )}
-        {canSell && (
-          <button className="btn small" disabled={!!busy} onClick={doSell}>
-            {t('pf.sellYes')}
+        {canSell && !confirm && (
+          <button className="btn small" disabled={!!busy || !live} onClick={() => live && setConfirm(live)}>
+            {live && !live.blocked
+              ? t('pf.sellYesAt', { avg: px(live.avgPrice), got: amt(fromUnits6(live.expectedOut)) })
+              : t('pf.sellYes')}
           </button>
         )}
         {pairs > 0n && (!r || r.status === 0) && (
@@ -248,7 +276,59 @@ function Position({ h }: { h: Holding }) {
           </button>
         )}
       </div>
+      {confirm && canSell && (
+        <SellConfirm
+          plan={confirm}
+          busy={!!busy}
+          onCancel={() => setConfirm(null)}
+          onConfirm={async () => {
+            const p = confirm;
+            setConfirm(null);
+            await doSell(p);
+          }}
+        />
+      )}
       {err && <p className="error small">{err}</p>}
+    </div>
+  );
+}
+
+const SELL_SLIPPAGE = 0.02;
+
+/** The quote, the average price and the exact minimum that will be sent; nothing is sent until the user confirms. */
+function SellConfirm({ plan, busy, onCancel, onConfirm }: { plan: PortfolioSellPlan; busy: boolean; onCancel: () => void; onConfirm: () => void }) {
+  const { t } = useI18n();
+  const n = amt(fromUnits6(plan.sellUnits));
+  const min = amt(fromUnits6(plan.minAusdOut));
+  return (
+    <div className="sell-confirm" role="alertdialog" aria-label={t('pf.sellYes')} data-testid="sell-confirm">
+      {plan.kind === 'retry' ? (
+        <>
+          <p>{t('pf.sellRetry', { n })}</p>
+          {plan.blocked ? (
+            <p className="warn small">
+              {t('trade.retryBlocked', { got: amt(fromUnits6(plan.expectedOut)), n, now: px(plan.noPriceNow), worst: px(plan.noPriceWorst) })}
+            </p>
+          ) : (
+            <p className="fine">{t('trade.retryNote', { worst: px(plan.noPriceWorst) })}</p>
+          )}
+        </>
+      ) : (
+        <>
+          <p>{t('pf.sellQuote', { n, avg: px(plan.avgPrice), got: amt(fromUnits6(plan.expectedOut)), min, slip: pct(SELL_SLIPPAGE) })}</p>
+          {plan.sellUnits < plan.heldUnits && (
+            <p className="fine">{t('pf.sellPartial', { n, held: amt(fromUnits6(plan.heldUnits)) })}</p>
+          )}
+        </>
+      )}
+      <div className="sell-confirm-actions">
+        <button className="btn small primary" disabled={busy || plan.blocked} onClick={onConfirm}>
+          {t('pf.sellConfirm', { n, min })}
+        </button>
+        <button className="btn small" disabled={busy} onClick={onCancel}>
+          {t('pf.cancel')}
+        </button>
+      </div>
     </div>
   );
 }

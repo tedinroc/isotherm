@@ -9,6 +9,7 @@ import { buyYes, ensureAusdAllowance, mergePairs, relayedMint } from '../lib/act
 import { fromUnits6, minOut, quoteBuyNoViaSell, quoteBuyYes, quoteSellYes, toUnits6 } from '../lib/book';
 import { planBuyNo, planRetrySell, runBuyNo, sellLeg, SellLegFailed, type BuyNoPlan, type StepEvent, type StepId, type StepStatus } from '../lib/buyNo';
 import { chainNow, type LadderView, type StrikeView } from '../lib/data';
+import { clearStranded, rememberStranded } from '../lib/stranded';
 import { amt, pct, px } from '../lib/format';
 import { formatDate, stationMeta } from '../lib/stations';
 import { txUrl } from '../config';
@@ -157,6 +158,9 @@ export function TradeSheet({ ladder, strike, onClose }: { ladder: LadderView; st
     const msg = (e as Error).message ?? String(e);
     if (e instanceof SellLegFailed) {
       // Step 1 minted; step 2 reverted (price moved past the limit) or was not sent. The user holds complete pairs.
+      // A first failure is recorded so Portfolio's "Sell Yes" keeps this plan's limit after the sheet is closed; a
+      // failed retry is the same pairs, already recorded.
+      if (!stranded && wallet.address) rememberStranded(wallet.address, strike.seriesId, origin, e.pairs);
       setStranded({ pairs: e.pairs, mintHash: e.mintHash, origin });
       app.log({ label: `Buy No step 2 not filled (${amt(fromUnits6(e.pairs))} pairs kept): ${msg}`, ok: false });
     } else {
@@ -238,6 +242,8 @@ export function TradeSheet({ ladder, strike, onClose }: { ladder: LadderView; st
     try {
       const client = await wallet.getClient();
       const r = await sellLeg(client, strike, stranded.pairs, retry.minAusdOut, stranded.mintHash, onStep(origin));
+      // Resolved; if the merge of an unsold remainder failed, those pairs stay recorded under the same plan.
+      if (wallet.address) rememberStranded(wallet.address, strike.seriesId, origin, r.mergeHash ? 0n : r.yesUnsold, 'set');
       finishNo(r, null);
       app.toast(t('trade.done'), 'ok');
     } catch (e) {
@@ -256,6 +262,7 @@ export function TradeSheet({ ladder, strike, onClose }: { ladder: LadderView; st
       const client = await wallet.getClient();
       const r = await mergePairs(client, strike.seriesId, stranded.pairs);
       app.log({ label: `Merged ${amt(fromUnits6(stranded.pairs))} pairs back into AUSD`, hash: r.hash, ok: true });
+      clearStranded(wallet.address, strike.seriesId);
       setDone({ text: t('trade.mergedBack', { n: amt(fromUnits6(stranded.pairs)) }), hash: r.hash });
       setStranded(null);
       setRun(null);

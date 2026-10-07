@@ -26,7 +26,7 @@ This document describes how Isotherm is put together: the contracts, the off-cha
 | `packages/maker/` | Node 22 + viem, long-running on a 24/7 host | Daily ladder roll, inventory, quoting, pull-at-close, kill switch |
 | `packages/cre-workflow/` | Chainlink CRE TypeScript SDK, compiled to WASM | Cron-triggered settlement |
 | `packages/mm-plugin/` | oclif plugin for `@metamask/agent-wallet` 7.x | Agent commands: read ladders and quotes, trade through the Zap |
-| `apps/web/` | Vite + React PWA on Cloudflare Pages (https://isotherm.pages.dev) | Phone app: ladder, trade, portfolio, redeem, results with in-browser attestation check, risk card. Dynamic email/Google login is wired but not enabled until a Sandbox environment ID exists; until then a labelled testnet burner wallet ("Dev wallet") |
+| `apps/web/` | Vite + React PWA on Cloudflare Pages (https://isotherm.pages.dev) | Phone app: ladder, trade, portfolio, redeem, results with in-browser attestation check, risk card. The deployed build offers a labelled testnet burner wallet ("Dev wallet"). Builds from this tree make Dynamic email login (Sandbox environment) the default, with the dev wallet as fallback; that build is not deployed and no Dynamic login has happened yet (§9) |
 | `apps/api/` | Cloudflare Worker + SQLite-backed Durable Object + KV (<former API host>) | Test-fund drip, gasless relay of signed AUSD authorizations, maker snapshot, stats API from our own log scan |
 | `spikes/` | mixed | Feasibility evidence from 2026-10-06; read-only |
 
@@ -204,6 +204,8 @@ The feasibility workflow (`spikes/cre/project/settle/metar.ts`) did not follow t
 
 Going to production: `setForwarder(0xF834…4482)`, then `setExpectedWorkflow(id, owner)`. In v1 the attestation **cannot be switched off**, so the DON signatures and the attester key must both agree (the feasibility build allowed switching it off, which the security review flagged).
 
+**Who runs it during the hackathon.** There is no DON deployment. A launchd job on a team Mac (`xyz.isotherm.cre-settle`, hourly at :05) runs the unmodified CRE CLI v1.37.0: `cre workflow simulate ./settle -T testnet --broadcast`. That is the CRE engine running the compiled WASM on one local node, delivering through the MockKeystoneForwarder. The official CLI needs a CRE login. The team logged in on 2026-10-07, and the first official run against live testnet, at 08:05 UTC, found nothing due and sent no report. An earlier run at 07:08 UTC, before the login, took the fallback and also had nothing due. If `cre whoami` fails, the job falls back to the SDK test harness: the same handler and attestation under Bun, not the CRE engine. Each run writes an evidence record naming the path (`docs/OPERATIONS.md` §6). The same official CLI settled RCSS and RJTT for 2026-10-06 against the v1 Resolver on an anvil fork (`packages/cre-workflow/evidence/sim-fork.txt`).
+
 ### 7.6 Stale void
 
 `voidIfStale(station, date)` is open to anyone once `staleAt(station, date)` has passed with no result. In v1:
@@ -233,14 +235,23 @@ Admins can never move collateral. The contracts never hold or send MON, so Monad
 
 ## 9. Onboarding, wallets and gas
 
-- **Login.** Dynamic email or Google login (wired in `apps/web/src/wallet/dynamic.tsx`, lazy-loaded) creates a TSS-MPC embedded wallet, which is a plain EOA, so its signatures verify with ecrecover. Smart wallets stay off. **It is not enabled yet:** it switches on when a Dynamic Sandbox environment ID is set (`VITE_DYNAMIC_ENVIRONMENT_ID`) and has never run against Dynamic. Until then the app offers a labelled testnet burner wallet ("Dev wallet", key kept in the browser's localStorage).
+- **Login.** Dynamic email login (`apps/web/src/wallet/dynamic.tsx`, lazy-loaded: `DynamicContextProvider` with `EthereumWalletConnectors`; the sign-in button opens Dynamic's auth flow with `setShowAuthFlow`) is designed around Dynamic's TSS-MPC embedded wallet. With smart wallets off, that wallet is a plain EOA, so its signatures verify with ecrecover. The app signs through `primaryWallet.getWalletClient('10143')`. **State on 2026-10-07:**
+  - A Dynamic Sandbox environment exists. Its public settings show email login only, automatic embedded-wallet creation (EVM) and smart wallets off. Its ID is a public value, kept in `apps/web/.env.production`.
+  - Builds from this tree therefore make "Sign in with email" the default, with the burner wallet as a fallback. On localhost, in both the dev and the production build, the SDK loads the real environment and Dynamic's login modal renders (`apps/web/evidence/dynamic/`).
+  - **Nobody has logged in yet**, so no embedded wallet exists and nothing has been signed by one. The deployed app still offers only a labelled testnet burner wallet ("Dev wallet", key kept in the browser's localStorage), and the Dynamic build stays undeployed until a test-account login, a relayed mint and a Buy Yes from the embedded wallet pass on testnet.
+  - Monad Testnet is not yet enabled in the environment's dashboard (only Ethereum Mainnet is listed). The app injects 10143 and 143 through `overrides.evmNetworks` with `mergeNetworks`, which Dynamic documents for networks it does not support out of the box. That this works for an embedded wallet on 10143 is unproven.
 - **No Dynamic gas sponsorship on Monad.** Dynamic's supported-chain list excludes 143 and 10143, and the 7702 delegate it uses has no code on either chain. Isotherm therefore relays:
   - the user signs an EIP-3009 `receiveWithAuthorization` for AUSD (domain `"Agora Dollar"` v1, chainId 10143; `name()` returns `"AUSD"`, which is not the signing name), whose nonce the vault recomputes as `keccak256(abi.encode(seriesId, amount, salt))`, so the authorization is bound to the series, the amount and this vault;
   - the relayer verifies signature, nonce, balance, time window, minimum and maximum amount, and its caps before submitting;
   - `receiveWithAuthorization` is front-run-safe because only the payee can execute it. A plain EIP-2612 permit does not bind the series, so a front-runner could redirect a relayed `mintSetWithPermit` to another open series; the API therefore does not relay permits for the v1 vault (`RELAY_ALLOW_PERMIT = "0"`, N10).
 - **Drip.** The AUSD faucet has one 60-second cooldown shared by every caller on the testnet, so the drip pays from the relayer's own AUSD float and returns HTTP 429 instead of hammering the faucet.
 - **Where the relayer runs.** `apps/api` is a Cloudflare Worker. Its relayer lives in a Durable Object (one sender, so no nonce races) and signs with its own relayer key, not a Dynamic server wallet: Dynamic's server-wallet SDK ships native addons for Linux and macOS only, so it cannot run inside a Worker. The relayer submits `mintSetWithAuthorization` (EIP-3009), and a once-a-minute cron refills its AUSD float and advances the log scan (`apps/RESULT.md`).
-- **Relayer budget.** Testnet MON is scarce and the relayer pays every drip (0.15 MON + gas) and every relayed mint (about 0.034 MON). Its daily caps in `apps/api/wrangler.toml` are sized from its live balance by `apps/api/scripts/size-caps.mjs`, which spreads the spendable MON over several worst-case days (`--days`, default 7) so one day cannot spend it all (at the v1 review the relayer held 0.599 MON, which gave 2 drips and 5 relayed mints per day; it held about 4.6 MON as of 2026-10-07 08:00 UTC, and `/api/health` `limits` shows the live caps), IPv6 clients are rate-limited per /64, and relayed mints have a 1 AUSD minimum (N5). The caps race (N4) is closed by re-checking them inside the single-sender queue.
+- **Relayer budget.** Testnet MON is scarce and the relayer pays every drip (0.15 MON + gas) and every relayed mint (about 0.034 MON). Its daily caps in `apps/api/wrangler.toml` are sized from its live balance by `apps/api/scripts/size-caps.mjs`, which spreads the spendable MON over several worst-case days (`--days`, default 7) so one day cannot spend it all. At the v1 review the relayer held 0.599 MON, which gave 2 drips and 5 relayed mints per day. After a top-up it held 4.599 MON. The caps were re-sized from that balance over 7 days and deployed at 2026-10-07 08:02 UTC. `/api/health` `limits` at 08:40 UTC shows the live caps:
+  - 2 drips per UTC day, at most 1 per network, and one drip per address per 24 h;
+  - 9 relayed mints per UTC day, at most 4 per network and 4 per address;
+  - a 0.1 MON reserve that drips and relays never spend.
+
+  At full use that budget covers UTC days Oct 7–13. IPv6 clients are rate-limited per /64, and relayed mints must be between 1 and 500 AUSD (N5). The caps race (N4) is closed by re-checking them inside the single-sender queue.
 - **Gas limits.** Monad bills the gas limit. Every transaction is estimated, then sent with a 1.05–1.10× limit (fixed 200k for CRE reports). On the fork and in the live roll, estimates equalled gas used.
 
 ## 10. Agent access (MetaMask Agent Wallet plugin)
@@ -329,7 +340,19 @@ New findings in the v1 review, and what was done:
 | N8, N9 | Low (API) | Uncached `/api/health`; unsanitised Polymarket link | Fixed and deployed |
 | N10 | Info | Recipient-only compliance gate; permit-mode relays; Kuru owner powers; stale pending nonce | Permit relays off; the rest documented |
 
-The Worker was redeployed with the API fixes on 2026-10-07: a read of `/api/health` at 07:12 UTC showed `relayModes: ["authorization"]`, `relayMinAusd: 1` and the new daily caps (2 drips, 5 relays, sized from the relayer's 0.599 MON at the time). The caps are re-sized from the live balance after each top-up (`docs/OPERATIONS.md` §5).
+The Worker was redeployed with the API fixes on 2026-10-07: a read of `/api/health` at 07:12 UTC showed `relayModes: ["authorization"]`, `relayMinAusd: 1` and the new daily caps (2 drips, 5 relays, sized from the relayer's 0.599 MON at the time). After the relayer was topped up, the caps were re-sized with `size-caps.mjs` over a 7-day horizon from 4.599 MON. The Worker was redeployed at 08:02 UTC (version `ea73ccfa`, build `a41d37d-dirty`). Live values from `/api/health` at 08:40 UTC:
+
+| Setting | Value |
+|---|---|
+| Relay mode | `relayModes: ["authorization"]` |
+| Relay amount | 1–500 AUSD |
+| Reserve | `reserveMon: 0.1` |
+| Drips | `dripDailyCap: 2`, `dripPerIpPerDay: 1`, `dripAddressCooldownH: 24` |
+| Relays | `relayDailyCap: 9`, `relayPerIpPerDay: 4`, `relayPerAddressPerDay: 4` |
+| Balance | `monBalance: 4.599171502` |
+| Use so far | `dripsToday: 3`, `relaysToday: 0`, `relayedTotal: 0`. The 3 drips predate this deploy; with the day's cap already used, `dripReady` is false |
+
+Evidence: `apps/api/evidence/size-caps-2026-10-07-r2.txt` and `live-verify-2026-10-07-r2.txt`. The caps are re-sized from the live balance after each top-up (`docs/OPERATIONS.md` §5).
 
 Before any real money: redeploy the Resolver, Vault and Zap with the N1, N2, N6 and N7 changes, and leave the live RCSS 2026-10-08 ladder on v1 until it settles.
 

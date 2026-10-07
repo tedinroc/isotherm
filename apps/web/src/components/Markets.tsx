@@ -3,6 +3,7 @@ import { useI18n } from '../i18n';
 import { useApp } from '../state';
 import { chainNow, type LadderView, type StrikeView } from '../lib/data';
 import { countdown, pct, px } from '../lib/format';
+import { fairTag, type FairTag } from '../lib/fairSource';
 import { formatDate, localDateOf, stationMeta, weekday } from '../lib/stations';
 import { IconExternal, IconThermo } from './icons';
 import { TradeSheet } from './TradeSheet';
@@ -17,6 +18,13 @@ export function useNow(ms = 1000) {
   }, [ms]);
   return now;
 }
+
+const FAIR_TAG_KEY: Record<FairTag, 'mk.srcObserved' | 'mk.srcModel' | 'mk.srcIntraday' | 'mk.srcUnknown'> = {
+  observed: 'mk.srcObserved',
+  model: 'mk.srcModel',
+  intraday: 'mk.srcIntraday',
+  unknown: 'mk.srcUnknown',
+};
 
 export type LadderPhase = 'open' | 'closed' | 'awaiting' | 'settled' | 'void';
 export function phaseOf(l: LadderView, now: number): LadderPhase {
@@ -222,6 +230,7 @@ function StrikeRow({ l, s, ph, obsReached, onPick }: { l: LadderView; s: StrikeV
   const yesAsk = s.book.bestAsk;
   const noAsk = s.book.bestBid !== null ? 1 - s.book.bestBid : null;
   const fair = s.fair;
+  const tag = fairTag(fair, s.fairSource);
   const resolved = ph === 'settled' || ph === 'void';
   const yesWon = l.result?.status === 1 ? l.result.tmaxC >= s.k : null;
   const flagged =
@@ -264,6 +273,11 @@ function StrikeRow({ l, s, ph, obsReached, onPick }: { l: LadderView; s: StrikeV
             <>
               <span>
                 {t('mk.fair')} <b className="num">{pct(fair)}</b>
+                {tag && (
+                  <span className="src-tag" title={t('mk.srcNote')} data-testid="fair-source">
+                    {t(FAIR_TAG_KEY[tag])}
+                  </span>
+                )}
               </span>
               <span>
                 {t('mk.pm')} <b className="num">{pct(s.pmImplied)}</b>

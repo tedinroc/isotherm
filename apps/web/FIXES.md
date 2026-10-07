@@ -175,3 +175,25 @@ Live at https://isotherm.pages.dev (Pages deployment `<retired-deployment>`, mai
 
 ## Note for the docs owner
 This deploy also shipped the "Who settles" copy in `src/components/HowItWorks.tsx` (en + 繁中), exactly as the docs worker had left it in the working tree at build time. If that copy changes again, Pages needs another `npm run build` and deploy.
+
+---
+
+# Dynamic round (2026-10-07)
+
+Full notes, screenshots and the runbook for the remaining proof: [`evidence/dynamic/RESULT.md`](evidence/dynamic/RESULT.md).
+Not deployed: the live site still serves `<retired-deployment>`.
+
+- **Portfolio "Sell Yes" has a floor and a confirmation.** The button shows the quote, and the confirmation shows the
+  average price and the exact minimum that is sent (today's quote − 2 %). Yes left by a Buy No whose step 2 failed keeps
+  the original plan's per-unit minimum (`planPortfolioSell` → `planRetrySell`, plan stored per wallet and strike in
+  `src/lib/stranded.ts`), and the sale is blocked when today's bids cannot pay it. On an anvil fork the confirmed minimum
+  is exactly the on-chain `sellYes` `minAusdOut` (4505581, `evidence/dynamic/fork-portfolio-sell.json`).
+- **Fair-value source label.** `SnapshotStrike.fairSource` and `guardSource` are typed and carried into `StrikeView`. A strike
+  whose fair value is not Polymarket-sourced shows "observed max", "our model", "intraday model" or "source not stated".
+- **Dynamic in the build.** `.env.production` holds the public environment ID; Dynamic email login is the default
+  sign-in and the dev wallet the labelled fallback. Verified on localhost (dev and production builds): the SDK loads
+  with the real environment and the Sandbox login modal renders. The login itself and the embedded-wallet transactions
+  were not run (they need a person to sign in to Dynamic).
+- **Dashboard:** the environment's public settings still list only Ethereum Mainnet (08:37Z); Monad Testnet must be
+  enabled in the *Sandbox* environment `3eaae4f7-…`.
+- `npm test` 35/35 (15 new), `tsc -b` exit 0.

@@ -5,3 +5,5 @@ fork-fixture.json
 .env.local
 *.key
 .wrangler/
+# the repo root ignores .env.*; this file only holds public build settings (see its header)
+!.env.production

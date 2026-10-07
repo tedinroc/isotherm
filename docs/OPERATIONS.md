@@ -1,14 +1,14 @@
 # Isotherm — live operations (Monad testnet 10143)
 
-Written 2026-10-07 14:15 Taipei (06:15 UTC), at go-live; balances and versions below are from then. Revised the same day after the v1 security review (attester gas, guardian runbook, owner key, API caps, settlement status). Balances and caps re-read at 2026-10-07 07:55 UTC (15:55 Taipei) are marked with that time. Everything here is **testnet only**. AUSD is free
+Written 2026-10-07 14:15 Taipei (06:15 UTC), at go-live; balances and versions below are from then. Revised the same day after the v1 security review (attester gas, guardian runbook, owner key, API caps, settlement status). Balances and caps re-read at 2026-10-07 07:55 UTC (15:55 Taipei) are marked with that time. Revised again at 08:40 UTC (16:40 Taipei) for the CRE login, the re-sized API caps and the Dynamic build. Everything here is **testnet only**. AUSD is free
 faucet test money. Nothing here touches Monad mainnet.
 
 ## 1. What is live
 
 | Thing | Where |
 |---|---|
-| Phone web app (PWA) | https://isotherm.pages.dev (Cloudflare Pages project `isotherm`) |
-| API: drip, gasless-mint relayer, stats, snapshot | <former API host> (Worker `isotherm-api`, version `ed0ab137` deployed at go-live) |
+| Phone web app (PWA) | https://isotherm.pages.dev (Cloudflare Pages project `isotherm`). The deployed build signs with the labelled dev (burner) wallet only: its main bundle `assets/index-sVKTc5nx.js` holds no Dynamic environment ID (curl, 08:40 UTC). Builds from this tree would enable Dynamic (section 5). |
+| API: drip, gasless-mint relayer, stats, snapshot | <former API host> (Worker `isotherm-api`; version `ea73ccfa` deployed 2026-10-07 08:02 UTC with the re-sized caps; the go-live version was `ed0ab137`) |
 | Contracts (v1, Sourcify exact_match) | Resolver `0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B`, Vault/factory `0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39`, Zap `0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0`. Source of truth: `deployments/testnet.json` |
 | Market maker | launchd jobs on this Mac, running from the **runtime copy** `~/isotherm-live` (see section 3) |
 
@@ -58,7 +58,7 @@ That way the single-writer lock also stops a second writer started from the repo
 | `xyz.isotherm.maker` | `loop`: every 60 s it quotes all active ladders around the Polymarket-implied fair, re-quotes when needed, posts the snapshot to the API, and runs queued roll requests. The kill-switch timer runs every 15 s. | KeepAlive (restarted if it dies; throttled to once per 60 s) |
 | `xyz.isotherm.roll` | `roll --station RCSS --date tomorrow --not-before 12:00`. While the loop runs, it queues the request for the loop. It is idempotent: an existing ladder costs 0 txs (verified at 06:14 UTC). | Every hour; acts from 12:00 Taipei |
 | `xyz.isotherm.watchdog` | `watchdog --verify`: an independent kill switch. It acts only if the loop's heartbeat is more than 3 min old. | Every 5 min |
-| `xyz.isotherm.cre-settle` (CRE workstream) | `scripts/settle-job.sh` from `~/isotherm-live/packages/cre-workflow`: settles due ladders. Official CRE path if `cre whoami` succeeds, otherwise the labelled SDK-harness fallback; writes an evidence record per run naming the path. See section 6. | Hourly at :05 |
+| `xyz.isotherm.cre-settle` (CRE workstream) | `scripts/settle-job.sh` from `~/isotherm-live/packages/cre-workflow`: settles due ladders. Official CRE path if `cre whoami` succeeds (the case since the team's `cre login` on 2026-10-07), otherwise the labelled SDK-harness fallback; writes an evidence record per run naming the path. See section 6. | Hourly at :05 |
 | `xyz.isotherm.challenge-watch` (CRE workstream) | `scripts/challenge-watch.sh`: recomputes every `LadderResolved` with the settlement rule and, on a reproduced mismatch, challenges from the guardian key (or prints the exact command) | Every 120 s |
 
 Plist files are in `~/Library/LaunchAgents/xyz.isotherm.{maker,roll,watchdog,cre-settle,challenge-watch}.plist`. They load at user login, so
@@ -134,20 +134,35 @@ The human faucet gives about 5 MON/day.
 - **API deploy** (wrangler 3.114 from `apps/api/node_modules`): `cd apps/api && XDG_CONFIG_HOME=<wrangler config dir> npm run deploy`.
   - Secrets `RELAYER_KEY`, `SNAPSHOT_TOKEN` and `ADMIN_TOKEN` are already set (`npx wrangler secret list`).
   - Knobs are in `apps/api/wrangler.toml [vars]`: `DRIP_MON`, `DRIP_DAILY_CAP`, `DRIP_ENABLED="0"` to pause drips, `RELAY_DAILY_CAP`, `RELAY_PER_IP_PER_DAY`, `RELAY_PER_ADDRESS_PER_DAY`, `RELAY_MIN_AUSD`, `RELAY_ALLOW_PERMIT`, `RELAYER_MIN_MON`, `AUSD_FLOAT_TARGET`, `TEAM_ADDRESSES`.
-  - **Size the caps to the relayer's MON** (v1 review N5): anyone can otherwise use up the day's drips and relays. `node apps/api/scripts/size-caps.mjs` computes the caps from the live balance, spread over several worst-case days (`--days N`, default 7) so one day can never spend the whole balance. The first values were sized from 0.599 MON (2 drips and 5 relayed mints per day); the relayer held 4.60 MON at 2026-10-07 07:55 UTC. Re-run it and redeploy after every top-up, with `--days` covering the time until the next top-up (judging runs Oct 14–27); the live caps are in `/api/health` `limits`. Permit-mode relays stay off for the v1 vault (`RELAY_ALLOW_PERMIT = "0"`, N10).
+  - **Size the caps to the relayer's MON** (v1 review N5): anyone can otherwise use up the day's drips and relays. `node apps/api/scripts/size-caps.mjs` computes the caps from the live balance, spread over several worst-case days (`--days N`, default 7) so one day can never spend the whole balance. The first values were sized from 0.599 MON (2 drips and 5 relayed mints per day). At 07:59 UTC on 2026-10-07 they were re-sized from 4.599 MON over 7 days (`apps/api/evidence/size-caps-2026-10-07-r2.txt`), and the Worker was redeployed at 08:02 UTC. `/api/health` `limits` at 08:40 UTC shows those values live:
+    - drips: 2 per UTC day, 1 per network, 24 h per address;
+    - relays: 9 per UTC day, 4 per network, 4 per address, 1–500 AUSD each;
+    - reserve: 0.1 MON.
+
+    At maximum use that covers UTC days Oct 7–13, so **top up and re-size before 2026-10-14**. Re-run it and redeploy after every top-up, with `--days` covering the time until the next top-up (judging runs Oct 14–27). Permit-mode relays stay off for the v1 vault (`RELAY_ALLOW_PERMIT = "0"`, N10).
   - After a deploy, check `/api/health`: `relayModes` should be `["authorization"]`, and `monBalance` should cover the caps.
   - Live logs: `XDG_CONFIG_HOME=<wrangler config dir> npx wrangler tail isotherm-api`.
 - **Go-live change to the API.** The drip's second tx (the AUSD leg) re-read `eth_getTransactionCount('pending')`. Monad's RPC does not count a just-submitted tx there, so the AUSD leg reused the MON tx's nonce and was rejected ("Missing or invalid parameters"). Because nothing was recorded, a retry could also send MON again.
   - The fix: nonces are counted locally, and if MON went out but AUSD failed, the drip is recorded as AUSD-pending so a retry sends only AUSD.
   - Verified live: a two-leg drip in 1.3 s, `docs/evidence/golive/drip-two-leg-after-fix.json`.
 - **Web deploy:** `cd apps/web && npm run build && XDG_CONFIG_HOME=<wrangler config dir> npx wrangler@3 pages deploy dist --project-name isotherm --branch main`. The build reads addresses from `deployments/testnet.json`.
+  - **Dynamic gate.** `npm run build` now also reads the public Dynamic Sandbox environment ID from `apps/web/.env.production`, so the build makes "Sign in with email" through Dynamic the default.
+  - **Do not deploy that build until the embedded-wallet proof passes.** The runbook is `apps/web/evidence/dynamic/RESULT.md`: a person signs in on localhost with a `+dynamic_test` account, then the embedded wallet does one relayed mint and one Buy Yes on testnet.
+  - Monad Testnet must also be enabled and saved in the Sandbox environment (Chains & Networks → EVM). Check with `curl -s https://app.dynamicauth.com/api/v0/sdk/3eaae4f7-b9bb-4a0a-a578-00ff7008a460/settings`; at 08:40 UTC it still listed only Ethereum Mainnet.
+  - To redeploy before then, build dev-wallet-only with `VITE_DYNAMIC_ENVIRONMENT_ID= npm run build` (a shell variable beats the file).
 - **Smoke-test wallet.** The go-live smoke test used dev wallet `0xd42A0b394F09df88BB2120D0973569b845f2D79c`, stored in the in-app browser. It is listed in `TEAM_ADDRESSES`, so the public "trading wallets" counter does not count our own test. `/api/stats` classifies its fill as `team`.
 
 ## 6. Settlement (not run by the maker)
 
 The Oct 8 ladder is settled by the CRE workflow in `packages/cre-workflow`, through the MockKeystoneForwarder plus the attester signature. The CRE workstream installed the jobs on 2026-10-07 (`packages/cre-workflow/README.md`, `RESULT.md`).
 - **When:** `xyz.isotherm.cre-settle` runs hourly at :05; nothing is attempted before day end + 2 h, so the first real attempt for the Oct 8 ladder is **2026-10-08 18:05 UTC (02:05 Taipei, Oct 9)**. Disagreeing or incomplete sources stay pending and are retried hourly; a void comes only after 36 h (46 h backstop).
-- **Which path:** the official path (`cre workflow simulate --broadcast`) needs `cre login`, which has **not** been run yet (browser + 2FA, `packages/cre-workflow/RESULT.md` §4). Until it is, the job settles through the **SDK-harness fallback**: the same handler, rule and attestation run under Bun, not the CRE engine. Its evidence record says which path ran; say "harness" wherever that evidence is used.
+- **Which path:** the official path (`cre workflow simulate --broadcast`) needs `cre login`.
+  - **Login.** It was run on 2026-10-07; the session file `~/.cre/cre.yaml` was written at about 07:59 UTC.
+  - **Since then.** `cre whoami` succeeds, and the job takes the official path with the unmodified CLI v1.37.0. The binary is byte-identical to the SHA-256-pinned release zip in `packages/cre-workflow/.tools/dl/`.
+  - **First official run.** At 08:05 UTC it ran `cre workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 --broadcast` against live testnet, scanned the one ladder, found nothing due and sent no report. Evidence: `~/isotherm-live/packages/cre-workflow/var/evidence/LATEST.json` (`"path": "official"`), with the history in `settle-runs.jsonl` next to it.
+  - **Before the login.** The 07:08 UTC run took the harness fallback and also had nothing due.
+  - **If the session lapses** (its expiry is undocumented), the job falls back to the **SDK-harness**: the same handler, rule and attestation run under Bun, not the CRE engine. The evidence record says which path ran; say "harness" wherever a harness run's evidence is used.
+  - **Check before the first real attempt** (2026-10-08 18:05 UTC). Run `cre whoami` from `packages/cre-workflow` with `.tools/bin` on the PATH, or read `path` in `LATEST.json`. If it is not `official`, run `cre login` again.
 - **Where it runs:** from the runtime copy `~/isotherm-live/packages/cre-workflow`, because launchd cannot read `~/Documents` (exit 126, as the maker hit). Ship changes with `packages/cre-workflow/scripts/deploy-runtime.sh`; check with `bash ~/isotherm-live/packages/cre-workflow/scripts/install-launchd.sh --status` and `launchctl list | grep xyz.isotherm`.
 - **Cost:** each report transaction bills about 0.0204 MON to the attester key (0.40 MON at 2026-10-07 07:55 UTC, about 19 reports).
 - **After it lands:** confirm `LadderResolved` or `Resolver.resultOf(0x52435353, 20261008)`, never the transaction status alone. `xyz.isotherm.challenge-watch` recomputes the result and challenges a reproduced mismatch within the 900 s window; a human check is still worth it (challenge first, then pause; section 3).
