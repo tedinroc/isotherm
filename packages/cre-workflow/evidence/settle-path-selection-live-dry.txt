@@ -1,0 +1,33 @@
+# 2026-10-07T07:05:11Z settle-job.sh path selection on LIVE testnet, DRY (--no-broadcast), with a TEST SHIM in place of the cre CLI
+# shim: 'cre whoami' exits 0 (pretend logged in), 'cre workflow simulate' exits 1 (simulated failure). Nothing is due on live yet, so nothing is signed or sent.
+## run 1
+[2026-10-07T07:05:12Z] [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<tmp>/shimrt/state; dry=1
+[2026-10-07T07:05:12Z] mode=official rpc=https://testnet-rpc.monad.xyz cre-login=yes broadcast=0
+[2026-10-07T07:05:19Z] attester 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9 == Resolver.attester(); tx sender 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9 has 0.100000000000000000 MON; vault ladders 1
+[2026-10-07T07:05:19Z] OFFICIAL: cre workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 
+SHIM: cre workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 -> simulated failure
+[2026-10-07T07:05:19Z] run exited 1
+[2026-10-07T07:05:19Z] [settle-job] exit 1
+[evidence] path=official exit=1 outcomes=- -> <tmp>/shimrt/state/evidence/settle-runs.jsonl
+## run 2
+[2026-10-07T07:05:19Z] [settle-job] path=harness (cre whoami succeeded, but the previous OFFICIAL run failed (rc=1 at 2026-10-07T07:05:19Z); this run uses the harness, the next one retries OFFICIAL); rpc=https://testnet-rpc.monad.xyz; state=<tmp>/shimrt/state; dry=1
+[2026-10-07T07:05:19Z] mode=harness rpc=https://testnet-rpc.monad.xyz cre-login=yes broadcast=0
+[2026-10-07T07:05:27Z] attester 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9 == Resolver.attester(); tx sender 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9 has 0.100000000000000000 MON; vault ladders 1
+[2026-10-07T07:05:27Z] HARNESS (fallback, not the CRE engine): settle/e2e/harness-run.ts
+[path] HARNESS FALLBACK: the workflow handler under Bun in the CRE SDK test harness (NOT the CRE engine); reports go through 0xB9F79d863261869B234c481D1f9A7af84AeAd192 with the v1 EIP-712 attestation
+[USER LOG] nothing to settle (ladders=1, due=0, skipped=0)
+[2026-10-07T07:05:29Z] [settle-job] exit 0
+[evidence] path=harness-fallback exit=0 outcomes=- -> <tmp>/shimrt/state/evidence/settle-runs.jsonl
+## run 3
+[2026-10-07T07:05:29Z] [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<tmp>/shimrt/state; dry=1
+[2026-10-07T07:05:29Z] mode=official rpc=https://testnet-rpc.monad.xyz cre-login=yes broadcast=0
+[2026-10-07T07:05:37Z] attester 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9 == Resolver.attester(); tx sender 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9 has 0.100000000000000000 MON; vault ladders 1
+[2026-10-07T07:05:37Z] OFFICIAL: cre workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 
+SHIM: cre workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 -> simulated failure
+[2026-10-07T07:05:37Z] run exited 1
+[2026-10-07T07:05:37Z] [settle-job] exit 1
+[evidence] path=official exit=1 outcomes=- -> <tmp>/shimrt/state/evidence/settle-runs.jsonl
+## evidence records (path, reason, exit)
+2026-10-07T07:05:11Z path=official exit=1 network=LIVE Monad testnet 10143 dry=true reason="cre whoami succeeded" ladders=null
+2026-10-07T07:05:19Z path=harness-fallback exit=0 network=LIVE Monad testnet 10143 dry=true reason="cre whoami succeeded, but the previous OFFICIAL run failed (rc=1 at 2026-10-07T07:05:19Z); this run uses the harness, the next one retries OFFICIAL" ladders={"count":1,"scanned":[0,1],"due":0}
+2026-10-07T07:05:29Z path=official exit=1 network=LIVE Monad testnet 10143 dry=true reason="cre whoami succeeded" ladders=null

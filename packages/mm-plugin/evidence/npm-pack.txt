@@ -1,12 +1,12 @@
-# npm pack 2026-10-07T05:39:34Z
-sha256 ed29e4a1214d3283a35e53d3c364668bd1bdfd01184cb28aedf33c261d1f34b2
--rw-r--r--  1 user  staff  73055 Oct  6 22:39 mm-plugin-isotherm-0.1.0.tgz
+# npm pack 2026-10-07T07:29:47Z
+sha256 89deaeb3f3f8c797682359c6df3afef38e498122741368002b99787ff051f34b
+-rw-r--r--  1 user  staff  81436 Oct  7 00:29 mm-plugin-isotherm-0.1.0.tgz
 npm notice
 npm notice package: mm-plugin-isotherm@0.1.0
 npm notice Tarball Contents
 npm notice 1.4kB LICENSE
-npm notice 15.5kB README.md
-npm notice 7.1kB SKILL.md
+npm notice 20.9kB README.md
+npm notice 10.0kB SKILL.md
 npm notice 18.8kB assets/abi-feasibility/CollateralVault.json
 npm notice 6.3kB assets/abi-feasibility/IsothermZap.json
 npm notice 9.6kB assets/abi-feasibility/OutcomeToken.json
@@ -26,12 +26,12 @@ npm notice 6.5kB assets/deployments.testnet.json
 npm notice 4.3kB dist/commands/kuru/book.js
 npm notice 5.8kB dist/commands/kuru/cancel.js
 npm notice 8.2kB dist/commands/kuru/limit.js
-npm notice 10.5kB dist/commands/weather/buy.js
-npm notice 6.1kB dist/commands/weather/doctor.js
-npm notice 5.1kB dist/commands/weather/edge.js
+npm notice 15.3kB dist/commands/weather/buy.js
+npm notice 6.6kB dist/commands/weather/doctor.js
+npm notice 6.0kB dist/commands/weather/edge.js
 npm notice 5.8kB dist/commands/weather/markets.js
 npm notice 7.0kB dist/commands/weather/positions.js
-npm notice 1.4kB dist/commands/weather/quote.js
+npm notice 1.5kB dist/commands/weather/quote.js
 npm notice 7.2kB dist/commands/weather/redeem.js
 npm notice 10.4kB dist/commands/weather/sell.js
 npm notice 5.8kB dist/lib/chain.js
@@ -41,12 +41,13 @@ npm notice 8.3kB dist/lib/exec.js
 npm notice 9.5kB dist/lib/isotherm.js
 npm notice 7.9kB dist/lib/kuru.js
 npm notice 1.6kB dist/lib/kurucmd.js
-npm notice 4.6kB dist/lib/plan.js
-npm notice 5.2kB dist/lib/trade.js
+npm notice 5.7kB dist/lib/plan.js
+npm notice 9.5kB dist/lib/snapshot.js
+npm notice 5.3kB dist/lib/trade.js
 npm notice 3.0kB dist/lib/util.js
-npm notice 4.6kB dist/lib/view.js
+npm notice 7.3kB dist/lib/view.js
 npm notice 10.6kB dist/lib/weather.js
-npm notice 46.1kB oclif.manifest.json
+npm notice 46.3kB oclif.manifest.json
 npm notice 3.4kB package.json
 npm notice 2.4kB scripts/add-monad-testnet-chain.mjs
 npm notice 2.1kB scripts/rpc-shim.mjs
@@ -55,57 +56,9 @@ npm notice Tarball Details
 npm notice name: mm-plugin-isotherm
 npm notice version: 0.1.0
 npm notice filename: mm-plugin-isotherm-0.1.0.tgz
-npm notice package size: 73.1 kB
-npm notice unpacked size: 351.3 kB
-npm notice shasum: 6e67df8369c29b22bd527463bf6aa59f398b37c6
-npm notice integrity: sha512-oe2FVxROBY0GQ[...]JplHOOmT0gLXg==
-npm notice total files: 47
+npm notice package size: 81.4 kB
+npm notice unpacked size: 379.6 kB
+npm notice shasum: 9d9261a27effba5118ca7935ef615385bd0d16ca
+npm notice integrity: sha512-w8sE4e4GgFeSi[...]xXO5n6cGCR16w==
+npm notice total files: 48
 npm notice
-
-# bundled from the repo at build time
-{
- "builtAt": "2026-10-07T05:39:34.728Z",
- "copied": {
-  "deployments.testnet.json": {
-   "from": "<repo>/deployments/testnet.json",
-   "sha256": "e93bc4167b8052346f59d2e5d3230dab8a61e50eb82957b8de400e08b42ea253"
-  },
-  "abi/CollateralVault.json": {
-   "from": "<repo>/packages/abi/CollateralVault.json",
-   "sha256": "d320d7fc19077e1f431289a16ba086ba2780bf4b6a836228a0c65393877630ba"
-  },
-  "abi/ForecastCommit.json": {
-   "from": "<repo>/packages/abi/ForecastCommit.json",
-   "sha256": "96730d30285041fa1af8e2612a341b4b3aeca032dc2711206e94d7fdd239403a"
-  },
-  "abi/IERC3009.json": {
-   "from": "<repo>/packages/abi/IERC3009.json",
-   "sha256": "926cc468e75c6ce110905c204c24456a46b6159e8b6e290f9173f8a41be5fef1"
-  },
-  "abi/IIsothermResolver.json": {
-   "from": "<repo>/packages/abi/IIsothermResolver.json",
-   "sha256": "3daef01427b0828dc40572d3c891d96d39daa9258924fe4abb0a12d31781c01e"
-  },
-  "abi/IKuruOrderBookTaker.json": {
-   "from": "<repo>/packages/abi/IKuruOrderBookTaker.json",
-   "sha256": "8455ebdb50a01f12c201a1fdb3fc43c3cb4393c36c2bb8861aa414a588cb4419"
-  },
-  "abi/IKuruRouterView.json": {
-   "from": "<repo>/packages/abi/IKuruRouterView.json",
-   "sha256": "ee2f8a30750949b1d60d20ea045c72f890a3a83526375e63060ea7e0fd05f1bd"
-  },
-  "abi/IsothermZap.json": {
-   "from": "<repo>/packages/abi/IsothermZap.json",
-   "sha256": "007c7ebf1b3cad47b1c56abb7a5d8ecabd80a6ccfe2ecbff80427674b32e0ff4"
-  },
-  "abi/OutcomeToken.json": {
-   "from": "<repo>/packages/abi/OutcomeToken.json",
-   "sha256": "8e0114a8081a8b41fa0f90211a377e653ce3481440b65412dffea1cc390f784d"
-  },
-  "abi/Resolver.json": {
-   "from": "<repo>/packages/abi/Resolver.json",
-   "sha256": "d5ea4849dc7f14af3fe41ef5041702d2fc2d2421e07d100c57fcc7164760b469"
-  }
- },
- "missing": []
-}

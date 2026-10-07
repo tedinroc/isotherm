@@ -14,9 +14,36 @@ $ mm weather edge taipei --date tomorrow --json
     "polymarket": {
       "slug": "highest-temperature-in-taipei-on-october-8-2026",
       "url": "https://polymarket.com/event/highest-temperature-in-taipei-on-october-8-2026",
-      "volumeUsd": 2408,
-      "sumMid": 1.038,
+      "volumeUsd": 3054,
+      "sumMid": 1.041,
       "closed": false
+    },
+    "makerSnapshot": {
+      "url": "<former API host>/api/snapshot",
+      "used": false,
+      "generatedAt": "2026-10-07T07:09:05.971Z",
+      "ageS": 9,
+      "stale": false,
+      "strikesUsed": 0,
+      "note": null
+    },
+    "guardrailModel": {
+      "role": "GUARDRAIL ONLY: a sanity check, not a forecast and not a fair value. Isotherm's v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days).",
+      "usedFor": [
+        "plugin-v0-lite: isotherm-v0-lite, computed locally by the plugin: raw Open-Meteo 4-model mean, sigma ~1.5 C, NO bias correction. Cruder than v0 and often far from Polymarket; used only when the maker snapshot is unavailable."
+      ],
+      "makerV0Mu": 29.8,
+      "pluginV0Lite": {
+        "mu": 27.9,
+        "sigma": 1.51,
+        "models": {
+          "ecmwf_ifs025": 27.9,
+          "gfs_seamless": 27.9,
+          "icon_seamless": 27.6,
+          "jma_seamless": 28.2
+        },
+        "label": "isotherm-v0-lite, computed locally by the plugin: raw Open-Meteo 4-model mean, sigma ~1.5 C, NO bias correction. Cruder than v0 and often far from Polymarket; used only when the maker snapshot is unavailable."
+      }
     },
     "observed": {
       "source": "aviationweather.gov",
@@ -35,91 +62,135 @@ $ mm weather edge taipei --date tomorrow --json
         "strikeC": 27,
         "bestBid": 0.95,
         "bestAsk": 0.999,
-        "polymarketImplied": 0.983,
-        "v0Guardrail": 0.823,
-        "yesCheapVsPolymarket": -0.017,
-        "yesRichVsPolymarket": -0.034,
+        "fairValue": 0.9923,
+        "fairValueSource": "polymarket-live",
+        "reference": 0.9923,
+        "referenceSource": "polymarket-live",
+        "polymarketImplied": 0.992,
+        "yesCheapVsPolymarket": -0.008,
+        "yesRichVsPolymarket": -0.043,
         "observedLocked": false,
-        "guardrailFlag": true,
+        "guardrail": {
+          "p": 0.823,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": true
+        },
         "canonical": true,
         "suggestion": null
       },
       {
         "strike": "Tmax>=30C",
         "strikeC": 30,
-        "bestBid": 0.437,
-        "bestAsk": 0.498,
-        "polymarketImplied": 0.468,
-        "v0Guardrail": 0.145,
-        "yesCheapVsPolymarket": -0.03,
-        "yesRichVsPolymarket": -0.031,
+        "bestBid": 0.363,
+        "bestAsk": 0.424,
+        "fairValue": 0.3931,
+        "fairValueSource": "polymarket-live",
+        "reference": 0.3931,
+        "referenceSource": "polymarket-live",
+        "polymarketImplied": 0.393,
+        "yesCheapVsPolymarket": -0.031,
+        "yesRichVsPolymarket": -0.03,
         "observedLocked": false,
-        "guardrailFlag": true,
+        "guardrail": {
+          "p": 0.145,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": true
+        },
         "canonical": true,
         "suggestion": null
       },
       {
         "strike": "Tmax>=31C",
         "strikeC": 31,
-        "bestBid": 0.062,
-        "bestAsk": 0.123,
-        "polymarketImplied": 0.092,
-        "v0Guardrail": 0.043,
+        "bestBid": 0.036,
+        "bestAsk": 0.097,
+        "fairValue": 0.0663,
+        "fairValueSource": "polymarket-live",
+        "reference": 0.0663,
+        "referenceSource": "polymarket-live",
+        "polymarketImplied": 0.066,
         "yesCheapVsPolymarket": -0.031,
         "yesRichVsPolymarket": -0.03,
         "observedLocked": false,
-        "guardrailFlag": false,
+        "guardrail": {
+          "p": 0.043,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": false
+        },
         "canonical": true,
         "suggestion": null
       },
       {
         "strike": "Tmax>=28C",
         "strikeC": 28,
-        "bestBid": 0.919,
-        "bestAsk": 0.98,
-        "polymarketImplied": 0.95,
-        "v0Guardrail": 0.604,
-        "yesCheapVsPolymarket": -0.031,
-        "yesRichVsPolymarket": -0.032,
+        "bestBid": 0.93,
+        "bestAsk": 0.991,
+        "fairValue": 0.9601,
+        "fairValueSource": "polymarket-live",
+        "reference": 0.9601,
+        "referenceSource": "polymarket-live",
+        "polymarketImplied": 0.96,
+        "yesCheapVsPolymarket": -0.032,
+        "yesRichVsPolymarket": -0.031,
         "observedLocked": false,
-        "guardrailFlag": true,
+        "guardrail": {
+          "p": 0.604,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": true
+        },
         "canonical": true,
         "suggestion": null
       },
       {
         "strike": "Tmax>=29C",
         "strikeC": 29,
-        "bestBid": 0.818,
-        "bestAsk": 0.879,
-        "polymarketImplied": 0.849,
-        "v0Guardrail": 0.346,
-        "yesCheapVsPolymarket": -0.031,
-        "yesRichVsPolymarket": -0.032,
+        "bestBid": 0.829,
+        "bestAsk": 0.89,
+        "fairValue": 0.8592,
+        "fairValueSource": "polymarket-live",
+        "reference": 0.8592,
+        "referenceSource": "polymarket-live",
+        "polymarketImplied": 0.859,
+        "yesCheapVsPolymarket": -0.032,
+        "yesRichVsPolymarket": -0.031,
         "observedLocked": false,
-        "guardrailFlag": true,
+        "guardrail": {
+          "p": 0.346,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": true
+        },
         "canonical": true,
         "suggestion": null
       }
     ],
     "definitions": {
-      "yesCheapVsPolymarket": "Polymarket-implied P minus our best ask grossed up for the taker fee. Positive: YES on our book costs less than the Polymarket-implied probability (also how cheaply NO can be sold).",
-      "yesRichVsPolymarket": "Our best bid net of the taker fee minus Polymarket-implied P. Positive: YES sells (or NO buys) on our book above the Polymarket-implied probability.",
+      "reference": "The Polymarket-implied P(Tmax >= k) the gap is measured against: the maker snapshot's fair value when it is fresh and Polymarket-based (referenceSource maker-snapshot), else the plugin's own live Polymarket read (polymarket-live). Never a model.",
+      "yesCheapVsPolymarket": "reference minus our best ask grossed up for the taker fee. Positive: YES on our book costs less than the Polymarket-implied probability (also how cheaply NO can be sold).",
+      "yesRichVsPolymarket": "Our best bid net of the taker fee minus reference. Positive: YES sells (or NO buys) on our book above the Polymarket-implied probability.",
+      "guardrail": "GUARDRAIL ONLY (maker v0, else the plugin's cruder v0-lite). flag = it differs from the reference by more than 0.15. It never drives a suggestion.",
       "observedLocked": "The observed METAR max so far already reached k, so YES is very likely to win (official settlement still pending). No suggestion is made for locked strikes."
     },
     "disclaimer": [
       "A gap between two venues is not a forecasting edge and not a promise of profit: Polymarket can be wrong, both books can move, and thin books mean small size.",
       "Testnet only: Monad testnet 10143 with faucet AUSD. Nothing here is real money or financial advice.",
-      "Polymarket-implied P is the normalised mid of Polymarket's bucket prices summed over buckets >= k: a reference price from another venue, not a forecast.",
-      "Isotherm's own v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days); it is shown only as a guardrail. No forecasting edge is claimed.",
+      "fairValue is the price the house maker quotes around: the Polymarket-implied P(Tmax >= k) from the maker's snapshot (or the plugin's own Polymarket read when the snapshot is missing or stale). fairValueBasis says when the maker fell back to its model because Polymarket had no usable price. It is a reference price, not a forecast.",
+      "guardrail is GUARDRAIL ONLY: Isotherm's own v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days). The plugin-local v0-lite fallback is cruder still. No forecasting edge is claimed.",
       "Settlement: official integer °C METAR max for the station-local day incl. SPECI and :30 reports; this rule matches Polymarket on 183/184 RCSS days and 209/209 RJTT days."
     ],
-    "notes": [],
+    "notes": [
+      "maker snapshot ignored for strike(s) 28, 29, 30, 31: its seriesId/market differs from this deployment's on-chain series (another deployment or a fork)"
+    ],
     "deployment": "env:<repo>/packages/mm-plugin/harness/fork-deployments-feasibility.json",
     "abiSet": "feasibility",
     "vault": "0xC83fE722eb5Bd29a0355C090f14CCb0605153713",
     "zap": "0x1b1d91eBd1590c7814AEdCae66ac6ded492C792e",
     "rpcSource": "mm-customEvmChains",
-    "rpcUrl": "http://127.0.0.1:19251"
+    "rpcUrl": "http://127.0.0.1:19541"
   },
   "hint": "0 strike(s) with a gap >= 0.03 vs Polymarket-implied (testnet; not a forecast)"
 }

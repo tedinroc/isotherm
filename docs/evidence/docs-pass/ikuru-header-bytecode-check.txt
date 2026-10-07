@@ -1,0 +1,10 @@
+IsothermZap runtime bytecode check after the src/interfaces/IKuru.sol header edit (2026-10-07, docs pass)
+compiler: forge 1.8.5, solc 0.8.37, optimizer 10000 runs, osaka, bytecode_hash=ipfs (foundry.toml)
+live code: cast code 0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0 (Monad testnet, read-only), length 7713 bytes
+immutable references masked to zero before comparing live code: 24 slots
+repo before the edit vs live (immutables masked, CBOR included): True
+repo after the edit  vs live (immutables masked, CBOR included): False
+repo after the edit  vs live (immutables masked, CBOR stripped):  True
+CBOR metadata, live:       a2646970667358221220d03d250fb2c72e330ca5edd5a40cf995738c765fa36d4beb205e68bd3aebcfbd64736f6c63430008250033
+CBOR metadata, after edit: a26469706673582212201dd571895ed94a2d171d60a4cce5e4b1a7749eae4771d80361e143048cac743a64736f6c63430008250033
+Conclusion: the header edit changes only the 53-byte CBOR metadata hash; executable code is identical.

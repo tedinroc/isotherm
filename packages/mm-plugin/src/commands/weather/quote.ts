@@ -6,7 +6,7 @@ const inputs = { city: F.city(0, true), date: F.date(), rpc: F.rpc() } satisfies
 
 export default class WeatherQuote extends PluginCommand<Record<string, unknown>> {
   static override description =
-    "Per strike of a city's Tmax ladder: our Kuru book bid/ask, the Polymarket-implied P(Tmax >= k), the v0-lite guardrail, and the observed max so far.";
+    "Per strike of a city's Tmax ladder: our Kuru book bid/ask, the fair value (the maker snapshot's Polymarket-implied P(Tmax >= k), else the plugin's own Polymarket read), a clearly labelled guardrail model (not a forecast), and the observed max so far.";
   static override examples = ["<%= config.bin %> weather quote taipei --json", "<%= config.bin %> weather quote tokyo --date 2026-10-09 --json"];
   static override requiresAuth = false;
   static override requiresInit = false;

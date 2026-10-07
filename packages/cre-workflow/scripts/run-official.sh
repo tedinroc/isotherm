@@ -17,7 +17,10 @@
 # Env:   ISOTHERM_ATTESTER_KEY_FILE (default ~/.config/isotherm/attester.key)
 #        ISOTHERM_TX_KEY_FILE       (default: the attester key file; the attester was funded with 0.1 MON for gas)
 #        ISOTHERM_RPC               (harness mode only; default live testnet. Refused with the LIVE attester key.)
-#        ISOTHERM_STATE_DIR         (default var; spacing guard + lock), HARNESS_EXTRA / HARNESS_AT (harness tests)
+#        ISOTHERM_STATE_DIR         (spacing guard + lock + logs). Default for the LIVE RPC: the runtime copy's
+#                                   ~/isotherm-live/packages/cre-workflow/var when it exists, so a manual run from the
+#                                   repo and the launchd job share ONE lock and ONE 30-min spacing guard; otherwise var.
+#        HARNESS_EXTRA / HARNESS_AT / ISOTHERM_TEST_RELABEL (harness fork tests only)
 # Exit:  0 ok / nothing to do / skipped, 2 preflight failed, 3 not logged in to CRE (official mode),
 #        4 a report was sent but not accepted on chain.
 #
@@ -48,7 +51,8 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
-STATE=${ISOTHERM_STATE_DIR:-var}
+RUNTIME_STATE="${ISOTHERM_RUNTIME:-$HOME/isotherm-live}/packages/cre-workflow/var"
+if [ -z "${ISOTHERM_STATE_DIR:-}" ] && [ "$RPC" = "$LIVE_RPC" ] && [ -d "$RUNTIME_STATE" ]; then STATE=$RUNTIME_STATE; else STATE=${ISOTHERM_STATE_DIR:-var}; fi
 mkdir -p "$STATE/logs"
 LOG="$STATE/logs/run-$(date -u +%Y%m%dT%H%M%SZ).log"
 say() { echo "[$(date -u +%FT%TZ)] $*" | tee -a "$LOG"; }
@@ -62,7 +66,8 @@ case "$(command -v cre)" in *nologin*) say "refusing a patched CLI"; exit 2 ;; e
 
 # ---- 1. mode + CRE login (the official simulator refuses to run without it)
 LOGGED_IN=0
-if [ -n "${CRE_API_KEY:-}" ] || cre whoami >/dev/null 2>&1; then LOGGED_IN=1; fi
+# `cre whoami` talks to the CRE API: bound it (perl alarm; macOS has no `timeout`) so a hung call cannot stall launchd.
+if [ -n "${CRE_API_KEY:-}" ] || perl -e 'alarm shift; exec @ARGV' 45 cre whoami </dev/null >/dev/null 2>&1; then LOGGED_IN=1; fi
 if [ "$MODE" = auto ]; then if [ "$LOGGED_IN" = 1 ]; then MODE=official; else MODE=harness; fi; fi
 if [ "$MODE" = official ] && [ "$RPC" != "$LIVE_RPC" ]; then say "official mode always uses the -T testnet target; ISOTHERM_RPC is for --harness"; exit 2; fi
 if [ "$MODE" = official ] && [ "$LOGGED_IN" = 0 ] && [ "$PREFLIGHT_ONLY" = 0 ]; then
@@ -114,6 +119,8 @@ fi
 if [ "$PREFLIGHT_ONLY" = 1 ]; then say "preflight OK"; exit 0; fi
 
 # ---- 4. one run at a time, >= 30 min apart (attestation TTL is 25 min: two runs' signatures never overlap)
+# A lock older than 20 min is stale (a run takes < 1 min; a crash/reboot mid-run would otherwise block every later run).
+if [ -d "$STATE/run.lock" ] && [ -n "$(find "$STATE/run.lock" -maxdepth 0 -mmin +20 2>/dev/null)" ]; then say "removing stale $STATE/run.lock (> 20 min old)"; rmdir "$STATE/run.lock" 2>/dev/null || true; fi
 if ! mkdir "$STATE/run.lock" 2>/dev/null; then say "another run holds $STATE/run.lock; skipping"; exit 0; fi
 trap 'rmdir "$STATE/run.lock" 2>/dev/null || true' EXIT
 NOW=$(date +%s)

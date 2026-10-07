@@ -1,5 +1,6 @@
 // User transactions. Monad bills the gas LIMIT, so every write estimates first and sends limit = estimate × 1.10.
-// Trades always go through IsothermZap with a min-out computed from the live book.
+// Book trades always go through IsothermZap with a min-out computed from the live book (buyYes, sellYes). Buy No is
+// vault.mintSet + zap.sellYes (lib/buyNo.ts), never Zap.buyNo, whose bound fails under partial fills.
 import { maxUint256, parseSignature, type Abi, type Address, type Hex, type TransactionReceipt } from 'viem';
 import { GAS_MULTIPLIER_PCT } from '../config';
 import type { Client } from '../wallet/wallet';
@@ -37,11 +38,17 @@ export async function send(client: Client, req: { address: Address; abi: Abi; fu
   return { hash, receipt, gasLimit: gas, ms: Math.round(performance.now() - t0) };
 }
 
-/** Approve the Zap for AUSD once (100,000 test AUSD) so later trades need a single transaction. */
-export async function ensureAusdAllowance(client: Client, needed: bigint, current: bigint): Promise<TxResult | null> {
+/** Approve `spender` (the Zap for Buy Yes, the vault for Buy No's mint) for AUSD once (100,000 test AUSD) so later
+ *  trades skip the approval. Neither contract can pull a holder's AUSD on anyone else's behalf. */
+export async function ensureAusdAllowance(
+  client: Client,
+  needed: bigint,
+  current: bigint,
+  spender: Address = DEPLOYMENTS.zap,
+): Promise<TxResult | null> {
   if (current >= needed) return null;
   const amount = needed > 100_000_000_000n ? needed : 100_000_000_000n;
-  return send(client, { address: DEPLOYMENTS.ausd, abi: ausdAbi as Abi, functionName: 'approve', args: [DEPLOYMENTS.zap, amount] });
+  return send(client, { address: DEPLOYMENTS.ausd, abi: ausdAbi as Abi, functionName: 'approve', args: [spender, amount] });
 }
 
 export async function ensureYesAllowance(client: Client, s: StrikeView, needed: bigint, current: bigint): Promise<TxResult | null> {
@@ -58,15 +65,6 @@ export function buyYes(client: Client, s: StrikeView, ausdIn: bigint, minYesOut:
   });
 }
 
-export function buyNo(client: Client, s: StrikeView, ausdIn: bigint, minAusdBack: bigint) {
-  return send(client, {
-    address: DEPLOYMENTS.zap,
-    abi: zapAbi as Abi,
-    functionName: 'buyNo',
-    args: [s.seriesId, s.market, ausdIn, minAusdBack, client.account.address],
-  });
-}
-
 export function sellYes(client: Client, s: StrikeView, yesIn: bigint, minAusdOut: bigint) {
   return send(client, {
     address: DEPLOYMENTS.zap,
@@ -74,6 +72,11 @@ export function sellYes(client: Client, s: StrikeView, yesIn: bigint, minAusdOut
     functionName: 'sellYes',
     args: [s.seriesId, s.market, yesIn, minAusdOut, client.account.address],
   });
+}
+
+/** vault.mintSet: pull `amount` AUSD from the caller, mint `amount` YES + `amount` NO to the caller. */
+export function mintSet(client: Client, s: StrikeView, amount: bigint) {
+  return send(client, { address: DEPLOYMENTS.vault, abi: vaultAbi as Abi, functionName: 'mintSet', args: [s.seriesId, amount] });
 }
 
 export function redeem(client: Client, seriesId: Hex, yes: bigint, no: bigint) {

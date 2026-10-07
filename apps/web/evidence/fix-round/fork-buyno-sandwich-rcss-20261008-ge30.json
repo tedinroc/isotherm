@@ -1,0 +1,212 @@
+{
+  "note": "anvil fork of Monad testnet; deployed v1 vault/zap and the real Kuru book of the live ladder; nothing sent to the live chain",
+  "rpc": "http://127.0.0.1:19520",
+  "forkBlock": "68905793",
+  "series": {
+    "station": "RCSS",
+    "date": 20261008,
+    "strike": 30,
+    "seriesId": "0xb020bdde35a3212b69e836e2f78f56b4560e75bc74eb7a6b790342f58de00064",
+    "market": "0x702A7a87EDb18D733c624bF766020F3b66eb36DC"
+  },
+  "budget": 10,
+  "slippage": 0.02,
+  "A_normal": {
+    "bookBids": [
+      {
+        "price": 0.34,
+        "size": 100
+      }
+    ],
+    "quote": {
+      "mint": 15.143713,
+      "proceeds": 5.143713,
+      "netCost": 10,
+      "avgPrice": 0.6603400368192398,
+      "depthLimited": false
+    },
+    "plan": {
+      "mint": "15143713",
+      "minAusdOut": "5040838",
+      "expectedOut": "5143713"
+    },
+    "txs": [
+      {
+        "fn": "approve",
+        "hash": "0x935e0b4ed961b7440b584bd33b5afddf0a271d54d3781851e5a4205cba58a15e",
+        "status": "success",
+        "gasUsed": "70249",
+        "gasLimit": "77762",
+        "monBilled": "0.00793"
+      },
+      {
+        "fn": "approve",
+        "hash": "0xb6c10a31c1dd76df5222cba2635570e5b0b6c81289650d6822fa70f88ced8275",
+        "status": "success",
+        "gasUsed": "62608",
+        "gasLimit": "69362",
+        "monBilled": "0.00707"
+      },
+      {
+        "fn": "mintSet",
+        "hash": "0x0b60998a5d6c920fe4ed32adc8669cb0b9581f61b40ab7ff4116f5ea59705949",
+        "status": "success",
+        "gasUsed": "229205",
+        "gasLimit": "252126",
+        "monBilled": "0.02572"
+      },
+      {
+        "fn": "sellYes",
+        "hash": "0x65694a21103db6ba99277777f564b47f3bc7a5702baaafabde3040fcfb60db60",
+        "status": "success",
+        "gasUsed": "472327",
+        "gasLimit": "519560",
+        "monBilled": "0.05300"
+      }
+    ],
+    "sold": {
+      "ausdOut": "5143651",
+      "yesRefund": "0"
+    },
+    "noHeld": "15143713",
+    "yesHeld": "0",
+    "ausdPaid": 10.000062,
+    "pricePerNo": 0.660344130927468,
+    "monFlowFirstTime": "0.09372",
+    "monFlowRepeat": "0.07872"
+  },
+  "B_sandwich_newPath": {
+    "quotedBids": [
+      {
+        "price": 0.34,
+        "size": 100
+      }
+    ],
+    "plan": {
+      "mint": "15143713",
+      "minAusdOut": "5040838"
+    },
+    "attacker": {
+      "attacker": "0x15D2fA5b237c025cAb49ef4C4Efb9D4790b9F47d",
+      "bidsBefore": [
+        {
+          "price": 0.34,
+          "size": 100
+        }
+      ],
+      "bidsAfter": [
+        {
+          "price": 0.001,
+          "size": 7.571856
+        }
+      ],
+      "txs": [
+        "approve success",
+        "mintSet success",
+        "approve success",
+        "placeAndExecuteMarketSell success",
+        "approve success",
+        "deposit success",
+        "batchUpdate success"
+      ]
+    },
+    "step2EstimateError": "The contract function \"sellYes\" reverted.",
+    "step2": "reverted",
+    "afterStep2": {
+      "yes": "15143713",
+      "no": "15143713"
+    },
+    "mergeBack": "success",
+    "ausdNetChange": 0,
+    "txs": [
+      {
+        "fn": "approve",
+        "hash": "0x8497b6aeff85663fdef40c2ed6d2fbe4315183bb327e603ea0efa7733c002bb7",
+        "status": "success",
+        "gasUsed": "70249",
+        "gasLimit": "77762",
+        "monBilled": "0.00793"
+      },
+      {
+        "fn": "approve",
+        "hash": "0x529a4f8b0f60464696e8a2185a0d2efeb657c2fd8868dc9eac1bf91d1c2375ef",
+        "status": "success",
+        "gasUsed": "62608",
+        "gasLimit": "69362",
+        "monBilled": "0.00707"
+      },
+      {
+        "fn": "mintSet",
+        "hash": "0x8a523cff29573bf2172b26ec43bdd06d86d8b64381e119008ae7699eb3e8a8ed",
+        "status": "success",
+        "gasUsed": "229205",
+        "gasLimit": "252126",
+        "monBilled": "0.02572"
+      },
+      {
+        "fn": "sellYes",
+        "hash": "0xbff0154a16c9cab2497a2f41b7e8fda3b0cf18ec6558c3a38f1f948a766736b7",
+        "status": "reverted",
+        "gasUsed": "468831",
+        "gasLimit": "600000",
+        "monBilled": "0.06120"
+      },
+      {
+        "fn": "redeemSet",
+        "hash": "0x1bf80bafec8c07e21d3ec34da998960715784ee4a561e90cd2cadd12547fd8db",
+        "status": "success",
+        "gasUsed": "159980",
+        "gasLimit": "175978",
+        "monBilled": "0.01795"
+      }
+    ],
+    "verdict": "PROTECTED: step 2 reverted, pairs merged back, 0 AUSD lost (gas only)"
+  },
+  "C_sandwich_oldZapBuyNo": {
+    "ausdIn": "15143713",
+    "minAusdBack": "5040839",
+    "attacker": {
+      "bidsAfter": [
+        {
+          "price": 0.001,
+          "size": 7.571856
+        }
+      ]
+    },
+    "status": "success",
+    "noOut": "7571856",
+    "ausdBack": "7579349",
+    "ausdPaid": 7.564364,
+    "pricePerNo": 0.9990105464234925,
+    "quotedPricePerNo": 0.6603399999999999,
+    "verdict": "NOT PROTECTED: the minAusdBack bound passed while the victim paid ~1 per NO"
+  },
+  "D_buyYes": {
+    "quote": {
+      "spend": 10,
+      "refund": 0,
+      "out": 21.255319,
+      "avgPrice": 0.47047047376706036,
+      "filledAll": true
+    },
+    "txs": [
+      {
+        "fn": "approve",
+        "hash": "0xe0795b5f00b730f1ac67f880e484dce89e9a19e451155ebeb079ad748263e568",
+        "status": "success",
+        "gasUsed": "70249",
+        "gasLimit": "77762",
+        "monBilled": "0.00793"
+      },
+      {
+        "fn": "buyYes",
+        "hash": "0x145d3782e2b649583cdbd9850270656c59d0da32f559c0a900718a0503168065",
+        "status": "success",
+        "gasUsed": "466041",
+        "gasLimit": "512646",
+        "monBilled": "0.05229"
+      }
+    ],
+    "yesHeld": "21255318"
+  }
+}

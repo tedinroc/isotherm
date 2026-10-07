@@ -1,0 +1,10 @@
+# 2026-10-07T07:06:14Z live read-only checks for the settlement jobs (eth_call / eth_estimateGas only; nothing broadcast)
+block 68906756; gas price 102000000000 wei
+Resolver.attester() = 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9; guardian() = 0x30C8E371719Ff00577284dd9c10587Fa89357d50; paused() = false
+attester/report sender 0x63D2…0Bb9 balance 0.100000000000000000 MON; guardian 0x30C8…7d50 balance 0.050000000000000000 MON
+Vault.ladderCount() = 1; ladderAt(0) = (0x52435353, 20261008 [2.026e7])
+dayEnd(RCSS,20261008) = 1791475200 (2026-10-08T16:00:00Z); staleAt = 1791648000 (2026-10-10T16:00:00Z)
+resultOf(RCSS,20261008) = (0, 0, 0, 0, 0x0000000000000000000000000000000000000000000000000000000000000000)
+eth_estimateGas challenge(RCSS,20261008,0x0) from the live guardian (expected revert NotChallengeable=0xe9439e1b, nothing is settled yet):
+Error: server returned an error response: error code 3: execution reverted, data: "0xe9439e1b52435353000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001352890"
+cost per report: gas limit 200000 x 102 gwei = 0.0204 MON (Monad bills the limit); per challenge: fork gasUsed 44,432 -> watcher limit 62,761 x 102 gwei = 0.0064 MON

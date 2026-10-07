@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Isotherm challenge watcher, every 120 s, from the RUNTIME COPY outside ~/Documents (macOS TCC).
+  scripts/challenge-watch.sh: on every LadderResolved, recompute Tmax with the workflow's decide() rule; on a reproduced
+  mismatch inside the 900 s window, call Resolver.challenge() from the guardian key if it holds MON, otherwise print the
+  exact manual command (var/watch/ALERTS.log + a macOS notification). Read-only unless a mismatch is found.
+  Rendered by scripts/install-launchd.sh; installed by scripts/deploy-runtime.sh --load.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>__LABEL__</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__PKG__/scripts/challenge-watch.sh</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__PKG__/settle</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>__HOME__</string>
+    <key>PATH</key>
+    <string>__PKG__/.tools/bin:__PKG__/.tools/node_modules/.bin:__HOME__/.foundry/bin:__HOME__/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+__EXTRA_ENV__  </dict>
+__SCHEDULE__
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>__LOGDIR__/watch.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>__LOGDIR__/watch.err.log</string>
+</dict>
+</plist>

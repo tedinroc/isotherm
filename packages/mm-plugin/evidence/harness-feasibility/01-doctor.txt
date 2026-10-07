@@ -9,18 +9,18 @@ $ mm weather doctor --json
       {
         "check": "mm customEvmChains[10143] (executor nonce/gas/fees)",
         "ok": true,
-        "detail": "rpcTarget http://127.0.0.1:19251"
+        "detail": "rpcTarget http://127.0.0.1:19541"
       },
       {
         "check": "mm gateway ctx.publicClient(10143)",
         "ok": false,
         "detail": "HTTP request failed.",
-        "fix": "optional: the plugin reads via its own RPC fallback. To fix the gateway too: node <plugin dir>/scripts/rpc-shim.mjs & export MM_INFURA_RPC_BASE_URL=http://127.0.0.1:18790"
+        "fix": "optional: the plugin reads through its own RPC fallback. To fix the gateway for other commands too, run scripts/rpc-shim.mjs from this package and export MM_INFURA_RPC_BASE_URL=http://127.0.0.1:18790"
       },
       {
         "check": "read RPC",
         "ok": true,
-        "detail": "mm-customEvmChains http://127.0.0.1:19251 block 68887552"
+        "detail": "mm-customEvmChains http://127.0.0.1:19541 block 68907057"
       },
       {
         "check": "contract CollateralVault",
@@ -58,6 +58,12 @@ $ mm weather doctor --json
         "detail": "none on-chain (deployment 'feasibility'); using the deployment file's market list (12 entries) + the plugin's canonical-book parameter check"
       },
       {
+        "check": "maker snapshot API (optional, display only)",
+        "ok": true,
+        "optional": true,
+        "detail": "<former API host>/api/snapshot: generated 62s ago (limit 600s), ladders RCSS 20261008"
+      },
+      {
         "check": "wallet MON for gas",
         "ok": true,
         "detail": "10.000000000000000000 MON (a Zap trade bills ~0.06-0.10 MON at 102 gwei because Monad bills the gas limit)"
@@ -83,7 +89,7 @@ $ mm weather doctor --json
         "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC",
         "0xd029C2D98ff85D8F64799017fE00a59B1159CE02",
         "each strike's Kuru market (weather markets), for kuru limit/cancel",
-        "each outcome token (approve to the Zap when selling)"
+        "each outcome token (YES is approved to the Zap when selling YES or buying NO)"
       ]
     },
     "publicRpc": "https://testnet-rpc.monad.xyz",
@@ -92,7 +98,7 @@ $ mm weather doctor --json
     "vault": "0xC83fE722eb5Bd29a0355C090f14CCb0605153713",
     "zap": "0x1b1d91eBd1590c7814AEdCae66ac6ded492C792e",
     "rpcSource": "mm-customEvmChains",
-    "rpcUrl": "http://127.0.0.1:19251",
+    "rpcUrl": "http://127.0.0.1:19541",
     "deploymentSource": "<repo>/packages/mm-plugin/harness/fork-deployments-feasibility.json",
     "deploymentWarnings": []
   },

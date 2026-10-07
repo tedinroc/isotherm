@@ -1,4 +1,4 @@
-$ mm weather buy taipei --date tomorrow --strike 30 --side yes --amount 20 --max-price 0.52 --dry-run --json
+$ mm weather buy taipei --date tomorrow --strike 30 --side yes --amount 20 --max-price 0.424 --dry-run --json
 {
   "ok": true,
   "data": {
@@ -10,7 +10,7 @@ $ mm weather buy taipei --date tomorrow --strike 30 --side yes --amount 20 --max
       "date": 20261008,
       "strike": "Tmax>=30C",
       "strikeC": 30,
-      "closeTime": "2026-10-08T15:00:00Z",
+      "closeTime": "2026-10-08T09:30:00Z",
       "yes": "0xe1f9a759a24e41Bd8A1c7755B8b054f1E7E6D284",
       "no": "0xD2b847F236F09f7376A28c617A80e4cFBfEB8687"
     },
@@ -20,14 +20,15 @@ $ mm weather buy taipei --date tomorrow --strike 30 --side yes --amount 20 --max
     "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
     "takerFeeBps": 10,
     "slippageBps": 50,
-    "maxPrice": "0.52",
+    "maxPrice": "0.424",
     "plan": {
+      "route": "Zap.buyYes(minYesOut)",
       "spendAusd": "20.000000",
       "requestedAusd": "20.000000",
-      "expectedYes": "40.120481",
-      "minYesOut": "39.919878",
-      "avgPricePerYes": 0.4984985100253409,
-      "worstLevel": "0.4980",
+      "expectedYes": "47.122641",
+      "minYesOut": "46.887027",
+      "avgPricePerYes": 0.42442442901279664,
+      "worstLevel": "0.4240",
       "levelsUsed": 1,
       "cappedByMaxPrice": false
     },
@@ -45,7 +46,7 @@ $ mm weather buy taipei --date tomorrow --strike 30 --side yes --amount 20 --max
     "abiSet": "v1",
     "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
     "rpcSource": "mm-customEvmChains",
-    "rpcUrl": "http://127.0.0.1:19251"
+    "rpcUrl": "http://127.0.0.1:19541"
   },
   "hint": "dry run: nothing signed"
 }

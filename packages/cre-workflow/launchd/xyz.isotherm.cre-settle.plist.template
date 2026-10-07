@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Isotherm settlement, hourly at minute 05 (Mac local time; minutes are equal in every zone involved), from the RUNTIME
+  COPY outside ~/Documents (launchd-started bash cannot read ~/Documents: macOS TCC, exit 126).
+  scripts/settle-job.sh: `cre whoami` OK -> OFFICIAL `cre workflow simulate -T testnet --broadcast`; otherwise the
+  HARNESS FALLBACK (same handler + decide() rule + v1 attestation through the MockKeystoneForwarder, NOT the CRE engine).
+  Every run appends an evidence record naming the path to var/evidence/settle-runs.jsonl.
+  The workflow only acts from dayEnd + 2 h (02:00 station-local; RCSS 18:00Z) and retries every hour until the ladder is
+  settled, or voided after 36 h of disagreement (46 h backstop). A run with nothing due sends nothing (0 MON).
+  Rendered by scripts/install-launchd.sh; installed by scripts/deploy-runtime.sh --load.
+  Unload before a real DON deployment (two signers for one station-date must never overlap).
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>__LABEL__</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__PKG__/scripts/settle-job.sh</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__PKG__</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>__HOME__</string>
+    <key>PATH</key>
+    <string>__PKG__/.tools/bin:__PKG__/.tools/node_modules/.bin:__HOME__/.foundry/bin:__HOME__/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+__EXTRA_ENV__  </dict>
+__SCHEDULE__
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>__LOGDIR__/settle.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>__LOGDIR__/settle.err.log</string>
+</dict>
+</plist>

@@ -5,7 +5,7 @@ import { configFrom, type Config, type Env } from './env';
 import { makeClients, type Pub } from './chain';
 import { createRelayer, type Relayer, type RelayMintWire } from './relayer';
 import { addMarkets, loadBatch, publicStats, refreshSettlements, scanOnce, scanRange, type ScanOptions } from './scan';
-import type { Store } from './limits';
+import { WindowLimiter, type Store } from './limits';
 import { HttpError, errorMessage, json } from './util';
 import { getAddress, isAddress, type Address } from 'viem';
 
@@ -15,6 +15,7 @@ export class RelayerDO {
   private relayer: Relayer;
   private store: Store;
   private scanning: Promise<unknown> | null = null;
+  private posts: WindowLimiter;
 
   constructor(
     state: DurableObjectState,
@@ -25,6 +26,13 @@ export class RelayerDO {
     this.pub = pub;
     this.store = state.storage as unknown as Store;
     this.relayer = createRelayer({ cfg: this.cfg, dep: DEPLOYMENTS, pub, wallet, store: this.store });
+    this.posts = new WindowLimiter(this.cfg.postLimitPerMin, 60_000);
+  }
+
+  /** Per-network request window for the public POST endpoints, before any storage or RPC work. */
+  private throttle(ip: unknown) {
+    const r = this.posts.hit(String(ip ?? 'unknown'));
+    if (!r.ok) throw new HttpError(429, 'too many requests from this network; slow down', { retryAfterSec: r.retryAfterSec });
   }
 
   private scanOpts(maxWindows = this.cfg.statsScanMaxWindows): ScanOptions {
@@ -52,9 +60,11 @@ export class RelayerDO {
         case '/info':
           return json(await this.relayer.info());
         case '/drip':
+          this.throttle(body.ip);
           return json(await this.relayer.drip(String(body.address ?? ''), String(body.ip ?? 'unknown')));
         case '/relay-mint':
-          return json(await this.relayer.relayMint(body as unknown as RelayMintWire));
+          this.throttle(body.ip);
+          return json(await this.relayer.relayMint(body.wire as RelayMintWire, String(body.ip ?? 'unknown')));
         case '/markets': {
           const list = Array.isArray(body.markets) ? body.markets : [];
           const ms = list

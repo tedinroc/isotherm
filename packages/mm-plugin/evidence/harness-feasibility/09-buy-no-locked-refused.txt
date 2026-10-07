@@ -1,9 +1,0 @@
-$ mm weather buy taipei --strike 28 --side no --amount 10 --max-price 0.2 --json
-{
-  "ok": false,
-  "error": {
-    "code": "ISOTHERM_OUTCOME_LOCKED",
-    "message": "Observed max so far at RCSS is 28°C >= 28°C (21 reports, last 2026-10-07T05:00:00Z); YES has effectively won, so this buy NO would almost surely lose.",
-    "hint": "Pass --ignore-observed to override (not recommended)."
-  }
-}

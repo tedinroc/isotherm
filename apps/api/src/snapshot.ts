@@ -18,9 +18,20 @@ export interface SnapshotStrike {
   model: number | null;
   bid: number | null;
   ask: number | null;
+  /** YES size of the maker's bid / ask as placed, and what is still resting on the book (null = not reported). */
+  bidSize: number | null;
+  askSize: number | null;
+  bidRemaining: number | null;
+  askRemaining: number | null;
   flags: string[];
   mode: string | null; // maker state for this strike, e.g. "quoting", "certain", "pulled"
+  /** The maker's decision on the tick that produced this snapshot ("none", "quote", "requote", "pull", "close"). */
+  action: string | null;
+  /** Why the maker took `action` on that tick (e.g. "quote still good"). null when the tick did not reach this strike. */
   reason: string | null;
+  /** Why the maker last CHANGED this strike's quote (re-quote or pull); may be hours old, see `lastQuoteAt`. */
+  lastChangeReason: string | null;
+  lastQuoteAt: number | null; // unix s of the maker's last quote tx for this strike
   divergence: number | null; // |guard model − Polymarket| as computed by the maker
 }
 
@@ -72,6 +83,7 @@ const pickAddr = (o: Record<string, unknown>, keys: string[]): Address | null =>
   return null;
 };
 const prob = (x: number | null) => (x === null ? null : x > 1 && x <= 100 ? x / 100 : x >= 0 && x <= 1 ? x : null);
+const size = (x: number | null) => (x === null || x < 0 || x > 1e12 ? null : x);
 
 export function parseDate(v: unknown): number | null {
   if (typeof v === 'number' && v > 19000101 && v < 21001231) return Math.floor(v);
@@ -109,6 +121,17 @@ export function normalizeSnapshot(input: unknown): Snapshot {
       if (k === null || !Number.isInteger(k) || k < -90 || k > 70) continue;
       const sid = pickStr(so, ['seriesId', 'id']);
       const v0k = v0Ladder[String(k)];
+      const sub = (key: string) => (so[key] && typeof so[key] === 'object' ? (so[key] as Record<string, unknown>) : {});
+      const quote = sub('quote');
+      const resting = sub('resting');
+      const hasResting = !!so.resting && typeof so.resting === 'object';
+      const restingBid = resting.bid && typeof resting.bid === 'object' ? (resting.bid as Record<string, unknown>) : null;
+      const restingAsk = resting.ask && typeof resting.ask === 'object' ? (resting.ask as Record<string, unknown>) : null;
+      // packages/maker: `lastAction` is THIS tick's decision for the strike; `reason` is the maker's persisted reason
+      // for its last re-quote or pull, which can be hours old. Publishing that as "reason" read as the current state
+      // (security/UX review v1), so it is renamed lastChangeReason and `reason` now carries this tick's decision.
+      const act = so.lastAction && typeof so.lastAction === 'object' ? (so.lastAction as Record<string, unknown>) : null;
+      const actReasons = act && Array.isArray(act.reasons) ? act.reasons.filter((x): x is string => typeof x === 'string') : null;
       strikes.push({
         k,
         seriesId: sid && /^0x[0-9a-fA-F]{64}$/.test(sid) ? sid.toLowerCase() : null,
@@ -121,9 +144,17 @@ export function normalizeSnapshot(input: unknown): Snapshot {
         model: prob(pickNum(so, ['model', 'guard', 'v0', 'modelProb', 'forecast']) ?? (typeof v0k === 'number' ? v0k : null)),
         bid: prob(pickNum(so, ['bid', 'quoteBid'])),
         ask: prob(pickNum(so, ['ask', 'quoteAsk'])),
+        bidSize: size(pickNum(so, ['bidSize']) ?? pickNum(quote, ['bidSize'])),
+        askSize: size(pickNum(so, ['askSize']) ?? pickNum(quote, ['askSize'])),
+        // resting = {} means "no order resting" (0); resting missing or null means "not observed this tick" (null)
+        bidRemaining: restingBid ? size(pickNum(restingBid, ['remaining', 'size'])) : hasResting ? 0 : null,
+        askRemaining: restingAsk ? size(pickNum(restingAsk, ['remaining', 'size'])) : hasResting ? 0 : null,
         flags: Array.isArray(so.flags) ? so.flags.filter((f): f is string => typeof f === 'string').slice(0, 8) : [],
         mode: pickStr(so, ['mode']),
-        reason: pickStr(so, ['reason']),
+        action: act ? pickStr(act, ['kind']) : null,
+        reason: actReasons ? actReasons.join('; ').slice(0, 300) || null : null,
+        lastChangeReason: pickStr(so, ['lastChangeReason', 'reason']),
+        lastQuoteAt: pickNum(quote, ['at']) ?? pickNum(so, ['lastQuoteAt']),
         divergence: pickNum(so, ['divergence']),
       });
     }

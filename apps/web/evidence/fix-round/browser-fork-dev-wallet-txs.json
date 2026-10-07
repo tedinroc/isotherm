@@ -1,0 +1,87 @@
+{
+  "note": "in-app browser dev wallet on the anvil fork (127.0.0.1:19520), oldest last; never broadcast to the live chain",
+  "wallet": "0xC022975dc0E1376D96E77f285c5d28EEF68eE02e",
+  "txs": [
+    {
+      "block": "68905861",
+      "hash": "0x838ae83e81ba7317e127da39c4c5528d65e7d2bfaeb5afa6823b390f705c431d",
+      "to": "0xae36cf0a163bafcde4d40a6ab7b5e3c762ad7b39",
+      "fn": "redeemSet",
+      "status": "success",
+      "gasUsed": "159980",
+      "gasLimit": "175978"
+    },
+    {
+      "block": "68905850",
+      "hash": "0xd299eb3a6e078e06f72f50c40e1fcb371f9038c49465e8869003412f828c2b59",
+      "to": "0x1acaf47987fe570df5d136ae1cac0d45e2b8cfb0",
+      "fn": "sellYes",
+      "status": "reverted",
+      "gasUsed": "468831",
+      "gasLimit": "500860"
+    },
+    {
+      "block": "68905849",
+      "hash": "0x72f447d8577e1b3362f331784142f0315ac76a9735b9c5813116dc1e2669b61c",
+      "to": "0xae36cf0a163bafcde4d40a6ab7b5e3c762ad7b39",
+      "fn": "mintSet",
+      "status": "success",
+      "gasUsed": "195205",
+      "gasLimit": "214726"
+    },
+    {
+      "block": "68905815",
+      "hash": "0x025d790e0907a2dcc0ef92c0a9ac9e71d6670431edba7bd8c02b87f07d3cdead",
+      "to": "0x1acaf47987fe570df5d136ae1cac0d45e2b8cfb0",
+      "fn": "buyYes",
+      "status": "success",
+      "gasUsed": "466041",
+      "gasLimit": "512646"
+    },
+    {
+      "block": "68905814",
+      "hash": "0x276d8be8ab19f71921d412fa9e947b136354e11e677cf8d4496b28dfb0b25f8c",
+      "to": "0xa9012a055bd4e0edff8ce09f960291c09d5322dc",
+      "fn": "approve",
+      "status": "success",
+      "gasUsed": "70249",
+      "gasLimit": "77762"
+    },
+    {
+      "block": "68905802",
+      "hash": "0x63a0bfbd33f43bca1cde317a338e8bba3f06dda490b0f6e5aee34d6d2139b8d1",
+      "to": "0x1acaf47987fe570df5d136ae1cac0d45e2b8cfb0",
+      "fn": "sellYes",
+      "status": "success",
+      "gasUsed": "472327",
+      "gasLimit": "519560"
+    },
+    {
+      "block": "68905800",
+      "hash": "0x3bd570aedc23e710795dbf0a908c5dd6324b0d06cdd6ad5e8fad3c4ac91ed0e1",
+      "to": "0xae36cf0a163bafcde4d40a6ab7b5e3c762ad7b39",
+      "fn": "mintSet",
+      "status": "success",
+      "gasUsed": "229205",
+      "gasLimit": "252126"
+    },
+    {
+      "block": "68905799",
+      "hash": "0x31f3a89ece9bdd13e59e07fd50e14bac234fd0013fe442928c2ba65c99643382",
+      "to": "0xe1f9a759a24e41bd8a1c7755b8b054f1e7e6d284",
+      "fn": "approve",
+      "status": "success",
+      "gasUsed": "62608",
+      "gasLimit": "69362"
+    },
+    {
+      "block": "68905798",
+      "hash": "0xa660779f94da0ffc5df8675a185d5cf3bcb480f06a2569a37c3f43e965bed2fe",
+      "to": "0xa9012a055bd4e0edff8ce09f960291c09d5322dc",
+      "fn": "approve",
+      "status": "success",
+      "gasUsed": "70249",
+      "gasLimit": "77762"
+    }
+  ]
+}

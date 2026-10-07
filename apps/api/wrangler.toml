@@ -28,19 +28,34 @@ ALLOWED_ORIGINS = "https://isotherm.pages.dev,https://*.isotherm.pages.dev,http:
 DRIP_ENABLED = "1"
 DRIP_MON = "0.15"
 DRIP_AUSD = "1000"
-DRIP_DAILY_CAP = "40"
-DRIP_PER_IP_PER_DAY = "3"
 DRIP_ADDRESS_COOLDOWN_H = "24"
-RELAYER_MIN_MON = "0.3"
 AUSD_FLOAT_TARGET = "50000"
 RELAY_ENABLED = "1"
+RELAY_MIN_AUSD = "1"
 RELAY_MAX_AUSD = "500"
-RELAY_PER_ADDRESS_PER_DAY = "10"
-RELAY_DAILY_CAP = "60"
+# Permit-mode relays stay off: the v1 vault has EIP-3009 authorizations, and a permit can be redirected (review N10).
+RELAY_ALLOW_PERMIT = "0"
 GAS_MULTIPLIER_PCT = "108"
+# Drip + relay POSTs per client network per minute, enforced in the Durable Object before any RPC work (exact).
+POST_LIMIT_PER_MIN = "30"
+# ---- MON budget (testnet MON is scarce). Sized by `node scripts/size-caps.mjs` from the relayer's LIVE balance:
+#   2026-10-07T07:00Z: balance 0.599171502 MON, gas 102 gwei, reserve 0.1 -> spendable 0.499 MON
+#   dripCost = 0.15 + 99,752 gas x 102 gwei = 0.1602; relayCost = 335,000 gas x 102 gwei = 0.0342 (fork-measured
+#   limit for a first-time holder: 334,228). DRIP_DAILY_CAP = floor(0.499 x 0.65 / 0.1602) = 2;
+#   RELAY_DAILY_CAP = floor((0.499 - 2 x 0.1602) / 0.0342) = 5; worst-case UTC day = 0.491 MON <= 0.499 spendable.
+#   Per network (IPv4 / IPv6 /64): at most half a day's drips and relays.
+# Drips and relays never spend below RELAYER_MIN_MON (the reserve; only the AUSD-float cron refill may use it).
+# After funding the relayer, re-run the script, paste its output here and redeploy (formula: apps/api/README.md).
+RELAYER_MIN_MON = "0.1"
+DRIP_GAS_MON = "0.011"
+RELAY_COST_MON = "0.035"
+DRIP_DAILY_CAP = "2"
+DRIP_PER_IP_PER_DAY = "1"
+RELAY_DAILY_CAP = "5"
+RELAY_PER_IP_PER_DAY = "2"
+RELAY_PER_ADDRESS_PER_DAY = "2"
 STATS_SCAN_MAX_WINDOWS = "20"
 REAL_STATIONS = "RCSS,RJTT,ZGSZ,RKSI,VHHH"
-# Budget guards (testnet MON is scarce): worst case ≈ 40 × 0.15 MON drips + 60 relayed mints × ~0.03 MON per day.
 # Wallets excluded from the public "non-maker" counts (deployments/testnet.json roles are added automatically).
 MAKER_ADDRESSES = "0xd572638F07829D1c3636400FB73CF34Ca6c7448a"
 # 0xd42A…D79c = the go-live smoke-test dev wallet (docs/evidence/golive), our own, so it is not a "trading wallet".

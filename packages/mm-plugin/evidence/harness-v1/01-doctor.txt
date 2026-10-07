@@ -9,7 +9,7 @@ $ mm weather doctor --json
       {
         "check": "mm customEvmChains[10143] (executor nonce/gas/fees)",
         "ok": true,
-        "detail": "rpcTarget http://127.0.0.1:19251"
+        "detail": "rpcTarget http://127.0.0.1:19541"
       },
       {
         "check": "mm gateway ctx.publicClient(10143)",
@@ -20,7 +20,7 @@ $ mm weather doctor --json
       {
         "check": "read RPC",
         "ok": true,
-        "detail": "mm-customEvmChains http://127.0.0.1:19251 block 68888686"
+        "detail": "mm-customEvmChains http://127.0.0.1:19541 block 68907638"
       },
       {
         "check": "contract CollateralVault",
@@ -58,6 +58,12 @@ $ mm weather doctor --json
         "detail": "on-chain 0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0.canonicalMarket(seriesId)"
       },
       {
+        "check": "maker snapshot API (optional, display only)",
+        "ok": true,
+        "optional": true,
+        "detail": "<former API host>/api/snapshot: generated 15s ago (limit 600s), ladders RCSS 20261008"
+      },
+      {
         "check": "wallet MON for gas",
         "ok": true,
         "detail": "10.000000000000000000 MON (a Zap trade bills ~0.06-0.10 MON at 102 gwei because Monad bills the gas limit)"
@@ -83,7 +89,7 @@ $ mm weather doctor --json
         "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC",
         "0xd029C2D98ff85D8F64799017fE00a59B1159CE02",
         "each strike's Kuru market (weather markets), for kuru limit/cancel",
-        "each outcome token (approve to the Zap when selling)"
+        "each outcome token (YES is approved to the Zap when selling YES or buying NO)"
       ]
     },
     "publicRpc": "https://testnet-rpc.monad.xyz",
@@ -92,7 +98,7 @@ $ mm weather doctor --json
     "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
     "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
     "rpcSource": "mm-customEvmChains",
-    "rpcUrl": "http://127.0.0.1:19251",
+    "rpcUrl": "http://127.0.0.1:19541",
     "deploymentSource": "<repo>/packages/mm-plugin/harness/fork-deployments-v1.json",
     "deploymentWarnings": []
   },

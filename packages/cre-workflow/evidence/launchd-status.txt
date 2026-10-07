@@ -1,0 +1,50 @@
+# 2026-10-07T07:11:49Z launchd status after install (scripts/deploy-runtime.sh --load)
+$ launchctl list | grep xyz.isotherm
+-	0	xyz.isotherm.challenge-watch
+66897	0	xyz.isotherm.maker
+-	0	xyz.isotherm.cre-settle
+-	0	xyz.isotherm.roll
+-	0	xyz.isotherm.watchdog
+
+$ bash ~/isotherm-live/packages/cre-workflow/scripts/install-launchd.sh --status
+xyz.isotherm.cre-settle: state = not running;program = /bin/bash;runs = 1;last exit code = 0; calendar: "Minute" => 5
+xyz.isotherm.challenge-watch: state = not running;program = /bin/bash;runs = 2;last exit code = 0;run interval = 120 seconds;
+-	0	xyz.isotherm.challenge-watch
+-	0	xyz.isotherm.cre-settle
+next cre-settle run: 2026-10-07T08:05:00.000Z (every hour at :05; first settlement attempt for RCSS 2026-10-08 = 2026-10-08T18:05:00Z)
+challenge-watch last pass 2026-10-07T07:10:43.466Z (head 68907621, guardian key 0x30C8E371719Ff00577284dd9c10587Fa89357d50); next due ~2026-10-07T07:12:43.466Z
+latest settle run 2026-10-07T07:09:17.480Z: path=harness-fallback exit=0 (cre whoami failed (not logged in to CRE))
+
+# plists
+-rw-r--r--  1 user  staff  1880 Oct  7 00:08 ~/Library/LaunchAgents/xyz.isotherm.challenge-watch.plist
+-rw-r--r--  1 user  staff  2335 Oct  7 00:08 ~/Library/LaunchAgents/xyz.isotherm.cre-settle.plist
+  "Label" => "xyz.isotherm.cre-settle"
+    1 => "~/isotherm-live/packages/cre-workflow/scripts/settle-job.sh"
+    "Minute" => 5
+  "WorkingDirectory" => "~/isotherm-live/packages/cre-workflow"
+  "Label" => "xyz.isotherm.challenge-watch"
+    1 => "~/isotherm-live/packages/cre-workflow/scripts/challenge-watch.sh"
+  "RunAtLoad" => true
+  "StartInterval" => 120
+
+# first LIVE run of xyz.isotherm.cre-settle (kickstarted once at install; nothing due -> nothing signed, 0 MON)
+[2026-10-07T07:08:59Z] [settle-job] path=harness (cre whoami failed (not logged in to CRE)); rpc=https://testnet-rpc.monad.xyz; state=~/isotherm-live/packages/cre-workflow/var; dry=0
+[2026-10-07T07:09:01Z] mode=harness rpc=https://testnet-rpc.monad.xyz cre-login=no broadcast=1
+[2026-10-07T07:09:11Z] attester 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9 == Resolver.attester(); tx sender 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9 has 0.100000000000000000 MON; vault ladders 1
+[2026-10-07T07:09:11Z] HARNESS (fallback, not the CRE engine): settle/e2e/harness-run.ts
+e2e/harness-run.ts:
+[path] HARNESS FALLBACK: the workflow handler under Bun in the CRE SDK test harness (NOT the CRE engine); reports go through 0xB9F79d863261869B234c481D1f9A7af84AeAd192 with the v1 EIP-712 attestation
+[time] anchor 2026-10-07T07:09:14.000Z (wall clock)
+[USER LOG] nothing to settle (ladders=1, due=0, skipped=0)
+[result] {"triggerTime":"2026-10-07T07:09:14.000Z","scheduledTime":"2026-10-07T07:09:14.000Z","resolver":"0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B","outcomes":[],"skipped":[],"budget":{"http":"0/15","evmReads":"3/15","reports":"0/5","ogimet":"0/1"},"ladders":{"count":1,"scanned":[0,1],"due":0}}
+(pass) harness run [2936.83ms]
+ 1 pass
+ 0 fail
+Ran 1 test across 1 file. [5.89s]
+[2026-10-07T07:09:17Z] done; log: ~/isotherm-live/packages/cre-workflow/var/logs/run-20261007T070859Z.log
+[2026-10-07T07:09:17Z] [settle-job] exit 0
+[evidence] path=harness-fallback exit=0 outcomes=- -> ~/isotherm-live/packages/cre-workflow/var/evidence/settle-runs.jsonl
+
+# LIVE passes of xyz.isotherm.challenge-watch
+[2026-10-07T07:08:38.633Z] pass done: blocks 68903136..68907136 (0 events), 1 ladders, 0 result(s) checked; guardian key 0x30C8E371719Ff00577284dd9c10587Fa89357d50; auto-challenge on
+[2026-10-07T07:10:43.466Z] pass done: blocks 68907137..68907621 (0 events), 1 ladders, 0 result(s) checked; guardian key 0x30C8E371719Ff00577284dd9c10587Fa89357d50; auto-challenge on

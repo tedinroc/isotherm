@@ -1,0 +1,31 @@
+# apps/api tests on the final code (Worker version ce5bfc02), 2026-10-07T07:12:29Z
+
+ RUN  v3.2.7 <repo>/apps/api
+
+ ✓ test/unit/relay-abuse.test.ts (16 tests) 269ms
+ ✓ test/unit/api-units.test.ts (20 tests) 9ms
+
+ Test Files  2 passed (2)
+      Tests  36 passed (36)
+   Start at  00:12:29
+   Duration  652ms (transform 58ms, setup 0ms, collect 205ms, tests 278ms, environment 0ms, prepare 40ms)
+
+tsc exit 0
+
+ RUN  v3.2.7 <repo>/apps/api
+
+stdout | test/integration/api.fork.test.ts > isotherm-api on a Monad testnet fork > relays a signed EIP-3009 mint for a user with no MON; refuses permit mode, dust, tampering and over-limit requests
+[fork] relayed mintSetWithAuthorization: estimate 309470, gas limit 334228, gas used 309470
+
+ ✓ test/integration/api.fork.test.ts (6 tests) 30719ms
+   ✓ isotherm-api on a Monad testnet fork > serves health with the relayer and v1 relay modes; CORS only for allowed origins  953ms
+   ✓ isotherm-api on a Monad testnet fork > admin endpoints need the bearer token; the cron tick refills the AUSD float from the faucet  1942ms
+   ✓ isotherm-api on a Monad testnet fork > drips MON + AUSD once per address, never to contracts, and enforces the per-IP limit  2762ms
+   ✓ isotherm-api on a Monad testnet fork > relays a signed EIP-3009 mint for a user with no MON; refuses permit mode, dust, tampering and over-limit requests  6371ms
+   ✓ isotherm-api on a Monad testnet fork > counts a non-maker Kuru fill and a CRE settlement in /api/stats and /api/settlements  14614ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  00:12:32
+   Duration  30.91s (transform 33ms, setup 0ms, collect 100ms, tests 30.72s, environment 0ms, prepare 21ms)
+

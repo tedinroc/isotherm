@@ -1,62 +1,51 @@
 deployment <repo>/packages/mm-plugin/assets/deployments.testnet.json: abiSet v1, v1 (on-chain canonical market registry)
-#1 vault.createLadder(RCSS, 20261007, [27,28,29,30], close=dayEnd-1h)  gasUsed 1081879  0x64777d17bb6e69d5308b0dcbae23b191aa2ba20831c8b11e05b2539641b31095
-#2 kuru.deployProxy YES>=27C 20261007  gasUsed 1310536  0xf9bd5a15810f1412c4ae5f6455ef7bf0a5510930416cf4c2dc47f461085aa762
-#3 kuru.deployProxy YES>=28C 20261007  gasUsed 1310536  0x836459c5c0d6aada1b2947b28bb58b0fa06023defd998218adcb9b140adb687c
-#4 kuru.deployProxy YES>=29C 20261007  gasUsed 1310536  0x8d75077c59fbeb98c243f8dcd081b399d370053d03c7d54e634026255c123301
-#5 kuru.deployProxy YES>=30C 20261007  gasUsed 1321336  0xb74c413c09915899a663279f939dff6cf52207bef43e1170b529c7a88fdb4087
-#6 vault.createLadder(RCSS, 20261008, [27,28,29,30,31], close=dayEnd-1h)  gasUsed 1297810  0x801c8efc41b6556899447724cfffdd707bfd88100b445e56cfecbdcc7d9984f3
-#7 kuru.deployProxy YES>=27C 20261008  gasUsed 1310536  0x09b72f7bf218bda0a2747f4543228233fc10d81de72c0d0ece2789d612cf4016
-#8 kuru.deployProxy YES>=28C 20261008  gasUsed 1310524  0x311ca4aad4bdca5c00d4ea65854b753e343aafe60b6c21cd63595055acd513e6
-#9 kuru.deployProxy YES>=29C 20261008  gasUsed 1310536  0x109a70effe4c296313ccd8aa66e717cb7881211f8237820b2c8b13e9cc9f93d4
-#10 kuru.deployProxy YES>=30C 20261008  gasUsed 1310536  0x2a4c8de12f031bb4f918f343a0ee0ad78f8a21adab12069a2cbe6948a76c2e91
-#11 kuru.deployProxy YES>=31C 20261008  gasUsed 1310536  0xa5c57424b6eb5611f848fe19e099bf58c2d14f1aa053b34ec986aff0f00e9305
-#12 maker approve AUSD -> vault  gasUsed 70585  0x5fd4e0e49383ef6b28e4b4c80a1b30fa2e9497341e8f63cb1116924724d8031e
-#13 maker approve AUSD -> MarginAccount  gasUsed 50773  0x2c4a9adcd7c53098866f1c1882890ffb63e2c1d5631f3484e9dc44961ad4fd33
-#14 maker MarginAccount.deposit 3000 AUSD  gasUsed 131244  0x7daee446f49afe37730359aaa3f3dae0b09227959eda0a90bd896af48057e5fa
-#15 maker mintSet YES/NO>=27C x300  gasUsed 294093  0x03e0ace9e00e646c751ca9ef698b47826e4efc59bbc39b0d200d39e83a9d04f8
-#16 maker approve YES>=27 -> MarginAccount  gasUsed 62596  0x4af1411104f6c3cc91a641ff6bbdd1b15178e1f0e47e3cb464e0a369bf18daa4
-#17 maker deposit 300 YES>=27  gasUsed 149698  0xe0f548a03035784a52288efc82ae9eafda6c264a1bb7a93dd90c55b977838f3d
-#18 maker quote >=27C fv=0.980 bids 0.95,0.93 asks 0.999  gasUsed 642489  0x45ea7b49f1a62797f636499a47a0d2e3c4450b1fd9f5b845976a03b2d2c04179
-#19 zap.setCanonicalMarket(>=27C)  gasUsed 130920  0x7da836bef0d73e7a795029bda4844bb990493e1a4f763b8676011771b4b00808
-#20 maker mintSet YES/NO>=28C x300  gasUsed 277081  0x5b35fd3252f5a374226359673bc907c3f95969e8b3985bc2e19824ff63743f10
-#21 maker approve YES>=28 -> MarginAccount  gasUsed 62596  0xb0b2ee3739acc557bd9b13a93fb9cf4d08385d4e3c1b645b87a09f24ca2cc55c
-#22 maker deposit 300 YES>=28  gasUsed 149698  0xe50a52353e46f795f153f6d800b5a86060e9fa82901e0cf7dbf5e762151f3a45
-#23 maker quote >=28C fv=0.980 bids 0.95,0.93 asks 0.999  gasUsed 642489  0xd93d99ca15ba908c1f0e84e1455f5a88b5cf8cf864024ff8e2ca44c1afa39a25
-#24 zap.setCanonicalMarket(>=28C)  gasUsed 130908  0xde3f0985edd4381d52c39002da1687ed4bb4390616bab288289991a3785bbb0a
-#25 maker mintSet YES/NO>=29C x300  gasUsed 277093  0x5282fdf71dd7361c93c5b6fa1a9c1f185d75ee4063099487a068ec07b238daeb
-#26 maker approve YES>=29 -> MarginAccount  gasUsed 62596  0xb18ba17bd96519aa9b5e33aa8f35965b4b794f608240f559614adde6a1675ce5
-#27 maker deposit 300 YES>=29  gasUsed 149698  0x9558451c5495a38970d2d1a7efe3f11a08795ab94059813573cc26bb2c671874
-#28 maker quote >=29C fv=0.030 bids 0.001 asks 0.06,0.08  gasUsed 644311  0x4918966a69b98dfa0ab54547f9df4104a9f06b7e76ea94b44303da363cefbfc4
-#29 zap.setCanonicalMarket(>=29C)  gasUsed 130920  0xc54638659b83974cba9f6da0eeae8e8b51884d70b175701298bb4f376e65411e
-#30 maker mintSet YES/NO>=30C x300  gasUsed 277093  0x9b9ed5a97d09626f6174369f6e61e3122bdc1cdcc516b8986af8c0d720371193
-#31 maker approve YES>=30 -> MarginAccount  gasUsed 62596  0x408eacc16aa71462fe7068d4ba865ebb510f1be0fd55c2d5f5936693cd67da95
-#32 maker deposit 300 YES>=30  gasUsed 149698  0x45f4eb93e9873b2c6f97e985eb5c7c8a8f6e65cea55fafc1b405e62a2b1e8a36
-#33 maker quote >=30C fv=0.020 bids 0.001 asks 0.05,0.07  gasUsed 644311  0x8ca75191b556be64357da5ff0e090b338d005b15ec25cbdc91fb29ba0459b27c
-#34 zap.setCanonicalMarket(>=30C)  gasUsed 138908  0x42e2bba3e8b32c01b19fa461089a260e26a67016704fcca9e22964b30f04233a
-#35 maker mintSet YES/NO>=27C x300  gasUsed 277093  0x1c03b9a3a18a02d6bfcf73dc1b54ecadd14ed5f3aaa522a6d7656e5c7f1596c2
-#36 maker approve YES>=27 -> MarginAccount  gasUsed 62596  0x7548e096545454bdc30c91e2837cf08d220cfdb93b1370b2710fc84a034e5eee
-#37 maker deposit 300 YES>=27  gasUsed 149698  0x55883da11b63e88d33b63c13b93718589b4d4ebec5e3869e731c9b44de450518
-#38 maker quote >=27C fv=0.980 bids 0.95,0.93 asks 0.999  gasUsed 642489  0x8e89a4268c7d73bdf9f2e0d553e3b887fa48caf186180878f71d1743f21deb94
-#39 zap.setCanonicalMarket(>=27C)  gasUsed 130920  0x169e5dda2a982c0e9fe897964623c3bcc68540ed69f8c1fae2b6abde472289cd
-#40 maker mintSet YES/NO>=28C x300  gasUsed 277093  0x6a4e59d59bff45d420c1746d28f6d264069091295d1cb35bb53f0b7c5c9c8129
-#41 maker approve YES>=28 -> MarginAccount  gasUsed 62596  0xd503be4358be82b09bf44a70476191046ff278098a7d116e92f333c42503674a
-#42 maker deposit 300 YES>=28  gasUsed 149686  0x0995dbab9be48e6a5fb5b6a5c7905d790c9c79cafe3a82fe7d8daddc3f73403f
-#43 maker quote >=28C fv=0.950 bids 0.919,0.899 asks 0.98,0.999  gasUsed 730719  0xdb7d320df909f1dda74140fadb6c5c85217c4a296b00ab96083481a49ffed747
-#44 zap.setCanonicalMarket(>=28C)  gasUsed 130920  0xc431930eceeed3ee0ac35d5e3e9c198afefccdfdde5b6c6b55834855f1a6ec44
-#45 maker mintSet YES/NO>=29C x300  gasUsed 277093  0xf1d4669f8f3c8a6f27e28e7b343ddf9d9acde0fe0f8add1714a48e0cf2d517e9
-#46 maker approve YES>=29 -> MarginAccount  gasUsed 62596  0x0d23415fc6ba500b7bd49851242ae20b59cea47695e64ba2398b35cb5bcbe4f6
-#47 maker deposit 300 YES>=29  gasUsed 149698  0xfec50bd86973ee695f250bb2e8236f8596b15175388b1432f7f59af73cd837ab
-#48 maker quote >=29C fv=0.849 bids 0.818,0.798 asks 0.879,0.899  gasUsed 730839  0x93985174446a7ea80846cdb871d1065b4d12f1ebff3e3d94a1c8acbf0fb3a4ba
-#49 zap.setCanonicalMarket(>=29C)  gasUsed 130920  0x37ff6706cd504936041180e70f89f6d99b0b154488caeaac7b452ed6d91f12c5
-#50 maker mintSet YES/NO>=30C x300  gasUsed 277081  0xd3a3ba5505caa9141645a99c63c13acdc3a41cc2310a1b13623ed5c7fde9cd71
-#51 maker approve YES>=30 -> MarginAccount  gasUsed 62596  0xb6d0aee6840f6f2e8d84c71c87f96c858eb6f7aa2bf3f2434f9712c1788ff60a
-#52 maker deposit 300 YES>=30  gasUsed 149698  0x1c0e0b4683e50ef9669d58584250977a2679924bd8fae6a55754c9314b246fa0
-#53 maker quote >=30C fv=0.468 bids 0.437,0.417 asks 0.498,0.518  gasUsed 758630  0xd4ee18b3d848e4a4b0ea302969cc5d47c4ad991759517b5cf9bc662499b00cf4
-#54 zap.setCanonicalMarket(>=30C)  gasUsed 130908  0xd0f3211051287791636abe6c10834547933401840b34cdeb1500c337ea05fb71
-#55 maker mintSet YES/NO>=31C x300  gasUsed 277093  0xceb3b5dbfdaeed959ba04731b5db8245996215cd31e9eadfcb984f81652affe6
-#56 maker approve YES>=31 -> MarginAccount  gasUsed 62596  0xc1f7d40aed480ae3485335c4943cbb69661e9d5104045130731f4cff31903dc5
-#57 maker deposit 300 YES>=31  gasUsed 149698  0x51d06565814c4d43c6139272ebe44bbb92e67e56e25e569d97b773f397919191
-#58 maker quote >=31C fv=0.092 bids 0.062,0.042 asks 0.123,0.143  gasUsed 758724  0x1bdf8a8ddb8dbff303bff66a83ec2f9371878acc38f0670bb7ef7f498e9f8e62
-#59 zap.setCanonicalMarket(>=31C)  gasUsed 130920  0x34e885303abe040c8b20587dd899870f6b7dc8c1f8ba8cd19f3bafb5a9342adf
-#60 maker -> harness BYOK wallet 2000 AUSD  gasUsed 72037  0x606e8a3278d5ca354e30e4377ec4dd7cc4bb007905f1e3f6d206030f5f9760f4
-wrote <repo>/packages/mm-plugin/harness/fork-deployments-v1.json: 9 series, user 0x9F6AF0b5E8091B867500D9E2a3240Bd92259a543 funded with 10 MON + 2000 AUSD
+#1 vault.createLadder(RCSS, 20261007, [27,28,29,30], close=dayEnd-1h)  gasUsed 1064879  0x844d6bfb50f112479f337c9fec9d2f057f87a9b785ddbdc0217c151df7dd9c5e
+#2 kuru.deployProxy YES>=27C 20261007  gasUsed 1310536  0xcaaed0bd702be08a8f5d68acba7ad4d4ecaa9f3d2ba4b98369ba2fa80cae0387
+#3 kuru.deployProxy YES>=28C 20261007  gasUsed 1310536  0x8c38a0b2360ca6442c1a0c680ae8d913fb417e73fa2d7073484560bf8fc91c08
+#4 kuru.deployProxy YES>=29C 20261007  gasUsed 1310536  0xf52bd054d8533c89d7fd2ddf61c153725ad1e707062de76d8c9635ddda10a846
+#5 kuru.deployProxy YES>=30C 20261007  gasUsed 1321336  0x0b88d73734dc72620828b61e5b99bd6e86ac3de56890c12fb046f065543ec47b
+reusing the live canonical book 0x171b4cdE3724f2F17576439e6de8c36142A7DBd7 for >=28C 20261008
+reusing the live canonical book 0x855eF3549eA5ACA5602EAefDD988950f16FCc6c2 for >=29C 20261008
+reusing the live canonical book 0x702A7a87EDb18D733c624bF766020F3b66eb36DC for >=30C 20261008
+reusing the live canonical book 0x4f5Ef4Bf256BDD88492C1e394B0D0f06A8265813 for >=31C 20261008
+#6 maker approve AUSD -> vault  gasUsed 50785  0x1ed9873816437b03e2599824acd6a08e549da01f14c454bb6cc2ab017b2d6759
+#7 maker approve AUSD -> MarginAccount  gasUsed 50773  0x488a60055f54e5c9a05627a57039d555f63efb1c3c30766163437daed4ac2cc7
+#8 maker MarginAccount.deposit 3000 AUSD  gasUsed 114244  0xfaa76f54fdcc82d042299aa8ec315603dc95e19a001e7e2b8e57c105c5137ac0
+#9 maker mintSet YES/NO>=27C x300  gasUsed 277093  0xf8d9cbc1ba449d164439fa160299736195483024c757758d6d99ee23e56dda59
+#10 maker approve YES>=27 -> MarginAccount  gasUsed 62596  0xf764da33bbbda79108067a27874dd59b96e993109df388cc333b9bab3fc67157
+#11 maker deposit 300 YES>=27  gasUsed 149698  0x87342aa6c307f4ca5b0fefad54476548bdd08d0e45ed8dd6862c7299b705da6b
+#12 maker quote >=27C fv=0.980 bids 0.95,0.93 asks 0.999  gasUsed 642489  0x4a03ad1353a3929c28bc7476719662eb44d02a6f38f022628967d39b1901ea8c
+#13 zap.setCanonicalMarket(>=27C)  gasUsed 130920  0x2cb911eceab2dcf7f3be822f66d0ee3c5a2e7eb0c342891de3cbdd2d92f37999
+#14 maker mintSet YES/NO>=28C x300  gasUsed 277081  0x97f22c6a2355072f4f7ce15158ac5f2a4b7ffa26a5a9cadc65d0d08d22629e1b
+#15 maker approve YES>=28 -> MarginAccount  gasUsed 62596  0xb3cc7626dcf29aea2957759d1cf1726efa8cf5cd188897b203ea84a12fb25e54
+#16 maker deposit 300 YES>=28  gasUsed 149698  0x6f1ad5c2c550c6331c96da3a55858d377424c35832cc8c2ef504c30486064ad8
+#17 maker quote >=28C fv=0.980 bids 0.95,0.93 asks 0.999  gasUsed 642489  0xee743ae5556bb561cb6f254c39fa795268e9ff2b2ff24751100c9805fc77251d
+#18 zap.setCanonicalMarket(>=28C)  gasUsed 130908  0x1910bcfeb1b0b5e528dcab5b2ce689ae614fbc803d71796a28c4f98f396bb912
+#19 maker mintSet YES/NO>=29C x300  gasUsed 277093  0x75b92b86385ff3cd69c4e84e606579dbe13f1012cd5831c5975afa20af5fad6c
+#20 maker approve YES>=29 -> MarginAccount  gasUsed 62596  0xcec265639587a37f07ae26c0155f322581c0680a1a0e667d50b28cc63170779a
+#21 maker deposit 300 YES>=29  gasUsed 149698  0x667c5fc6c178e027c74e1f2e0ebdb88bc6ecad7f93e839cd0d177974a180b59c
+#22 maker quote >=29C fv=0.020 bids 0.001 asks 0.05,0.07  gasUsed 644311  0x402b9faef497b61005e9d46190267fcd48093c2cbdfa53a630c9187faeaebd0f
+#23 zap.setCanonicalMarket(>=29C)  gasUsed 130920  0x800748de4c3692a71a1d121d7367e2587505a4822fd89c19eb8c5dbfaec66e35
+#24 maker mintSet YES/NO>=30C x300  gasUsed 277093  0xea9829795235fadd130eba10a038f178af7110829eaac97ad63e18c3cebe74b8
+#25 maker approve YES>=30 -> MarginAccount  gasUsed 62596  0x8ea8eb1c07080bfd7fe6c7de1c7952b1aadf827080c6841ffa10fa1f857181f7
+#26 maker deposit 300 YES>=30  gasUsed 149698  0x0ea3aa25ef73b4a3d713e81a4c516f6b1f9cffe443e409e681cfa66a12db8ea3
+#27 maker quote >=30C fv=0.020 bids 0.001 asks 0.05,0.07  gasUsed 644311  0xb861e6dfaf3ccc04b3afb6681d1c82ad4f2ec2ddb20880a38b7bac45388905f9
+#28 zap.setCanonicalMarket(>=30C)  gasUsed 138908  0x5bf7868f88c32b5419e1d2b3c20e958e2506106439e79bde6a33ff39a5e27927
+#29 maker mintSet YES/NO>=28C x300  gasUsed 209093  0x746eaa19ec82cc7077418c78f0e708fdcff3c555bc7ad969b83df1c8c9a0bd05
+#30 maker approve YES>=28 -> MarginAccount  gasUsed 42796  0x37bb3537398164c13c371ec69db6f95f12360fd6adf1cc902ae01c7f6ef32416
+#31 maker deposit 300 YES>=28  gasUsed 115686  0xf3837e5d2bc83e19bfebd23384fe878a625db6375a5857161457983666d2a22f
+#32 maker quote >=28C fv=0.960 bids 0.93,0.91 asks 0.991,0.999  gasUsed 608089  0x91440fcf61c28909b19a99e4c26c29eb23e4d4c2a80b6c01b4e329c51b429284
+#33 maker mintSet YES/NO>=29C x300  gasUsed 209093  0x98dd8aed80a473bf285ecf03c80fe233ea88548f85c66179bc4a2074a2c5a351
+#34 maker approve YES>=29 -> MarginAccount  gasUsed 42796  0x1fdc9e8617b88f12968fb21035fc669ab37803463c6c8c151e77e49c82ae9b24
+#35 maker deposit 300 YES>=29  gasUsed 115698  0x17b5109c7a7006715a50dc0317119d316dec64653fc13d69113c0b0f3c253f1b
+#36 maker quote >=29C fv=0.859 bids 0.829,0.809 asks 0.89,0.91  gasUsed 599318  0x16821aa3c7f1899e09a5a69b7cdad15f53da6b64f4687db14a90fa4c8ad56f0c
+#37 maker mintSet YES/NO>=30C x300  gasUsed 209081  0xf34e80047d98afa3eebcff2d10d3263d6d55dbb7b38bf5892e4ab942acff20ba
+#38 maker approve YES>=30 -> MarginAccount  gasUsed 42796  0xc5259696b9f90a5d5751218d3048ff478516584d239f2f70b8eb9f184c3fb15f
+#39 maker deposit 300 YES>=30  gasUsed 115698  0x46225c647b63fd115008024024423778af6b7648febda8853bc28227bb028438
+#40 maker quote >=30C fv=0.393 bids 0.363,0.343 asks 0.424,0.444  gasUsed 633605  0xa81e57c9bc592b2ddee54ed8ef3a5fb4a33e613f04a394b89f78922b1e9396ed
+#41 maker mintSet YES/NO>=31C x300  gasUsed 209093  0xfa3cc8067f6922e65c948cdb1385553abdd3fb1be656d22779258128ecac6707
+#42 maker approve YES>=31 -> MarginAccount  gasUsed 42796  0xe5484c95cc3b72d6cae0f7e3a5c333906352c60ebefef84ac5d9a6a0425a473d
+#43 maker deposit 300 YES>=31  gasUsed 115698  0x96d3231fcadb9308d527c77fde4a1a669ba5fb1427bcbec3829cb3e535b9bcca
+#44 maker quote >=31C fv=0.066 bids 0.036,0.016 asks 0.097,0.117  gasUsed 633415  0x5d2df2b9e38bd895c962ed0739c5021977c62eadfe448fd7c0786c9214d94a13
+#45 maker -> harness BYOK wallet 2000 AUSD  gasUsed 72037  0x24bd6cdeee5d738a835aee569463c3492d2a926f53bf0ec0f012dd4a38c86e33
+wrote <repo>/packages/mm-plugin/harness/fork-deployments-v1.json: 8 series, user 0x9F6AF0b5E8091B867500D9E2a3240Bd92259a543 funded with 10 MON + 2000 AUSD

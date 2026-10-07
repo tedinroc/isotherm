@@ -1,6 +1,6 @@
 # Isotherm — live operations (Monad testnet 10143)
 
-Last updated 2026-10-07 14:15 Taipei (06:15 UTC), at go-live. Everything here is **testnet only**. AUSD is free
+Written 2026-10-07 14:15 Taipei (06:15 UTC), at go-live; balances and versions below are from then. Revised the same day after the v1 security review (attester gas, guardian runbook, owner key, API caps, settlement status). Everything here is **testnet only**. AUSD is free
 faucet test money. Nothing here touches Monad mainnet.
 
 ## 1. What is live
@@ -31,12 +31,12 @@ Full seriesIds, every tx hash and the on-chain checks are in `docs/evidence/goli
 
 | Role | Address | Pays for | MON after go-live |
 |---|---|---|---|
-| deployer = contract owner | `0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11` | owner calls; **funds the others** | 0.85 |
+| deployer = contract owner | `0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11` | owner calls; **funds the others**. Hot key: with it alone an attacker could replace the guardian and attester, so move ownership of the Resolver and Vault to a cold key (v1 review N3) | 0.85 |
 | operator (also creates Kuru markets) | `0x602dbf3937558B1d18d76315635fD5410089bd51` | daily `createLadder` + 4 × `deployProxy` + 4 × `setCanonicalMarket` (≈0.78 MON) | 0.12 |
 | maker | `0xd572638F07829D1c3636400FB73CF34Ca6c7448a` | mint, margin, quotes, re-quotes, kill switch | 1.73 |
 | relayer (API Worker secret `RELAYER_KEY`) | `0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f` | drips (0.15 MON + 1,000 AUSD each), relayed gasless mints, AUSD float refills | 0.75 |
 | guardian | `0x30C8E371719Ff00577284dd9c10587Fa89357d50` | emergency `pause()` / `challenge()` | 0.05 |
-| attester (CRE secret) | `0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9` | signs settlement reports (no gas) | 0.10 |
+| attester (CRE secret) | `0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9` | signs settlement reports, and as the CRE workflow's default transaction sender **pays about 0.0204 MON per report tx** (200,000 gas limit at 102 gwei; `packages/cre-workflow/RESULT.md` §2), so 0.10 MON covers about 4 reports | 0.10 |
 
 `~/.config/isotherm/maker.env` (chmod 600) holds `ISOTHERM_ALLOW_LIVE=1`, `ISOTHERM_API_URL` and `ISOTHERM_SNAPSHOT_TOKEN`.
 The launchd jobs load it through `scripts/run.sh`.
@@ -58,8 +58,10 @@ That way the single-writer lock also stops a second writer started from the repo
 | `xyz.isotherm.maker` | `loop`: every 60 s it quotes all active ladders around the Polymarket-implied fair, re-quotes when needed, posts the snapshot to the API, and runs queued roll requests. The kill-switch timer runs every 15 s. | KeepAlive (restarted if it dies; throttled to once per 60 s) |
 | `xyz.isotherm.roll` | `roll --station RCSS --date tomorrow --not-before 12:00`. While the loop runs, it queues the request for the loop. It is idempotent: an existing ladder costs 0 txs (verified at 06:14 UTC). | Every hour; acts from 12:00 Taipei |
 | `xyz.isotherm.watchdog` | `watchdog --verify`: an independent kill switch. It acts only if the loop's heartbeat is more than 3 min old. | Every 5 min |
+| `xyz.isotherm.cre-settle` (CRE workstream) | `scripts/settle-job.sh` from `~/isotherm-live/packages/cre-workflow`: settles due ladders. Official CRE path if `cre whoami` succeeds, otherwise the labelled SDK-harness fallback; writes an evidence record per run naming the path. See section 6. | Hourly at :05 |
+| `xyz.isotherm.challenge-watch` (CRE workstream) | `scripts/challenge-watch.sh`: recomputes every `LadderResolved` with the settlement rule and, on a reproduced mismatch, challenges from the guardian key (or prints the exact command) | Every 120 s |
 
-Plist files are in `~/Library/LaunchAgents/xyz.isotherm.{maker,roll,watchdog}.plist`. They load at user login, so
+Plist files are in `~/Library/LaunchAgents/xyz.isotherm.{maker,roll,watchdog,cre-settle,challenge-watch}.plist`. They load at user login, so
 **the Mac must stay awake and logged in**. `pmset` currently shows `sleep 0`.
 
 ### Daily MON caps (config/local.json, metered per Taipei day)
@@ -97,11 +99,13 @@ curl -s <former API host>/api/health   # snapshotReceivedAt, relayer MON, AUSD f
 
 ### Emergency (contracts)
 
+**Wrong result: challenge first, then pause.** `pause()` neither stops nor extends the 900 s challenge clock, and the vault does not follow the Resolver's pause, so a guardian who pauses instead of challenging lets a false *Settled* result pay out in full (`test/security/v1/RESULT.md`, N6). A reported *Void* is final at once and cannot be challenged (N2). `xyz.isotherm.challenge-watch` now watches the window every 120 s, but it runs on this Mac next to the attester key, so it catches a wrong report, not a compromise of this Mac; a watcher on a separate machine holding only the guardian key is still to do.
+
 - **Guardian pause** (it holds 0.05 MON; pause costs ≈30k gas). Pausing the Resolver blocks reports; pausing the vault blocks mints:
   `cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B "pause()" --private-key "$(cat ~/.config/isotherm/guardian.key)" --rpc-url https://testnet-rpc.monad.xyz`
   Use the same call with the vault address `0xae36…7B39`. Only the owner (deployer) can `unpause()`.
-- **Guardian challenge** of a wrong settlement, within 900 s of `resolvedAt`, turns the result to Void (0.5/0.5):
-  `challenge(bytes4 station, uint32 date, bytes32 reasonHash)`.
+- **Guardian challenge** of a wrong settlement, within 900 s of `resolvedAt`, turns the result to Void (0.5/0.5); about 44k gas:
+  `cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B "challenge(bytes4,uint32,bytes32)" 0x52435353 20261008 <reasonHash> --private-key "$(cat ~/.config/isotherm/guardian.key)" --rpc-url https://testnet-rpc.monad.xyz`
 - Anyone can call `voidIfStale(0x52435353, 20261008)` after `staleAt` (dayEnd + 48 h = 2026-10-11 00:00 Taipei) if nothing settled it.
 
 ## 4. Funding routine (testnet MON is the bottleneck)
@@ -129,7 +133,9 @@ The human faucet gives about 5 MON/day.
 
 - **API deploy** (wrangler 3.114 from `apps/api/node_modules`): `cd apps/api && XDG_CONFIG_HOME=<wrangler config dir> npm run deploy`.
   - Secrets `RELAYER_KEY`, `SNAPSHOT_TOKEN` and `ADMIN_TOKEN` are already set (`npx wrangler secret list`).
-  - Knobs are in `apps/api/wrangler.toml [vars]`: `DRIP_MON`, `DRIP_DAILY_CAP`, `DRIP_ENABLED="0"` to pause drips, `RELAYER_MIN_MON`, `AUSD_FLOAT_TARGET`, `TEAM_ADDRESSES`.
+  - Knobs are in `apps/api/wrangler.toml [vars]`: `DRIP_MON`, `DRIP_DAILY_CAP`, `DRIP_ENABLED="0"` to pause drips, `RELAY_DAILY_CAP`, `RELAY_PER_IP_PER_DAY`, `RELAY_PER_ADDRESS_PER_DAY`, `RELAY_MIN_AUSD`, `RELAY_ALLOW_PERMIT`, `RELAYER_MIN_MON`, `AUSD_FLOAT_TARGET`, `TEAM_ADDRESSES`.
+  - **Size the caps to the relayer's MON** (v1 review N5): anyone can otherwise use up the day's drips and relays. `node apps/api/scripts/size-caps.mjs` computes the caps from the live balance; the values in `wrangler.toml` were sized from 0.599 MON (2 drips and 5 relayed mints per day). Re-run it and redeploy after every top-up. Permit-mode relays stay off for the v1 vault (`RELAY_ALLOW_PERMIT = "0"`, N10).
+  - After a deploy, check `/api/health`: `relayModes` should be `["authorization"]`, and `monBalance` should cover the caps.
   - Live logs: `XDG_CONFIG_HOME=<wrangler config dir> npx wrangler tail isotherm-api`.
 - **Go-live change to the API.** The drip's second tx (the AUSD leg) re-read `eth_getTransactionCount('pending')`. Monad's RPC does not count a just-submitted tx there, so the AUSD leg reused the MON tx's nonce and was rejected ("Missing or invalid parameters"). Because nothing was recorded, a retry could also send MON again.
   - The fix: nonces are counted locally, and if MON went out but AUSD failed, the drip is recorded as AUSD-pending so a retry sends only AUSD.
@@ -139,11 +145,13 @@ The human faucet gives about 5 MON/day.
 
 ## 6. Settlement (not run by the maker)
 
-The Oct 8 ladder is settled by the CRE workflow in `packages/cre-workflow`, through the MockKeystoneForwarder plus the attester signature.
-- **When:** it acts from 02:00 station-local on Oct 9 and retries hourly. It voids itself after 36 h of disagreement.
-- **Status at go-live:** this step did **not** install or run it; that is the CRE workstream's job.
-- **Warning:** its launchd job (`com.isotherm.cre-settle`) runs `scripts/run-official.sh` from `~/Documents/...`. It will hit the same macOS privacy block (exit 126) as the maker did. Run it from a copy outside `~/Documents`, or give `/bin/bash` Full Disk Access in System Settings (a human decision).
-- **Fallback:** if nothing settles, `voidIfStale` pays 0.5/0.5 after 2026-10-11 00:00 Taipei.
+The Oct 8 ladder is settled by the CRE workflow in `packages/cre-workflow`, through the MockKeystoneForwarder plus the attester signature. The CRE workstream installed the jobs on 2026-10-07 (`packages/cre-workflow/README.md`, `RESULT.md`).
+- **When:** `xyz.isotherm.cre-settle` runs hourly at :05; nothing is attempted before day end + 2 h, so the first real attempt for the Oct 8 ladder is **2026-10-08 18:05 UTC (02:05 Taipei, Oct 9)**. Disagreeing or incomplete sources stay pending and are retried hourly; a void comes only after 36 h (46 h backstop).
+- **Which path:** the official path (`cre workflow simulate --broadcast`) needs `cre login`, which has **not** been run yet (browser + 2FA, `packages/cre-workflow/RESULT.md` §4). Until it is, the job settles through the **SDK-harness fallback**: the same handler, rule and attestation run under Bun, not the CRE engine. Its evidence record says which path ran; say "harness" wherever that evidence is used.
+- **Where it runs:** from the runtime copy `~/isotherm-live/packages/cre-workflow`, because launchd cannot read `~/Documents` (exit 126, as the maker hit). Ship changes with `packages/cre-workflow/scripts/deploy-runtime.sh`; check with `bash ~/isotherm-live/packages/cre-workflow/scripts/install-launchd.sh --status` and `launchctl list | grep xyz.isotherm`.
+- **Cost:** each report transaction bills about 0.0204 MON to the attester key (0.10 MON now, about 4 reports).
+- **After it lands:** confirm `LadderResolved` or `Resolver.resultOf(0x52435353, 20261008)`, never the transaction status alone. `xyz.isotherm.challenge-watch` recomputes the result and challenges a reproduced mismatch within the 900 s window; a human check is still worth it (challenge first, then pause; section 3).
+- **Fallback:** if nothing settles, anyone can call `voidIfStale` after 2026-10-11 00:00 Taipei, which pays 0.5/0.5.
 
 ## 7. Known limits
 

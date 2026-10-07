@@ -261,6 +261,7 @@ export interface Balances {
   mon: bigint;
   ausd: bigint;
   ausdAllowanceZap: bigint;
+  ausdAllowanceVault: bigint; // Buy No mints the set in the vault (mintSet), so it needs its own allowance
   holdings: Holding[];
   yesAllowanceZap: Record<string, bigint>;
 }
@@ -270,7 +271,9 @@ export async function loadBalances(user: Address, ladders: LadderView[]): Promis
   const calls: Call[] = [
     { target: DEPLOYMENTS.ausd, callData: enc(ausdAbi, 'balanceOf', [user]) },
     { target: DEPLOYMENTS.ausd, callData: enc(ausdAbi, 'allowance', [user, DEPLOYMENTS.zap]) },
+    { target: DEPLOYMENTS.ausd, callData: enc(ausdAbi, 'allowance', [user, DEPLOYMENTS.vault]) },
   ];
+  const H = 3; // header calls before the per-strike triples
   for (const { s } of strikes) {
     calls.push({ target: s.yes, callData: enc(erc20Abi, 'balanceOf', [user]) });
     calls.push({ target: s.no, callData: enc(erc20Abi, 'balanceOf', [user]) });
@@ -280,15 +283,16 @@ export async function loadBalances(user: Address, ladders: LadderView[]): Promis
   const holdings: Holding[] = [];
   const yesAllowanceZap: Record<string, bigint> = {};
   strikes.forEach(({ l, s }, i) => {
-    const yes = dec<bigint>(erc20Abi, 'balanceOf', res[2 + i * 3]) ?? 0n;
-    const no = dec<bigint>(erc20Abi, 'balanceOf', res[3 + i * 3]) ?? 0n;
-    yesAllowanceZap[s.seriesId] = dec<bigint>(erc20Abi, 'allowance', res[4 + i * 3]) ?? 0n;
+    const yes = dec<bigint>(erc20Abi, 'balanceOf', res[H + i * 3]) ?? 0n;
+    const no = dec<bigint>(erc20Abi, 'balanceOf', res[H + 1 + i * 3]) ?? 0n;
+    yesAllowanceZap[s.seriesId] = dec<bigint>(erc20Abi, 'allowance', res[H + 2 + i * 3]) ?? 0n;
     if (yes > 0n || no > 0n) holdings.push({ ladder: l, strike: s, yes, no });
   });
   return {
     mon,
     ausd: dec<bigint>(ausdAbi, 'balanceOf', res[0]) ?? 0n,
     ausdAllowanceZap: dec<bigint>(ausdAbi, 'allowance', res[1]) ?? 0n,
+    ausdAllowanceVault: dec<bigint>(ausdAbi, 'allowance', res[2]) ?? 0n,
     holdings,
     yesAllowanceZap,
   };

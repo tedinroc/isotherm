@@ -1,0 +1,107 @@
+# 2026-10-07T07:06:46Z jobs-fork-e2e: launchd jobs from ~/isotherm-live/packages/cre-workflow on an anvil fork of live testnet (pid 81677, :19330, block 68906853)
+# live: Resolver.attester 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9, guardian 0x30C8E371719Ff00577284dd9c10587Fa89357d50; resultOf(RCSS,20261008) = (0, 0, 0, 0, 0x0000000000000000000000000000000000000000000000000000000000000000)
+# fork only: attester -> 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720 (anvil #9), guardian -> 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC (anvil #2) via owner impersonation
+# warped: chain time 2026-10-08T18:06:19.000Z = 02:06 Taipei on Oct 9 (dayEnd 2026-10-08T16:00Z + 2 h gate passed)
+
+## F. launchd runs the OFFICIAL toolchain's compile step (cre workflow build, no login needed) from the runtime copy
+launchd xyz.isotherm.test.build: runs = 1;last exit code = 0;
+  Compiling workflow...
+✓ Workflow compiled successfully
+  Binary hash: 413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938
+✓ Build output written to ~/isotherm-live/packages/cre-workflow/settle/binary.wasm
+413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938  binary.wasm
+
+## A1. launchd runs the settle job (xyz.isotherm.cre-settle template, on demand) from the runtime copy
+launchd xyz.isotherm.test.cre-settle: program = /bin/bash;working directory = ~/isotherm-live/packages/cre-workflow;runs = 1;last exit code = 0;
+[2026-10-07T07:06:55Z] [settle-job] path=harness (cre whoami failed (not logged in to CRE)); rpc=http://127.0.0.1:19330; state=~/isotherm-live/packages/cre-workflow/var/test-fork/A; dry=0
+[path] HARNESS FALLBACK: the workflow handler under Bun in the CRE SDK test harness (NOT the CRE engine); reports go through 0xB9F79d863261869B234c481D1f9A7af84AeAd192 with the v1 EIP-712 attestation
+[time] anchor 2026-10-08T18:06:19.000Z (fork chain time)
+[TEST] ISOTHERM_TEST_RELABEL active (fork only): RCSS:2026-10-08 <- live data of 2026-10-06
+[sent] RCSS 20261008 tmaxC=25 isVoid=false tx 0x53b478af94d9db2431233adebbce54d85baa26dbc3c607ac4648c8daefab92d3 status=success gasUsed=149875/200000 1062 ms
+[USER LOG] RCSS 2026-10-08: SETTLED (primary sources agree) | IEM 25C n=44 h=24 last=23:30 complete | AWC 25C n=44 h=24 last=23:30 complete | OGIMET not fetched
+[USER LOG] RCSS 2026-10-08: isotherm-sources-v1|RCSS|20261008|SETTLED|IEM:25,44,24,23:30,1|AWC:25,44,24,23:30,1|OGIMET:- digest=0x331a61494c73698e4f17c7b53c1f597fbc6914cf96c3b36fd6e8833c0387b9e4 validUntil=1791484279
+[USER LOG] RCSS 2026-10-08: tx 0x53b478af94d9db2431233adebbce54d85baa26dbc3c607ac4648c8daefab92d3 -> resolved
+0x53b478af94d9db2431233adebbce54d85baa26dbc3c607ac4648c8daefab92d3 block 68906936 status=success gasUsed=149875 ReportProcessed.result=true LadderResolved: RCSS 20261008 status=Settled tmaxC=25 OK
+[2026-10-07T07:07:13Z] [settle-job] exit 0
+[evidence] path=harness-fallback exit=0 outcomes=RCSS/20261008:settled=25(resolved) -> ~/isotherm-live/packages/cre-workflow/var/test-fork/A/evidence/settle-runs.jsonl
+resultOf(RCSS,20261008) = (1, 25, 1791482802 [1.791e9], 1791483702 [1.791e9], 0x424d0b116727ec5082861d5f0d976bdc7b338185f74f40f5e2411554f5350236)
+### evidence record (var/evidence/LATEST.json, abridged)
+{
+ "path": "harness-fallback",
+ "pathLabel": "HARNESS FALLBACK: the same workflow handler under Bun in the CRE SDK test harness, NOT the CRE engine; same decide() rule, same v1 EIP-712 attestation, same MockKeystoneForwarder call",
+ "pathReason": "cre whoami failed (not logged in to CRE)",
+ "creLogin": false,
+ "network": "anvil fork (http://127.0.0.1:19330)",
+ "testDataRelabel": "[TEST] ISOTHERM_TEST_RELABEL active (fork only): RCSS:2026-10-08 <- live data of 2026-10-06",
+ "exitCode": 0,
+ "reportsSent": [
+  {
+   "station": "RCSS",
+   "date": 20261008,
+   "action": "settled",
+   "tmaxC": 25,
+   "txHash": "0x53b478af94d9db2431233adebbce54d85baa26dbc3c607ac4648c8daefab92d3",
+   "confirmed": "resolved",
+   "sourcesHash": "0x424d0b116727ec5082861d5f0d976bdc7b338185f74f40f5e2411554f5350236"
+  }
+ ],
+ "receiptChecks": [
+  "0x53b478af94d9db2431233adebbce54d85baa26dbc3c607ac4648c8daefab92d3 block 68906936 status=success gasUsed=149875 ReportProcessed.result=true LadderResolved: RCSS 20261008 status=Settled tmaxC=25 OK"
+ ]
+}
+LATEST.json
+settle-runs.jsonl
+settlement-RCSS-20261008-harness-fallback.json
+
+## A2. a second kickstart right away: the 30-min spacing guard stops it (no second signature)
+launchd xyz.isotherm.test.cre-settle: program = /bin/bash;working directory = ~/isotherm-live/packages/cre-workflow;runs = 1;last exit code = 0;
+[2026-10-07T07:07:16Z] attester 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720 == Resolver.attester(); tx sender 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 has 9999.999799692397000000 MON; vault ladders 1
+[2026-10-07T07:07:16Z] last run 8 s ago (< 1800 s spacing); skipping
+[2026-10-07T07:07:16Z] [settle-job] exit 0
+[evidence] path=harness-fallback exit=0 outcomes=- -> ~/isotherm-live/packages/cre-workflow/var/test-fork/A/evidence/settle-runs.jsonl
+
+## A3. launchd runs the challenge watcher: honest result -> MATCH, nothing sent
+launchd xyz.isotherm.test.challenge-watch: program = /bin/bash;working directory = ~/isotherm-live/packages/cre-workflow/settle;runs = 1;last exit code = 0;
+[2026-10-07T07:07:17.734Z] [TEST] ISOTHERM_TEST_RELABEL active (fork only): RCSS:2026-10-08 <- live data of 2026-10-06
+[2026-10-07T07:07:21.716Z] event LadderResolved RCSS:20261008 status=Settled tmaxC=25 caller=0xB9F79d863261869B234c481D1f9A7af84AeAd192 (block 68906936, tx 0x53b478af94d9db2431233adebbce54d85baa26dbc3c607ac4648c8daefab92d3)
+[2026-10-07T07:07:24.577Z] RCSS:20261008: MATCH reported Settled 25 == recomputed 25 (primary sources agree); IEM 25C h=24 last=23:30 complete | AWC 25C h=24 last=23:30 complete | OGIMET not fetched; window 900s left
+[2026-10-07T07:07:24.578Z] pass done: blocks 68906336..68906936 (1 events), 1 ladders, 1 result(s) checked; guardian key 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC; auto-challenge on
+resultOf(RCSS,20261008) = (1, 25, 1791482802 [1.791e9], 1791483702 [1.791e9], 0x424d0b116727ec5082861d5f0d976bdc7b338185f74f40f5e2411554f5350236)
+
+## B. fork reverted; a FORGED report (31 C, signed by the fork's test attester) settles; the watcher challenges
+[forged] RCSS 20261008 tmaxC=31 signed by the fork's test attester; tx 0xfeeea47120e38f3c635786967bcb58548ae57befcf8d3283eaf083d334d379f8 status=0x1 gasUsed=149875
+resultOf(RCSS,20261008) = (1, 31, 1791482816 [1.791e9], 1791483716 [1.791e9], 0xdf01aee4adffe1ee5f13c312443982ee0fed4d4aaf93800941ce866fb83741b1)
+guardian balance 10000.000000000000000000 MON
+launchd xyz.isotherm.test.challenge-watch: program = /bin/bash;working directory = ~/isotherm-live/packages/cre-workflow/settle;runs = 1;last exit code = 0;
+[2026-10-07T07:07:27.484Z] event LadderResolved RCSS:20261008 status=Settled tmaxC=31 caller=0xB9F79d863261869B234c481D1f9A7af84AeAd192 (block 68906936, tx 0xfeeea47120e38f3c635786967bcb58548ae57befcf8d3283eaf083d334d379f8)
+!!! CHALLENGE WATCHER: MISMATCH RCSS:20261008: reported Settled 31 C, the rule gives 25 C
+!!! CHALLENGE WATCHER: CHALLENGED RCSS:20261008
+!!! challenge tx 0x6fba518920835a6432ac8ceb09e3111e1673afd8af336ef01b628d780244b0d1 status=success gasUsed=44432 gasLimit=62761; resultOf now Void
+!!! reasonHash 0xf1dd01fd26c9856de336d1568dba1f3f481f7a9097af60529fd7b0dd4156c072 = keccak256("isotherm-challenge-v1|RCSS|20261008|reported=31|recomputed:isotherm-sources-v1|RCSS|20261008|SETTLED|IEM:25,44,24,23:30,1|AWC:25,44,24,23:30,1|OGIMET:-")
+[2026-10-07T07:07:38.498Z] pass done: blocks 68906336..68906936 (1 events), 1 ladders, 1 result(s) checked; guardian key 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC; auto-challenge on
+resultOf(RCSS,20261008) = (2, 0, 1791482816 [1.791e9], 1791482829 [1.791e9], 0xdf01aee4adffe1ee5f13c312443982ee0fed4d4aaf93800941ce866fb83741b1)
+  data: 0x000000000000000000000000000000000000000000000000000000000000001ff1dd01fd26c9856de336d1568dba1f3f481f7a9097af60529fd7b0dd4156c0720000000000000000000000003c44cdddb6a900fa2b585dd299e03d12fa4293bc
+  transactionHash: 0x6fba518920835a6432ac8ceb09e3111e1673afd8af336ef01b628d780244b0d1
+
+## C. fork reverted; forged report again, guardian holds 0 MON: the watcher prints the exact manual command
+[forged] RCSS 20261008 tmaxC=31 signed by the fork's test attester; tx 0xfeeea47120e38f3c635786967bcb58548ae57befcf8d3283eaf083d334d379f8 status=0x1 gasUsed=149875
+launchd xyz.isotherm.test.challenge-watch: program = /bin/bash;working directory = ~/isotherm-live/packages/cre-workflow/settle;runs = 1;last exit code = 0;
+!!! CHALLENGE WATCHER: MISMATCH RCSS:20261008 NOT CHALLENGED automatically
+!!! Why: guardian 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC holds 0 MON < 0.002062845485594628 MON needed (gas limit 62761 x 1001346148 wei + 0.002)
+!!! RUN THIS NOW as the guardian, before 2026-10-08T18:22:14.000Z (900s left at the last block):
+!!!   cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'challenge(bytes4,uint32,bytes32)' 0x52435353 20261008 0xf1dd01fd26c9856de336d1568dba1f3f481f7a9097af60529fd7b0dd4156c072 --private-key "$(tr -d '[:space:]' < ~/isotherm-live/packages/cre-workflow/var/test-fork/keys/guardian.key)" --gas-limit 62761 --rpc-url http://127.0.0.1:19330
+!!! (fund the guardian first if it is short: it needs about 0.00690371 MON)
+resultOf before the manual command = (1, 31, 1791482834 [1.791e9], 1791483734 [1.791e9], 0xdf01aee4adffe1ee5f13c312443982ee0fed4d4aaf93800941ce866fb83741b1)
+funded the fork guardian with 1 MON; running the printed command verbatim:
+gasUsed              44432
+status               1 (success)
+transactionHash      0x82b5fd12d8cb6dc7763d8e574459485e644be92c27d3d01595682d200ef775f8
+resultOf after the manual command = (2, 0, 1791482834 [1.791e9], 1791482847 [1.791e9], 0xdf01aee4adffe1ee5f13c312443982ee0fed4d4aaf93800941ce866fb83741b1)
+
+## D. live keys on the fork are refused (nothing is signed)
+[2026-10-07T07:07:56.776Z] pass done: blocks 68906887..68906937 (2 events), 1 ladders, 1 result(s) checked; REFUSED: the LIVE guardian key on a non-live RPC (http://127.0.0.1:19330); auto-challenge on
+[2026-10-07T07:07:57Z] REFUSED: the LIVE attester key on a non-live RPC (http://127.0.0.1:19330). Its signatures would be valid on live testnet.
+[2026-10-07T07:07:57Z] [settle-job] exit 2
+[evidence] path=harness-fallback exit=2 outcomes=- -> ~/isotherm-live/packages/cre-workflow/var/test-fork/D/evidence/settle-runs.jsonl
+
+# done 2026-10-07T07:07:57Z; anvil pid 81677 stopped on exit; test labels booted out

@@ -28,7 +28,7 @@ import { ABI_BUNDLE, RECEIVE_TYPES, SELECTORS, ausdAbi, decodeSeries, faucetAbi,
 import { withMargin, type Pub, type Wallet } from './chain';
 import type { Deployments } from './deployments';
 import type { Config } from './env';
-import { checkDrip, checkRelay, recordDrip, recordRelay, type DripRecord, type Store } from './limits';
+import { checkDrip, checkRelay, recordDrip, recordRelay, usageToday, type DripRecord, type RelayLimits, type Store } from './limits';
 import { HttpError, errorMessage } from './util';
 
 const RESERVE_LINE = parseEther('10');
@@ -63,6 +63,11 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
   const enqueue = makeQueue();
   let lastSendBlock: bigint | null = null;
   const errorAbis: Abi[] = [vaultFragments as Abi, vaultV1Abi as Abi, faucetAbi as Abi, ...Object.values(ABI_BUNDLE)];
+  const relayLimits: RelayLimits = { perAddressPerDay: cfg.relayPerAddressPerDay, perIpPerDay: cfg.relayPerIpPerDay, dailyCap: cfg.relayDailyCap };
+  /** MON a drip needs on hand: the MON leg, gas for both legs, and the reserve that drips never touch. */
+  const dripNeeds = (monToSend: bigint) => monToSend + cfg.dripGasMon + cfg.relayerMinMon;
+  /** MON a relayed mint needs on hand: its worst-case gas cost plus the reserve. */
+  const relayNeeds = cfg.relayCostMon + cfg.relayerMinMon;
 
   const explain = (e: unknown): string => {
     const seen = new Set<unknown>();
@@ -144,6 +149,7 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
     } catch {
       /* RPC trouble: report what we have */
     }
+    const usage = await usageToday(store);
     return {
       relayer,
       chainId: cfg.chainId,
@@ -151,12 +157,26 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
       monBalance: mon === null ? null : formatEther(mon),
       ausdFloat: ausd === null ? null : formatUnits(ausd, 6),
       dripEnabled: cfg.dripEnabled && !!wallet,
-      dripReady: !!wallet && mon !== null && mon >= cfg.dripMon + cfg.relayerMinMon,
+      // ready = enough MON above the reserve AND today's (UTC) cap not used up
+      dripReady: !!wallet && cfg.dripEnabled && mon !== null && mon >= dripNeeds(cfg.dripMon) && usage.dripsToday < cfg.dripDailyCap,
       dripMon: formatEther(cfg.dripMon),
       dripAusd: formatUnits(cfg.dripAusd, 6),
       relayEnabled: cfg.relayEnabled && !!wallet,
+      relayReady: !!wallet && cfg.relayEnabled && mon !== null && mon >= relayNeeds && usage.relaysToday < cfg.relayDailyCap,
       relayModes: await relayModes().catch(() => []),
+      relayMinAusd: formatUnits(cfg.relayMinAusd, 6),
       relayMaxAusd: formatUnits(cfg.relayMaxAusd, 6),
+      // Budget knobs (wrangler.toml; formula in apps/api/README.md) and today's usage (UTC day).
+      limits: {
+        reserveMon: formatEther(cfg.relayerMinMon),
+        dripDailyCap: cfg.dripDailyCap,
+        dripPerIpPerDay: cfg.dripPerIpPerDay,
+        dripAddressCooldownH: cfg.dripAddressCooldownMs / 3600_000,
+        relayDailyCap: cfg.relayDailyCap,
+        relayPerAddressPerDay: cfg.relayPerAddressPerDay,
+        relayPerIpPerDay: cfg.relayPerIpPerDay,
+        ...usage,
+      },
       deployments: dep.source,
       vault: dep.vault,
       zap: dep.zap,
@@ -166,16 +186,18 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
     };
   }
 
-  /** Which relay paths the deployed vault supports, detected from its bytecode (dispatcher PUSH4 selectors), so the
-   *  API stays correct whether it points at the feasibility vault (permit only) or v1 (EIP-3009 + permit). */
+  /** Which relay paths the API offers, from the deployed vault's bytecode (dispatcher PUSH4 selectors).
+   *  Authorization mode only whenever the vault has it (v1): an EIP-3009 authorization binds the series and amount
+   *  through its nonce, while a permit to the vault can be front-run and redirected to another series (security
+   *  review v1, N10). Permit is offered only for a vault without the authorization path AND with RELAY_ALLOW_PERMIT=1. */
   let modesCache: { at: number; modes: string[] } | null = null;
   async function relayModes(): Promise<string[]> {
     if (modesCache && Date.now() - modesCache.at < 600_000) return modesCache.modes;
-    const code = (await pub.getCode({ address: dep.vault }).catch(() => undefined)) ?? '0x';
-    const has = (sel: string) => bytecodeHasSelector(code, sel);
+    const code = await pub.getCode({ address: dep.vault });
+    const has = (sel: string) => !!code && bytecodeHasSelector(code, sel);
     const modes: string[] = [];
     if (has(SELECTORS.mintSetWithAuthorization)) modes.push('authorization');
-    if (has(SELECTORS.mintSetWithPermit)) modes.push('permit');
+    else if (cfg.relayAllowPermit && has(SELECTORS.mintSetWithPermit)) modes.push('permit');
     modesCache = { at: Date.now(), modes };
     return modes;
   }
@@ -217,7 +239,7 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
         }
         return { ok: true, alreadyFunded: true, txHashes: [] as Hex[], latencyMs: Date.now() - t0 };
       }
-      if (relMon < monToSend + cfg.relayerMinMon) {
+      if (relMon < dripNeeds(monToSend)) {
         throw new HttpError(503, 'The faucet relayer is out of test MON right now; please try again later.', { relayer });
       }
 
@@ -272,19 +294,27 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
         if (ausdTx) hashes.push(ausdTx);
       }
 
-      const receipts = await Promise.all(hashes.map((hash) => pub.waitForTransactionReceipt({ hash, pollingInterval: 300, timeout: 45_000 })));
+      // Record the drip as soon as anything is broadcast (security review v1): Monad bills the gas limit even for a
+      // revert, and a receipt wait can time out, so a drip must use up the address / network / daily quota whether or
+      // not it confirms. Otherwise every retry would spend again.
+      const countIt = !decision.retryOfPending;
+      const rec: DripRecord = { at: decision.record?.at ?? Date.now(), monTx: monTx ?? decision.record?.monTx, ausdTx, ausdPending };
+      if (monTx || ausdTx || ausdPending) await recordDrip(store, user, ip, rec, countIt);
+      let receipts: Awaited<ReturnType<typeof pub.waitForTransactionReceipt>>[];
+      try {
+        receipts = await Promise.all(hashes.map((hash) => pub.waitForTransactionReceipt({ hash, pollingInterval: 300, timeout: 45_000 })));
+      } catch {
+        // Unconfirmed: a retry re-reads the user's balances and sends only what is still missing (AUSD leg only).
+        if (wantAusd) await recordDrip(store, user, ip, { ...rec, ausdPending: true }, false);
+        throw new HttpError(504, 'test funds sent but not confirmed yet; check your balance in a minute', { txHashes: hashes });
+      }
       for (const r of receipts) await noteSendBlock(r.blockNumber);
       const failed = receipts.find((r) => r.status !== 'success');
-      if (failed) throw new HttpError(502, `drip transaction reverted: ${failed.transactionHash}`);
-
-      if (monTx || ausdTx || ausdPending) {
-        const rec: DripRecord = {
-          at: decision.ok && decision.record ? decision.record.at : Date.now(),
-          monTx: monTx ?? decision.record?.monTx,
-          ausdTx,
-          ausdPending,
-        };
-        await recordDrip(store, user, ip, rec, !decision.retryOfPending);
+      if (failed) {
+        if (ausdTx && receipts.some((r) => r.transactionHash === ausdTx && r.status !== 'success')) {
+          await recordDrip(store, user, ip, { ...rec, ausdPending: true }, false); // a retry sends the AUSD leg only
+        }
+        throw new HttpError(502, `drip transaction reverted: ${failed.transactionHash}`);
       }
       return {
         ok: true,
@@ -340,7 +370,8 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
     return { name: 'Agora Dollar', version: '1', chainId: cfg.chainId, verifyingContract: dep.ausd } as const;
   }
 
-  async function relayMint(w: RelayMintWire) {
+  /** `ip` is the salted client-network tag (IPv4, or IPv6 /64) computed by the Worker; never a raw IP. */
+  async function relayMint(w: RelayMintWire, ip?: string) {
     if (!cfg.relayEnabled) throw new HttpError(503, 'relayed mint is paused');
     if (!wallet) throw new HttpError(503, 'relayer not configured');
     if (!w || typeof w !== 'object') throw new HttpError(400, 'bad body');
@@ -354,22 +385,31 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
     } catch {
       throw new HttpError(400, 'bad amount');
     }
-    if (amount <= 0n || amount > cfg.relayMaxAusd) throw new HttpError(400, `amount must be between 0 and ${formatUnits(cfg.relayMaxAusd, 6)} AUSD`);
+    if (amount < cfg.relayMinAusd || amount > cfg.relayMaxAusd) {
+      throw new HttpError(400, `amount must be between ${formatUnits(cfg.relayMinAusd, 6)} and ${formatUnits(cfg.relayMaxAusd, 6)} AUSD`);
+    }
+    if (w.mode !== 'authorization' && w.mode !== 'permit') throw new HttpError(400, 'mode must be "authorization"');
+    const modes = await relayModes().catch(() => {
+      throw new HttpError(503, 'chain RPC unavailable; please try again');
+    });
+    if (!modes.includes(w.mode)) {
+      throw new HttpError(400, w.mode === 'permit' ? 'permit-mode relays are disabled for this vault; sign an EIP-3009 authorization (mode "authorization")' : `${w.mode} mode not supported by this vault`);
+    }
     const holder = getAddress(w.holder);
     const now = BigInt(Math.floor(Date.now() / 1000));
 
+    // Cheap storage-only cap check before any RPC read, so a capped client cannot turn requests into RPC load.
+    const lim = await checkRelay(store, relayLimits, holder, ip);
+    if (!lim.ok) throw new HttpError(429, lim.reason, { retryAfterSec: lim.retryAfterSec });
     const series = await readSeries(w.seriesId);
     if (!series) throw new HttpError(400, 'unknown series');
     if (BigInt(series.closeTime) <= now + 15n) throw new HttpError(400, 'this strike is closed for new positions');
     if (series.gated) throw new HttpError(400, 'this series is gated (allowlist only)');
-    const lim = await checkRelay(store, { perAddressPerDay: cfg.relayPerAddressPerDay, dailyCap: cfg.relayDailyCap }, holder);
-    if (!lim.ok) throw new HttpError(429, lim.reason);
     const bal = await pub.readContract({ address: dep.ausd, abi: ausdAbi, functionName: 'balanceOf', args: [holder] });
     if (bal < amount) throw new HttpError(400, `insufficient AUSD (${formatUnits(bal, 6)})`);
 
     let call: { address: Address; abi: Abi; functionName: string; args: readonly unknown[] };
     if (w.mode === 'permit') {
-      if (!(await relayModes()).includes('permit')) throw new HttpError(400, 'permit mode not supported by this vault');
       const deadline = BigInt(w.deadline ?? '0');
       if (deadline <= now + 15n || deadline > now + 3600n) throw new HttpError(400, 'permit deadline must be within the next hour');
       const nonce = await pub.readContract({ address: dep.ausd, abi: ausdAbi, functionName: 'nonces', args: [holder] });
@@ -397,8 +437,7 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
         functionName: 'mintSetWithPermit',
         args: [w.seriesId, amount, holder, deadline, v, sig.r, sig.s],
       };
-    } else if (w.mode === 'authorization') {
-      if (!(await relayModes()).includes('authorization')) throw new HttpError(400, 'authorization mode not supported by this vault');
+    } else {
       const validAfter = BigInt(w.validAfter ?? '0');
       const validBefore = BigInt(w.validBefore ?? '0');
       if (validAfter > now) throw new HttpError(400, 'authorization not yet valid');
@@ -423,8 +462,6 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
         functionName: 'mintSetWithAuthorization',
         args: [w.seriesId, amount, holder, validAfter, validBefore, w.salt, v, sig.r, sig.s],
       };
-    } else {
-      throw new HttpError(400, 'mode must be "authorization" or "permit"');
     }
 
     return enqueue(async () => {
@@ -433,11 +470,11 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
       // RPC awaits, so concurrent requests all passed it before any recordRelay() ran: 8 parallel requests for one
       // holder were all broadcast against a per-address cap of 2, and the daily cap could be overrun the same way.
       // Jobs run one at a time and recordRelay() happens before the next job starts, so this check is exact.
-      const capNow = await checkRelay(store, { perAddressPerDay: cfg.relayPerAddressPerDay, dailyCap: cfg.relayDailyCap }, holder);
-      if (!capNow.ok) throw new HttpError(429, capNow.reason);
+      const capNow = await checkRelay(store, relayLimits, holder, ip);
+      if (!capNow.ok) throw new HttpError(429, capNow.reason, { retryAfterSec: capNow.retryAfterSec });
       const relayer = wallet.account.address;
       const mon = await pub.getBalance({ address: relayer });
-      if (mon < cfg.relayerMinMon / 2n) throw new HttpError(503, 'The relayer is out of test MON right now.');
+      if (mon < relayNeeds) throw new HttpError(503, 'The relayer is out of test MON right now; please try again later.');
       let est: bigint;
       try {
         est = await pub.estimateContractGas({ ...call, account: wallet.account } as never);
@@ -447,10 +484,10 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
       const gas = withMargin(est, cfg.gasMultiplierPct);
       const nonce = await pub.getTransactionCount({ address: relayer, blockTag: 'pending' });
       const hash = await wallet.writeContract({ ...call, gas, nonce, account: wallet.account, chain: wallet.chain } as never);
+      await recordRelay(store, holder, ip); // counted on broadcast: a revert costs the relayer the full gas limit too
       const r = await pub.waitForTransactionReceipt({ hash, pollingInterval: 300, timeout: 45_000 });
       await noteSendBlock(r.blockNumber);
       if (r.status !== 'success') throw new HttpError(502, `relayed mint reverted: ${hash}`);
-      await recordRelay(store, holder);
       return {
         ok: true,
         mode: w.mode,

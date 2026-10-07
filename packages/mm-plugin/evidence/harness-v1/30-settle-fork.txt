@@ -1,4 +1,0 @@
-resolver.setAttester(<throwaway harness key 0x0327286Ed76EF8eBe2Ad2d45CF4506b0a0709D62>) 0xf885122e160402922a599f1b63793791ebad39d0ecdcc04fa595a0d8c0a7c29a
-fork clock moved from 2026-10-07T05:37:01.000Z to 2026-10-07T16:02:00.000Z (day end + 2 min)
-MockKeystoneForwarder.report 0xcc8b4be607167be3738f0b4d6ac69d63e7e4311d7beaa65594a364f46bc45251 status=success ReportProcessed.result=true resultOf=(status 1, tmaxC 28, finalAt 2026-10-07T16:17:00.000Z)
-fork clock moved past the 900 s challenge window

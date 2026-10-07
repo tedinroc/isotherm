@@ -1,0 +1,59 @@
+$ mm weather buy taipei --date tomorrow --strike 29 --side no --amount 10 --max-price 0.1719 --dry-run --json
+{
+  "ok": true,
+  "data": {
+    "action": "buy NO",
+    "series": {
+      "seriesId": "0xa69ae9d5af5141648df6a03de55f960d141e84ccda321efe1c7bb7882cf02cd3",
+      "city": "Taipei",
+      "station": "RCSS",
+      "date": 20261008,
+      "strike": "Tmax>=29C",
+      "strikeC": 29,
+      "closeTime": "2026-10-08T09:30:00Z",
+      "yes": "0x9D4c41dcEE377A9C4bd1A8BE20A30f7598f595E8",
+      "no": "0xc6D967B0e1434f8e81AFC63B9A7Ca719f80CD6f5"
+    },
+    "date": "2026-10-08",
+    "market": "0x855eF3549eA5ACA5602EAefDD988950f16FCc6c2",
+    "marketSource": "registry",
+    "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+    "takerFeeBps": 10,
+    "slippageBps": 50,
+    "maxPrice": "0.1719",
+    "plan": {
+      "route": "CollateralVault.mintSet + Zap.sellYes(minAusdOut)",
+      "setsMinted": "10.000000",
+      "requestedAusd": "10.000000",
+      "expectedNo": "10.000000",
+      "expectedAusdBack": "8.281710",
+      "minAusdOut": "8.240301",
+      "netAusdCost": "1.718290",
+      "avgPricePerNo": 0.171829,
+      "worstCaseNoPrice": 0.1759699,
+      "minYesBid": "0.8290",
+      "worstYesBid": "0.8290",
+      "levelsUsed": 1,
+      "cappedByMaxPrice": false,
+      "bound": "On-chain: Zap.sellYes reverts unless at least minAusdOut AUSD comes back for exactly setsMinted YES. NO received is exactly setsMinted (minted to your wallet), so the NO price can never exceed worstCaseNoPrice."
+    },
+    "observed": {
+      "checked": false,
+      "reason": "ladder is not for today (station-local)"
+    },
+    "wallet": "0x9F6AF0b5E8091B867500D9E2a3240Bd92259a543",
+    "dryRun": true,
+    "steps": [
+      "approve AUSD -> CollateralVault (if allowance < 10.000000)",
+      "approve YES -> Zap (if allowance < 10.000000)",
+      "CollateralVault.mintSet(10.000000): 10.000000 YES + 10.000000 NO to your wallet",
+      "Zap.sellYes(10.000000 YES, minAusdOut 8.240301): reverts instead of filling below the bound"
+    ],
+    "deployment": "env:<repo>/packages/mm-plugin/harness/fork-deployments-v1.json",
+    "abiSet": "v1",
+    "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+    "rpcSource": "mm-customEvmChains",
+    "rpcUrl": "http://127.0.0.1:19541"
+  },
+  "hint": "dry run: nothing signed"
+}

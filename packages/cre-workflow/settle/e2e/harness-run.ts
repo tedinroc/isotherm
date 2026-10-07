@@ -6,7 +6,9 @@
 //
 // Env: ISOTHERM_RPC (default live testnet), ISOTHERM_ATTESTER_KEY_FILE, ISOTHERM_TX_KEY_FILE (read in-process, never
 //      printed), HARNESS_BROADCAST=1 to send (otherwise stops before sending), HARNESS_EXTRA=ICAO:YYYY-MM-DD,...,
-//      HARNESS_AT=<unix s> (fork tests only), HARNESS_CONFIG (default ./config.testnet.json).
+//      HARNESS_AT=<unix s> (fork tests only; on a loopback fork the default is the fork's latest block time, so a
+//      warped fork is settled at ITS time), HARNESS_CONFIG (default ./config.testnet.json),
+//      ISOTHERM_TEST_RELABEL=ICAO:YYYY-MM-DD=YYYY-MM-DD (fork only, see e2e/http.ts).
 import { EvmMock, HttpActionsMock, newTestRuntime, test } from '@chainlink/cre-sdk/test'
 import { readFileSync } from 'node:fs'
 import { type Hex, bytesToHex, concat, keccak256, stringToBytes } from 'viem'
@@ -15,6 +17,7 @@ import { decodeReport } from '../report'
 import { onCron } from '../workflow'
 import { cronPayload, MONAD_TESTNET_SELECTOR } from '../test/helpers'
 import { deployments, makeRpc, simulatorHeader } from './chain'
+import { isLoopbackRpc, LIVE_RPC, parseRelabel, sourceGet } from './http'
 
 const env = (k: string) => process.env[k] || undefined
 const RPC = env('ISOTHERM_RPC') ?? 'https://testnet-rpc.monad.xyz'
@@ -28,18 +31,21 @@ const cfg = configSchema.parse({
   ...(env('HARNESS_EXTRA') ? { extraTargets: env('HARNESS_EXTRA')!.split(',').map((s) => ({ icao: s.split(':')[0], date: s.split(':')[1] })) } : {}),
 })
 const BROADCAST = env('HARNESS_BROADCAST') === '1'
-const at = Number(env('HARNESS_AT') ?? Math.floor(Date.now() / 1000))
 const rpc = makeRpc(RPC)
+const relabel = parseRelabel(env('ISOTHERM_TEST_RELABEL'), RPC)
+const chainNow = () => Number(BigInt(rpc.call('eth_getBlockByNumber', ['latest', false]).timestamp))
+const at = Number(env('HARNESS_AT') ?? (RPC !== LIVE_RPC && isLoopbackRpc(RPC) ? chainNow() : Math.floor(Date.now() / 1000)))
 const forwarder = deployments.activeForwarder as Hex
 
 test('harness run', () => {
   const attesterKey = readKey(env('ISOTHERM_ATTESTER_KEY_FILE'))
+  console.log(`[path] HARNESS FALLBACK: the workflow handler under Bun in the CRE SDK test harness (NOT the CRE engine); reports go through ${forwarder} with the v1 EIP-712 attestation`)
+  console.log(`[time] anchor ${new Date(at * 1000).toISOString()} (${env('HARNESS_AT') ? 'HARNESS_AT' : RPC === LIVE_RPC ? 'wall clock' : 'fork chain time'})`)
+  if (relabel) console.log(`[TEST] ISOTHERM_TEST_RELABEL active (fork only): ${[...relabel].map(([k, v]) => `${k} <- live data of ${v}`).join(', ')}`)
   HttpActionsMock.testInstance().sendRequest = (req) => {
-    const r = Bun.spawnSync(['curl', '-sS', '--max-time', '10', '-A', 'isotherm-cre-harness/1.0', '-w', '\n%{http_code}', req.url])
-    const raw = r.stdout.toString()
-    const i = raw.lastIndexOf('\n')
-    console.log(`[http] ${raw.slice(i + 1) || 'ERR'} ${Math.max(i, 0)}B ${req.url}`)
-    return { statusCode: Number(raw.slice(i + 1)) || 0, body: new TextEncoder().encode(i > 0 ? raw.slice(0, i) : ''), headers: {} }
+    const a = sourceGet(req.url, relabel, cfg.stations)
+    console.log(`[http] ${a.status || 'ERR'} ${a.body.length}B ${req.url}${a.relabelledFrom ? ` (TEST relabel from ${a.relabelledFrom})` : ''}`)
+    return { statusCode: a.status, body: new TextEncoder().encode(a.body), headers: {} }
   }
   const evm = EvmMock.testInstance(MONAD_TESTNET_SELECTOR)
   evm.callContract = (req) => {

@@ -9,7 +9,7 @@ $ mm weather markets --json
     "vault": "0xC83fE722eb5Bd29a0355C090f14CCb0605153713",
     "zap": "0x1b1d91eBd1590c7814AEdCae66ac6ded492C792e",
     "rpcSource": "mm-customEvmChains",
-    "rpcUrl": "http://127.0.0.1:19251",
+    "rpcUrl": "http://127.0.0.1:19541",
     "ladders": [
       {
         "city": "Taipei",
@@ -18,7 +18,7 @@ $ mm weather markets --json
         "state": "open",
         "closeTime": "2026-10-08T15:00:00Z",
         "dayEnd": "2026-10-08T16:00:00Z",
-        "minutesToClose": 2010,
+        "minutesToClose": 1911,
         "result": null,
         "strikes": [
           {
@@ -42,8 +42,8 @@ $ mm weather markets --json
             "market": "0x90a5e8B152CeD36558f4006A6e3fB0412CDcA419",
             "marketSource": "deployments",
             "canonical": true,
-            "bestBid": 0.919,
-            "bestAsk": 0.98
+            "bestBid": 0.93,
+            "bestAsk": 0.991
           },
           {
             "strike": "Tmax>=29C",
@@ -54,8 +54,8 @@ $ mm weather markets --json
             "market": "0x11b8C955c46EF8C59862Cf35591CC0A325031C5d",
             "marketSource": "deployments",
             "canonical": true,
-            "bestBid": 0.818,
-            "bestAsk": 0.879
+            "bestBid": 0.829,
+            "bestAsk": 0.89
           },
           {
             "strike": "Tmax>=30C",
@@ -66,8 +66,8 @@ $ mm weather markets --json
             "market": "0x2a221d4614c4408b00444B943be964cA44C6a44a",
             "marketSource": "deployments",
             "canonical": true,
-            "bestBid": 0.437,
-            "bestAsk": 0.498
+            "bestBid": 0.363,
+            "bestAsk": 0.424
           },
           {
             "strike": "Tmax>=31C",
@@ -78,8 +78,8 @@ $ mm weather markets --json
             "market": "0x9567594d6d19AfDfBe1dF99d5a7c3191A4E038C2",
             "marketSource": "deployments",
             "canonical": true,
-            "bestBid": 0.062,
-            "bestAsk": 0.123
+            "bestBid": 0.036,
+            "bestAsk": 0.097
           }
         ]
       },
@@ -90,7 +90,7 @@ $ mm weather markets --json
         "state": "open",
         "closeTime": "2026-10-07T15:00:00Z",
         "dayEnd": "2026-10-07T16:00:00Z",
-        "minutesToClose": 570,
+        "minutesToClose": 471,
         "result": null,
         "strikes": [
           {
@@ -127,7 +127,7 @@ $ mm weather markets --json
             "marketSource": "deployments",
             "canonical": true,
             "bestBid": 0.001,
-            "bestAsk": 0.061
+            "bestAsk": 0.06
           },
           {
             "strike": "Tmax>=30C",

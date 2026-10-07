@@ -1,4 +1,8 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Trimmed from spikes/kuru/src/interfaces/IKuru.sol, itself derived from github.com/Kuru-Labs/Kuru-contracts-dex-public
+// (contracts/interfaces/IRouter.sol + IOrderBook.sol, commit 2060bb2, GPL-2.0-or-later). The declarations match Kuru's;
+// verifiedMarket's return names are Kuru's MarketParams fields. Parameter names and comments were rewritten. The copy
+// verified on Sourcify for the deployed IsothermZap carries the earlier "MIT" SPDX line; only this header differs.
 pragma solidity ^0.8.28;
 
 /// @dev Minimal Kuru v1 surface used by the Zap (selectors checked against the live Monad-testnet bytecode by the

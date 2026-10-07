@@ -23,6 +23,9 @@ export const vaultAbi = parseAbi([
   'function ladderSeries(bytes4 station, uint32 date) view returns (bytes32[])',
   'function redeem(bytes32 seriesId, uint256 yesAmount, uint256 noAmount) returns (uint256)',
   'function redeemSet(bytes32 seriesId, uint256 amount)',
+  'function mintSet(bytes32 seriesId, uint256 amount)',
+  'event SetMinted(bytes32 indexed seriesId, address indexed payer, address indexed to, uint256 amount)',
+  'event SetRedeemed(bytes32 indexed seriesId, address indexed account, uint256 amount)',
   'function previewRedeem(bytes32 seriesId, uint256 yesAmount, uint256 noAmount) view returns (uint256)',
   'function mintAuthorizationNonce(bytes32 seriesId, uint256 amount, bytes32 salt) view returns (bytes32)',
   'event Redeemed(bytes32 indexed seriesId, address indexed account, uint256 yesAmount, uint256 noAmount, uint256 payout)',
@@ -47,7 +50,8 @@ export const resolverAbi = parseAbi([
 export const zapAbi = parseAbi([
   'function buyYes(bytes32 seriesId, address market, uint256 ausdIn, uint256 minYesOut, address to) returns (uint256 yesOut, uint256 ausdRefund)',
   'function sellYes(bytes32 seriesId, address market, uint256 yesIn, uint256 minAusdOut, address to) returns (uint256 ausdOut, uint256 yesRefund)',
-  'function buyNo(bytes32 seriesId, address market, uint256 ausdIn, uint256 minAusdBack, address to) returns (uint256 noOut, uint256 ausdBack)',
+  // Zap.buyNo is deliberately NOT in this ABI: its minAusdBack bound fails under partial fills (verifier N1).
+  // "Buy No" is vault.mintSet + zap.sellYes(minAusdOut); see lib/buyNo.ts.
   'function canonicalMarket(bytes32 seriesId) view returns (address)',
   'error MarketMismatch(address market)',
   'error MarketMismatch(address market, address canonical)',
@@ -58,7 +62,6 @@ export const zapAbi = parseAbi([
   'error ZeroAddress()',
   'event ZapBuyYes(address indexed user, bytes32 indexed seriesId, address market, uint256 ausdIn, uint256 yesOut, uint256 ausdRefund)',
   'event ZapSellYes(address indexed user, bytes32 indexed seriesId, address market, uint256 yesIn, uint256 ausdOut, uint256 yesRefund)',
-  'event ZapBuyNo(address indexed user, bytes32 indexed seriesId, address market, uint256 ausdIn, uint256 noOut, uint256 ausdBack)',
 ]);
 
 export const routerAbi = parseAbi([

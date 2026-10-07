@@ -88,34 +88,47 @@ export function quoteSellYes(book: Book, yes: number, takerFeeBps = 10): SellQuo
   return { sold, unsold: left, proceeds, avgPrice: sold > 0 ? proceeds / sold : null };
 }
 
-export interface NoQuote {
-  ausdIn: number; // complete sets minted (= AUSD pulled up front)
-  noOut: number; // NO received
-  ausdBack: number; // proceeds of the YES leg + merged unsold YES
-  netCost: number; // ausdIn - ausdBack
+/** Total YES the bids can absorb right now. */
+export const bidDepth = (book: Book) => book.bids.reduce((a, l) => a + l.size, 0);
+
+export interface NoViaSellQuote {
+  mint: number; // complete sets minted in the vault = YES sold = NO received
+  proceeds: number; // AUSD expected from selling the YES leg (after Kuru's fee)
+  netCost: number; // mint - proceeds
   avgPrice: number | null; // net cost per NO
+  depthLimited: boolean; // the bids, not the budget, set the size
 }
 
-/** Zap.buyNo(ausdIn): mint `ausdIn` sets, sell the YES leg; unsold YES merges back 1:1. */
-export function quoteBuyNo(book: Book, ausdIn: number, takerFeeBps = 10): NoQuote {
-  const s = quoteSellYes(book, ausdIn, takerFeeBps);
-  const noOut = ausdIn - s.unsold;
-  const ausdBack = s.proceeds + s.unsold;
-  const netCost = ausdIn - ausdBack;
-  return { ausdIn, noOut, ausdBack, netCost, avgPrice: noOut > 1e-9 ? netCost / noOut : null };
-}
-
-/** Largest `ausdIn` whose net cost is ≤ `budget` (what "spend X on NO" means), capped by `maxIn` (wallet balance). */
-export function sizeBuyNoForBudget(book: Book, budget: number, maxIn: number, takerFeeBps = 10): NoQuote {
-  if (budget <= 0) return quoteBuyNo(book, 0, takerFeeBps);
+/**
+ * "Buy No" without Zap.buyNo (whose only bound, minAusdBack, also counts unsold YES merged back at par, so a
+ * sandwich that empties the bids still passes it: verifier finding N1). Instead the app sends two transactions:
+ *   1. vault.mintSet(seriesId, mint)                      -> mint YES + mint NO
+ *   2. zap.sellYes(seriesId, market, mint, minAusdOut)    -> AUSD for the YES leg, reverts below minAusdOut
+ * sellYes' bound is a true worst-case bound: the user never receives less than minAusdOut for at most `mint` YES.
+ * Sizing: the largest `mint` with net cost <= budget, mint <= maxIn (wallet AUSD), and mint <= today's bid depth, so
+ * the whole YES leg is expected to sell and no third "merge unsold YES" transaction is normally needed.
+ */
+export function quoteBuyNoViaSell(book: Book, budget: number, maxIn: number, takerFeeBps = 10): NoViaSellQuote {
+  const cap = floor6(Math.min(Math.max(0, maxIn), bidDepth(book)));
+  const none: NoViaSellQuote = { mint: 0, proceeds: 0, netCost: 0, avgPrice: null, depthLimited: false };
+  if (!(budget > 0) || cap <= 0) return none;
+  const cost = (n: number) => n - quoteSellYes(book, n, takerFeeBps).proceeds;
   let lo = 0;
-  let hi = Math.max(0, maxIn);
-  for (let i = 0; i < 50; i++) {
-    const mid = (lo + hi) / 2;
-    if (quoteBuyNo(book, mid, takerFeeBps).netCost <= budget) lo = mid;
-    else hi = mid;
+  let hi = cap;
+  const fitsAll = cost(cap) <= budget;
+  if (fitsAll) lo = cap;
+  else {
+    for (let i = 0; i < 60; i++) {
+      const mid = (lo + hi) / 2;
+      if (cost(mid) <= budget) lo = mid;
+      else hi = mid;
+    }
   }
-  return quoteBuyNo(book, floor6(lo), takerFeeBps);
+  const mint = floor6(lo);
+  if (mint <= 0) return none;
+  const s = quoteSellYes(book, mint, takerFeeBps);
+  const netCost = mint - s.proceeds;
+  return { mint, proceeds: s.proceeds, netCost, avgPrice: netCost / mint, depthLimited: fitsAll && bidDepth(book) <= maxIn };
 }
 
 export const floor6 = (x: number) => Math.floor(x * 1e6 + 1e-7) / 1e6;

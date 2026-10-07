@@ -1,4 +1,4 @@
-# 2026-10-07T05:39:57Z signed-out mm 7.0.0 host (no mm login, no mm init), LIVE Monad testnet, reads only; tarball sha256 ed29e4a1214d3283a35e53d3c364668bd1bdfd01184cb28aedf33c261d1f34b2; bundled deployment = v1 deployments/testnet.json
+# 2026-10-07T07:30:16Z signed-out mm 7.0.0 host (no mm login, no mm init), LIVE Monad testnet, reads only; tarball sha256 89deaeb3f3f8c797682359c6df3afef38e498122741368002b99787ff051f34b; bundled deployment = v1 deployments/testnet.json; maker snapshot from the live Isotherm API
 $ mm weather doctor --json
 {
   "ok": true,
@@ -21,7 +21,7 @@ $ mm weather doctor --json
       {
         "check": "read RPC",
         "ok": true,
-        "detail": "mm-customEvmChains https://testnet-rpc.monad.xyz block 68889683"
+        "detail": "mm-customEvmChains https://testnet-rpc.monad.xyz block 68911473"
       },
       {
         "check": "contract CollateralVault",
@@ -59,6 +59,12 @@ $ mm weather doctor --json
         "detail": "on-chain 0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0.canonicalMarket(seriesId)"
       },
       {
+        "check": "maker snapshot API (optional, display only)",
+        "ok": true,
+        "optional": true,
+        "detail": "<former API host>/api/snapshot: generated 7s ago (limit 600s), ladders RCSS 20261008"
+      },
+      {
         "check": "wallet",
         "ok": false,
         "detail": "none (run `mm init`, or pass --address)",
@@ -77,7 +83,7 @@ $ mm weather doctor --json
         "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC",
         "0xd029C2D98ff85D8F64799017fE00a59B1159CE02",
         "each strike's Kuru market (weather markets), for kuru limit/cancel",
-        "each outcome token (approve to the Zap when selling)"
+        "each outcome token (YES is approved to the Zap when selling YES or buying NO)"
       ]
     },
     "publicRpc": "https://testnet-rpc.monad.xyz",
@@ -87,11 +93,12 @@ $ mm weather doctor --json
     "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
     "rpcSource": "mm-customEvmChains",
     "rpcUrl": "https://testnet-rpc.monad.xyz",
-    "deploymentSource": "<repo>/packages/mm-plugin/harness/.mmhome-fresh/.local/share/mm/node_modules/mm-plugin-isotherm/assets/deployments.testnet.json",
+    "deploymentSource": "<tmp>/mmhome-live/.local/share/mm/node_modules/mm-plugin-isotherm/assets/deployments.testnet.json",
     "deploymentWarnings": []
   },
   "hint": "some checks failed: see fix fields"
 }
+
 $ mm weather markets --all --json
 {
   "ok": true,
@@ -104,41 +111,113 @@ $ mm weather markets --all --json
     "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
     "rpcSource": "mm-customEvmChains",
     "rpcUrl": "https://testnet-rpc.monad.xyz",
-    "ladders": [],
-    "count": 0,
+    "ladders": [
+      {
+        "city": "Taipei",
+        "station": "RCSS",
+        "date": "2026-10-08",
+        "state": "open",
+        "closeTime": "2026-10-08T09:30:00Z",
+        "dayEnd": "2026-10-08T16:00:00Z",
+        "minutesToClose": 1560,
+        "result": null,
+        "strikes": [
+          {
+            "strike": "Tmax>=28C",
+            "strikeC": 28,
+            "seriesId": "0xff739cf13e58d95b7a376dde35a7a32b86774508c14e7d3d6c4d47b93c121064",
+            "yes": "0x67A91138014c30bF5F28A900326971bD08Cd1bc4",
+            "no": "0x49B7900D282E3f5262Dd712d2e66ff0166d7516D",
+            "market": "0x171b4cdE3724f2F17576439e6de8c36142A7DBd7",
+            "marketSource": "registry",
+            "canonical": true,
+            "bestBid": null,
+            "bestAsk": null
+          },
+          {
+            "strike": "Tmax>=29C",
+            "strikeC": 29,
+            "seriesId": "0xa69ae9d5af5141648df6a03de55f960d141e84ccda321efe1c7bb7882cf02cd3",
+            "yes": "0x9D4c41dcEE377A9C4bd1A8BE20A30f7598f595E8",
+            "no": "0xc6D967B0e1434f8e81AFC63B9A7Ca719f80CD6f5",
+            "market": "0x855eF3549eA5ACA5602EAefDD988950f16FCc6c2",
+            "marketSource": "registry",
+            "canonical": true,
+            "bestBid": null,
+            "bestAsk": null
+          },
+          {
+            "strike": "Tmax>=30C",
+            "strikeC": 30,
+            "seriesId": "0xb020bdde35a3212b69e836e2f78f56b4560e75bc74eb7a6b790342f58de00064",
+            "yes": "0xe1f9a759a24e41Bd8A1c7755B8b054f1E7E6D284",
+            "no": "0xD2b847F236F09f7376A28c617A80e4cFBfEB8687",
+            "market": "0x702A7a87EDb18D733c624bF766020F3b66eb36DC",
+            "marketSource": "registry",
+            "canonical": true,
+            "bestBid": null,
+            "bestAsk": null
+          },
+          {
+            "strike": "Tmax>=31C",
+            "strikeC": 31,
+            "seriesId": "0x28b6d44a3bda37f45860480b4dc43046c744f49215a6f12151cbd8ad72a8e658",
+            "yes": "0xCC10a4D4f9ec075Fa4299941a9c3F7A720E973F4",
+            "no": "0x119CC5aC32500789e004B7A98919acA309C85532",
+            "market": "0x4f5Ef4Bf256BDD88492C1e394B0D0f06A8265813",
+            "marketSource": "registry",
+            "canonical": true,
+            "bestBid": null,
+            "bestAsk": null
+          }
+        ]
+      }
+    ],
+    "count": 1,
     "notes": [
       "Each strike is a fully collateralized YES/NO pair (1 AUSD per complete set). YES pays 1 AUSD iff the official integer METAR Tmax >= k; a void pays 0.5/0.5.",
-      "Only YES has a Kuru book; NO is bought by minting a set and selling the YES leg (weather buy --side no).",
-      "This deployment has no ladders matching the filter yet."
+      "Only YES has a Kuru book; NO is bought by minting a set and selling the YES leg (weather buy --side no)."
     ]
   },
-  "hint": "0 ladder(s)"
+  "hint": "1 ladder(s)"
 }
-$ mm weather quote taipei --json
+
+$ mm weather quote taipei --date 2026-10-08 --json
 {
   "ok": true,
   "data": {
     "city": "Taipei",
     "station": "RCSS",
     "date": "2026-10-08",
-    "ladder": null,
+    "ladder": {
+      "state": "open",
+      "closeTime": "2026-10-08T09:30:00Z",
+      "dayEnd": "2026-10-08T16:00:00Z",
+      "result": null
+    },
     "polymarket": {
       "slug": "highest-temperature-in-taipei-on-october-8-2026",
       "url": "https://polymarket.com/event/highest-temperature-in-taipei-on-october-8-2026",
-      "volumeUsd": 2408,
-      "sumMid": 1.038,
+      "volumeUsd": 3300,
+      "sumMid": 1.041,
       "closed": false
     },
-    "v0": {
-      "name": "isotherm-v0-lite",
-      "mu": 27.9,
-      "sigma": 1.51,
-      "models": {
-        "ecmwf_ifs025": 27.9,
-        "gfs_seamless": 27.9,
-        "icon_seamless": 27.6,
-        "jma_seamless": 28.2
-      }
+    "makerSnapshot": {
+      "url": "<former API host>/api/snapshot",
+      "used": true,
+      "generatedAt": "2026-10-07T07:30:11.631Z",
+      "ageS": 18,
+      "stale": false,
+      "strikesUsed": 4,
+      "note": null
+    },
+    "guardrailModel": {
+      "role": "GUARDRAIL ONLY: a sanity check, not a forecast and not a fair value. Isotherm's v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days).",
+      "usedFor": [
+        "maker-snapshot: isotherm-v0 from the maker snapshot (rolling per-model bias correction, empirical residuals)"
+      ],
+      "makerV0Mu": 29.81,
+      "pluginV0Lite": null
     },
     "observed": {
       "source": "aviationweather.gov",
@@ -152,139 +231,163 @@ $ mm weather quote taipei --json
     },
     "rows": [
       {
-        "strike": "Tmax>=25C",
-        "strikeC": 25,
-        "seriesId": null,
-        "market": null,
-        "canonical": false,
-        "book": null,
-        "polymarketImplied": 0.999,
-        "v0Guardrail": 0.988,
-        "observedLocked": false,
-        "guardrailFlag": false,
-        "takerFeeBps": null
-      },
-      {
-        "strike": "Tmax>=26C",
-        "strikeC": 26,
-        "seriesId": null,
-        "market": null,
-        "canonical": false,
-        "book": null,
-        "polymarketImplied": 0.994,
-        "v0Guardrail": 0.944,
-        "observedLocked": false,
-        "guardrailFlag": false,
-        "takerFeeBps": null
-      },
-      {
-        "strike": "Tmax>=27C",
-        "strikeC": 27,
-        "seriesId": null,
-        "market": null,
-        "canonical": false,
-        "book": null,
-        "polymarketImplied": 0.983,
-        "v0Guardrail": 0.823,
-        "observedLocked": false,
-        "guardrailFlag": true,
-        "takerFeeBps": null
-      },
-      {
         "strike": "Tmax>=28C",
         "strikeC": 28,
-        "seriesId": null,
-        "market": null,
-        "canonical": false,
-        "book": null,
-        "polymarketImplied": 0.949,
-        "v0Guardrail": 0.604,
+        "seriesId": "0xff739cf13e58d95b7a376dde35a7a32b86774508c14e7d3d6c4d47b93c121064",
+        "market": "0x171b4cdE3724f2F17576439e6de8c36142A7DBd7",
+        "canonical": true,
+        "book": {
+          "bestBid": 0.92,
+          "bestAsk": 0.99,
+          "bidSize": 100,
+          "askSize": 100,
+          "mid": 0.955,
+          "spread": 0.07
+        },
+        "fairValue": 0.9601,
+        "fairValueSource": "maker-snapshot",
+        "fairValueBasis": "polymarket",
+        "polymarketImplied": 0.96,
+        "marketRef": 0.9601,
+        "marketRefSource": "maker-snapshot",
+        "maker": {
+          "fair": 0.9601,
+          "fairSource": "polymarket",
+          "pmImplied": 0.9601,
+          "quoteBid": 0.92,
+          "quoteAsk": 0.99,
+          "mode": "quoting",
+          "flags": []
+        },
+        "guardrail": {
+          "p": 0.963,
+          "source": "maker-snapshot",
+          "basis": "v0",
+          "flag": false
+        },
         "observedLocked": false,
-        "guardrailFlag": true,
-        "takerFeeBps": null
+        "takerFeeBps": 10
       },
       {
         "strike": "Tmax>=29C",
         "strikeC": 29,
-        "seriesId": null,
-        "market": null,
-        "canonical": false,
-        "book": null,
-        "polymarketImplied": 0.848,
-        "v0Guardrail": 0.346,
+        "seriesId": "0xa69ae9d5af5141648df6a03de55f960d141e84ccda321efe1c7bb7882cf02cd3",
+        "market": "0x855eF3549eA5ACA5602EAefDD988950f16FCc6c2",
+        "canonical": true,
+        "book": {
+          "bestBid": 0.82,
+          "bestAsk": 0.89,
+          "bidSize": 100,
+          "askSize": 100,
+          "mid": 0.855,
+          "spread": 0.07
+        },
+        "fairValue": 0.8592,
+        "fairValueSource": "maker-snapshot",
+        "fairValueBasis": "polymarket",
+        "polymarketImplied": 0.859,
+        "marketRef": 0.8592,
+        "marketRefSource": "maker-snapshot",
+        "maker": {
+          "fair": 0.8592,
+          "fairSource": "polymarket",
+          "pmImplied": 0.8592,
+          "quoteBid": 0.82,
+          "quoteAsk": 0.89,
+          "mode": "quoting",
+          "flags": []
+        },
+        "guardrail": {
+          "p": 0.869,
+          "source": "maker-snapshot",
+          "basis": "v0",
+          "flag": false
+        },
         "observedLocked": false,
-        "guardrailFlag": true,
-        "takerFeeBps": null
+        "takerFeeBps": 10
       },
       {
         "strike": "Tmax>=30C",
         "strikeC": 30,
-        "seriesId": null,
-        "market": null,
-        "canonical": false,
-        "book": null,
-        "polymarketImplied": 0.468,
-        "v0Guardrail": 0.145,
+        "seriesId": "0xb020bdde35a3212b69e836e2f78f56b4560e75bc74eb7a6b790342f58de00064",
+        "market": "0x702A7a87EDb18D733c624bF766020F3b66eb36DC",
+        "canonical": true,
+        "book": {
+          "bestBid": 0.34,
+          "bestAsk": 0.47,
+          "bidSize": 100,
+          "askSize": 100,
+          "mid": 0.405,
+          "spread": 0.13
+        },
+        "fairValue": 0.3931,
+        "fairValueSource": "maker-snapshot",
+        "fairValueBasis": "polymarket",
+        "polymarketImplied": 0.393,
+        "marketRef": 0.3931,
+        "marketRefSource": "maker-snapshot",
+        "maker": {
+          "fair": 0.3931,
+          "fairSource": "polymarket",
+          "pmImplied": 0.3931,
+          "quoteBid": 0.34,
+          "quoteAsk": 0.47,
+          "mode": "quoting",
+          "flags": [
+            "guard-wide"
+          ]
+        },
+        "guardrail": {
+          "p": 0.595,
+          "source": "maker-snapshot",
+          "basis": "v0",
+          "flag": true
+        },
         "observedLocked": false,
-        "guardrailFlag": true,
-        "takerFeeBps": null
+        "takerFeeBps": 10
       },
       {
         "strike": "Tmax>=31C",
         "strikeC": 31,
-        "seriesId": null,
-        "market": null,
-        "canonical": false,
-        "book": null,
-        "polymarketImplied": 0.092,
-        "v0Guardrail": 0.043,
+        "seriesId": "0x28b6d44a3bda37f45860480b4dc43046c744f49215a6f12151cbd8ad72a8e658",
+        "market": "0x4f5Ef4Bf256BDD88492C1e394B0D0f06A8265813",
+        "canonical": true,
+        "book": {
+          "bestBid": 0.01,
+          "bestAsk": 0.14,
+          "bidSize": 100,
+          "askSize": 100,
+          "mid": 0.075,
+          "spread": 0.13
+        },
+        "fairValue": 0.0663,
+        "fairValueSource": "maker-snapshot",
+        "fairValueBasis": "polymarket",
+        "polymarketImplied": 0.066,
+        "marketRef": 0.0663,
+        "marketRefSource": "maker-snapshot",
+        "maker": {
+          "fair": 0.0663,
+          "fairSource": "polymarket",
+          "pmImplied": 0.0663,
+          "quoteBid": 0.01,
+          "quoteAsk": 0.14,
+          "mode": "quoting",
+          "flags": [
+            "guard-wide"
+          ]
+        },
+        "guardrail": {
+          "p": 0.225,
+          "source": "maker-snapshot",
+          "basis": "v0",
+          "flag": true
+        },
         "observedLocked": false,
-        "guardrailFlag": false,
-        "takerFeeBps": null
-      },
-      {
-        "strike": "Tmax>=32C",
-        "strikeC": 32,
-        "seriesId": null,
-        "market": null,
-        "canonical": false,
-        "book": null,
-        "polymarketImplied": 0.02,
-        "v0Guardrail": 0.009,
-        "observedLocked": false,
-        "guardrailFlag": false,
-        "takerFeeBps": null
-      },
-      {
-        "strike": "Tmax>=33C",
-        "strikeC": 33,
-        "seriesId": null,
-        "market": null,
-        "canonical": false,
-        "book": null,
-        "polymarketImplied": 0.007,
-        "v0Guardrail": 0.001,
-        "observedLocked": false,
-        "guardrailFlag": false,
-        "takerFeeBps": null
-      },
-      {
-        "strike": "Tmax>=34C",
-        "strikeC": 34,
-        "seriesId": null,
-        "market": null,
-        "canonical": false,
-        "book": null,
-        "polymarketImplied": 0.002,
-        "v0Guardrail": 0,
-        "observedLocked": false,
-        "guardrailFlag": false,
-        "takerFeeBps": null
+        "takerFeeBps": 10
       }
     ],
-    "notes": [
-      "No Isotherm ladder is listed for RCSS 2026-10-08; showing reference prices only."
-    ],
+    "notes": [],
     "fidelity": "183/184 RCSS days match Polymarket",
     "deployment": "testnet (bundled)",
     "abiSet": "v1",
@@ -294,13 +397,177 @@ $ mm weather quote taipei --json
     "rpcUrl": "https://testnet-rpc.monad.xyz",
     "disclaimer": [
       "Testnet only: Monad testnet 10143 with faucet AUSD. Nothing here is real money or financial advice.",
-      "Polymarket-implied P is the normalised mid of Polymarket's bucket prices summed over buckets >= k: a reference price from another venue, not a forecast.",
-      "Isotherm's own v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days); it is shown only as a guardrail. No forecasting edge is claimed.",
+      "fairValue is the price the house maker quotes around: the Polymarket-implied P(Tmax >= k) from the maker's snapshot (or the plugin's own Polymarket read when the snapshot is missing or stale). fairValueBasis says when the maker fell back to its model because Polymarket had no usable price. It is a reference price, not a forecast.",
+      "guardrail is GUARDRAIL ONLY: Isotherm's own v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days). The plugin-local v0-lite fallback is cruder still. No forecasting edge is claimed.",
       "Settlement: official integer °C METAR max for the station-local day incl. SPECI and :30 reports; this rule matches Polymarket on 183/184 RCSS days and 209/209 RJTT days."
     ]
   },
-  "hint": "Isotherm Taipei 2026-10-08: 10 strikes"
+  "hint": "Isotherm Taipei 2026-10-08: 4 strikes"
 }
+
+$ mm weather edge taipei --date 2026-10-08 --json
+{
+  "ok": true,
+  "data": {
+    "city": "Taipei",
+    "station": "RCSS",
+    "date": "2026-10-08",
+    "ladder": {
+      "state": "open",
+      "closeTime": "2026-10-08T09:30:00Z",
+      "dayEnd": "2026-10-08T16:00:00Z",
+      "result": null
+    },
+    "polymarket": {
+      "slug": "highest-temperature-in-taipei-on-october-8-2026",
+      "url": "https://polymarket.com/event/highest-temperature-in-taipei-on-october-8-2026",
+      "volumeUsd": 3300,
+      "sumMid": 1.041,
+      "closed": false
+    },
+    "makerSnapshot": {
+      "url": "<former API host>/api/snapshot",
+      "used": true,
+      "generatedAt": "2026-10-07T07:30:11.631Z",
+      "ageS": 23,
+      "stale": false,
+      "strikesUsed": 4,
+      "note": null
+    },
+    "guardrailModel": {
+      "role": "GUARDRAIL ONLY: a sanity check, not a forecast and not a fair value. Isotherm's v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days).",
+      "usedFor": [
+        "maker-snapshot: isotherm-v0 from the maker snapshot (rolling per-model bias correction, empirical residuals)"
+      ],
+      "makerV0Mu": 29.81,
+      "pluginV0Lite": null
+    },
+    "observed": {
+      "source": "aviationweather.gov",
+      "station": "RCSS",
+      "date": 20261008,
+      "status": "future",
+      "maxC": null,
+      "nReports": 0,
+      "lastReportUtc": null,
+      "note": "local day has not started"
+    },
+    "minGap": 0.03,
+    "rows": [
+      {
+        "strike": "Tmax>=28C",
+        "strikeC": 28,
+        "bestBid": 0.92,
+        "bestAsk": 0.99,
+        "fairValue": 0.9601,
+        "fairValueSource": "maker-snapshot",
+        "reference": 0.9601,
+        "referenceSource": "maker-snapshot",
+        "polymarketImplied": 0.96,
+        "yesCheapVsPolymarket": -0.031,
+        "yesRichVsPolymarket": -0.041,
+        "observedLocked": false,
+        "guardrail": {
+          "p": 0.963,
+          "source": "maker-snapshot",
+          "basis": "v0",
+          "flag": false
+        },
+        "canonical": true,
+        "suggestion": null
+      },
+      {
+        "strike": "Tmax>=29C",
+        "strikeC": 29,
+        "bestBid": 0.82,
+        "bestAsk": 0.89,
+        "fairValue": 0.8592,
+        "fairValueSource": "maker-snapshot",
+        "reference": 0.8592,
+        "referenceSource": "maker-snapshot",
+        "polymarketImplied": 0.859,
+        "yesCheapVsPolymarket": -0.032,
+        "yesRichVsPolymarket": -0.04,
+        "observedLocked": false,
+        "guardrail": {
+          "p": 0.869,
+          "source": "maker-snapshot",
+          "basis": "v0",
+          "flag": false
+        },
+        "canonical": true,
+        "suggestion": null
+      },
+      {
+        "strike": "Tmax>=30C",
+        "strikeC": 30,
+        "bestBid": 0.34,
+        "bestAsk": 0.47,
+        "fairValue": 0.3931,
+        "fairValueSource": "maker-snapshot",
+        "reference": 0.3931,
+        "referenceSource": "maker-snapshot",
+        "polymarketImplied": 0.393,
+        "yesCheapVsPolymarket": -0.077,
+        "yesRichVsPolymarket": -0.053,
+        "observedLocked": false,
+        "guardrail": {
+          "p": 0.595,
+          "source": "maker-snapshot",
+          "basis": "v0",
+          "flag": true
+        },
+        "canonical": true,
+        "suggestion": null
+      },
+      {
+        "strike": "Tmax>=31C",
+        "strikeC": 31,
+        "bestBid": 0.01,
+        "bestAsk": 0.14,
+        "fairValue": 0.0663,
+        "fairValueSource": "maker-snapshot",
+        "reference": 0.0663,
+        "referenceSource": "maker-snapshot",
+        "polymarketImplied": 0.066,
+        "yesCheapVsPolymarket": -0.074,
+        "yesRichVsPolymarket": -0.056,
+        "observedLocked": false,
+        "guardrail": {
+          "p": 0.225,
+          "source": "maker-snapshot",
+          "basis": "v0",
+          "flag": true
+        },
+        "canonical": true,
+        "suggestion": null
+      }
+    ],
+    "definitions": {
+      "reference": "The Polymarket-implied P(Tmax >= k) the gap is measured against: the maker snapshot's fair value when it is fresh and Polymarket-based (referenceSource maker-snapshot), else the plugin's own live Polymarket read (polymarket-live). Never a model.",
+      "yesCheapVsPolymarket": "reference minus our best ask grossed up for the taker fee. Positive: YES on our book costs less than the Polymarket-implied probability (also how cheaply NO can be sold).",
+      "yesRichVsPolymarket": "Our best bid net of the taker fee minus reference. Positive: YES sells (or NO buys) on our book above the Polymarket-implied probability.",
+      "guardrail": "GUARDRAIL ONLY (maker v0, else the plugin's cruder v0-lite). flag = it differs from the reference by more than 0.15. It never drives a suggestion.",
+      "observedLocked": "The observed METAR max so far already reached k, so YES is very likely to win (official settlement still pending). No suggestion is made for locked strikes."
+    },
+    "disclaimer": [
+      "A gap between two venues is not a forecasting edge and not a promise of profit: Polymarket can be wrong, both books can move, and thin books mean small size.",
+      "Testnet only: Monad testnet 10143 with faucet AUSD. Nothing here is real money or financial advice.",
+      "fairValue is the price the house maker quotes around: the Polymarket-implied P(Tmax >= k) from the maker's snapshot (or the plugin's own Polymarket read when the snapshot is missing or stale). fairValueBasis says when the maker fell back to its model because Polymarket had no usable price. It is a reference price, not a forecast.",
+      "guardrail is GUARDRAIL ONLY: Isotherm's own v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days). The plugin-local v0-lite fallback is cruder still. No forecasting edge is claimed.",
+      "Settlement: official integer °C METAR max for the station-local day incl. SPECI and :30 reports; this rule matches Polymarket on 183/184 RCSS days and 209/209 RJTT days."
+    ],
+    "notes": [],
+    "deployment": "testnet (bundled)",
+    "abiSet": "v1",
+    "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+    "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+    "rpcSource": "mm-customEvmChains",
+    "rpcUrl": "https://testnet-rpc.monad.xyz"
+  },
+  "hint": "0 strike(s) with a gap >= 0.03 vs Polymarket-implied (testnet; not a forecast)"
+}
+
 $ mm weather quote tokyo --date tomorrow --json
 {
   "ok": true,
@@ -312,19 +579,35 @@ $ mm weather quote tokyo --date tomorrow --json
     "polymarket": {
       "slug": "highest-temperature-in-tokyo-on-october-8-2026",
       "url": "https://polymarket.com/event/highest-temperature-in-tokyo-on-october-8-2026",
-      "volumeUsd": 7725,
-      "sumMid": 1.026,
+      "volumeUsd": 8238,
+      "sumMid": 1.017,
       "closed": false
     },
-    "v0": {
-      "name": "isotherm-v0-lite",
-      "mu": 23.28,
-      "sigma": 1.52,
-      "models": {
-        "ecmwf_ifs025": 23.3,
-        "gfs_seamless": 23.4,
-        "icon_seamless": 22.9,
-        "jma_seamless": 23.5
+    "makerSnapshot": {
+      "url": "<former API host>/api/snapshot",
+      "used": false,
+      "generatedAt": null,
+      "ageS": null,
+      "stale": null,
+      "strikesUsed": 0,
+      "note": "the maker snapshot has no RJTT 20261008 ladder"
+    },
+    "guardrailModel": {
+      "role": "GUARDRAIL ONLY: a sanity check, not a forecast and not a fair value. Isotherm's v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days).",
+      "usedFor": [
+        "plugin-v0-lite: isotherm-v0-lite, computed locally by the plugin: raw Open-Meteo 4-model mean, sigma ~1.5 C, NO bias correction. Cruder than v0 and often far from Polymarket; used only when the maker snapshot is unavailable."
+      ],
+      "makerV0Mu": null,
+      "pluginV0Lite": {
+        "mu": 23.25,
+        "sigma": 1.51,
+        "models": {
+          "ecmwf_ifs025": 23.3,
+          "gfs_seamless": 23.4,
+          "icon_seamless": 22.9,
+          "jma_seamless": 23.4
+        },
+        "label": "isotherm-v0-lite, computed locally by the plugin: raw Open-Meteo 4-model mean, sigma ~1.5 C, NO bias correction. Cruder than v0 and often far from Polymarket; used only when the maker snapshot is unavailable."
       }
     },
     "observed": {
@@ -345,10 +628,20 @@ $ mm weather quote tokyo --date tomorrow --json
         "market": null,
         "canonical": false,
         "book": null,
+        "fairValue": 0.999,
+        "fairValueSource": "polymarket-live",
+        "fairValueBasis": "polymarket",
         "polymarketImplied": 0.999,
-        "v0Guardrail": 0.999,
+        "marketRef": 0.999,
+        "marketRefSource": "polymarket-live",
+        "maker": null,
+        "guardrail": {
+          "p": 0.999,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": false
+        },
         "observedLocked": false,
-        "guardrailFlag": false,
         "takerFeeBps": null
       },
       {
@@ -358,10 +651,20 @@ $ mm weather quote tokyo --date tomorrow --json
         "market": null,
         "canonical": false,
         "book": null,
+        "fairValue": 0.9975,
+        "fairValueSource": "polymarket-live",
+        "fairValueBasis": "polymarket",
         "polymarketImplied": 0.998,
-        "v0Guardrail": 0.994,
+        "marketRef": 0.9975,
+        "marketRefSource": "polymarket-live",
+        "maker": null,
+        "guardrail": {
+          "p": 0.993,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": false
+        },
         "observedLocked": false,
-        "guardrailFlag": false,
         "takerFeeBps": null
       },
       {
@@ -371,10 +674,20 @@ $ mm weather quote tokyo --date tomorrow --json
         "market": null,
         "canonical": false,
         "book": null,
-        "polymarketImplied": 0.996,
-        "v0Guardrail": 0.966,
+        "fairValue": 0.9966,
+        "fairValueSource": "polymarket-live",
+        "fairValueBasis": "polymarket",
+        "polymarketImplied": 0.997,
+        "marketRef": 0.9966,
+        "marketRefSource": "polymarket-live",
+        "maker": null,
+        "guardrail": {
+          "p": 0.966,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": false
+        },
         "observedLocked": false,
-        "guardrailFlag": false,
         "takerFeeBps": null
       },
       {
@@ -384,10 +697,20 @@ $ mm weather quote tokyo --date tomorrow --json
         "market": null,
         "canonical": false,
         "book": null,
-        "polymarketImplied": 0.992,
-        "v0Guardrail": 0.879,
+        "fairValue": 0.9926,
+        "fairValueSource": "polymarket-live",
+        "fairValueBasis": "polymarket",
+        "polymarketImplied": 0.993,
+        "marketRef": 0.9926,
+        "marketRefSource": "polymarket-live",
+        "maker": null,
+        "guardrail": {
+          "p": 0.877,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": false
+        },
         "observedLocked": false,
-        "guardrailFlag": false,
         "takerFeeBps": null
       },
       {
@@ -397,10 +720,20 @@ $ mm weather quote tokyo --date tomorrow --json
         "market": null,
         "canonical": false,
         "book": null,
-        "polymarketImplied": 0.953,
-        "v0Guardrail": 0.696,
+        "fairValue": 0.9626,
+        "fairValueSource": "polymarket-live",
+        "fairValueBasis": "polymarket",
+        "polymarketImplied": 0.963,
+        "marketRef": 0.9626,
+        "marketRefSource": "polymarket-live",
+        "maker": null,
+        "guardrail": {
+          "p": 0.69,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": true
+        },
         "observedLocked": false,
-        "guardrailFlag": true,
         "takerFeeBps": null
       },
       {
@@ -410,10 +743,20 @@ $ mm weather quote tokyo --date tomorrow --json
         "market": null,
         "canonical": false,
         "book": null,
-        "polymarketImplied": 0.631,
-        "v0Guardrail": 0.442,
+        "fairValue": 0.6675,
+        "fairValueSource": "polymarket-live",
+        "fairValueBasis": "polymarket",
+        "polymarketImplied": 0.667,
+        "marketRef": 0.6675,
+        "marketRefSource": "polymarket-live",
+        "maker": null,
+        "guardrail": {
+          "p": 0.434,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": true
+        },
         "observedLocked": false,
-        "guardrailFlag": true,
         "takerFeeBps": null
       },
       {
@@ -423,10 +766,20 @@ $ mm weather quote tokyo --date tomorrow --json
         "market": null,
         "canonical": false,
         "book": null,
-        "polymarketImplied": 0.1,
-        "v0Guardrail": 0.211,
+        "fairValue": 0.1264,
+        "fairValueSource": "polymarket-live",
+        "fairValueBasis": "polymarket",
+        "polymarketImplied": 0.126,
+        "marketRef": 0.1264,
+        "marketRefSource": "polymarket-live",
+        "maker": null,
+        "guardrail": {
+          "p": 0.204,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": false
+        },
         "observedLocked": false,
-        "guardrailFlag": false,
         "takerFeeBps": null
       },
       {
@@ -436,10 +789,20 @@ $ mm weather quote tokyo --date tomorrow --json
         "market": null,
         "canonical": false,
         "book": null,
-        "polymarketImplied": 0.022,
-        "v0Guardrail": 0.072,
+        "fairValue": 0.0182,
+        "fairValueSource": "polymarket-live",
+        "fairValueBasis": "polymarket",
+        "polymarketImplied": 0.018,
+        "marketRef": 0.0182,
+        "marketRefSource": "polymarket-live",
+        "maker": null,
+        "guardrail": {
+          "p": 0.068,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": false
+        },
         "observedLocked": false,
-        "guardrailFlag": false,
         "takerFeeBps": null
       },
       {
@@ -449,10 +812,20 @@ $ mm weather quote tokyo --date tomorrow --json
         "market": null,
         "canonical": false,
         "book": null,
+        "fairValue": 0.0108,
+        "fairValueSource": "polymarket-live",
+        "fairValueBasis": "polymarket",
         "polymarketImplied": 0.011,
-        "v0Guardrail": 0.017,
+        "marketRef": 0.0108,
+        "marketRefSource": "polymarket-live",
+        "maker": null,
+        "guardrail": {
+          "p": 0.016,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": false
+        },
         "observedLocked": false,
-        "guardrailFlag": false,
         "takerFeeBps": null
       },
       {
@@ -462,10 +835,20 @@ $ mm weather quote tokyo --date tomorrow --json
         "market": null,
         "canonical": false,
         "book": null,
+        "fairValue": 0.0049,
+        "fairValueSource": "polymarket-live",
+        "fairValueBasis": "polymarket",
         "polymarketImplied": 0.005,
-        "v0Guardrail": 0.003,
+        "marketRef": 0.0049,
+        "marketRefSource": "polymarket-live",
+        "maker": null,
+        "guardrail": {
+          "p": 0.002,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": false
+        },
         "observedLocked": false,
-        "guardrailFlag": false,
         "takerFeeBps": null
       }
     ],
@@ -481,280 +864,15 @@ $ mm weather quote tokyo --date tomorrow --json
     "rpcUrl": "https://testnet-rpc.monad.xyz",
     "disclaimer": [
       "Testnet only: Monad testnet 10143 with faucet AUSD. Nothing here is real money or financial advice.",
-      "Polymarket-implied P is the normalised mid of Polymarket's bucket prices summed over buckets >= k: a reference price from another venue, not a forecast.",
-      "Isotherm's own v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days); it is shown only as a guardrail. No forecasting edge is claimed.",
+      "fairValue is the price the house maker quotes around: the Polymarket-implied P(Tmax >= k) from the maker's snapshot (or the plugin's own Polymarket read when the snapshot is missing or stale). fairValueBasis says when the maker fell back to its model because Polymarket had no usable price. It is a reference price, not a forecast.",
+      "guardrail is GUARDRAIL ONLY: Isotherm's own v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days). The plugin-local v0-lite fallback is cruder still. No forecasting edge is claimed.",
       "Settlement: official integer °C METAR max for the station-local day incl. SPECI and :30 reports; this rule matches Polymarket on 183/184 RCSS days and 209/209 RJTT days."
     ]
   },
   "hint": "Isotherm Tokyo 2026-10-08: 10 strikes"
 }
-$ mm weather edge taipei --date tomorrow --json
-{
-  "ok": true,
-  "data": {
-    "city": "Taipei",
-    "station": "RCSS",
-    "date": "2026-10-08",
-    "ladder": null,
-    "polymarket": {
-      "slug": "highest-temperature-in-taipei-on-october-8-2026",
-      "url": "https://polymarket.com/event/highest-temperature-in-taipei-on-october-8-2026",
-      "volumeUsd": 2408,
-      "sumMid": 1.038,
-      "closed": false
-    },
-    "observed": {
-      "source": "aviationweather.gov",
-      "station": "RCSS",
-      "date": 20261008,
-      "status": "future",
-      "maxC": null,
-      "nReports": 0,
-      "lastReportUtc": null,
-      "note": "local day has not started"
-    },
-    "minGap": 0.03,
-    "rows": [
-      {
-        "strike": "Tmax>=25C",
-        "strikeC": 25,
-        "bestBid": null,
-        "bestAsk": null,
-        "polymarketImplied": 0.999,
-        "v0Guardrail": 0.988,
-        "yesCheapVsPolymarket": null,
-        "yesRichVsPolymarket": null,
-        "observedLocked": false,
-        "guardrailFlag": false,
-        "canonical": false,
-        "suggestion": null
-      },
-      {
-        "strike": "Tmax>=26C",
-        "strikeC": 26,
-        "bestBid": null,
-        "bestAsk": null,
-        "polymarketImplied": 0.994,
-        "v0Guardrail": 0.944,
-        "yesCheapVsPolymarket": null,
-        "yesRichVsPolymarket": null,
-        "observedLocked": false,
-        "guardrailFlag": false,
-        "canonical": false,
-        "suggestion": null
-      },
-      {
-        "strike": "Tmax>=27C",
-        "strikeC": 27,
-        "bestBid": null,
-        "bestAsk": null,
-        "polymarketImplied": 0.983,
-        "v0Guardrail": 0.823,
-        "yesCheapVsPolymarket": null,
-        "yesRichVsPolymarket": null,
-        "observedLocked": false,
-        "guardrailFlag": true,
-        "canonical": false,
-        "suggestion": null
-      },
-      {
-        "strike": "Tmax>=28C",
-        "strikeC": 28,
-        "bestBid": null,
-        "bestAsk": null,
-        "polymarketImplied": 0.949,
-        "v0Guardrail": 0.604,
-        "yesCheapVsPolymarket": null,
-        "yesRichVsPolymarket": null,
-        "observedLocked": false,
-        "guardrailFlag": true,
-        "canonical": false,
-        "suggestion": null
-      },
-      {
-        "strike": "Tmax>=29C",
-        "strikeC": 29,
-        "bestBid": null,
-        "bestAsk": null,
-        "polymarketImplied": 0.848,
-        "v0Guardrail": 0.346,
-        "yesCheapVsPolymarket": null,
-        "yesRichVsPolymarket": null,
-        "observedLocked": false,
-        "guardrailFlag": true,
-        "canonical": false,
-        "suggestion": null
-      },
-      {
-        "strike": "Tmax>=30C",
-        "strikeC": 30,
-        "bestBid": null,
-        "bestAsk": null,
-        "polymarketImplied": 0.468,
-        "v0Guardrail": 0.145,
-        "yesCheapVsPolymarket": null,
-        "yesRichVsPolymarket": null,
-        "observedLocked": false,
-        "guardrailFlag": true,
-        "canonical": false,
-        "suggestion": null
-      },
-      {
-        "strike": "Tmax>=31C",
-        "strikeC": 31,
-        "bestBid": null,
-        "bestAsk": null,
-        "polymarketImplied": 0.092,
-        "v0Guardrail": 0.043,
-        "yesCheapVsPolymarket": null,
-        "yesRichVsPolymarket": null,
-        "observedLocked": false,
-        "guardrailFlag": false,
-        "canonical": false,
-        "suggestion": null
-      },
-      {
-        "strike": "Tmax>=32C",
-        "strikeC": 32,
-        "bestBid": null,
-        "bestAsk": null,
-        "polymarketImplied": 0.02,
-        "v0Guardrail": 0.009,
-        "yesCheapVsPolymarket": null,
-        "yesRichVsPolymarket": null,
-        "observedLocked": false,
-        "guardrailFlag": false,
-        "canonical": false,
-        "suggestion": null
-      },
-      {
-        "strike": "Tmax>=33C",
-        "strikeC": 33,
-        "bestBid": null,
-        "bestAsk": null,
-        "polymarketImplied": 0.007,
-        "v0Guardrail": 0.001,
-        "yesCheapVsPolymarket": null,
-        "yesRichVsPolymarket": null,
-        "observedLocked": false,
-        "guardrailFlag": false,
-        "canonical": false,
-        "suggestion": null
-      },
-      {
-        "strike": "Tmax>=34C",
-        "strikeC": 34,
-        "bestBid": null,
-        "bestAsk": null,
-        "polymarketImplied": 0.002,
-        "v0Guardrail": 0,
-        "yesCheapVsPolymarket": null,
-        "yesRichVsPolymarket": null,
-        "observedLocked": false,
-        "guardrailFlag": false,
-        "canonical": false,
-        "suggestion": null
-      }
-    ],
-    "definitions": {
-      "yesCheapVsPolymarket": "Polymarket-implied P minus our best ask grossed up for the taker fee. Positive: YES on our book costs less than the Polymarket-implied probability (also how cheaply NO can be sold).",
-      "yesRichVsPolymarket": "Our best bid net of the taker fee minus Polymarket-implied P. Positive: YES sells (or NO buys) on our book above the Polymarket-implied probability.",
-      "observedLocked": "The observed METAR max so far already reached k, so YES is very likely to win (official settlement still pending). No suggestion is made for locked strikes."
-    },
-    "disclaimer": [
-      "A gap between two venues is not a forecasting edge and not a promise of profit: Polymarket can be wrong, both books can move, and thin books mean small size.",
-      "Testnet only: Monad testnet 10143 with faucet AUSD. Nothing here is real money or financial advice.",
-      "Polymarket-implied P is the normalised mid of Polymarket's bucket prices summed over buckets >= k: a reference price from another venue, not a forecast.",
-      "Isotherm's own v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days); it is shown only as a guardrail. No forecasting edge is claimed.",
-      "Settlement: official integer °C METAR max for the station-local day incl. SPECI and :30 reports; this rule matches Polymarket on 183/184 RCSS days and 209/209 RJTT days."
-    ],
-    "notes": [
-      "No Isotherm ladder is listed for RCSS 2026-10-08; showing reference prices only.",
-      "The ladder is not open, so no trade is suggested."
-    ],
-    "deployment": "testnet (bundled)",
-    "abiSet": "v1",
-    "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
-    "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
-    "rpcSource": "mm-customEvmChains",
-    "rpcUrl": "https://testnet-rpc.monad.xyz"
-  },
-  "hint": "0 strike(s) with a gap >= 0.03 vs Polymarket-implied (testnet; not a forecast)"
-}
-$ mm weather positions --address 0x636D0598E416e5f66acD0F6Ac2Ae96306529b4d5 --json
-{
-  "ok": true,
-  "data": {
-    "address": "0x636D0598E416e5f66acD0F6Ac2Ae96306529b4d5",
-    "addressSource": "flag",
-    "balances": {
-      "AUSD": "19948.392856",
-      "MON": "0.084093766000000000",
-      "ausdAllowanceToZap": "0.000000"
-    },
-    "positions": [],
-    "redeemableAusdTotal": "0.000000",
-    "scannedLadders": 0,
-    "deployment": "testnet (bundled)",
-    "abiSet": "v1",
-    "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
-    "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
-    "rpcSource": "mm-customEvmChains",
-    "rpcUrl": "https://testnet-rpc.monad.xyz",
-    "notes": [
-      "Testnet faucet AUSD only. Marks use the current top of our Kuru book before fees and are not a promise of execution."
-    ]
-  },
-  "hint": "0 position(s); redeemable 0.000000 AUSD"
-}
-$ mm kuru book 0x47cb4f32Eb554E4a873DA20CA86261bc3d9CD42A --address 0x636D0598E416e5f66acD0F6Ac2Ae96306529b4d5 --json
-{
-  "ok": true,
-  "data": {
-    "market": "0x47cb4f32Eb554E4a873DA20CA86261bc3d9CD42A",
-    "pair": "YES/AUSD",
-    "params": {
-      "base": "0x03222E19fDa0fb305Df95092edBB65f26e0806ab",
-      "quote": "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC",
-      "baseDecimals": 6,
-      "quoteDecimals": 6,
-      "pricePrecision": "10000",
-      "sizePrecision": "1000000",
-      "tick": "0.0010",
-      "minSize": "1.000000",
-      "maxSize": "1000000.000000",
-      "takerFeeBps": 10,
-      "makerFeeBps": 0
-    },
-    "book": {
-      "block": "68889735",
-      "bestBid": null,
-      "bestAsk": null,
-      "bids": [],
-      "asks": []
-    },
-    "mine": {
-      "address": "0x636D0598E416e5f66acD0F6Ac2Ae96306529b4d5",
-      "openOrders": [],
-      "marginAccount": {
-        "YES": "0.000000",
-        "AUSD": "0.000000"
-      },
-      "wallet": {
-        "YES": "45.409090",
-        "AUSD": "19948.392856"
-      },
-      "note": "Open orders are scanned over the last 300 order ids."
-    },
-    "deployment": "testnet (bundled)",
-    "abiSet": "v1",
-    "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
-    "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
-    "rpcSource": "mm-customEvmChains",
-    "rpcUrl": "https://testnet-rpc.monad.xyz"
-  }
-}
-$ mm weather buy taipei --strike 29 --side yes --amount 1 --max-price 0.5 --json
+
+$ mm weather buy taipei --date 2026-10-08 --strike 30 --side no --amount 1 --max-price 0.7 --json
 {
   "ok": false,
   "error": {
@@ -763,3 +881,5 @@ $ mm weather buy taipei --strike 29 --side yes --amount 1 --max-price 0.5 --json
     "hint": "Run `mm login` to sign in."
   }
 }
+
+exit: done

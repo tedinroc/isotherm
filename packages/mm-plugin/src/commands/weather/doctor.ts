@@ -4,6 +4,7 @@ import { CHAIN_ID, PUBLIC_RPC } from "../../lib/config.js";
 import { customChainRpc } from "../../lib/chain.js";
 import { F, PLUGIN_VERSION, envSummary, setupEnv } from "../../lib/cmd.js";
 import { findRegistryFn } from "../../lib/isotherm.js";
+import { snapshotStatus } from "../../lib/snapshot.js";
 import { erc20Abi } from "../../lib/kuru.js";
 import { fmtAllowance, fmtUnits, shortErr, withTimeout } from "../../lib/util.js";
 
@@ -21,7 +22,7 @@ export default class WeatherDoctor extends PluginCommand<Record<string, unknown>
 
   async execute(io: CommandIO) {
     const i = await io.resolveInputs(inputs);
-    const checks: { check: string; ok: boolean; detail: string; fix?: string }[] = [];
+    const checks: { check: string; ok: boolean; detail: string; fix?: string; optional?: boolean }[] = [];
 
     const custom = customChainRpc(this.ctx);
     checks.push({
@@ -67,6 +68,15 @@ export default class WeatherDoctor extends PluginCommand<Record<string, unknown>
         : `none on-chain (deployment '${env.dep.abiSet}'); using the deployment file's market list (${Object.keys(env.dep.markets).length} entries) + the plugin's canonical-book parameter check`,
     });
 
+    const snap = await snapshotStatus();
+    checks.push({
+      check: "maker snapshot API (optional, display only)",
+      ok: snap.ok,
+      optional: true,
+      detail: snap.detail,
+      ...(snap.ok ? {} : { fix: "optional: quote/edge fall back to the plugin's own Polymarket read and label it; set ISOTHERM_API_URL to another Isotherm API if you run one" }),
+    });
+
     let wallet: Record<string, unknown> = { address: null, source: env.selfSource };
     if (env.self) {
       const [mon, ausd, allow] = await Promise.all([
@@ -94,12 +104,12 @@ export default class WeatherDoctor extends PluginCommand<Record<string, unknown>
     return {
       plugin: `mm-plugin-isotherm@${PLUGIN_VERSION}`,
       chainId: CHAIN_ID,
-      ok: checks.every((c) => c.ok || c.check.startsWith("mm gateway")),
+      ok: checks.every((c) => c.ok || c.optional || c.check.startsWith("mm gateway")),
       checks,
       wallet,
       guardModeAllowlist: {
         note: "If your mm wallet runs Guard Mode with an allowlist, these are the contracts the plugin sends transactions to.",
-        targets: [env.dep.zap, env.dep.vault, env.dep.ausd, env.dep.marginAccount, "each strike's Kuru market (weather markets), for kuru limit/cancel", "each outcome token (approve to the Zap when selling)"].filter(Boolean),
+        targets: [env.dep.zap, env.dep.vault, env.dep.ausd, env.dep.marginAccount, "each strike's Kuru market (weather markets), for kuru limit/cancel", "each outcome token (YES is approved to the Zap when selling YES or buying NO)"].filter(Boolean),
       },
       publicRpc: PUBLIC_RPC,
       ...envSummary(env),

@@ -14,19 +14,35 @@ $ mm weather quote taipei --json
     "polymarket": {
       "slug": "highest-temperature-in-taipei-on-october-7-2026",
       "url": "https://polymarket.com/event/highest-temperature-in-taipei-on-october-7-2026",
-      "volumeUsd": 32066,
-      "sumMid": 0.998,
+      "volumeUsd": 32781,
+      "sumMid": 0.936,
       "closed": false
     },
-    "v0": {
-      "name": "isotherm-v0-lite",
-      "mu": 26.18,
-      "sigma": 1.51,
-      "models": {
-        "ecmwf_ifs025": 26.3,
-        "gfs_seamless": 26.4,
-        "icon_seamless": 26,
-        "jma_seamless": 26
+    "makerSnapshot": {
+      "url": "<former API host>/api/snapshot",
+      "used": false,
+      "generatedAt": null,
+      "ageS": null,
+      "stale": null,
+      "strikesUsed": 0,
+      "note": "the maker snapshot has no RCSS 20261007 ladder"
+    },
+    "guardrailModel": {
+      "role": "GUARDRAIL ONLY: a sanity check, not a forecast and not a fair value. Isotherm's v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days).",
+      "usedFor": [
+        "plugin-v0-lite: isotherm-v0-lite, computed locally by the plugin: raw Open-Meteo 4-model mean, sigma ~1.5 C, NO bias correction. Cruder than v0 and often far from Polymarket; used only when the maker snapshot is unavailable."
+      ],
+      "makerV0Mu": null,
+      "pluginV0Lite": {
+        "mu": 26.05,
+        "sigma": 1.54,
+        "models": {
+          "ecmwf_ifs025": 26.3,
+          "gfs_seamless": 26.4,
+          "icon_seamless": 26,
+          "jma_seamless": 25.5
+        },
+        "label": "isotherm-v0-lite, computed locally by the plugin: raw Open-Meteo 4-model mean, sigma ~1.5 C, NO bias correction. Cruder than v0 and often far from Polymarket; used only when the maker snapshot is unavailable."
       }
     },
     "observed": {
@@ -35,8 +51,8 @@ $ mm weather quote taipei --json
       "date": 20261007,
       "status": "in-progress",
       "maxC": 28,
-      "nReports": 21,
-      "lastReportUtc": "2026-10-07T05:00:00Z",
+      "nReports": 25,
+      "lastReportUtc": "2026-10-07T07:00:00Z",
       "note": "max over every METAR and SPECI (incl. :30 reports) so far; informational only, settlement uses the official rule after day end"
     },
     "rows": [
@@ -54,10 +70,20 @@ $ mm weather quote taipei --json
           "mid": 0.9745,
           "spread": 0.049
         },
+        "fairValue": 0.9973,
+        "fairValueSource": "polymarket-live",
+        "fairValueBasis": "polymarket",
         "polymarketImplied": 0.997,
-        "v0Guardrail": 1,
+        "marketRef": 0.9973,
+        "marketRefSource": "polymarket-live",
+        "maker": null,
+        "guardrail": {
+          "p": 1,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": false
+        },
         "observedLocked": true,
-        "guardrailFlag": false,
         "takerFeeBps": 10
       },
       {
@@ -74,10 +100,20 @@ $ mm weather quote taipei --json
           "mid": 0.9745,
           "spread": 0.049
         },
+        "fairValue": 0.9968,
+        "fairValueSource": "polymarket-live",
+        "fairValueBasis": "polymarket",
         "polymarketImplied": 0.997,
-        "v0Guardrail": 1,
+        "marketRef": 0.9968,
+        "marketRefSource": "polymarket-live",
+        "maker": null,
+        "guardrail": {
+          "p": 1,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": false
+        },
         "observedLocked": true,
-        "guardrailFlag": false,
         "takerFeeBps": 10
       },
       {
@@ -88,16 +124,26 @@ $ mm weather quote taipei --json
         "canonical": true,
         "book": {
           "bestBid": 0.001,
-          "bestAsk": 0.061,
+          "bestAsk": 0.06,
           "bidSize": 100,
           "askSize": 100,
-          "mid": 0.031,
-          "spread": 0.06
+          "mid": 0.0305,
+          "spread": 0.059
         },
-        "polymarketImplied": 0.031,
-        "v0Guardrail": 0.062,
+        "fairValue": 0.0294,
+        "fairValueSource": "polymarket-live",
+        "fairValueBasis": "polymarket",
+        "polymarketImplied": 0.029,
+        "marketRef": 0.0294,
+        "marketRefSource": "polymarket-live",
+        "maker": null,
+        "guardrail": {
+          "p": 0.056,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": false
+        },
         "observedLocked": false,
-        "guardrailFlag": false,
         "takerFeeBps": 10
       },
       {
@@ -114,10 +160,20 @@ $ mm weather quote taipei --json
           "mid": 0.0255,
           "spread": 0.049
         },
-        "polymarketImplied": 0.005,
-        "v0Guardrail": 0.014,
+        "fairValue": 0.0027,
+        "fairValueSource": "polymarket-live",
+        "fairValueBasis": "polymarket",
+        "polymarketImplied": 0.003,
+        "marketRef": 0.0027,
+        "marketRefSource": "polymarket-live",
+        "maker": null,
+        "guardrail": {
+          "p": 0.013,
+          "source": "plugin-v0-lite",
+          "basis": "v0-lite",
+          "flag": false
+        },
         "observedLocked": false,
-        "guardrailFlag": false,
         "takerFeeBps": 10
       }
     ],
@@ -128,11 +184,11 @@ $ mm weather quote taipei --json
     "vault": "0xC83fE722eb5Bd29a0355C090f14CCb0605153713",
     "zap": "0x1b1d91eBd1590c7814AEdCae66ac6ded492C792e",
     "rpcSource": "mm-customEvmChains",
-    "rpcUrl": "http://127.0.0.1:19251",
+    "rpcUrl": "http://127.0.0.1:19541",
     "disclaimer": [
       "Testnet only: Monad testnet 10143 with faucet AUSD. Nothing here is real money or financial advice.",
-      "Polymarket-implied P is the normalised mid of Polymarket's bucket prices summed over buckets >= k: a reference price from another venue, not a forecast.",
-      "Isotherm's own v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days); it is shown only as a guardrail. No forecasting edge is claimed.",
+      "fairValue is the price the house maker quotes around: the Polymarket-implied P(Tmax >= k) from the maker's snapshot (or the plugin's own Polymarket read when the snapshot is missing or stale). fairValueBasis says when the maker fell back to its model because Polymarket had no usable price. It is a reference price, not a forecast.",
+      "guardrail is GUARDRAIL ONLY: Isotherm's own v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days). The plugin-local v0-lite fallback is cruder still. No forecasting edge is claimed.",
       "Settlement: official integer °C METAR max for the station-local day incl. SPECI and :30 reports; this rule matches Polymarket on 183/184 RCSS days and 209/209 RJTT days."
     ]
   },

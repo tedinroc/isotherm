@@ -1,0 +1,68 @@
+# Live verification of Worker version ed9b59a4-7791-439c-820c-80264e296539 (2026-10-07T07:10:53Z)
+# Read-only plus refused requests: no drip or relay was broadcast (relayer MON before/after below).
+
+## relayer MON before (cast balance, read-only)
+0.599171502000000000
+
+## GET /api/health (Origin: https://isotherm.pages.dev)
+HTTP/2 200 
+access-control-allow-origin: https://isotherm.pages.dev
+cache-control: no-store
+{"ok":true,"version":"1.0.0","relayer":"0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f","chainId":10143,"head":"68907669","monBalance":"0.599171502","ausdFloat":"57000","dripEnabled":true,"dripReady":false,"dripMon":"0.15","dripAusd":"1000","relayEnabled":true,"relayReady":true,"relayModes":["authorization"],"relayMinAusd":"1","relayMaxAusd":"500","limits":{"reserveMon":"0.1","dripDailyCap":2,"dripPerIpPerDay":1,"dripAddressCooldownH":24,"relayDailyCap":5,"relayPerAddressPerDay":2,"relayPerIpPerDay":2,"dripsToday":3,"relaysToday":0},"deployments":"deployments/testnet.json","vault":"0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39","zap":"0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0","resolver":"0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B","dripsTotal":3,"relayedTotal":0,"snapshotReceivedAt":"2026-10-07T07:10:12.484Z","statsUpdatedAt":"2026-10-07T07:10:47.609Z","statsLagBlocks":0}
+
+## CORS preflight OPTIONS /api/relay/mint from https://isotherm.pages.dev
+HTTP/2 204 
+access-control-allow-origin: https://isotherm.pages.dev
+vary: Origin
+access-control-allow-headers: content-type,authorization
+access-control-allow-methods: GET,POST,OPTIONS
+access-control-max-age: 600
+
+## CORS preflight from a look-alike origin https://isotherm.pages.dev.evil.com (no allow-origin expected)
+HTTP/2 204 
+vary: Origin
+
+## GET /api/snapshot: per-strike fields
+receivedAt 2026-10-07T07:10:12.484Z
+{"k": 28, "fair": 0.9601, "pmImplied": 0.9601, "model": 0.9633, "bid": 0.92, "ask": 0.99, "bidSize": 100, "askSize": 100, "bidRemaining": 100, "askRemaining": 100, "mode": "quoting", "action": "none", "reason": "quote still good", "lastChangeReason": "no resting quote", "lastQuoteAt": 1791352588}
+{"k": 29, "fair": 0.8592, "pmImplied": 0.8592, "model": 0.8693, "bid": 0.82, "ask": 0.89, "bidSize": 100, "askSize": 100, "bidRemaining": 100, "askRemaining": 100, "mode": "quoting", "action": "none", "reason": "quote still good", "lastChangeReason": "bid 0.8 -> 0.82; ask 0.87 -> 0.89", "lastQuoteAt": 1791353266}
+{"k": 30, "fair": 0.3931, "pmImplied": 0.3931, "model": 0.5952, "bid": 0.34, "ask": 0.47, "bidSize": 100, "askSize": 100, "bidRemaining": 100, "askRemaining": 100, "mode": "quoting", "action": "none", "reason": "quote still good", "lastChangeReason": "bid 0.36 -> 0.34; ask 0.49 -> 0.47; fair moved 0.4278 -> 0.406", "lastQuoteAt": 1791354155}
+{"k": 31, "fair": 0.0663, "pmImplied": 0.0663, "model": 0.2251, "bid": 0.01, "ask": 0.14, "bidSize": 100, "askSize": 100, "bidRemaining": 100, "askRemaining": 100, "mode": "quoting", "action": "none", "reason": "quote still good", "lastChangeReason": "bid 0.05 -> 0.01; ask 0.12 -> 0.14", "lastQuoteAt": 1791356693}
+
+## POST /api/drip for the go-live throwaway 0x2320018d0AF18B64953Ef3029077024E67B5dCFe (dripped 06:06Z today; and today's drip cap 2 is used: 3)
+{"ok":false,"error":"this address already received test funds recently","retryAfterSec":82536}
+HTTP 429
+
+## POST /api/relay/mint dust (amount 1 = 0.000001 AUSD)
+{"ok":false,"error":"amount must be between 1 and 500 AUSD"}
+HTTP 400
+
+## POST /api/relay/mint permit mode
+{"ok":false,"error":"permit-mode relays are disabled for this vault; sign an EIP-3009 authorization (mode \"authorization\")"}
+HTTP 400
+
+## POST /api/relay/mint with a forged signature (refused: signature does not match holder)
+{"ok":false,"error":"signature does not match holder"}
+HTTP 400
+
+## Per-network request window: 35 junk POST /api/relay/mint {} in a row (each refused before any RPC)
+  26 400
+   9 429
+first 429 at request #27: {"ok":false,"error":"too many requests from this network; slow down","retryAfterSec":35}
+
+## relayer MON after
+0.599171502000000000
+
+## /api/health relay/drip totals after
+{'dripsTotal': 3, 'relayedTotal': 0, 'monBalance': '0.599171502'} {'reserveMon': '0.1', 'dripDailyCap': 2, 'dripPerIpPerDay': 1, 'dripAddressCooldownH': 24, 'relayDailyCap': 5, 'relayPerAddressPerDay': 2, 'relayPerIpPerDay': 2, 'dripsToday': 3, 'relaysToday': 0}
+
+# Final version ce5bfc02-7145-4d8f-b9f0-501e2f9ddcdf (2026-10-07T07:12:15Z): only change vs ed9b59a4 is drip-body parsing (null / non-string address -> 400)
+## POST /api/drip with body null
+{"ok":false,"error":"bad address"}
+HTTP 400
+## GET /api/health (summary)
+HTTP/2 200 
+access-control-allow-origin: https://isotherm.pages.dev
+{'ok': True, 'monBalance': '0.599171502', 'dripReady': False, 'relayReady': True, 'relayModes': ['authorization'], 'relayMinAusd': '1', 'dripsTotal': 3, 'relayedTotal': 0} {'reserveMon': '0.1', 'dripDailyCap': 2, 'dripPerIpPerDay': 1, 'dripAddressCooldownH': 24, 'relayDailyCap': 5, 'relayPerAddressPerDay': 2, 'relayPerIpPerDay': 2, 'dripsToday': 3, 'relaysToday': 0}
+## relayer MON
+0.599171502000000000

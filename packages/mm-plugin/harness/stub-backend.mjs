@@ -12,6 +12,8 @@
 // A toy "Guard" allowlist mimics the policy hop: txs to non-allowlisted `to`
 // addresses are DENIED, so the demo shows the executor really routes through
 // the backend before broadcast.
+// Optional adversary hook (security review N1 replay): STUB_FRONTRUN=<module> and STUB_FRONTRUN_MATCH=<regex on the
+// tx intent>. The first matching signed tx is held while the module front-runs it on anvil, then broadcast.
 import http from "node:http";
 import { appendFileSync, readFileSync } from "node:fs";
 
@@ -19,6 +21,9 @@ const PORT = Number(process.env.STUB_PORT || 19288);
 const ANVIL = process.env.ANVIL_RPC || "http://127.0.0.1:19251";
 const LOG = process.env.STUB_LOG || new URL("./logs/stub.log", import.meta.url).pathname;
 const ALLOW = new Set((process.env.STUB_ALLOWLIST || "").toLowerCase().split(",").filter(Boolean));
+const FRONTRUN = process.env.STUB_FRONTRUN || "";
+const FRONTRUN_MATCH = process.env.STUB_FRONTRUN_MATCH ? new RegExp(process.env.STUB_FRONTRUN_MATCH) : null;
+let frontranOnce = false;
 const jobs = new Map();
 // Real response of GET https://agentic-mimir-service.api.cx.metamask.io/v1/supportedNetworks (captured 2026-10-06).
 const MIMIR_NETWORKS = readFileSync(new URL("./fixtures/mimir-supported-networks.2026-10-06.json", import.meta.url), "utf8");
@@ -109,6 +114,13 @@ const server = http.createServer(async (req, res) => {
         return send(res, 200, job);
       }
       if (!signedTransaction) return send(res, 400, { code: "STUB_NEEDS_SIGNED_TX", message: "stub only supports BYOK" });
+      const summary = typeof txIntent === "string" ? txIntent : String(txIntent?.summary ?? "");
+      if (FRONTRUN && FRONTRUN_MATCH && !frontranOnce && FRONTRUN_MATCH.test(summary)) {
+        frontranOnce = true;
+        const mod = await import(FRONTRUN);
+        const info = await mod.default({ anvil: ANVIL, signedTransaction, tx });
+        log({ kind: "frontrun", requestId, victimIntent: summary, ...info });
+      }
       const t0 = Date.now();
       const hash = await rpc("eth_sendRawTransaction", [signedTransaction]);
       // Like the real service, answer with a non-terminal job; the CLI then polls GET .../:id.

@@ -2,7 +2,7 @@
  "network": "monad-testnet",
  "chainId": 10143,
  "abiSet": "feasibility",
- "note": "FORK ONLY (anvil http://127.0.0.1:19251, fork block 68887500). Ladders/books created by harness/fork-scenario.mjs.",
+ "note": "FORK ONLY (anvil http://127.0.0.1:19541, fork block 68907005). Ladders/books created by harness/fork-scenario.mjs.",
  "contracts": {
   "Resolver": "0x1c7a8a5df93f7f33c778c2163d8887e9249475f1",
   "CollateralVault": "0xc83fe722eb5bd29a0355c090f14ccb0605153713",
@@ -57,7 +57,7 @@
      "yes": "0xf6A2Edcc6aa24540eC1D013DA6822D5F53B681Ac",
      "no": "0x769b04648c03701c81AE6BBd19f0f2C65c181a90",
      "market": "0x535DD1F9E57B927BF4932Ad16378638858F2B7C8",
-     "fairValue": 0.031,
+     "fairValue": 0.029,
      "fairSource": "polymarket-implied"
     },
     {
@@ -89,7 +89,7 @@
      "yes": "0xCAC98c1AC1DE0CeE260eac3f14170B294967F2a2",
      "no": "0x75DAe984CF2AAed462eBDdDaC08e8A02C2097cF7",
      "market": "0x90a5e8B152CeD36558f4006A6e3fB0412CDcA419",
-     "fairValue": 0.95,
+     "fairValue": 0.96,
      "fairSource": "polymarket-implied"
     },
     {
@@ -98,7 +98,7 @@
      "yes": "0x9E30E89BCF6Cfcc60f44c21fDb7F40F6F30C9da9",
      "no": "0xc51A0e785E4CE393a8E21101a1155723C3AE3C9b",
      "market": "0x11b8C955c46EF8C59862Cf35591CC0A325031C5d",
-     "fairValue": 0.849,
+     "fairValue": 0.859,
      "fairSource": "polymarket-implied"
     },
     {
@@ -107,7 +107,7 @@
      "yes": "0x60F2E68C25cfF94c5e9978918516B156db9aD7F3",
      "no": "0x18f3dF370ddE9409eD487C31e93729f18995C2C9",
      "market": "0x2a221d4614c4408b00444B943be964cA44C6a44a",
-     "fairValue": 0.468,
+     "fairValue": 0.393,
      "fairSource": "polymarket-implied"
     },
     {
@@ -116,7 +116,7 @@
      "yes": "0x153942830ee692ff0b4741f57FE54c4951115f59",
      "no": "0x8f71A4a748C7a4a70A243117e4bE3869D78CFF2e",
      "market": "0x9567594d6d19AfDfBe1dF99d5a7c3191A4E038C2",
-     "fairValue": 0.092,
+     "fairValue": 0.066,
      "fairSource": "polymarket-implied"
     }
    ]

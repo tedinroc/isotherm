@@ -9,7 +9,18 @@ interface Section {
   p: string[];
 }
 
-function content(lang: 'en' | 'zh', challengeHours: number): Section[] {
+/** "15-minute" / "15 分鐘" for windows under an hour, "2-hour" / "2 小時" above (the live Resolver uses 900 s). */
+export function windowLabel(seconds: number, lang: 'en' | 'zh'): string {
+  if (seconds < 3600) {
+    const m = Math.max(1, Math.round(seconds / 60));
+    return lang === 'zh' ? `${m} 分鐘` : `${m}-minute`;
+  }
+  const h = Math.round((seconds / 3600) * 10) / 10;
+  return lang === 'zh' ? `${h} 小時` : `${h}-hour`;
+}
+
+function content(lang: 'en' | 'zh', challengeSeconds: number): Section[] {
+  const win = windowLabel(challengeSeconds, lang);
   if (lang === 'zh') {
     return [
       {
@@ -23,15 +34,15 @@ function content(lang: 'en' | 'zh', challengeHours: number): Section[] {
         h: '結算規則（台北 = RCSS 松山機場）',
         p: [
           '當日最高溫 = 台北時間 00:00 到 24:00 之間，所有例行（:00、:30）與特別（SPECI）METAR 報告溫度組中最高的整數攝氏度。不另外四捨五入。',
-          '這就是 Polymarket 台北每日最高溫市場所用的同一條規則：在 184 個以 RCSS 為準的台北日子中有 183 天與 Polymarket 結果相同（東京 RJTT 209/209）。唯一不同的那天，三個 METAR 資料庫都顯示是 Polymarket 的結算方漏了一筆報告。',
+          '這就是 Polymarket 台北每日最高溫市場所用的同一條規則：在 184 個以 RCSS 為準的台北日子中有 183 天與 Polymarket 結果相同（東京 RJTT 209/209）。唯一不同的那天（2026-05-04），兩個獨立的 METAR 資料庫（IEM 與 Ogimet）都有一筆 25°C 的報告，Polymarket 的 24°C 結果漏掉了它。',
         ],
       },
       {
         h: '誰來結算',
         p: [
-          'Chainlink CRE 工作流程讀兩個公開資料來源（Iowa Environmental Mesonet、aviationweather.gov；Ogimet 為備援），套用上面的規則，再把結果連同營運者的 attestation 簽章送上鏈。目前用的是 CRE 模擬 forwarder，它不檢查發送者，所以簽章是必要的。',
-          challengeHours > 0
-            ? `結果上鏈後有 ${challengeHours} 小時挑戰期：期間守護者只能把結果改成「作廢」，不能改成別的溫度。挑戰期結束後即可贖回。`
+          'Chainlink CRE 工作流程讀兩個公開資料來源（Iowa Environmental Mesonet、aviationweather.gov；Ogimet 為備援），套用上面的規則，再把結果連同營運者的 attestation 簽章送上鏈。目前用的是 CRE 模擬 forwarder，它不檢查發送者，所以簽章是必要的。到目前為止，真實日子的結算都是在本機執行 CRE 模擬器（從 MIT 授權的 CRE CLI 原始碼編譯、只移除登入檢查）或 SDK 測試工具，送到先前的可行性驗證合約，而不是由已部署的 Chainlink DON 執行。',
+          challengeSeconds > 0
+            ? `結果上鏈後有 ${win}挑戰期：期間守護者只能把結果改成「作廢」，不能改成別的溫度；挑戰期只適用於回報的溫度，回報「作廢」會立即生效。挑戰期結束後即可贖回。`
             : '結果上鏈後即可贖回。',
           '資料來源互相矛盾或不完整時，整個階梯作廢；逾時沒有報告，任何人都可以把它作廢。作廢時「是」和「否」各付 0.5 AUSD。',
         ],
@@ -67,15 +78,15 @@ function content(lang: 'en' | 'zh', challengeHours: number): Section[] {
       h: 'The settlement rule (Taipei = RCSS, Songshan Airport)',
       p: [
         'Daily max = the highest whole-degree °C in the METAR temperature group across all routine (:00 and :30) and special (SPECI) reports from 00:00 to 24:00 Taipei time. No further rounding.',
-        'This is the rule Polymarket’s Taipei daily-high markets resolve on: it matches Polymarket on 183 of 184 station-sourced Taipei days (Tokyo RJTT: 209/209). On the one miss, three METAR archives agree Polymarket’s resolver missed a report.',
+        'This is the rule Polymarket’s Taipei daily-high markets resolve on: it matches Polymarket on 183 of 184 station-sourced Taipei days (Tokyo RJTT: 209/209). On the one miss (2026-05-04), two independent METAR archives (IEM and Ogimet) both hold a 25 °C report that Polymarket’s 24 °C result missed.',
       ],
     },
     {
       h: 'Who settles',
       p: [
-        'A Chainlink CRE workflow reads two public archives (Iowa Environmental Mesonet and aviationweather.gov, with Ogimet as fallback), applies the rule, and reports the result on-chain with an operator attestation signature. Today it runs through the CRE simulation forwarder, which does not check who calls it — that is why the signature is mandatory.',
-        challengeHours > 0
-          ? `After a report there is a ${challengeHours}-hour challenge window in which the guardian can only turn the result into a void (never into a different temperature). Redemption opens when it ends.`
+        'A Chainlink CRE workflow reads two public archives (Iowa Environmental Mesonet and aviationweather.gov, with Ogimet as fallback), applies the rule, and reports the result on-chain with an operator attestation signature. Today it runs through the CRE simulation forwarder, which does not check who calls it — that is why the signature is mandatory. So far, real days have been settled by the CRE simulator run on our own machine (built from the MIT CRE CLI source with only its login check removed) or an SDK test harness, against the earlier feasibility contracts — not by a deployed Chainlink DON.',
+        challengeSeconds > 0
+          ? `After a report there is a ${win} challenge window in which the guardian can only turn the result into a void (never into a different temperature); it applies to a reported temperature, while a reported void is final at once. Redemption opens when it ends.`
           : 'Redemption opens as soon as the result is on-chain.',
         'If the sources disagree or are incomplete, the whole ladder is void; if no report arrives in time, anyone can void it. Void pays 0.5 AUSD per Yes and 0.5 AUSD per No.',
       ],
@@ -103,8 +114,7 @@ function content(lang: 'en' | 'zh', challengeHours: number): Section[] {
 export function HowItWorks() {
   const { t, lang } = useI18n();
   const { caps } = useApp();
-  const hours = caps ? Math.round((caps.challengeWindow / 3600) * 10) / 10 : 0;
-  const sections = content(lang, hours);
+  const sections = content(lang, caps?.challengeWindow ?? 0);
   return (
     <div className="screen">
       <section className="card how">

@@ -6,7 +6,8 @@ import { join } from "node:path";
 import { decodeFunctionData, encodeAbiParameters, type Abi } from "viem";
 import { fmtAllowance, fmtUnits, parsePrice, parseUnitsStrict } from "../src/lib/util.js";
 import { decodeL2, type MarketParams } from "../src/lib/kuru.js";
-import { avgPrice, quoteForExactOut, roundQuoteToPricePrecision, walkBuy, walkSell } from "../src/lib/plan.js";
+import { applyBpsDown, avgPrice, planBuyNo, quoteForExactOut, roundQuoteToPricePrecision, walkBuy, walkSell } from "../src/lib/plan.js";
+import { apiBaseUrl, chooseReference, inferFairSource, pickMakerLadder, type MakerStrike } from "../src/lib/snapshot.js";
 import { addDays, impliedAt, impliedFromEvent, localDate, metarTempC, observedFromReports, parseBucket, parseDateArg, v0Prob } from "../src/lib/weather.js";
 import { ASSETS, CITIES, normalizeDeployment, resolveCity } from "../src/lib/config.js";
 import { checkBookParams, decodeResult, findRegistryFn, ladderState } from "../src/lib/isotherm.js";
@@ -109,6 +110,41 @@ test("roundQuoteToPricePrecision and avgPrice", () => {
   assert.equal(roundQuoteToPricePrecision(19_999_999n, P), 19_999_900n);
   assert.equal(avgPrice(1_000_000n, 2_000_000n, 6n, 6n), 0.5);
   assert.equal(avgPrice(1n, 0n, 6n, 6n), null);
+});
+
+// ------------------------------------------------------------------------------------------- buy NO (N1 mitigation)
+test("planBuyNo reproduces the e2e buy-NO numbers (10 sets, YES leg into the 0.818 bid -> 8.171820 AUSD, min 8.130960)", () => {
+  const nb = planBuyNo([lvl(0.818, 100)], 10_000_000n, 2_000n, P, 50n);
+  assert.equal(nb.sets, 10_000_000n);
+  assert.equal(nb.expectedAusd, 8_171_820n);
+  assert.equal(nb.minAusdOut, 8_130_960n);
+  assert.equal(nb.minBidU, 8_009n); // ceil((1 - 0.2) / 0.999 * 1e4): NO at <= 0.2 needs a bid >= 0.8009
+  assert.equal(nb.cappedByMaxPrice, false);
+});
+
+test("planBuyNo spends only the bids inside --max-price and caps the sets", () => {
+  const bids = [lvl(0.85, 4), lvl(0.81, 3), lvl(0.7, 100)];
+  const nb = planBuyNo(bids, 20_000_000n, 2_000n, P, 50n);
+  assert.equal(nb.sets, 7_000_000n); // 4 + 3 YES at bids >= 0.8009; the 0.70 level would make NO cost ~0.30
+  assert.equal(nb.levelsUsed, 2);
+  assert.equal(nb.worstBidU, 8_100n);
+  assert.equal(nb.cappedByMaxPrice, true);
+  assert.equal(planBuyNo([lvl(0.7, 100)], 20_000_000n, 2_000n, P, 50n).sets, 0n);
+});
+
+test("N1: after a bid-draining sandwich, Zap.buyNo's bound still passes but the mintSet + sellYes bound reverts", () => {
+  // The verifier's scenario: the plan sees the maker's 0.43 bid; an attacker sells into it first and leaves 0.001 x 50.
+  const plan = planBuyNo([lvl(0.43, 1000)], 100_000_000n, 6_000n, P, 200n);
+  const drained = [lvl(0.001, 50)];
+  const w = walkSell(drained, plan.sets, null, P);
+  // Zap.buyNo: ausdBack = proceeds + unsold YES merged back at par, checked against the same min.
+  const buyNoAusdBack = w.netQuote + (plan.sets - w.soldBase);
+  const buyNoMin = applyBpsDown(plan.expectedAusd, 200n);
+  assert.ok(buyNoAusdBack >= buyNoMin, "old bound passes");
+  const noOut = plan.sets - (plan.sets - w.soldBase);
+  assert.ok(Number(plan.sets - buyNoAusdBack) / Number(noOut) > 0.99, "...at ~0.999 per NO for half the NO");
+  // mintSet + sellYes: the user sells exactly `sets` YES; the AUSD out is only what the bids pay.
+  assert.ok(w.netQuote < plan.minAusdOut, "new bound: Zap.sellYes reverts with Slippage");
 });
 
 // ------------------------------------------------------------------------------------------- weather
@@ -309,3 +345,71 @@ test("package.json#mm and the oclif manifest agree, and every command declares t
 });
 
 export const _unused = encodeAbiParameters;
+
+// ------------------------------------------------------------------------------------------- maker snapshot (fair value)
+test("pickMakerLadder reads the live API snapshot (captured 2026-10-07) and infers the fair-value basis", () => {
+  const body = fx("api-snapshot-2026-10-07.json");
+  const now = Date.parse(body.generatedAt) + 90_000;
+  const r = pickMakerLadder(body, "RCSS", 20261008, "https://x/api/snapshot", now);
+  assert.ok(r.ladder, r.error);
+  const l = r.ladder!;
+  assert.equal(l.ageS, 90);
+  assert.equal(l.stale, false);
+  assert.deepEqual(l.strikes.map((s) => s.k), [28, 29, 30, 31]);
+  const s30 = l.strikes.find((s) => s.k === 30)!;
+  assert.equal(s30.fair, 0.3986);
+  assert.equal(s30.fairSource, "polymarket");
+  assert.equal(s30.guard, 0.5907); // the API calls the maker's guard model "model"
+  assert.equal(s30.seriesId, "0xb020bdde35a3212b69e836e2f78f56b4560e75bc74eb7a6b790342f58de00064");
+  assert.equal(pickMakerLadder(body, "RCSS", 20261008, "u", now + 3_600_000).ladder!.stale, true);
+  assert.match(pickMakerLadder(body, "RJTT", 20261008, "u", now).error ?? "", /no RJTT 20261008 ladder/);
+  assert.match(pickMakerLadder({ version: 1, empty: true, ladders: [] }, "RCSS", 20261008, "u").error ?? "", /not published/);
+  assert.match(pickMakerLadder({ ...body, chainId: 1 }, "RCSS", 20261008, "u").error ?? "", /chain 1/);
+  // out-of-range numbers are dropped, never trusted
+  const bad = { ...body, ladders: [{ ...body.ladders[0], strikes: [{ k: 30, fair: 7, model: -1, pmImplied: "x" }] }] };
+  const b30 = pickMakerLadder(bad, "RCSS", 20261008, "u", now).ladder!.strikes[0];
+  assert.equal(b30.fair, null);
+  assert.equal(b30.guard, null);
+});
+
+test("inferFairSource: passthrough, certain, model fallback, polymarket", () => {
+  assert.equal(inferFairSource({ fairSource: "fallback-intraday", fair: 0.3, pmImplied: 0.2, flags: [] }), "fallback-intraday");
+  assert.equal(inferFairSource({ fair: 1, pmImplied: 0.9, flags: ["observed-max>=k"] }), "certain");
+  assert.equal(inferFairSource({ fair: 0.4, pmImplied: null, flags: ["no-polymarket-market"] }), "fallback-model");
+  assert.equal(inferFairSource({ fair: 0.4, pmImplied: 0.41, flags: ["guard-wide"] }), "polymarket");
+  assert.equal(inferFairSource({ fair: null, pmImplied: 0.41, flags: [] }), null);
+});
+
+test("chooseReference prefers the maker snapshot, labels the guardrail, and never lets a model drive edge", () => {
+  const ms = (o: Partial<MakerStrike>): MakerStrike => ({ k: 30, seriesId: null, market: null, fair: 0.3986, fairSource: "polymarket", pmImplied: 0.3986, guard: 0.5907, guardSource: null, bid: null, ask: null, mode: "quoting", flags: [], ...o });
+  // live 2026-10-07: maker fair 0.40, maker v0 guard 0.59, plugin v0-lite 0.145
+  const a = chooseReference(ms({}), 0.408, 0.145);
+  assert.equal(a.fairValue, 0.3986);
+  assert.equal(a.fairValueSource, "maker-snapshot");
+  assert.equal(a.marketRefSource, "maker-snapshot");
+  assert.equal(a.guardrail.source, "maker-snapshot");
+  assert.equal(a.guardrail.p, 0.5907);
+  assert.equal(a.guardrail.flag, true); // |0.59 - 0.40| > 0.15
+  // no (fresh) snapshot: the plugin's own Polymarket read, guardrail falls back to v0-lite and says so
+  const b = chooseReference(null, 0.408, 0.145);
+  assert.equal(b.fairValueSource, "polymarket-live");
+  assert.equal(b.fairValue, 0.408);
+  assert.equal(b.guardrail.source, "plugin-v0-lite");
+  assert.equal(b.guardrail.basis, "v0-lite");
+  // the maker fell back to its model: fairValue shows it, but edge's reference stays Polymarket (or nothing)
+  const c = chooseReference(ms({ fair: 0.5, fairSource: "fallback-v0", pmImplied: null, guard: 0.5 }), null, 0.2);
+  assert.equal(c.fairValue, 0.5);
+  assert.equal(c.fairValueBasis, "fallback-v0");
+  assert.equal(c.marketRef, null);
+  const d = chooseReference(null, null, null);
+  assert.equal(d.fairValue, null);
+  assert.equal(d.guardrail.source, null);
+});
+
+test("apiBaseUrl: default, override, off, and no plain http except localhost", () => {
+  assert.equal(apiBaseUrl({}), "<former API host>");
+  assert.equal(apiBaseUrl({ ISOTHERM_API_URL: "https://api.example.org/" }), "https://api.example.org");
+  assert.equal(apiBaseUrl({ ISOTHERM_API_URL: "off" }), null);
+  assert.equal(apiBaseUrl({ ISOTHERM_API_URL: "http://evil.example" }), null);
+  assert.equal(apiBaseUrl({ ISOTHERM_API_URL: "http://127.0.0.1:19543" }), "http://127.0.0.1:19543");
+});

@@ -86,6 +86,40 @@ export function walkSell(bids: Level[], baseIn: bigint, minPriceU: bigint | null
   };
 }
 
+export type BuyNoPlan = {
+  sets: bigint; // complete sets minted with vault.mintSet = NO received (exact, minted straight to the wallet)
+  expectedAusd: bigint; // AUSD back from selling exactly `sets` YES into the bids (book walk, after the taker fee)
+  minAusdOut: bigint; // the on-chain bound handed to Zap.sellYes(minAusdOut)
+  minBidU: bigint; // lowest YES bid the walk may touch, derived from --max-price
+  worstBidU: bigint | null;
+  levelsUsed: number;
+  cappedByMaxPrice: boolean; // fewer sets than requested, because the bids inside the price limit ran out
+};
+
+/**
+ * Buy NO WITHOUT Zap.buyNo (security review v1, N1): mint `sets` complete sets in the vault, then sell exactly
+ * `sets` YES through Zap.sellYes with a min-out. sellYes' minAusdOut is a true worst-case bound for a fixed YES
+ * input, so a sandwich that drains the bids makes it revert instead of filling (Zap.buyNo's minAusdBack counted
+ * unsold YES merged back at par, so it passed at a terrible NO price). NO costs 1 - bid x (1 - fee) per set, so
+ * only bids >= (1 - maxPrice) / (1 - fee) are used.
+ */
+export function planBuyNo(bids: Level[], amountAusd: bigint, maxPriceU: bigint, p: P, slipBps: bigint): BuyNoPlan {
+  const pp = p.pricePrecision;
+  const minBidU = ((pp - maxPriceU) * BPS + (BPS - p.takerFeeBps) - 1n) / (BPS - p.takerFeeBps);
+  const w0 = walkSell(bids, amountAusd, minBidU, p);
+  const sets = w0.soldBase < amountAusd ? w0.soldBase : amountAusd;
+  const w = walkSell(bids, sets, minBidU, p);
+  return {
+    sets,
+    expectedAusd: w.netQuote,
+    minAusdOut: applyBpsDown(w.netQuote, slipBps),
+    minBidU,
+    worstBidU: w.worstPriceU,
+    levelsUsed: w.levelsUsed,
+    cappedByMaxPrice: sets < amountAusd,
+  };
+}
+
 /**
  * Quote needed to RECEIVE at least `netBaseOut` base units (after the fee) from `asks`, no level above maxPriceU.
  * Returns null when the book (within the price limit) is too thin.

@@ -12,7 +12,7 @@ const inputs = {
 
 export default class WeatherEdge extends PluginCommand<Record<string, unknown>> {
   static override description =
-    "Compare our Kuru book with the Polymarket-implied probability for each strike (after Kuru's taker fee). A cross-venue price gap, not a forecast.";
+    "Compare our Kuru book with the Polymarket-implied fair value for each strike (from the maker snapshot when fresh, else the plugin's own Polymarket read), after Kuru's taker fee. A cross-venue price gap, not a forecast.";
   static override examples = ["<%= config.bin %> weather edge taipei --json", "<%= config.bin %> weather edge tokyo --min-gap 0.05 --json"];
   static override requiresAuth = false;
   static override requiresInit = false;
@@ -30,7 +30,9 @@ export default class WeatherEdge extends PluginCommand<Record<string, unknown>> 
 
     const rows = v.rows.map((r) => {
       const fee = (r.takerFeeBps ?? 10) / 10_000;
-      const pm = r.polymarketImplied;
+      // Polymarket-based reference only (the maker snapshot's fair when it is Polymarket-based, else the live read).
+      // A model fallback never drives a suggestion: no forecasting-edge claims.
+      const pm = r.marketRef;
       const ask = r.book?.bestAsk ?? null;
       const bid = r.book?.bestBid ?? null;
       // Effective prices after Kuru's taker fee (taken from the output token).
@@ -51,12 +53,15 @@ export default class WeatherEdge extends PluginCommand<Record<string, unknown>> 
         strikeC: r.strikeC,
         bestBid: bid,
         bestAsk: ask,
-        polymarketImplied: pm,
-        v0Guardrail: r.v0Guardrail,
+        fairValue: r.fairValue,
+        fairValueSource: r.fairValueSource,
+        reference: pm,
+        referenceSource: r.marketRefSource,
+        polymarketImplied: r.polymarketImplied,
         yesCheapVsPolymarket: yesCheap,
         yesRichVsPolymarket: yesRich,
         observedLocked: r.observedLocked,
-        guardrailFlag: r.guardrailFlag,
+        guardrail: r.guardrail,
         canonical: r.canonical,
         suggestion,
       };
@@ -69,12 +74,16 @@ export default class WeatherEdge extends PluginCommand<Record<string, unknown>> 
       date: v.date,
       ladder: v.ladder,
       polymarket: v.polymarket,
+      makerSnapshot: v.makerSnapshot,
+      guardrailModel: v.guardrailModel,
       observed: v.observed,
       minGap,
       rows: ranked,
       definitions: {
-        yesCheapVsPolymarket: "Polymarket-implied P minus our best ask grossed up for the taker fee. Positive: YES on our book costs less than the Polymarket-implied probability (also how cheaply NO can be sold).",
-        yesRichVsPolymarket: "Our best bid net of the taker fee minus Polymarket-implied P. Positive: YES sells (or NO buys) on our book above the Polymarket-implied probability.",
+        reference: "The Polymarket-implied P(Tmax >= k) the gap is measured against: the maker snapshot's fair value when it is fresh and Polymarket-based (referenceSource maker-snapshot), else the plugin's own live Polymarket read (polymarket-live). Never a model.",
+        yesCheapVsPolymarket: "reference minus our best ask grossed up for the taker fee. Positive: YES on our book costs less than the Polymarket-implied probability (also how cheaply NO can be sold).",
+        yesRichVsPolymarket: "Our best bid net of the taker fee minus reference. Positive: YES sells (or NO buys) on our book above the Polymarket-implied probability.",
+        guardrail: "GUARDRAIL ONLY (maker v0, else the plugin's cruder v0-lite). flag = it differs from the reference by more than 0.15. It never drives a suggestion.",
         observedLocked: "The observed METAR max so far already reached k, so YES is very likely to win (official settlement still pending). No suggestion is made for locked strikes.",
       },
       disclaimer: [

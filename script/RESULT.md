@@ -31,8 +31,8 @@ The v0 feasibility result is kept as `script/RESULT-v0-feasibility.md`.
   | operator | `0x602dbf3937558B1d18d76315635fD5410089bd51` |
 
   The deploy script refuses to run if any role equals the deployer.
-- **Cost.** The deploy was billed **1.0625 MON**: 10,315,665 gas limit at 102 gwei with a 1.08 multiplier, inside the
-  1.3 budget. Including the funding, the deployer spent 1.3168 MON and now holds 4.6603 MON.
+- **Cost.** The deploy was billed **1.0625 MON**: 10,315,665 gas limit at 103 gwei (`gasPriceWei` 103000000001 in
+  `deployments/testnet.json`) with a 1.08 multiplier, inside the 1.3 budget. Including the funding, the deployer spent 1.3168 MON and now holds 4.6603 MON.
 - **Rehearsal.** The same script ran on an anvil fork first (`script/evidence/deploy-anvil/`). It produced the same
   addresses and a gas limit of 10,229,586.
 - **Verification.** `script/verify-sourcify.sh` reports `Status: exact_match` for all 4 contracts on
@@ -46,7 +46,7 @@ The v0 feasibility result is kept as `script/RESULT-v0-feasibility.md`.
 | # | Finding | v1 fix | Proof |
 |---|---|---|---|
 | a | Stale-void free option (24 h < the workflow's 36 h); guardian forces a void via pause | `STALE_WINDOW = 48 h`. While paused, `voidIfStale` is blocked. After any unpause, the workflow gets `RESUME_GRACE = 24 h` before anyone may void. `MAX_STALE_WINDOW = 7 d` is a hard liveness bound that works even while paused. New view `staleAt(station,date)` | `test_FIXED_staleVoidCannotFrontRunAReportWithinWorkflowDeadline`, `test_FIXED_guardianPauseCannotForceStaleVoid`, `test_staleVoidBlockedWhilePausedUntilHardMax`, `test_resumeGraceAfterUnpause`, `testFuzz_staleVoidNeverBeforeWindow` |
-| b | A single attester key is final; no dispute | Deploy-time `challengeWindow` (testnet 900 s, max 2 d). A **Settled** result gets `finalAt = resolvedAt + challengeWindow`. Before then, only the **guardian** can call `challenge(station,date,reasonHash)`, which converts it to Void (0.5/0.5) and makes it final at once. Void results (reported or stale) are final immediately. The vault's `redeem`, `payoutHalves` and `previewRedeem` revert `NotFinal` until `finalAt`. `redeemSet` (a complete set at par) is always open | `test_FIXED_compromisedAttesterContainedByChallengeWindow`, `test_guardianChallengeConvertsToVoid`, `test_challengeRules`, `test_redeemWaitsForChallengeWindow`, `test_challengedResultPaysHalf`, the invariant `challenge`/`lateChallenge` actions |
+| b | A single attester key is final; no dispute | Deploy-time `challengeWindow` (testnet 900 s, max 2 d). A **Settled** result gets `finalAt = resolvedAt + challengeWindow`. Before then, only the **guardian** can call `challenge(station,date,reasonHash)`, which converts it to Void (0.5/0.5) and makes it final at once. Void results (reported or stale) are final immediately. The vault's `redeem`, `payoutHalves` and `previewRedeem` revert `NotFinal` until `finalAt`. `redeemSet` (a complete set at par) is always open | `test_FIXED_compromisedAttesterContainedByChallengeWindow`, `test_guardianChallengeConvertsToVoid`, `test_challengeRules`, `test_redeemWaitsForChallengeWindow`, `test_challengedResultPaysHalf`, the invariant `challenge`/`lateChallenge` actions (despite the test's name, the window limits a stolen attester key rather than containing it: reported Voids skip it and a challenged result still pays 0.5, see `test/security/v1/RESULT.md` N2) |
 | c | The Zap accepts any Kuru-verified book (hostile 90 % fee) | `src/IsothermZap.sol`. A write-once `canonicalMarket[seriesId]` set by a vault operator or the owner. It is validated against `Router.verifiedMarket`: base = series YES, quote = AUSD, 6/6 decimals, pricePrecision 1e4, sizePrecision 1e6, taker fee ≤ 30 bps, maker fee ≤ taker fee. Every flow requires `market == canonical`, a non-zero min-out and a non-zero recipient, and trades only before the series' closeTime | `test_fork_FIXED_zapRejectsHostileSecondBookForSameYes` (real Kuru), `IsothermZapTest` (4 offline tests), live-bytecode e2e step 3/5 |
 | d | A permit does not bind the series (front-run) | `mintSetWithAuthorization(seriesId, amount, holder, validAfter, validBefore, salt, v, r, s)` uses AUSD EIP-3009 `receiveWithAuthorization`, with `nonce = keccak256(abi.encode(seriesId, amount, salt))` recomputed by the vault. Payee == caller, so only the vault can consume it. `mintSetWithPermit` is kept for 2612-only wallets (documented residual) | `test_mintSetWithAuthorizationCannotBeRedirected`, the fork step `_step4b_authorizationMint` on **real AUSD**, live-bytecode e2e step 4 |
 | e | Fee-on-transfer collateral overstates reserves | Every deposit path credits only if the vault's AUSD balance grew by exactly `amount`, else `CollateralTransferMismatch` | `test_FIXED_feeOnTransferCollateralCannotOverstateReserves`, `test_feeOnTransferCollateralRejected` |
@@ -70,6 +70,9 @@ owners (see the interfaces below).
 
 ## Tests: 134 passed, 0 failed (with `MONAD_TESTNET_RPC`, fork block 68,886,592)
 
+(Later, the v1 security review added 15 tests in `test/security/v1/`: the full suite is now 149 in 18 suites, see
+`test/security/v1/RESULT.md` and `docs/evidence/docs-pass/forge-test-full-fork68898133.txt`.)
+
 Command: `MONAD_TESTNET_RPC=https://testnet-rpc.monad.xyz FORK_BLOCK=68886592 forge test`, which gives
 `Ran 15 test suites: 134 tests passed, 0 failed, 0 skipped`. Full log: `script/evidence/forge-test-full.txt`. Offline it
 gives 126 passed and 8 fork tests skipped.
@@ -78,7 +81,7 @@ gives 126 passed and 8 fork tests skipped.
 |---|---|
 | unit | 94: Resolver 38, CollateralVault 31, IsothermZap 4 (new, mock Kuru), OutcomeToken 7, ForecastCommit 7, StationTime 7 |
 | fuzz | 4 in `VaultFuzz`. There are 14 `testFuzz_*` across all files, at 1,000 runs each |
-| invariant | `VaultInvariant`: 5 invariants, 256 runs × 128 depth, 32,768 calls, 0 reverts. Actions executed: mint 1069, redeemSet 990, settle 567, voidStale 364, redeem 547, challenge 83, lateChallenge (must fail) 201 |
+| invariant | 1: `VaultInvariant` (forge counts an invariant contract as one test) checks 5 invariants, 256 runs × 128 depth, 32,768 calls, 0 reverts. Actions executed: mint 1069, redeemSet 990, settle 567, voidStale 364, redeem 547, challenge 83, lateChallenge (must fail) 201 |
 | security | 27: ResolverAttacks 13, VaultAttacks 11, AdversarialInvariant (4 invariants + path test; 20 handler selectors, 0 attack successes), MonadGas 1. Every v0 `FINDING` test was rewritten as `FIXED_*` (exploit no longer works) or `RESIDUAL_*` (documented) |
 | fork (live state) | 8: MonadTestnetFork 2 (with a real-AUSD EIP-3009 mint), ForkAttacks 4 (real Kuru, real MockKeystoneForwarder), IsothermE2EFork 2 (full loop with the v1 Zap and canonical markets) |
 

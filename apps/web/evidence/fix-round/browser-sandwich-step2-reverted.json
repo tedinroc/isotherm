@@ -1,0 +1,65 @@
+{
+  "note": "anvil fork; deployed v1 contracts + real Kuru book; in-browser dev wallet is the victim",
+  "series": {
+    "station": "RCSS",
+    "date": 20261008,
+    "strike": 30,
+    "seriesId": "0xb020bdde35a3212b69e836e2f78f56b4560e75bc74eb7a6b790342f58de00064",
+    "market": "0x702A7a87EDb18D733c624bF766020F3b66eb36DC"
+  },
+  "bidsBefore": [
+    {
+      "price": 0.34,
+      "size": 84.856287
+    }
+  ],
+  "victim": {
+    "address": "0xC022975dc0E1376D96E77f285c5d28EEF68eE02e",
+    "sellYes": "0xd299eb3a6e078e06f72f50c40e1fcb371f9038c49465e8869003412f828c2b59",
+    "yesIn": "15143713",
+    "minAusdOut": "5040838",
+    "status": "reverted",
+    "gasUsed": "468831",
+    "revertReason": "Slippage(7492, 5040838)  # cast run on the fork: the sandwiched sale would have fetched 0.007492 AUSD vs minAusdOut 5.040838"
+  },
+  "attacker": {
+    "address": "0xdB32df7eF6F4ad3B22483ad2cd78ec02eC722731",
+    "marketSell": {
+      "hash": "0x338f889e525ecd2b7b80fa53abb1f1b9baecf0a932dca27cb214522795ae7cab",
+      "status": "success"
+    },
+    "dustBid": {
+      "hash": "0x9629b0bf09a46c580e539e3c48816728fbadf1edd9ea3ccadf3b73fa9355c3a6",
+      "status": "success",
+      "size": "7571856",
+      "price": 0.001
+    }
+  },
+  "block": {
+    "number": "68905850",
+    "order": [
+      {
+        "hash": "0x338f889e525ecd2b7b80fa53abb1f1b9baecf0a932dca27cb214522795ae7cab",
+        "from": "0xdb32df7ef6f4ad3b22483ad2cd78ec02ec722731",
+        "role": "attacker market sell"
+      },
+      {
+        "hash": "0x9629b0bf09a46c580e539e3c48816728fbadf1edd9ea3ccadf3b73fa9355c3a6",
+        "from": "0xdb32df7ef6f4ad3b22483ad2cd78ec02ec722731",
+        "role": "attacker dust bid 0.001"
+      },
+      {
+        "hash": "0xd299eb3a6e078e06f72f50c40e1fcb371f9038c49465e8869003412f828c2b59",
+        "from": "0xc022975dc0e1376d96e77f285c5d28eef68ee02e",
+        "role": "victim sellYes"
+      }
+    ]
+  },
+  "bidsAfter": [
+    {
+      "price": 0.001,
+      "size": 7.571856
+    }
+  ],
+  "verdict": "PROTECTED: the sandwiched step 2 reverted (Slippage); the victim keeps complete pairs"
+}

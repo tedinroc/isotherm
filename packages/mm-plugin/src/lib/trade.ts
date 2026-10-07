@@ -51,17 +51,18 @@ export async function observedGuard(city: City, s: Series, side: "yes" | "no", d
   return { checked: true as const, observedMaxC: obs.maxC, lastReportUtc: obs.lastReportUtc, lockedYes: locked };
 }
 
-/** v1 gated series only mint to allowlisted recipients; buy NO mints a set to the Zap and forwards NO to `to`. */
-export async function gatedGuard(env: Env, s: Series, who: Address) {
+/** v1 gated series only mint to allowlisted recipients. Buy NO mints the set straight to the wallet (vault.mintSet),
+ *  so the wallet itself must be allowlisted (the gate is recipient-based). */
+export async function gatedGuard(env: Env, s: Series, recipient: Address) {
   if (!s.gated) return;
   let ok = false;
   try {
-    ok = (await env.reader.client.readContract({ address: env.dep.vault, abi: env.c.vaultAbi, functionName: "isAllowlisted", args: [env.dep.zap ?? who] })) as boolean;
+    ok = (await env.reader.client.readContract({ address: env.dep.vault, abi: env.c.vaultAbi, functionName: "isAllowlisted", args: [recipient] })) as boolean;
   } catch {}
   if (!ok)
     fail(
       "ISOTHERM_SERIES_GATED",
-      `Tmax>=${s.strikeC}C is a gated (allowlist-only) series and the Zap is not allowlisted to mint it.`,
+      `Tmax>=${s.strikeC}C is a gated (allowlist-only) series and ${recipient} is not allowlisted to mint it.`,
       "Buy YES on the book instead, or ask the operator; gating is a compliance switch (CollateralVault.setSeriesGated).",
     );
 }

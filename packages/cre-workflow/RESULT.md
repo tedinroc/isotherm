@@ -140,9 +140,14 @@ These runs used the spike's dev build of CRE CLI v1.37.0, with only the client-s
   Proven on a fork (`evidence/harness-fork.txt`):
   - the 10-06 replay settled and was confirmed;
   - at 02:05 Taipei on Oct 9 the live RCSS 10-08 ladder was found as due and correctly left PENDING, because its data does not exist yet.
-- **`launchd/com.isotherm.cre-settle.plist.template` + `scripts/install-launchd.sh`.** Hourly at :35 Mac time. The Mac
-  clock is on PDT; whole-hour offsets mean the minutes match. Rendering passes `plutil -lint`. It is **not installed**,
-  since installing it is a human action.
+- **Superseded on 2026-10-07 (ops round, see `FIXES.md`):** the old `com.isotherm.cre-settle` template ran from
+  `~/Documents` and would have failed with exit 126 (macOS TCC). It was replaced by two LaunchAgents that run from the
+  runtime copy `~/isotherm-live/packages/cre-workflow` and are **installed and loaded**:
+  - `xyz.isotherm.cre-settle`, hourly at :05. It takes the official path when `cre whoami` succeeds and the labelled
+    harness fallback otherwise, and it writes an evidence record per run.
+  - `xyz.isotherm.challenge-watch`, every 120 s.
+
+  Both were run by launchd end to end on a warped anvil fork (`evidence/jobs-fork-e2e.txt`).
 
 ### 1.8 Tests: 84 pass + 3 fork e2e pass (`evidence/bun-test.txt`, `evidence/bun-test-junit.xml` lists all 87 by name)
 - **Golden fixtures and settle-core identity:** 13.
@@ -182,35 +187,34 @@ These runs used the spike's dev build of CRE CLI v1.37.0, with only the client-s
 6. **Not audited.**
 
 ## 4. Human actions
-1. **Create a CRE account and log in** (once, before **2026-10-08 18:00Z** so the live RCSS 10-08 ladder settles through
-   the official path). Steps:
+(Updated 2026-10-07. The settlement job and the challenge watcher are installed, so no step is required for the
+RCSS 2026-10-08 ladder to settle. Without a login, it settles through the labelled harness fallback.)
+1. **Optional: log in to CRE, so the job takes the OFFICIAL path.** Do it once, at any time before
+   **2026-10-08 18:05Z**. The job checks `cre whoami` on every run.
    - Go to https://app.chain.link/cre/discover and choose "Create an account". You need an email, a 6-digit code, a
      password and an authenticator for 2FA.
-   - Run:
+   - Then run:
      ```bash
-     cd <repo>/packages/cre-workflow
-     export PATH="$PWD/.tools/bin:$PWD/.tools/node_modules/.bin:$PATH"
+     cd ~/isotherm-live/packages/cre-workflow && export PATH="$PWD/.tools/bin:$PWD/.tools/node_modules/.bin:$PATH"
      cre login && cre whoami
-     scripts/run-official.sh --preflight-only
-     scripts/install-launchd.sh --install
+     bash scripts/install-launchd.sh --status        # after the next :05 run: "latest settle run ... path=official"
      ```
-     The installer adds the hourly job. Add `--harness-fallback` if the job should fall back while you are logged out.
-   - Or run `scripts/run-official.sh` by hand after 02:00 Taipei.
-2. **If there is no CRE login in time,** decide whether to run `scripts/run-official.sh --harness`. It is a fallback,
-   not the CRE engine. Otherwise the ladder stays PENDING. At 48 h anyone can call `voidIfStale`, which gives 0.5/0.5.
-3. **Fund the report sender.** `0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9` (the attester, also the default tx sender)
-   has 0.1 MON, which covers about 4 reports. Add about 0.3 MON for two weeks of Taipei, or set `ISOTHERM_TX_KEY_FILE`
-   to a funded relayer key.
-4. **Keep the Mac awake around 02:00–03:00 Taipei** (11:00–12:00 PDT the day before). launchd runs a missed job on wake, but sleep delays settlement.
-5. **Optional, for a real DON:**
+2. **Fund the report sender.** `0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9` (the attester, also the default tx sender)
+   has 0.1 MON. That covers 4 reports at 0.0204 MON each, which is enough for Oct 8 and Oct 9. Add about 0.3 MON for
+   two weeks of Taipei, or set `ISOTHERM_TX_KEY_FILE` to a funded key. The guardian's 0.05 MON covers about 7
+   challenges at about 0.0064 MON each.
+3. **Keep the Mac awake and logged in around 02:00–03:00 Taipei** (11:00–12:00 PDT the day before). launchd runs a
+   missed job when the Mac wakes, but sleep delays settlement.
+4. **Optional, for a real DON:**
    - run `cre account access`, then (with the CRE secret set) `cre workflow deploy ./settle -T testnet`;
    - from the owner key, call `setForwarder(0xF834…4482)` and `setExpectedWorkflow(id, owner)`;
-   - **unload the launchd job**, so that two signers never overlap.
+   - **unload the settle job** (`scripts/deploy-runtime.sh --unload`, or `launchctl bootout gui/$(id -u)/xyz.isotherm.cre-settle`),
+     so that two signers never overlap.
 
 ## 5. Interfaces for others
 - **Status.** Watch `Resolver.LadderResolved` and `LadderChallenged`, or read `resultOf(station,date)`.
 - **Timeline per ladder:**
-  - first attempt at dayEnd + 2 h (02:00 local), then hourly retries at :30 UTC;
+  - first attempt at dayEnd + 2 h (02:00 local), then hourly retries (on a DON: the :30 UTC cron; on this Mac: the launchd job at :05);
   - VOID on disagreement or missing data only after dayEnd + 36 h with healthy sources;
   - backstop at 46 h;
   - on-chain stale void at 48 h.

@@ -1,7 +1,8 @@
 // End-to-end test of the Worker (wrangler dev / Miniflare: real Durable Object + KV) against an ANVIL FORK of the
 // live Monad testnet, with the real v1 contracts, AUSD + faucet, Kuru router and the CRE MockKeystoneForwarder.
 // Nothing touches the live chain: anvil impersonation stands in for the owner/maker, and the relayer is a throwaway
-// key generated here. Ports: anvil 19200, wrangler dev 8782 (this package's allocation).
+// key generated here. Ports: anvil 19200, wrangler dev 8782, inspector 8783 by default; override with
+// ISO_ANVIL_PORT / ISO_API_PORT / ISO_INSPECTOR_PORT so parallel workstreams do not collide.
 import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -31,8 +32,9 @@ import { generatePrivateKey, privateKeyToAccount, type PrivateKeyAccount } from 
 import { DEPLOYMENTS as D } from '../../src/deployments';
 import { decodeResult, decodeSeries } from '../../src/abi';
 
-const ANVIL_PORT = 19200;
-const API_PORT = 8782;
+const ANVIL_PORT = Number(process.env.ISO_ANVIL_PORT ?? 19200);
+const API_PORT = Number(process.env.ISO_API_PORT ?? 8782);
+const INSPECTOR_PORT = Number(process.env.ISO_INSPECTOR_PORT ?? 8783);
 const RPC = `http://127.0.0.1:${ANVIL_PORT}`;
 const API = `http://127.0.0.1:${API_PORT}`;
 const SNAP = 'test-snapshot-token';
@@ -120,6 +122,28 @@ async function as(from: Address, to: Address, abi: any, functionName: string, ar
   return r;
 }
 
+async function authorization(user: PrivateKeyAccount, amount: bigint) {
+  const salt = keccak256(stringToHex(`salt-${Date.now()}-${Math.random()}`));
+  const nonce = keccak256(encodeAbiParameters([{ type: 'bytes32' }, { type: 'uint256' }, { type: 'bytes32' }], [seriesId, amount, salt]));
+  const validBefore = BigInt(Math.floor(Date.now() / 1000) + 900);
+  const signature = await user.signTypedData({
+    domain: { name: 'Agora Dollar', version: '1', chainId: 10143, verifyingContract: D.ausd },
+    types: {
+      ReceiveWithAuthorization: [
+        { name: 'from', type: 'address' },
+        { name: 'to', type: 'address' },
+        { name: 'value', type: 'uint256' },
+        { name: 'validAfter', type: 'uint256' },
+        { name: 'validBefore', type: 'uint256' },
+        { name: 'nonce', type: 'bytes32' },
+      ],
+    },
+    primaryType: 'ReceiveWithAuthorization',
+    message: { from: user.address, to: D.vault, value: amount, validAfter: 0n, validBefore, nonce },
+  });
+  return { mode: 'authorization', chainId: 10143, seriesId, amount: amount.toString(), holder: user.address, validAfter: '0', validBefore: validBefore.toString(), salt, signature };
+}
+
 const api = (path: string, init?: RequestInit) => fetch(`${API}${path}`, init);
 const post = (path: string, body: unknown, headers: Record<string, string> = {}) =>
   api(path, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
@@ -142,12 +166,18 @@ beforeAll(async () => {
   const wr = spawn(
     'npx',
     [
-      'wrangler', 'dev', '--port', String(API_PORT), '--ip', '127.0.0.1', '--persist-to', stateDir,
+      'wrangler', 'dev', '--port', String(API_PORT), '--inspector-port', String(INSPECTOR_PORT), '--ip', '127.0.0.1', '--persist-to', stateDir,
       '--var', `RPC_URL:${RPC}`,
       '--var', `RELAYER_KEY:${relayerKey}`,
       '--var', `SNAPSHOT_TOKEN:${SNAP}`,
       '--var', `ADMIN_TOKEN:${ADMIN}`,
+      // mechanics, not the live budget: 3 drips per network and room for every drip below; relays: 3 per network,
+      // 2 per address, so both limits are hit for real below
       '--var', 'DRIP_PER_IP_PER_DAY:3',
+      '--var', 'DRIP_DAILY_CAP:10',
+      '--var', 'RELAY_PER_IP_PER_DAY:3',
+      '--var', 'RELAY_PER_ADDRESS_PER_DAY:2',
+      '--var', 'RELAY_DAILY_CAP:10',
       '--var', `STATS_START_BLOCK:${(await pub.getBlockNumber()) - 5n}`,
     ],
     { cwd: join(__dirname, '../..'), stdio: 'ignore' },
@@ -168,7 +198,9 @@ describe('isotherm-api on a Monad testnet fork', () => {
     const h = await (await api('/api/health')).json<any>();
     expect(h.relayer).toBe(relayer.address);
     expect(h.vault).toBe(D.vault);
-    expect(h.relayModes).toEqual(expect.arrayContaining(['authorization', 'permit']));
+    expect(h.relayModes).toEqual(['authorization']); // permit relays are off for the v1 vault (security review v1)
+    expect(h.relayMinAusd).toBe('1');
+    expect(h.limits).toMatchObject({ reserveMon: '0.1', relayPerIpPerDay: 3, relayPerAddressPerDay: 2, dripsToday: 0, relaysToday: 0 });
     const ok = await api('/api/health', { method: 'OPTIONS', headers: { origin: 'https://isotherm.pages.dev', 'access-control-request-method': 'POST' } });
     expect(ok.status).toBe(204);
     expect(ok.headers.get('access-control-allow-origin')).toBe('https://isotherm.pages.dev');
@@ -214,7 +246,7 @@ describe('isotherm-api on a Monad testnet fork', () => {
     expect((await post('/api/snapshot', { ladders: [] }, { authorization: 'Bearer wrong' })).status).toBe(401);
   });
 
-  it('relays a signed EIP-3009 mint (and a permit mint) for a user with no MON; rejects replays and tampering', async () => {
+  it('relays a signed EIP-3009 mint for a user with no MON; refuses permit mode, dust, tampering and over-limit requests', async () => {
     // open a ladder on the fork (owner impersonated), far enough out that the live maker has not used it
     const now = Number((await pub.getBlock()).timestamp);
     const d = new Date((now + 8 * 3600 + 3 * 86400) * 1000);
@@ -236,40 +268,32 @@ describe('isotherm-api on a Monad testnet fork', () => {
     await as(relayer.address, D.ausd, parseAbi(['function transfer(address,uint256) returns (bool)']), 'transfer', [user.address, 50_000_000n]);
     expect(await pub.getBalance({ address: user.address })).toBe(0n);
 
-    const salt = keccak256(stringToHex(`salt-${Date.now()}`));
     const amount = 5_000_000n;
-    const nonce = keccak256(encodeAbiParameters([{ type: 'bytes32' }, { type: 'uint256' }, { type: 'bytes32' }], [seriesId, amount, salt]));
-    const validBefore = BigInt(Math.floor(Date.now() / 1000) + 900);
-    const signature = await user.signTypedData({
-      domain: { name: 'Agora Dollar', version: '1', chainId: 10143, verifyingContract: D.ausd },
-      types: {
-        ReceiveWithAuthorization: [
-          { name: 'from', type: 'address' },
-          { name: 'to', type: 'address' },
-          { name: 'value', type: 'uint256' },
-          { name: 'validAfter', type: 'uint256' },
-          { name: 'validBefore', type: 'uint256' },
-          { name: 'nonce', type: 'bytes32' },
-        ],
-      },
-      primaryType: 'ReceiveWithAuthorization',
-      message: { from: user.address, to: D.vault, value: amount, validAfter: 0n, validBefore, nonce },
-    });
-    const body = { mode: 'authorization', chainId: 10143, seriesId, amount: amount.toString(), holder: user.address, validAfter: '0', validBefore: validBefore.toString(), salt, signature };
+    const body = await authorization(user, amount);
     const tampered = await post('/api/relay/mint', { ...body, amount: '6000000' });
     expect(tampered.status).toBe(400);
     expect((await tampered.json<any>()).error).toMatch(/signature/);
+    // a 1-unit (0.000001 AUSD) mint is refused before any RPC work (it would cost the relayer ~0.03 MON)
+    const dust = await post('/api/relay/mint', await authorization(user, 1n));
+    expect(dust.status).toBe(400);
+    expect((await dust.json<any>()).error).toMatch(/between 1 and 500 AUSD/);
     const ok = await post('/api/relay/mint', body);
     const okBody = await ok.json<any>();
     expect(ok.status, JSON.stringify(okBody)).toBe(200);
+    console.log(`[fork] relayed mintSetWithAuthorization: estimate ${okBody.estimate}, gas limit ${okBody.gasLimit}, gas used ${okBody.gasUsed}`);
     expect(await pub.readContract({ address: series!.yes, abi: erc20, functionName: 'balanceOf', args: [user.address] })).toBe(amount);
     expect(await pub.readContract({ address: series!.no, abi: erc20, functionName: 'balanceOf', args: [user.address] })).toBe(amount);
     expect(await pub.getBalance({ address: user.address })).toBe(0n); // the user paid no gas
+
     const replay = await post('/api/relay/mint', body);
     expect(replay.status).toBe(400);
     expect((await replay.json<any>()).error).toMatch(/already used/);
-
-    // EIP-2612 permit path
+    // a second mint for the same holder is fine; the third hits the per-address cap (2) before any RPC read
+    expect((await post('/api/relay/mint', await authorization(user, 2_000_000n))).status).toBe(200);
+    const addrCap = await post('/api/relay/mint', await authorization(user, 2_000_000n));
+    expect(addrCap.status).toBe(429);
+    expect((await addrCap.json<any>()).error).toMatch(/this address/);
+    // EIP-2612 permit path: disabled for the v1 vault (a front-runner can redirect a permit to another series)
     const pnonce = (await pub.readContract({ address: D.ausd, abi: parseAbi(['function nonces(address) view returns (uint256)']), functionName: 'nonces', args: [user.address] })) as bigint;
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 900);
     const psig = await user.signTypedData({
@@ -279,11 +303,36 @@ describe('isotherm-api on a Monad testnet fork', () => {
       message: { owner: user.address, spender: D.vault, value: 2_000_000n, nonce: pnonce, deadline },
     });
     const pr = await post('/api/relay/mint', { mode: 'permit', chainId: 10143, seriesId, amount: '2000000', holder: user.address, deadline: deadline.toString(), signature: psig });
-    expect(pr.status, await pr.clone().text()).toBe(200);
-    expect(await pub.readContract({ address: series!.yes, abi: erc20, functionName: 'balanceOf', args: [user.address] })).toBe(7_000_000n);
+    expect(pr.status).toBe(400);
+    expect((await pr.json<any>()).error).toMatch(/permit-mode relays are disabled/);
     // caps
     const big = await post('/api/relay/mint', { ...body, amount: '600000000' });
     expect(big.status).toBe(400);
+
+    // per-network limit (3 on this fork): a second holder on the same network relays once more, a third is refused
+    const second = privateKeyToAccount(generatePrivateKey());
+    const third = privateKeyToAccount(generatePrivateKey());
+    for (const u of [second, third]) await as(relayer.address, D.ausd, parseAbi(['function transfer(address,uint256) returns (bool)']), 'transfer', [u.address, 10_000_000n]);
+    const r2 = await post('/api/relay/mint', await authorization(second, 3_000_000n));
+    expect(r2.status, await r2.clone().text()).toBe(200);
+    const r3 = await post('/api/relay/mint', await authorization(third, 3_000_000n));
+    expect(r3.status).toBe(429);
+    const r3b = await r3.json<any>();
+    expect(r3b.error).toMatch(/this network/);
+    expect(r3b.retryAfterSec).toBeGreaterThan(0);
+    expect(await pub.readContract({ address: series!.yes, abi: erc20, functionName: 'balanceOf', args: [third.address] })).toBe(0n);
+    const h = await (await api('/api/health')).json<any>();
+    expect(h.relayedTotal).toBe(3);
+    expect(h.limits.relaysToday).toBe(3);
+
+    // a flood of junk POSTs from one network: POST_LIMIT_PER_MIN (30) in the Durable Object answers 429
+    const codes: number[] = [];
+    for (let i = 0; i < 35; i++) codes.push((await post('/api/relay/mint', {})).status);
+    expect(codes.filter((c) => c === 429).length).toBeGreaterThan(0);
+    expect(codes.every((c) => c === 400 || c === 429)).toBe(true);
+    const flooded = await post('/api/drip', { address: privateKeyToAccount(generatePrivateKey()).address });
+    expect(flooded.status).toBe(429);
+    expect((await flooded.json<any>()).error).toMatch(/too many requests/);
   });
 
   it('counts a non-maker Kuru fill and a CRE settlement in /api/stats and /api/settlements', async () => {

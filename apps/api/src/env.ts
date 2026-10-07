@@ -19,9 +19,15 @@ export interface Env {
   AUSD_FLOAT_TARGET?: string;
   RELAY_ENABLED?: string;
   RELAY_MAX_AUSD?: string;
+  RELAY_MIN_AUSD?: string;
   RELAY_PER_ADDRESS_PER_DAY?: string;
+  RELAY_PER_IP_PER_DAY?: string;
   RELAY_DAILY_CAP?: string;
+  RELAY_ALLOW_PERMIT?: string;
+  DRIP_GAS_MON?: string;
+  RELAY_COST_MON?: string;
   GAS_MULTIPLIER_PCT?: string;
+  POST_LIMIT_PER_MIN?: string;
   MAKER_ADDRESSES?: string;
   TEAM_ADDRESSES?: string;
   STATS_START_BLOCK?: string;
@@ -43,13 +49,25 @@ export interface Config {
   dripDailyCap: number;
   dripPerIpPerDay: number;
   dripAddressCooldownMs: number;
+  /** Reserve: drips and relays never take the relayer's MON below this (the cron refill may use it). */
   relayerMinMon: bigint;
   ausdFloatTarget: bigint;
   relayEnabled: boolean;
+  relayMinAusd: bigint;
   relayMaxAusd: bigint;
   relayPerAddressPerDay: number;
+  relayPerIpPerDay: number;
   relayDailyCap: number;
+  /** EIP-2612 permit relays can be redirected to another series by a front-runner (security review v1, N10), so they
+   *  are offered only for a vault WITHOUT mintSetWithAuthorization and only when this is set. */
+  relayAllowPermit: boolean;
+  /** Worst-case MON one drip costs in gas (MON leg 21,000 + AUSD leg ~78,752 gas at ~102 gwei, billed on the limit). */
+  dripGasMon: bigint;
+  /** Worst-case MON one relayed mint costs (gas limit x price; Monad bills the limit; fork: 334,228 gas x 102 gwei). */
+  relayCostMon: bigint;
   gasMultiplierPct: number;
+  /** POST /api/drip + /api/relay/mint requests per client network per minute (any outcome). */
+  postLimitPerMin: number;
   makerAddresses: Address[];
   teamAddresses: Address[];
   statsStartBlock: bigint | null;
@@ -87,16 +105,23 @@ export function configFrom(env: Env): Config {
     dripEnabled: (env.DRIP_ENABLED ?? '1') === '1',
     dripMon: parseEther(env.DRIP_MON || '0.15'),
     dripAusd: parseUnits(env.DRIP_AUSD || '1000', 6),
-    dripDailyCap: num(env.DRIP_DAILY_CAP, 150),
-    dripPerIpPerDay: num(env.DRIP_PER_IP_PER_DAY, 3),
+    // Conservative defaults (sized for a relayer holding about 0.6 MON); wrangler.toml sets the live values.
+    dripDailyCap: num(env.DRIP_DAILY_CAP, 2),
+    dripPerIpPerDay: num(env.DRIP_PER_IP_PER_DAY, 1),
     dripAddressCooldownMs: num(env.DRIP_ADDRESS_COOLDOWN_H, 24) * 3600_000,
-    relayerMinMon: parseEther(env.RELAYER_MIN_MON || '0.3'),
+    relayerMinMon: parseEther(env.RELAYER_MIN_MON || '0.1'),
     ausdFloatTarget: parseUnits(env.AUSD_FLOAT_TARGET || '50000', 6),
     relayEnabled: (env.RELAY_ENABLED ?? '1') === '1',
+    relayMinAusd: parseUnits(env.RELAY_MIN_AUSD || '1', 6),
     relayMaxAusd: parseUnits(env.RELAY_MAX_AUSD || '500', 6),
-    relayPerAddressPerDay: num(env.RELAY_PER_ADDRESS_PER_DAY, 20),
-    relayDailyCap: num(env.RELAY_DAILY_CAP, 400),
+    relayPerAddressPerDay: num(env.RELAY_PER_ADDRESS_PER_DAY, 2),
+    relayPerIpPerDay: num(env.RELAY_PER_IP_PER_DAY, 2),
+    relayDailyCap: num(env.RELAY_DAILY_CAP, 5),
+    relayAllowPermit: env.RELAY_ALLOW_PERMIT === '1',
+    dripGasMon: parseEther(env.DRIP_GAS_MON || '0.011'),
+    relayCostMon: parseEther(env.RELAY_COST_MON || '0.035'),
     gasMultiplierPct: num(env.GAS_MULTIPLIER_PCT, 108),
+    postLimitPerMin: num(env.POST_LIMIT_PER_MIN, 30),
     makerAddresses: makers,
     teamAddresses: team,
     statsStartBlock: env.STATS_START_BLOCK ? BigInt(env.STATS_START_BLOCK) : DEPLOYMENTS.deployBlock,

@@ -46,6 +46,7 @@ export function WalletSheet({ onClose }: { onClose: () => void }) {
             <div className="devnote">
               <b>{t('wallet.devLabel')}</b>
               <p>{t('wallet.devExplain')}</p>
+              {!w.dynamicAvailable && <p className="fine">{t('wallet.dynamicOff')}</p>}
             </div>
           </div>
         )}

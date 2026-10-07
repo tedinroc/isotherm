@@ -1,0 +1,84 @@
+$ mm weather positions --json
+{
+  "ok": true,
+  "data": {
+    "address": "0x9F6AF0b5E8091B867500D9E2a3240Bd92259a543",
+    "addressSource": "mm-wallet-state",
+    "balances": {
+      "AUSD": "1976.270551",
+      "MON": "9.989195920597957597",
+      "ausdAllowanceToZap": "unlimited"
+    },
+    "positions": [
+      {
+        "city": "Taipei",
+        "station": "RCSS",
+        "date": "2026-10-08",
+        "strike": "Tmax>=29C",
+        "strikeC": 29,
+        "seriesId": "0xa69ae9d5af5141648df6a03de55f960d141e84ccda321efe1c7bb7882cf02cd3",
+        "yes": "0.000039",
+        "no": "6.000000",
+        "ladderState": "open",
+        "result": null,
+        "redeemableAusd": null,
+        "mark": {
+          "bestBid": 0.829,
+          "bestAsk": 0.89,
+          "markAusd": "0.660032"
+        },
+        "nextAction": "hold, or merge 0.000039 YES+NO pairs back to AUSD: mm weather redeem taipei --date 2026-10-08 --merge"
+      },
+      {
+        "city": "Taipei",
+        "station": "RCSS",
+        "date": "2026-10-08",
+        "strike": "Tmax>=30C",
+        "strikeC": 30,
+        "seriesId": "0xb020bdde35a3212b69e836e2f78f56b4560e75bc74eb7a6b790342f58de00064",
+        "yes": "32.122641",
+        "no": "0.000000",
+        "ladderState": "open",
+        "result": null,
+        "redeemableAusd": null,
+        "mark": {
+          "bestBid": 0.001,
+          "bestAsk": 0.424,
+          "markAusd": "0.032123"
+        },
+        "nextAction": "hold, or sell: mm weather sell …"
+      },
+      {
+        "city": "Taipei",
+        "station": "RCSS",
+        "date": "2026-10-08",
+        "strike": "Tmax>=31C",
+        "strikeC": 31,
+        "seriesId": "0x28b6d44a3bda37f45860480b4dc43046c744f49215a6f12151cbd8ad72a8e658",
+        "yes": "27.896907",
+        "no": "0.000000",
+        "ladderState": "open",
+        "result": null,
+        "redeemableAusd": null,
+        "mark": {
+          "bestBid": 0.036,
+          "bestAsk": 0.097,
+          "markAusd": "1.004289"
+        },
+        "nextAction": "hold, or sell: mm weather sell …"
+      }
+    ],
+    "redeemableAusdTotal": "0.000000",
+    "scannedLadders": 2,
+    "deployment": "env:<repo>/packages/mm-plugin/harness/fork-deployments-v1.json",
+    "abiSet": "v1",
+    "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+    "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+    "rpcSource": "mm-customEvmChains",
+    "rpcUrl": "http://127.0.0.1:19541",
+    "notes": [
+      "Testnet faucet AUSD only. Marks use the current top of our Kuru book before fees and are not a promise of execution."
+    ]
+  },
+  "hint": "3 position(s); redeemable 0.000000 AUSD"
+}

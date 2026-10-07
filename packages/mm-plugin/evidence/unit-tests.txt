@@ -1,0 +1,48 @@
+
+> mm-plugin-isotherm@0.1.0 test
+> tsc -p tsconfig.test.json && node --test --test-reporter=spec 'dist-test/test/*.test.js'
+
+(node:87811) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ fmtUnits / parseUnitsStrict / parsePrice are exact and strict (0.504625ms)
+✔ decodeL2 parses [block][bids][0][asks] words (0.331292ms)
+✔ walkBuy reproduces the live Kuru spike fill exactly (20 AUSD at 0.44 -> 45.409090 YES) (0.073334ms)
+✔ walkBuy reproduces the e2e fork fill (50 AUSD at the 0.57 ask -> 87,631,578 YES units) (0.0325ms)
+✔ walkBuy stops at max price and reports the cap (0.043333ms)
+✔ walkSell reproduces the e2e buyNo proceeds (40 YES into the 0.28 bid -> 11,188,800 AUSD) (0.050625ms)
+✔ walkSell respects min price and partial depth (0.03075ms)
+✔ quoteForExactOut buys at least the requested net amount after the fee (0.1025ms)
+✔ roundQuoteToPricePrecision and avgPrice (0.155875ms)
+✔ planBuyNo reproduces the e2e buy-NO numbers (10 sets, YES leg into the 0.818 bid -> 8.171820 AUSD, min 8.130960) (0.253084ms)
+✔ planBuyNo spends only the bids inside --max-price and caps the sets (0.091083ms)
+✔ N1: after a bid-draining sandwich, Zap.buyNo's bound still passes but the mintSet + sellYes bound reverts (0.041542ms)
+✔ parseBucket handles Polymarket's °C grid labels and refuses °F (0.28075ms)
+✔ impliedFromEvent on a captured gamma response (Taipei 2026-10-08) (0.884541ms)
+✔ metarTempC follows the settlement parser (M = minus, RMK ignored) (0.065625ms)
+✔ observedFromReports uses the station-local day only (captured AWC reports) (0.555041ms)
+✔ dates are station-local (0.112125ms)
+✔ v0Prob: monotone in k, METAR rounding boundary, observed floor (0.042917ms)
+✔ resolveCity accepts names and ICAO codes (0.051708ms)
+✔ normalizeDeployment reads the v1 flat deployments/testnet.json (2.731167ms)
+✔ normalizeDeployment reads the nested feasibility file and its market map (0.942917ms)
+✔ normalizeDeployment: market lists as arrays, wrong chain refused (0.162833ms)
+✔ encodeZap matches parameters by name (feasibility and v1 ABIs) (0.923875ms)
+✔ encodeZap adapts to a future signature (no market arg, minNoOut, deadline) and refuses unknown params (0.263708ms)
+✔ findRegistryFn finds v1 canonicalMarket and nothing on the feasibility Zap (0.240292ms)
+✔ checkBookParams rejects the hostile-book pattern (security finding #4) (0.083625ms)
+✔ ladder state machine incl. the v1 challenge window (0.051916ms)
+✔ mapExecutorError: policy denial, gateway 400, sign-in (0.196625ms)
+✔ wallet + custom chain discovery from mm wallet state (0.088083ms)
+✔ package.json#mm and the oclif manifest agree, and every command declares the right capability (0.471208ms)
+✔ pickMakerLadder reads the live API snapshot (captured 2026-10-07) and infers the fair-value basis (0.279667ms)
+✔ inferFairSource: passthrough, certain, model fallback, polymarket (0.029333ms)
+✔ chooseReference prefers the maker snapshot, labels the guardrail, and never lets a model drive edge (0.075541ms)
+✔ apiBaseUrl: default, override, off, and no plain http except localhost (0.093584ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 324.886833

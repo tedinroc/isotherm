@@ -2,7 +2,7 @@
 //
 //   GET  /api/health                 relayer address/balances, drip + relay config, deployment source
 //   POST /api/drip {address}         small MON + test AUSD for a new wallet (rate-limited; never to contracts)
-//   POST /api/relay/mint {...}       relays a signed EIP-3009 authorization (or EIP-2612 permit) to the vault
+//   POST /api/relay/mint {...}       relays a signed EIP-3009 authorization to the vault (permit mode is off for v1)
 //   GET  /api/snapshot               the maker's latest ladder snapshot (fair value, Polymarket-implied, obs max)
 //   POST /api/snapshot               (Bearer SNAPSHOT_TOKEN) maker publishes a snapshot
 //   GET  /api/stats                  non-maker wallets, fills, settled city-days (from our own log scan)
@@ -36,10 +36,28 @@ async function passthrough(r: Response): Promise<Response> {
   return new Response(r.body, { status: r.status, headers: { 'content-type': 'application/json; charset=utf-8' } });
 }
 
+/** Salted rate-limit key for the client's network: IPv4 as is, IPv6 cut to its /64 (raw IPs are never stored). */
+async function clientTag(req: Request, env: Env): Promise<string> {
+  const ip = req.headers.get('cf-connecting-ip') ?? req.headers.get('x-real-ip') ?? 'local';
+  return ipTag(ipBucket(ip), env.SNAPSHOT_TOKEN ?? 'isotherm');
+}
+
 async function route(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   const url = new URL(req.url);
   const path = url.pathname.replace(/\/+$/, '') || '/';
   const m = req.method;
+
+  if (m === 'POST' && (path === '/api/drip' || path === '/api/relay/mint')) {
+    const tag = await clientTag(req, env); // the Durable Object applies POST_LIMIT_PER_MIN and the daily caps per tag
+    if (path === '/api/drip') {
+      const body = await readJson<{ address?: unknown } | null>(req, 2048);
+      const address = body && typeof body === 'object' && typeof body.address === 'string' ? body.address : '';
+      return passthrough(await callDO(env, '/drip', { address, ip: tag }));
+    }
+    const body = await readJson<Record<string, unknown>>(req, 4096);
+    if (!body || typeof body !== 'object' || Array.isArray(body)) throw new HttpError(400, 'bad body');
+    return passthrough(await callDO(env, '/relay-mint', { wire: body, ip: tag }));
+  }
 
   if (m === 'GET' && (path === '/' || path === '/api')) {
     return json({
@@ -64,18 +82,6 @@ async function route(req: Request, env: Env, ctx: ExecutionContext): Promise<Res
       statsUpdatedAt: stats?.updatedAt ?? null,
       statsLagBlocks: stats?.lagBlocks ?? null,
     }, 200, { 'cache-control': 'no-store' });
-  }
-
-  if (m === 'POST' && path === '/api/drip') {
-    const body = await readJson<{ address?: string }>(req, 2048);
-    const ip = req.headers.get('cf-connecting-ip') ?? req.headers.get('x-real-ip') ?? 'local';
-    const tag = await ipTag(ipBucket(ip), env.SNAPSHOT_TOKEN ?? 'isotherm'); // IPv6 limited per /64, not per address
-    return passthrough(await callDO(env, '/drip', { address: body.address ?? '', ip: tag }));
-  }
-
-  if (m === 'POST' && path === '/api/relay/mint') {
-    const body = await readJson<Record<string, unknown>>(req, 4096);
-    return passthrough(await callDO(env, '/relay-mint', body));
   }
 
   if (m === 'GET' && path === '/api/snapshot') {

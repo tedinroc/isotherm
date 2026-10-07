@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-labelledby="t">
+  <title id="t">Isotherm</title>
+  <!-- Isotherm logo mark. Original artwork for this repo (MIT, see LICENSE); no third-party marks.
+       A thermometer whose mercury stops exactly on an isotherm, a line of equal temperature: cool above the
+       line, warm below it. The rungs on the stem are the strike ladder ("Tmax >= k"). -->
+  <defs>
+    <clipPath id="tile">
+      <rect width="1024" height="1024" rx="232"/>
+    </clipPath>
+    <linearGradient id="cool" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#173B5C"/>
+      <stop offset="1" stop-color="#0C2034"/>
+    </linearGradient>
+    <linearGradient id="warm" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF9A3C"/>
+      <stop offset="1" stop-color="#F0502B"/>
+    </linearGradient>
+    <!-- The isotherm. It is level where it crosses the stem (x = 512, y = 590), so the mercury top sits on it. -->
+    <path id="iso" d="M-40 540 C190 470 330 590 512 590 S840 520 1064 560"/>
+  </defs>
+
+  <g clip-path="url(#tile)">
+    <rect width="1024" height="1024" fill="url(#cool)"/>
+    <!-- cool contours above the isotherm -->
+    <g fill="none" stroke="#25547D" stroke-width="20" stroke-linecap="round">
+      <path d="M-40 370 C190 300 330 420 512 420 S840 350 1064 390"/>
+      <path d="M-40 200 C190 130 330 250 512 250 S840 180 1064 220"/>
+    </g>
+    <!-- warm field below the isotherm -->
+    <path d="M-40 540 C190 470 330 590 512 590 S840 520 1064 560 L1064 1064 L-40 1064 Z" fill="url(#warm)"/>
+    <!-- one warm contour below it -->
+    <path d="M-40 760 C190 690 330 810 512 810 S840 740 1064 780" fill="none" stroke="#FFB466"
+          stroke-opacity="0.55" stroke-width="20" stroke-linecap="round"/>
+
+    <!-- thermometer body -->
+    <g fill="#FFF6E8">
+      <rect x="430" y="117" width="164" height="620" rx="82"/>
+      <circle cx="512" cy="761" r="146"/>
+    </g>
+    <!-- strike-ladder rungs on the stem -->
+    <g stroke="#173B5C" stroke-width="26" stroke-linecap="round">
+      <line x1="474" y1="215" x2="550" y2="215"/>
+      <line x1="474" y1="305" x2="550" y2="305"/>
+      <line x1="474" y1="395" x2="550" y2="395"/>
+      <line x1="474" y1="485" x2="550" y2="485"/>
+    </g>
+    <!-- mercury: bulb plus a column whose flat top is the isotherm -->
+    <g fill="#E23B28">
+      <circle cx="512" cy="761" r="92"/>
+      <rect x="475" y="590" width="74" height="200"/>
+    </g>
+  </g>
+</svg>
