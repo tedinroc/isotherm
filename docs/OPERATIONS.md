@@ -10,7 +10,7 @@ faucet test money. Nothing here touches Monad mainnet.
 | Phone web app (PWA) | https://isotherm.pages.dev (Cloudflare Pages project `isotherm`). Dynamic is enabled since Pages deployment `<retired-deployment>` (2026-10-07 13:21 UTC). The deployed build (Pages deployment `6b18d972`, about 16:24 UTC, main chunk `assets/index-Cd8KBz0E.js`, same app plus the same-origin API) makes "Sign in with email" through Dynamic the default, keeps the labelled dev (burner) wallet as fallback, and shows the Open-Meteo CC BY credit. The first embedded-wallet login, relayed mint and Buy Yes (a team test wallet) are in section 5. |
 | API: drip, gasless-mint relayer, stats, snapshot | https://isotherm.pages.dev/api/* (Pages Function `apps/web/functions/api/[[path]].ts` → service binding `API` → Worker `isotherm-api`; the Worker has no public hostname of its own since 2026-10-07 16:05 UTC). Worker version `60f3a919` deployed 16:24 UTC; its source equals `0c112836` (13:27 UTC, stats classification), and the re-sized caps are live since `ea73ccfa` (08:02 UTC); the go-live version was `ed0ab137` |
 | Contracts (v1, Sourcify exact_match) | Resolver `0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B`, Vault/factory `0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39`, Zap `0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0`. Source of truth: `deployments/testnet.json` |
-| Market maker | **Live:** launchd jobs on this Mac, running from the **runtime copy** `~/isotherm-live` (see section 3). **Shadow:** the Cloudflare Worker `isotherm-maker` (`apps/maker-worker`), live since 2026-10-08 16:25 UTC in SHADOW mode: it computes every decision and sends nothing. Its decisions matched the Mac's tick by tick (section 8.6). The cutover runbook is section 8. |
+| Market maker | **Live: the Cloudflare Worker `isotherm-maker`** (`apps/maker-worker`), cron every minute plus a Durable Object, since the cutover at 2026-10-08 23:00 UTC (07:00 Taipei, Oct 9); first live tx 23:06 UTC. Before that it ran 6.5 h in SHADOW mode and matched the Mac's decisions tick by tick (section 8.6). The Mac launchd jobs `xyz.isotherm.maker/roll/watchdog/challenge-watch` are booted out and disabled; rollback is section 8.4. Settlement (`xyz.isotherm.cre-settle`) still runs on the Mac. |
 
 ### The first live ladder: Taipei (RCSS), Thursday 2026-10-08
 
@@ -197,6 +197,10 @@ judging (Oct 14 – Nov 3), so that judging does not depend on this Mac staying 
   - since 16:25 UTC (`320e757f`, then `07fd9e32`);
   - `d034e1c9` (16:52 UTC), `bdb169ea` (16:57) and `bff587c6` (17:05, current) carry the fixes from the
     shadow-vs-Mac comparison (8.6). The shadow state was reset at 16:58 UTC, so `summary` counts from there.
+  - `c0301839` (18:46 UTC): guard-wide hysteresis and the 3-tick requote step (8.7), still shadow.
+- **Cutover to LIVE 2026-10-08 23:00 UTC** (runbook 8.3): Mac writers stopped at 23:00:31, state imported (2 ladders,
+  Oct 9 spend 2.87 MON re-booked), armed, `033804cc` deployed with `MAKER_MODE = "live"`; live from 23:06 UTC, first tx a
+  >=31 requote (success); the API snapshot source is `isotherm-maker-worker`.
 
 ### 8.1 Who does what
 
