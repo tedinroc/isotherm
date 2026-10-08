@@ -31,7 +31,11 @@ describe("worker config", () => {
     const sh = workerConfig(settingsFrom({} as Env), "shadow");
     expect([sh.dryRun, sh.allowLive]).toEqual([true, false]);
     expect(sh.budget.rollCapMon).toEqual({ maker: 0.8, operator: 0.5, marketCreator: 0.8 });
-    expect(sh.budget.dailyCapMon.maker).toBe(2.2);
+    // cutover day: the Mac's quote spend of that day (<= its cap 4.5 + 0.2 reserve) is re-booked onto this meter
+    expect(sh.budget.dailyCapMon.maker).toBe(6.9);
+    // the Worker's own requote threshold (the Mac keeps 2); the guard-wide hysteresis comes from the shared defaults
+    expect(sh.policy.requoteTicks).toBe(3);
+    expect([sh.fair.guardWarn, sh.fair.guardWarnExit]).toEqual([0.15, 0.13]);
     expect([sh.gas.makerMult, sh.gas.opMult]).toEqual([1.08, 1.1]);
     expect(sh.quote.halfSpreadTicks).toBe(3);
     expect(sh.api.url).toBeNull();

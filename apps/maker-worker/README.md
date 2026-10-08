@@ -84,8 +84,10 @@ Mac's loop), and earlier when a ladder's kill-switch time comes first.
    - Live adopts open orders it lost track of after a cutover or an interrupted tick, and cancels any extra ones.
 6. **Quote** (`tickLadder`).
    - Fair = the Polymarket-implied P(Tmax ≥ k), conditioned on the observed METAR max.
-   - The v0 / intraday guardrail widens or pulls.
-   - Post-only, one bid and one ask per strike, re-quoted only when the policy says so.
+   - The v0 / intraday guardrail widens or pulls. The wide spread has hysteresis: entered above |fair − guard| 0.15,
+     kept while ≥ 0.13 if the resting quote was placed wide (`guard-wide-held` in the tick lines).
+   - Post-only, one bid and one ask per strike, re-quoted only when the policy says so: a move of ≥ `requoteTicks` × 0.01
+     (3 on the Worker, 2 on the Mac), a fair through a resting price (at once), a fill, or a quote older than 6 h.
 7. **Watcher** (every `WATCH_EVERY_SEC`). This is the Mac's `challenge-watch.ts` logic.
    - Resolver events are read with `eth_getLogs` in pages of ≤ 100 blocks, plus a backstop over the newest 64
      ladders.
@@ -109,7 +111,8 @@ it and the book did not change) is reported with `repeat: true` and metered once
   a nonce.
 
 **Budgets.** The meters are per role and per Taipei day. The roll now has its **own** meter (`rollCapMon`: maker
-0.8, operator 0.5, market creator 0.8). It is separate from quoting (`dailyCapMon`: maker 2.2). A day of re-quotes
+0.8, operator 0.5, market creator 0.8). It is separate from quoting (`dailyCapMon`: maker 2.2; 6.9 on the cutover
+day, see docs/OPERATIONS.md §8.7). A day of re-quotes
 can no longer block the next day's roll (the 2026-10-08 incident). The opening quotes of a new ladder count as
 roll. The Mac's Node runner keeps its single shared meter: `rollCapMon` is only set in `config/worker.json`.
 
@@ -137,7 +140,7 @@ roll. The Mac's Node runner keeps its single shared meter: `rollCapMon` is only 
 ```bash
 npm ci
 npm run typecheck
-npm test                     # unit: the Durable Object logic against a fake chain, the cutover scripts (29 tests)
+npm test                     # unit: the Durable Object logic against a fake chain, the cutover scripts (32 tests)
 npm run test:fork            # anvil fork (ports 19800-19802) + the bundled Worker in Miniflare, LIVE on the fork only
 MW_LIVE_SMOKE=1 npx vitest run test/integration/live-readonly.smoke.test.ts   # read-only: live RPC + live data, watch-only shadow, no keys
 MW_REHEARSAL=1 npx vitest run test/integration/cutover-rehearsal.fork.test.ts  # the cutover on a fork: the Mac's REAL state.json and ladder (ports 19810-19812)

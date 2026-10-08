@@ -19,7 +19,9 @@ export interface SeriesState {
   mode: SeriesMode;
   reason?: string;
   orders: { bid?: OrderRef; ask?: OrderRef };
-  lastQuote?: { fair: number; bid: number | null; ask: number | null; bidSize: number; askSize: number; at: number; tx: Hex };
+  /** `wide`: the quote was placed with the "guard-wide" spread; the guard hysteresis (fair.guardWarnExit) keys on it.
+   *  Absent in states written before it existed (and in the shadow's mirror of the live maker): no hysteresis. */
+  lastQuote?: { fair: number; bid: number | null; ask: number | null; bidSize: number; askSize: number; at: number; tx: Hex; wide?: boolean };
   lastPullAt?: number;
   marginDone?: boolean;
 }

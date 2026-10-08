@@ -1,8 +1,9 @@
 // One maker pass. Order of operations every tick:
 //   1. kill switch (independent of market data): any ladder at/after stopAt - preStop gets every maker order on
 //      every strike cancelled (tracked ids + a scan of the book), then optionally its YES margin withdrawn.
-//   2. per active ladder: market data -> fair values -> per strike: resting orders, inventory, book ->
-//      makeQuote -> decide -> one tx (batchUpdate: cancel + place, post-only) or a pull, MON-budgeted.
+//   2. per active ladder: market data -> fair values (guard-wide hysteresis keyed on lastQuote.wide) -> per strike:
+//      resting orders, inventory, book -> makeQuote -> decide -> one tx (batchUpdate: cancel + place, post-only) or a
+//      pull, MON-budgeted.
 //   3. snapshot (file + POST /api/snapshot).
 import type { Address, Hex } from "viem";
 import { computeFairs, type StrikeFair } from "../../forecast/src/fair.ts";
@@ -179,7 +180,14 @@ export async function tickLadder(ctx: Ctx, lad: LadderState, data: MarketData, o
   }
   const d = await data.get(lad.station, lad.isoDate, now * 1000);
   res.data = d;
-  const fairs = computeFairs({ strikes: lad.strikes, nowMs: now * 1000, localMinute: d.localMinute, pm: d.pm, pmFetchedMs: d.pmFetchedMs, obs: d.obs, v0: d.v0, intraday: d.intraday, cfg: ctx.cfg.fair });
+  // guard-wide hysteresis (fair.guardWarnExit) keys on the spread the resting quote was placed with; a lastQuote
+  // without `wide` (older state, the shadow's mirror of the live maker) keeps the plain guardWarn threshold
+  const restingWide: Record<number, boolean> = {};
+  for (const k of lad.strikes) {
+    const s = lad.series[k];
+    if (s?.lastQuote?.wide === true && (s.orders.bid || s.orders.ask)) restingWide[k] = true;
+  }
+  const fairs = computeFairs({ strikes: lad.strikes, nowMs: now * 1000, localMinute: d.localMinute, pm: d.pm, pmFetchedMs: d.pmFetchedMs, obs: d.obs, v0: d.v0, intraday: d.intraday, restingWide, cfg: ctx.cfg.fair });
   res.fairs = fairs;
   if (lad.status === "active" && !lad.paused && !ctx.cfg.dryRun)
     try {
@@ -254,7 +262,7 @@ export async function tickLadder(ctx: Ctx, lad: LadderState, data: MarketData, o
         const created = createdOrders(r.receipt, s.market);
         s.orders = {};
         for (const o of created) s.orders[o.isBuy ? "bid" : "ask"] = { id: o.id, price: o.price, size: o.size, placedAt: now };
-        s.lastQuote = { fair: f.fair!, bid: desired.bid, ask: desired.ask, bidSize: desired.bidSize, askSize: desired.askSize, at: now, tx: r.hash };
+        s.lastQuote = { fair: f.fair!, bid: desired.bid, ask: desired.ask, bidSize: desired.bidSize, askSize: desired.askSize, at: now, tx: r.hash, wide: f.flags.includes("guard-wide") };
         s.mode = "quoting";
         s.reason = action.reasons.join("; ");
         ctx.save();

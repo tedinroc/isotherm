@@ -1,7 +1,7 @@
 // Fair value per strike = the Polymarket-implied P(Tmax >= k), conditioned on the observed max so far.
 // v0 (or, on the day itself, the 2-year intraday increment table) is a GUARDRAIL: a large disagreement widens the
-// maker's spread, a huge one pulls the strike. Without a usable Polymarket ladder the guard becomes a FALLBACK fair
-// (the maker widens further). Pure: no I/O.
+// maker's spread (with hysteresis when guardWarnExit is set), a huge one pulls the strike. Without a usable Polymarket
+// ladder the guard becomes a FALLBACK fair (the maker widens further). Pure: no I/O.
 // Imports only runtime-agnostic modules (the *-core.ts files, closetime.ts), so the Cloudflare Worker uses it as is.
 import { pAtLeast, type LiveLadder } from "./polymarket-core.ts";
 import type { ObservedMax } from "./obs-core.ts";
@@ -11,6 +11,10 @@ import { v0At, type V0Ladder } from "./v0-core.ts";
 export interface FairCfg {
   pmMaxAgeSec: number; // older Polymarket data is not used as the quote source
   guardWarn: number; // |fair - guard| above this -> flag "guard-wide" (maker widens)
+  /** Hysteresis for "guard-wide": a strike whose RESTING quote was placed wide (FairInput.restingWide) stays wide while
+   *  |fair - guard| >= guardWarnExit, and only narrows below it. Entering still needs > guardWarn. Absent/null = no
+   *  hysteresis: the flag flips at guardWarn both ways (each flip is a ~0.056 MON re-quote on Monad). */
+  guardWarnExit?: number | null;
   guardPull: number; // above this -> flag "guard-pull" (maker pulls the strike)
   intradayFromMin: number; // on day D, after this local minute the guard uses the increment table instead of v0
   minCondMass: number; // only condition the PM ladder on the observed max when P_pm(>= m) is at least this
@@ -42,6 +46,9 @@ export interface FairInput {
   obs: ObservedMax | null;
   v0: Pick<V0Ladder, "ladder"> | null;
   intraday: Pick<CloseTimeStats, "incrementTable"> | null;
+  /** Strikes whose resting quote was placed with the "guard-wide" spread (the maker's lastQuote.wide). Only read with
+   *  cfg.guardWarnExit set; a strike that is absent here gets the plain guardWarn threshold. */
+  restingWide?: Record<number, boolean> | null;
   cfg?: Partial<FairCfg>;
 }
 
@@ -98,6 +105,9 @@ export function computeFairs(inp: FairInput): StrikeFair[] {
     const divergence = fair !== null && guard !== null && source === "polymarket" ? +Math.abs(fair - guard).toFixed(4) : null;
     if (divergence !== null && divergence > cfg.guardPull) flags.push("guard-pull");
     else if (divergence !== null && divergence > cfg.guardWarn) flags.push("guard-wide");
+    // hysteresis: keep the wide spread the resting quote was placed with until the divergence is clearly back
+    else if (divergence !== null && typeof cfg.guardWarnExit === "number" && inp.restingWide?.[k] === true && divergence >= cfg.guardWarnExit)
+      flags.push("guard-wide", "guard-wide-held");
     return {
       k,
       fair: fair === null ? null : +fair.toFixed(4),

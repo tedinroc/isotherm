@@ -61,7 +61,8 @@ export function worldStart(): number {
 
 export const PM: Record<number, number> = { 28: 0.95, 29: 0.85, 30: 0.47, 31: 0.09 };
 
-export function stubData(pm: Record<number, number>, obs: { max: number | null } = { max: null }): MarketData {
+/** `v0`: the guard ladder P(Tmax >= k) per strike (null = no guard, so no guard-wide / guard-pull flags). */
+export function stubData(pm: Record<number, number>, obs: { max: number | null } = { max: null }, v0: Record<number, number> | null = null): MarketData {
   return {
     async get(icao, isoDate, nowMs): Promise<LadderData> {
       const strikes = Object.keys(pm).map(Number).sort((a, b) => a - b);
@@ -69,7 +70,7 @@ export function stubData(pm: Record<number, number>, obs: { max: number | null }
         pm: { station: icao, city: "taipei", date: isoDate, slug: "stub", url: "https://polymarket.com/event/stub", apiUrl: "", eventId: "1", title: "stub", closed: false, volume: 1000, liquidity: 1000, endDate: "", settlementSource: `wunderground:${icao}`, unit: "C", fetchedAt: new Date(nowMs).toISOString(), quoteSource: "clob", sumRaw: 1, buckets: [], ladder: { ...pm }, strikes, median: 29, mean: 29.5, sd: 1, ok: true, warnings: [] },
         pmFetchedMs: nowMs,
         obs: obs.max === null ? null : { station: icao, date: isoDate, tmaxC: obs.max, nObs: 20, lastObsUtc: nowMs, lastLocal: "10:00", atLocal: "10:00", dayStarted: true, dayOver: false, fetchedAt: new Date(nowMs).toISOString(), sources: [] },
-        v0: null,
+        v0: v0 ? ({ ladder: { ...v0 } } as LadderData["v0"]) : null,
         intraday: null,
         localMinute: null,
       };

@@ -59,3 +59,35 @@ test("guard divergence flags: >0.15 widen, >0.40 pull", () => {
   const mild = computeFairs({ ...base, v0: { ladder: { ...far.ladder, 30: 0.7 } } });
   assert.ok(mild[2].flags.includes("guard-wide"));
 });
+
+test("guard-wide hysteresis: enter above guardWarn, stay wide while >= guardWarnExit when the resting quote is wide, exit below it", () => {
+  const f30 = +pm.ladder[30].toFixed(4);
+  // |fair - guard| = div on strike 30; restingWide = the maker's lastQuote.wide; cfg.guardWarnExit = the exit threshold
+  const at = (div: number, restingWide?: Record<number, boolean> | null, cfg: { guardWarnExit?: number | null } = { guardWarnExit: 0.13 }) =>
+    computeFairs({ ...base, strikes: [30], v0: { ladder: { 30: +(f30 + div).toFixed(4) } }, restingWide, cfg })[0];
+  assert.equal(at(0.14, { 30: true }).divergence, 0.14);
+  // enter: above 0.15, whatever the resting quote
+  assert.deepEqual(at(0.16, null).flags, ["guard-wide"]);
+  assert.deepEqual(at(0.16, { 30: true }).flags, ["guard-wide"]);
+  // stay: the resting quote was placed wide and the divergence is still >= 0.13
+  assert.deepEqual(at(0.14, { 30: true }).flags, ["guard-wide", "guard-wide-held"]);
+  assert.deepEqual(at(0.13, { 30: true }).flags, ["guard-wide", "guard-wide-held"]);
+  // a narrow resting quote is not widened between the thresholds
+  assert.deepEqual(at(0.14, { 30: false }).flags, []);
+  assert.deepEqual(at(0.14, { 31: true }).flags, []);
+  // exit: below 0.13
+  assert.deepEqual(at(0.1299, { 30: true }).flags, []);
+  assert.deepEqual(at(0.12, { 30: true }).flags, []);
+  // absent field (a lastQuote written before `wide` existed): the plain 0.15 threshold, as before
+  assert.deepEqual(at(0.14, undefined).flags, []);
+  assert.deepEqual(at(0.16, undefined).flags, ["guard-wide"]);
+  // absent config value: no hysteresis at all, even with a wide resting quote
+  assert.deepEqual(at(0.14, { 30: true }, {}).flags, []);
+  assert.deepEqual(at(0.14, { 30: true }, { guardWarnExit: null }).flags, []);
+  // guard-pull still wins over a held wide spread
+  assert.deepEqual(at(0.45, { 30: true }).flags, ["guard-pull"]);
+  // only a Polymarket fair has a divergence: a fallback fair is never held
+  const fb = computeFairs({ ...base, strikes: [30], pm: null, v0: { ladder: { 30: 0.5 } }, restingWide: { 30: true }, cfg: { guardWarnExit: 0.13 } })[0];
+  assert.equal(fb.source, "fallback-v0");
+  assert.ok(!fb.flags.includes("guard-wide"));
+});

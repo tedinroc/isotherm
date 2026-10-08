@@ -71,4 +71,11 @@ test("config: defaults validate; live broadcast needs ISOTHERM_ALLOW_LIVE=1", ()
   assert.equal(c.allowLive, process.env.ISOTHERM_ALLOW_LIVE === "1");
   assert.throws(() => loadConfig({ quote: { tick: 0.0015 } }), /multiple of the Kuru tick/);
   assert.throws(() => loadConfig({ gas: { makerMult: 2 } }), /gas multipliers/);
+  // the Mac keeps requoteTicks 2 (the Worker sets 3 in its own overlay); the guard-wide hysteresis is shared
+  assert.equal(c.policy.requoteTicks, 2);
+  assert.deepEqual([c.fair.guardWarn, c.fair.guardWarnExit], [0.15, 0.13]);
+  assert.throws(() => loadConfig({ fair: { guardWarnExit: 0.2 } }), /guardWarnExit 0.2 must be in \(0, guardWarn 0.15\]/);
+  assert.throws(() => loadConfig({ fair: { guardWarnExit: 0 } }), /guardWarnExit/);
+  assert.equal(loadConfig({ fair: { guardWarnExit: null } }).fair.guardWarnExit, null);
+  assert.throws(() => loadConfig({ policy: { requoteTicks: 0 } }), /requoteTicks 0 must be >= 1/);
 });

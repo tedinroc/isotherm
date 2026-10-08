@@ -329,3 +329,81 @@ describe("shadow fidelity (fixes from the 2026-10-08 shadow-vs-Mac comparison)",
     expect(w.chain.openOrders(w.strikes[0].market, MAKER.address)).toEqual([]);
   });
 });
+
+describe("re-quote spend: guard-wide hysteresis (fair.guardWarnExit 0.13) and requoteTicks 3 (config/worker.json)", () => {
+  // Polymarket fair and v0 guard: equal on every strike except >=30, so only >=30 can get a guard flag
+  const data = (f30: number, g30: number) => stubData({ ...PM, 30: f30 }, { max: null }, { ...PM, 30: g30 });
+  const live = async (w: ReturnType<typeof world>) => {
+    await armed(w);
+    w.api.snapshot = macSnapshot(w, 3600); // the Mac stopped an hour ago
+  };
+
+  it("live: enters the wide spread above 0.15, keeps it while |fair - guard| >= 0.13, leaves it below; a 2-tick move is not re-quoted", async () => {
+    const w = world();
+    await live(w);
+    const tick = async (f30: number, g30: number) => {
+      w.chain.time += 60;
+      return w.engine({ MAKER_MODE: "live" }, data(f30, g30)).tick();
+    };
+    const s30 = () => w.engine().loadState("live").ladders[`RCSS:${w.date}`].series[30];
+    const v30 = (r: Awaited<ReturnType<typeof tick>>) => r.ladders[0].strikes.find((k) => k.k === 30)!;
+    // |0.47 - 0.63| = 0.16 > 0.15: the adopted 0.44/0.51 quote is re-placed wide, and the flag is stored with it
+    let r = await tick(0.47, 0.63);
+    expect(r.mode).toBe("live");
+    expect(r.txs.map((t) => t.label)).toEqual(["requote >=30 100@0.41 / 100@0.53 cancel 2"]);
+    expect(s30().lastQuote).toMatchObject({ bid: 0.41, ask: 0.53, fair: 0.47, wide: true });
+    // 0.14, between the thresholds: held (without the hysteresis this re-quotes back to 0.44/0.50: the Oct 9 flip-flop)
+    r = await tick(0.47, 0.61);
+    expect(r.txs).toEqual([]);
+    expect(v30(r)).toMatchObject({ action: "none", flags: ["guard-wide", "guard-wide-held"], desired: { bid: 0.41, ask: 0.53 } });
+    r = await tick(0.47, 0.6);
+    expect(r.txs).toEqual([]);
+    // 0.12 < 0.13: narrow again
+    r = await tick(0.47, 0.59);
+    expect(r.txs.map((t) => t.label)).toEqual(["requote >=30 100@0.44 / 100@0.5 cancel 2"]);
+    expect(s30().lastQuote).toMatchObject({ bid: 0.44, ask: 0.5, wide: false });
+    // 0.14 again, but the resting quote is narrow now: the 0.15 entry threshold applies
+    r = await tick(0.47, 0.61);
+    expect(r.txs).toEqual([]);
+    expect(v30(r).flags).toEqual([]);
+    // requoteTicks 3: fair +0.02 (desired 0.46/0.52) is not worth a re-quote ...
+    r = await tick(0.49, 0.49);
+    expect(r.txs).toEqual([]);
+    expect(v30(r)).toMatchObject({ action: "none", desired: { bid: 0.46, ask: 0.52 } });
+    // ... a 3-tick move of the desired ask is
+    r = await tick(0.497, 0.497);
+    expect(r.txs.map((t) => t.label)).toEqual(["requote >=30 100@0.46 / 100@0.53 cancel 2"]);
+    expect(v30(r).reasons).toEqual(["ask 0.5 -> 0.53"]);
+    // the urgent rule is unaffected: the fair through the resting ask re-quotes at once (0.53 <= 0.535, a 0.008 move)
+    r = await tick(0.535, 0.535);
+    expect(r.txs.map((t) => t.label)).toEqual(["requote >=30 100@0.5 / 100@0.57 cancel 2"]);
+    expect(v30(r).reasons[0]).toBe("resting ask 0.53 <= fair 0.535");
+    expect(w.chain.sent.filter((t) => t.functionName === "batchUpdate")).toHaveLength(4);
+  });
+
+  it("control: without the exit threshold (fair.guardWarnExit null) the same path flip-flops, one re-quote per flip", async () => {
+    const w = world();
+    await live(w);
+    const tick = async (g30: number) => {
+      w.chain.time += 60;
+      return w.engine({ MAKER_MODE: "live", CONFIG_OVERRIDES: '{"fair":{"guardWarnExit":null}}' }, data(0.47, g30)).tick();
+    };
+    const labels: string[] = [];
+    for (const g of [0.63, 0.61, 0.63, 0.61]) labels.push(...(await tick(g)).txs.map((t) => t.label));
+    expect(labels).toEqual(["requote >=30 100@0.41 / 100@0.53 cancel 2", "requote >=30 100@0.44 / 100@0.5 cancel 2", "requote >=30 100@0.41 / 100@0.53 cancel 2", "requote >=30 100@0.44 / 100@0.5 cancel 2"]);
+  });
+
+  it("a lastQuote without the wide flag (adopted from the books or imported from the Mac's state.json) keeps the plain 0.15 threshold", async () => {
+    const w = world();
+    // the Mac's >=30 quote is the wide one (0.41/0.53, placed when |fair - guard| was above 0.15)
+    const m30 = w.strikes[1];
+    w.chain.apply(MAKER.address, m30.market, encodeFunctionData({ abi: kuruBookAbi, functionName: "batchCancelOrdersNoRevert", args: [[w.macOrders[30].bid, w.macOrders[30].ask]] }));
+    w.chain.place(m30.market, MAKER.address, 0.41, 100, true);
+    w.chain.place(m30.market, MAKER.address, 0.53, 100, false);
+    await live(w);
+    // |0.47 - 0.61| = 0.14: nothing says the resting quote is wide, so it is narrowed, exactly as before the change
+    const r = await w.engine({ MAKER_MODE: "live" }, data(0.47, 0.61)).tick();
+    expect(r.txs.map((t) => t.label)).toEqual(["requote >=30 100@0.44 / 100@0.5 cancel 2"]);
+    expect(w.engine().loadState("live").ladders[`RCSS:${w.date}`].series[30].lastQuote).toMatchObject({ wide: false });
+  });
+});

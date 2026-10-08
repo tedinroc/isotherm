@@ -1,0 +1,37 @@
+B: >=30 guard fitted for the hourly v0 refreshes before 15:47:33 UTC: 0.8685 (13:45-14:46), 0.8695 (14:46-15:47); score 11
+requote cost 0.0561 MON (mean of the Mac's requotes), pull 0.0281
+data                                                | scenario                                                             | requotes | pulls | urgent | flip-backs | per 24 h |  MON | MON / 24 h | min edge | max |mid-fair|
+A recorded 16:32-17:26 UTC (54 ticks)               | Mac actual (txs.jsonl)                                               |        9 |     0 |        |            |      243 | 0.51 |      13.88 |          |               
+A recorded 16:32-17:26 UTC (54 ticks)               | current (2 ticks, no hysteresis) [9 of the Mac's 9 txs reproduced]   |        9 |     0 |      0 |          2 |      243 | 0.51 |      13.62 |    0.027 |          0.012
+A recorded 16:32-17:26 UTC (54 ticks)               | hysteresis 0.15/0.13, 2 ticks                                        |        5 |     0 |      0 |          0 |      135 | 0.28 |       7.57 |    0.027 |          0.012
+A recorded 16:32-17:26 UTC (54 ticks)               | hysteresis + requoteTicks 3                                          |        2 |     0 |      0 |          0 |       54 | 0.11 |       3.03 |    0.014 |          0.023
+A recorded 16:32-17:26 UTC (54 ticks)               | hysteresis + requoteTicks 4                                          |        2 |     0 |      0 |          0 |       54 | 0.11 |       3.03 |    0.014 |          0.023
+A recorded 16:32-17:26 UTC (54 ticks)               | requoteTicks 3, no hysteresis                                        |        6 |     0 |      0 |          1 |      162 | 0.34 |       9.08 |    0.014 |          0.023
+B Oct 9 ladder 13:47-18:38 UTC (4.9 h)              | Mac actual (txs.jsonl)                                               |       38 |     1 |        |            |      188 | 2.19 |      10.83 |          |               
+B Oct 9 ladder 13:47-18:38 UTC (4.9 h)              | current (2 ticks, no hysteresis) [26 of the Mac's 39 txs reproduced] |       44 |     2 |      2 |         27 |      218 | 2.53 |      12.49 |    0.021 |          0.014
+B Oct 9 ladder 13:47-18:38 UTC (4.9 h)              | hysteresis 0.15/0.13, 2 ticks                                        |       25 |     2 |      2 |         10 |      124 | 1.46 |       7.22 |    0.021 |          0.014
+B Oct 9 ladder 13:47-18:38 UTC (4.9 h)              | hysteresis + requoteTicks 3                                          |       17 |     2 |      1 |          6 |       84 | 1.01 |       5.00 |    0.012 |          0.024
+B Oct 9 ladder 13:47-18:38 UTC (4.9 h)              | hysteresis + requoteTicks 4                                          |        8 |     2 |      1 |          2 |       40 | 0.51 |       2.50 |    0.013 |          0.032
+B Oct 9 ladder 13:47-18:38 UTC (4.9 h)              | requoteTicks 3, no hysteresis                                        |       38 |     2 |      2 |         24 |      188 | 2.19 |      10.83 |    0.011 |          0.024
+B' of which Oct 9 Taipei day 16:00-18:38 UTC        | Mac actual (txs.jsonl)                                               |       27 |     1 |        |            |      246 | 1.56 |      14.23 |          |               
+B' of which Oct 9 Taipei day 16:00-18:38 UTC        | current (2 ticks, no hysteresis) [17 of the Mac's 28 txs reproduced] |       29 |     2 |      2 |         16 |      264 | 1.68 |      15.33 |    0.021 |          0.014
+B' of which Oct 9 Taipei day 16:00-18:38 UTC        | hysteresis 0.15/0.13, 2 ticks                                        |       20 |     2 |      2 |          8 |      182 | 1.18 |      10.73 |    0.021 |          0.014
+B' of which Oct 9 Taipei day 16:00-18:38 UTC        | hysteresis + requoteTicks 3                                          |       13 |     2 |      1 |          4 |      118 | 0.79 |       7.16 |    0.012 |          0.024
+B' of which Oct 9 Taipei day 16:00-18:38 UTC        | hysteresis + requoteTicks 4                                          |        7 |     2 |      1 |          2 |       64 | 0.45 |       4.09 |    0.013 |          0.032
+B' of which Oct 9 Taipei day 16:00-18:38 UTC        | requoteTicks 3, no hysteresis                                        |       24 |     2 |      2 |         12 |      219 | 1.40 |      12.78 |    0.011 |          0.024
+C Oct 8 ladder Oct 7 05:57-Oct 8 02:20 UTC (20.4 h) | Mac actual (txs.jsonl)                                               |       29 |     4 |        |            |       34 | 1.71 |       2.01 |          |               
+C Oct 8 ladder Oct 7 05:57-Oct 8 02:20 UTC (20.4 h) | current (2 ticks) [25 of the Mac's 33 txs reproduced]                |       39 |     5 |      0 |         13 |       46 | 2.33 |       2.74 |    0.020 |          0.015
+C Oct 8 ladder Oct 7 05:57-Oct 8 02:20 UTC (20.4 h) | requoteTicks 3                                                       |       18 |     5 |      0 |          2 |       21 | 1.15 |       1.35 |    0.010 |          0.025
+C Oct 8 ladder Oct 7 05:57-Oct 8 02:20 UTC (20.4 h) | requoteTicks 4                                                       |       15 |     5 |      2 |          1 |       18 | 0.98 |       1.16 |    0.001 |          0.034
+
+urgent re-quotes (fair crossed a resting price):
+  B current (2 ticks, no hysteresis): 2026-10-08T18:11:29Z >=30 -> 0.7/0.77 [resting ask 0.73 <= fair 0.7368; bid 0.66 -> 0.7; ask 0.73 -> 0.77; fair moved 0.6972 -> 0.7368]
+  B current (2 ticks, no hysteresis): 2026-10-08T18:19:00Z >=30 -> 0.61/0.74 [resting bid 0.7 >= fair 0.6761; bid 0.7 -> 0.61; ask 0.77 -> 0.74; fair moved 0.7368 -> 0.6761]
+  B hysteresis 0.15/0.13, 2 ticks: 2026-10-08T18:11:29Z >=30 -> 0.7/0.77 [resting ask 0.73 <= fair 0.7368; bid 0.66 -> 0.7; ask 0.73 -> 0.77; fair moved 0.6972 -> 0.7368]
+  B hysteresis 0.15/0.13, 2 ticks: 2026-10-08T18:19:00Z >=30 -> 0.61/0.74 [resting bid 0.7 >= fair 0.6761; bid 0.7 -> 0.61; ask 0.77 -> 0.74; fair moved 0.7368 -> 0.6761]
+  B hysteresis + requoteTicks 3: 2026-10-08T18:19:00Z >=30 -> 0.61/0.74 [resting bid 0.68 >= fair 0.6761; bid 0.68 -> 0.61; fair moved 0.7118 -> 0.6761]
+  B hysteresis + requoteTicks 4: 2026-10-08T18:19:00Z >=30 -> 0.61/0.74 [resting bid 0.68 >= fair 0.6761; bid 0.68 -> 0.61]
+  B requoteTicks 3, no hysteresis: 2026-10-08T18:11:29Z >=30 -> 0.7/0.77 [resting ask 0.73 <= fair 0.7368; bid 0.66 -> 0.7; ask 0.73 -> 0.77; fair moved 0.6972 -> 0.7368]
+  B requoteTicks 3, no hysteresis: 2026-10-08T18:19:00Z >=30 -> 0.61/0.74 [resting bid 0.7 >= fair 0.6761; bid 0.7 -> 0.61; ask 0.77 -> 0.74; fair moved 0.7368 -> 0.6761]
+  C requoteTicks 4: 2026-10-07T06:08:45Z >=30 -> 0.36/0.49 [resting bid 0.43 >= fair 0.4231; bid 0.43 -> 0.36; fair moved 0.4636 -> 0.4231]
+  C requoteTicks 4: 2026-10-08T00:21:37Z >=29 -> 0.71/0.78 [resting bid 0.75 >= fair 0.7447; bid 0.75 -> 0.71; ask 0.82 -> 0.78]

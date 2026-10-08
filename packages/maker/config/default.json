@@ -57,6 +57,7 @@
   "fair": {
     "pmMaxAgeSec": 1200,
     "guardWarn": 0.15,
+    "guardWarnExit": 0.13,
     "guardPull": 0.4,
     "intradayFromMin": 660,
     "minCondMass": 0.05

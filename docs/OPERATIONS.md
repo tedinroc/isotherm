@@ -222,7 +222,8 @@ tick. The DO applies only the latest document, so `control.mjs` refuses a new on
 unapplied (`--force` replaces it). Always wait for `node scripts/control.mjs result` before the next command.
 
 **Budgets** (`apps/maker-worker/config/worker.json`):
-- Quoting: maker 2.2 MON/day, plus the 0.2 reserve for pulls.
+- Quoting: maker 2.2 MON/day, plus the 0.2 reserve for pulls. **6.9 on the cutover day** (section 8.7): the import
+  re-books the Mac's spend of that day onto this meter, so 2.2 would leave the Worker unable to re-quote or pull.
 - Roll, separately: maker 0.8, operator 0.5, market creator 0.8.
 
 A spent quoting day therefore cannot block the next roll (the Oct 8 incident). The opening quotes of a new ladder
@@ -352,7 +353,7 @@ Run everything from `apps/maker-worker` with `XDG_CONFIG_HOME` set as in 8.2.
 | Change caps or settings | edit `config/worker.json` or the `[vars]` in `wrangler.toml`, then `npm run deploy` (`-- --live` once live) |
 | Rotate a secret | `node scripts/put-secrets.mjs --only MAKER_KEY` |
 | Reset the shadow's own state and summary | `node scripts/control.mjs reset-shadow` |
-| Tests | `npm test` (29 unit), `npm run test:fork` (anvil fork + the bundled Worker in Miniflare, live on the fork), `MW_REHEARSAL=1 npx vitest run test/integration/cutover-rehearsal.fork.test.ts` (this runbook on a fork with the Mac's real state), `MW_LIVE_SMOKE=1 npx vitest run test/integration/live-readonly.smoke.test.ts` (read-only, no keys) |
+| Tests | `npm test` (32 unit), `npm run test:fork` (anvil fork + the bundled Worker in Miniflare, live on the fork), `MW_REHEARSAL=1 npx vitest run test/integration/cutover-rehearsal.fork.test.ts` (this runbook on a fork with the Mac's real state), `MW_LIVE_SMOKE=1 npx vitest run test/integration/live-readonly.smoke.test.ts` (read-only, no keys) |
 
 **Known limits.**
 - **Settlement still depends on the Mac.** If the Mac sleeps, ladders still resolve by `voidIfStale` after 48 h
@@ -449,5 +450,89 @@ quoting, so a busy quoting day can again block the next roll (Oct 8); the Worker
   maker spent 0.66 MON by 17:27 UTC (the Taipei day starts at 16:00 UTC), mostly on ≥30 flipping. A small
   hysteresis (enter the wide spread at 0.15, leave it below 0.13, using the flag the resting quote was placed with)
   would remove it. Not changed here, so that the shadow stays comparable with the Mac: it is a policy change for both.
+  Prepared on Oct 9 for after the cutover: section 8.7.
 - **MON runway.** The maker held 4.10 MON at 17:19 UTC and spent 2.45 on Oct 8 (all three keys: 3.4 MON/day);
   the testnet faucet needs a person in a browser, so fund before judging starts.
+
+### 8.7 Re-quote spend fix (prepared 2026-10-09, deploy after the cutover)
+
+On Monad each re-quote bills its gas limit, about 0.056 MON. On Oct 9 (Taipei) the Mac spent about 0.65 MON/h,
+mostly re-quotes that flip back and forth on ≥30 and ≥31. There are two causes:
+- `guard-wide` had no hysteresis (section 8.6).
+- `requoteTicks` 2 re-quotes on every 0.02 move of the fair, and the Polymarket mids jitter by cents.
+
+**What changed.**
+- *Shared core (both runtimes).* `fair.guardWarnExit` 0.13 in `packages/maker/config/default.json`.
+  - A strike enters the wide spread above `guardWarn` 0.15, as before.
+  - It stays wide while |fair − guard| ≥ 0.13, but only if its resting quote was placed wide. That flag is now
+    stored as `lastQuote.wide`.
+  - Tick lines and the snapshot show `guard-wide-held` while the wide spread is held.
+  - A `lastQuote` without `wide` behaves exactly as before. That covers the Mac's `state.json` imported at the
+    cutover and the shadow's mirror of the live maker. So does a config without `guardWarnExit`.
+  - The Mac's runtime copy (`~/isotherm-live`) is not changed. It gets the hysteresis only at its next
+    `deploy-runtime.sh`.
+- *Worker only* (`apps/maker-worker/config/worker.json`):
+  - `policy.requoteTicks` 3. The Mac keeps 2.
+  - `budget.dailyCapMon.maker` 6.9 for the cutover day (below).
+
+**Replay** (`apps/maker-worker/evidence/requote-replay-2026-10-09/`, `node replay.ts`, output in `results.txt`). It
+runs the repo's `computeFairs`, `makeQuote` and `decide` tick by tick.
+
+| Data | Mac actual | current (2 ticks) | hysteresis, 2 ticks | hysteresis + 3 ticks | hysteresis + 4 ticks |
+|---|---|---|---|---|---|
+| A. The Mac's recorded snapshots, 16:32–17:26 UTC Oct 8 (exact fair and guard) | 9 | 9 (all 9 of the Mac's txs reproduced) | 5 | **2** | 2 |
+| B. Oct 9 ladder, 13:47–18:38 UTC (4.9 h; fair from the Polymarket minute history) | 38 | 44 | 25 | **17** | 8 |
+| B per 24 h (MON per 24 h) | 188 (10.8) | 218 (12.5) | 124 (7.2) | **84 (5.0)** | 40 (2.5) |
+| C. Oct 8 ladder, 20.4 h, no guard flapping (requoteTicks only) | 29 | 39 | – | **18** | 15 |
+| Lowest edge left on the book, B / C | | 0.021 / 0.020 | 0.021 / – | 0.012 / 0.010 | 0.013 / **0.001** |
+
+Notes on the replay:
+- The urgent rule (fair at or through a resting price) still fired in every scenario. In B with 3 ticks: 18:19 UTC,
+  ≥30, "resting bid 0.68 >= fair 0.6761".
+- Of the 17 re-quotes left in B, 11 are ≥31. Its Polymarket bucket mid jumped 0.04–0.06 every few minutes between
+  17:57 and 18:06 UTC. A larger step would only hide that by letting quotes go stale.
+
+**Why requoteTicks 3.** It removes most of the remaining jitter re-quotes: −54 % on the calm Oct 8 ladder, −32 % on
+top of the hysteresis in B. It still leaves at least 0.01 of edge on both sides. A 4-tick step (0.04) is as wide as
+the normal half-spread (0.03–0.04 after rounding), so the fair reaches the resting price before the step triggers:
+lowest edge 0.001 and 2 urgent re-quotes on Oct 8.
+
+**Why 6.9 MON for the cutover day.** `import-state` re-books the Mac's quote and pull spend of that Taipei day onto
+the Worker's quoting meter:
+- *The Mac's part: at most 4.7.* The Mac's runtime caps that meter at 4.5 (`~/isotherm-live` `local.json`), plus the
+  0.2 reserve for pulls. It stood at 1.56 at 02:21 Taipei. At that night's pace of 0.65 MON/h it reaches its cap
+  around 06:50 Taipei, before the 07:00 cutover window.
+  - This also argues for the morning window. A Mac at its cap cannot pay for its own 12:45 roll of Oct 10: its
+    single meter blocks it, as on Oct 8. The Worker rolls at 12:00 on its separate roll meter.
+- *The Worker's part: 2.2*, its usual quoting allowance.
+
+With the old 2.2 cap, the imported meter (above 2.4) would refuse every re-quote and every pull for the rest of that
+day. Only the kill switch is never refused. **Deploy this right after the cutover** (or ship it with step 4 of 8.3),
+not hours later.
+
+Lower the cap back to 2.2 from Oct 10 (Taipei): 6.9 is more than the maker key holds, so it would not protect the
+wallet. With the fix, a calm day projects to about 1.6 MON of quoting; a day like the night of Oct 9 projects to
+about 6, and the cap then turns re-quotes into pulls.
+
+**MON.** The maker held 6.19 MON at 02:33 Taipei on Oct 9. If the Mac reaches its cap first, about 3 MON is left for
+the Worker's rest of the day: quoting up to 2.4, roll up to 0.8 and the kill switch about 0.15. Fund the maker
+(section 4).
+
+**Deploy (after the cutover: the Worker is live).** Run from `apps/maker-worker`, with `XDG_CONFIG_HOME` set as in 8.2.
+```bash
+npm test && npm run typecheck                 # 32 unit tests
+npm run test:fork                             # optional: anvil fork + Miniflare, throwaway keys
+npm run deploy -- --live                      # wrangler.toml has MAKER_MODE = "live": the output must show it,
+                                              # the cron, and no workers.dev URL; note the version id
+node scripts/control.mjs status               # "version.id" = the new version, "mode": "live"
+node scripts/control.mjs ticks 5              # live ticks, "sent:" only when a re-quote is due; a strike between
+                                              # 0.13 and 0.15 with a wide quote shows guard-wide-held, not a re-quote
+```
+Then, after Taipei midnight Oct 10: set `budget.dailyCapMon.maker` back to 2.2 in `config/worker.json`, along with
+its assertion in `test/unit/infra.test.ts`. Run `npm test`, then `npm run deploy -- --live`.
+
+**Rollback.**
+- Revert `config/worker.json` (and, for the hysteresis, `guardWarnExit` in `default.json`) and deploy with `--live`.
+- Alternatively, set `CONFIG_OVERRIDES = '{"policy":{"requoteTicks":2},"fair":{"guardWarnExit":null}}'` in the
+  `[vars]` and deploy.
+- Old states keep working in both directions: `wide` is optional.

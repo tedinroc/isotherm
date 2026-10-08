@@ -40,8 +40,11 @@ export interface MakerConfig {
     rollCapMon?: Partial<Record<Role, number>> | null;
   };
   quote: QuoteCfg;
+  /** requoteTicks: re-quote when the desired price or the fair moved >= requoteTicks x quote.tick since the resting
+   *  quote (per runtime: the Worker sets its own in config/worker.json). */
   policy: { requoteTicks: number; staleHours: number; refillRatio: number; preStopSec: number };
-  fair: { pmMaxAgeSec: number; guardWarn: number; guardPull: number; intradayFromMin: number; minCondMass: number };
+  /** guardWarnExit: guard-wide hysteresis (see forecast/src/fair.ts FairCfg); absent/null = none. */
+  fair: { pmMaxAgeSec: number; guardWarn: number; guardWarnExit?: number | null; guardPull: number; intradayFromMin: number; minCondMass: number };
   roll: {
     strikePolicy: Partial<StrikePolicy>;
     mintSets: number;
@@ -75,4 +78,7 @@ export function validateConfig(c: MakerConfig) {
   if (q.halfSpreadTicks < 1) throw new Error("quote.halfSpreadTicks must be >= 1");
   if (c.gas.makerMult < 1 || c.gas.opMult < 1 || c.gas.makerMult > 1.5 || c.gas.opMult > 1.5) throw new Error("gas multipliers must be in [1, 1.5] (Monad bills the gas limit)");
   if (c.chainId !== 10143) throw new Error("this maker only runs on Monad testnet (10143)");
+  if (!(c.policy.requoteTicks >= 1)) throw new Error(`policy.requoteTicks ${c.policy.requoteTicks} must be >= 1`);
+  const exit = c.fair.guardWarnExit;
+  if (exit !== undefined && exit !== null && !(exit > 0 && exit <= c.fair.guardWarn)) throw new Error(`fair.guardWarnExit ${exit} must be in (0, guardWarn ${c.fair.guardWarn}]`);
 }
