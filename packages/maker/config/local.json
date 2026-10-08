@@ -1,5 +1,5 @@
 {
-  "_comment": "Go-live overrides (2026-10-07). Conservative daily MON caps while testnet MON is scarce. Live state lives OUTSIDE ~/Documents (launchd jobs cannot read ~/Documents: macOS privacy/TCC), in the runtime copy ~/isotherm-live made by scripts/deploy-runtime.sh. Both the repo copy and the runtime copy point at the same absolute var paths, so the single-writer lock covers both. See docs/OPERATIONS.md. Maker cap 0.8 + reserve 0.2 per Taipei day so that cap + reserve + the close-time kill switch (~0.26) always fit in the maker's MON (it held 1.73 after go-live funding). 2026-10-07 15:40 Taipei: maker cap raised 0.8->1.2 after funding (maker 2.62 MON).",
+  "_comment": "Go-live overrides (2026-10-07). Conservative daily MON caps while testnet MON is scarce. Live state lives OUTSIDE ~/Documents (launchd jobs cannot read ~/Documents: macOS privacy/TCC), in the runtime copy ~/isotherm-live made by scripts/deploy-runtime.sh. Both the repo copy and the runtime copy point at the same absolute var paths, so the single-writer lock covers both. See docs/OPERATIONS.md. Maker cap 0.8 + reserve 0.2 per Taipei day so that cap + reserve + the close-time kill switch (~0.26) always fit in the maker's MON (it held 1.73 after go-live funding). 2026-10-07 15:40 Taipei: maker cap raised 0.8->1.2 after funding (maker 2.62 MON). 2026-10-08 22:00 Taipei: maker cap 1.2->3.0 after the Oct 9 roll was blocked by the quoting budget; maker funded +5 MON.",
   "api": {
     "url": "https://isotherm.pages.dev"
   },
@@ -12,7 +12,7 @@
   },
   "budget": {
     "dailyCapMon": {
-      "maker": 1.2,
+      "maker": 3.0,
       "operator": 0.5,
       "marketCreator": 0.8
     },

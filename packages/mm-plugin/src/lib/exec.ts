@@ -38,6 +38,7 @@ export type StepResult = {
   maxMonBilled: string; // gasLimit x gas price at submit time (Monad bills the limit)
   pollingId?: string;
   failure?: string;
+  reportedStatus?: string; // what the signing service reported when we confirmed the receipt ourselves
 };
 
 export type RunnerOpts = { gasMult: number; errorAbis: Abi[]; source: string };
@@ -115,12 +116,27 @@ export class TxRunner {
       ...(res.failureDescription || res.failureCode ? { failure: [res.failureCode, res.failureDescription].filter(Boolean).join(": ") } : {}),
     };
     this.steps.push(r);
-    if (res.status !== "CONFIRMED") throw statusError(r, this.doneSoFar(1));
+    // The signing service can hand back a tx hash before the tx is mined (status BROADCASTED/SUBMITTED). That is
+    // not a failure: wait for the receipt on chain ourselves and only then decide (mined OK -> CONFIRMED).
+    const reported = String(res.status ?? "").toUpperCase();
+    const pendingWithHash = !!hash && PENDING_WITH_HASH.has(reported);
+    if (res.status !== "CONFIRMED" && !pendingWithHash) throw statusError(r, this.doneSoFar(1));
     let receipt: TransactionReceipt | null = null;
     if (hash) {
-      receipt = await this.receipt(hash as Hex);
+      receipt = await this.receipt(hash as Hex, pendingWithHash ? 180 : 20);
+      if (!receipt && pendingWithHash) {
+        throw new CommandError(
+          "ISOTHERM_TX_PENDING",
+          `'${step.label}' was broadcast by MetaMask (${hash}) but no receipt arrived within 90 s.${this.doneSoFar(1)}`,
+          "Check the explorer link, then re-run this command; steps already confirmed are skipped automatically.",
+        );
+      }
       if (receipt) {
         r.gasUsed = receipt.gasUsed.toString();
+        if (receipt.status === "success" && pendingWithHash) {
+          r.status = "CONFIRMED";
+          r.reportedStatus = reported;
+        }
         if (receipt.status !== "success") {
           r.status = "REVERTED";
           throw new CommandError("ISOTHERM_TX_REVERTED", `'${step.label}' was mined but reverted (${hash}).${this.doneSoFar(1)}`, "Check the explorer link; balances were not changed by the reverted step.");
@@ -131,8 +147,8 @@ export class TxRunner {
     return { result: r, receipt };
   }
 
-  private async receipt(hash: Hex): Promise<TransactionReceipt | null> {
-    for (let i = 0; i < 20; i++) {
+  private async receipt(hash: Hex, tries = 20): Promise<TransactionReceipt | null> {
+    for (let i = 0; i < tries; i++) {
       try {
         return await this.reader.client.getTransactionReceipt({ hash });
       } catch {
@@ -147,6 +163,8 @@ export class TxRunner {
     return done.length ? ` Already confirmed earlier in this command: ${done.map((s) => `${s.label} (${s.hash})`).join("; ")}.` : "";
   }
 }
+
+const PENDING_WITH_HASH = new Set(["BROADCASTED", "SUBMITTED", "SIGNED", "PENDING"]);
 
 function statusError(r: StepResult, done: string): CommandError {
   switch (r.status) {

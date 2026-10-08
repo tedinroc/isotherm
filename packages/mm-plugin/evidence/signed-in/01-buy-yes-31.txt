@@ -1,0 +1,9 @@
+Intent: AUSD for the Isotherm Zap: approve exact amount
+{"_notice":{"kind":"AWAITING_MFA","source":"weather:buy","pollingId":"938445db-58e9-44f9-b764-aa8c83e79ed0","expiresAt":"2026-10-08T14:05:30.233Z","authMethod":"social","message":"Approval required: check the email registered to your dashboard and confirm to proceed.\nRequest ID: 938445db-58e9-44f9-b764-aa8c83e79ed0"}}
+ServerKeyringHttp.request failed {
+  code: 'NETWORK_ERROR',
+  detail: 'fetch failed',
+  method: 'GET',
+  path: '/v1/projects/<mm-project-id>/transaction-requests/938445db-58e9-44f9-b764-aa8c83e79ed0'
+}
+{"_error":{"code":"ISOTHERM_EXECUTOR_ERROR","message":"mm executor failed on 'AUSD for the Isotherm Zap: approve exact amount': Remote signing request failed (network error): fetch failed.","hint":"Run `mm weather doctor` to check the chain setup, then retry."}}
