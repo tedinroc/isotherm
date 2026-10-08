@@ -1,31 +1,13 @@
 // Market data for the maker: Polymarket-implied ladder, observed max so far, v0 guard, intraday increment table.
 // Live provider = packages/forecast (relative import; no workspaces). Tests inject a stub with the same shape.
+// The interface and localMinuteOf live in data-core.ts (re-exported here); this file is the Node provider.
 import { livePolymarketLadder, type LiveLadder } from "../../forecast/src/polymarket.ts";
-import { observedMaxSoFar, type ObservedMax } from "../../forecast/src/obs.ts";
+import { observedMaxSoFar } from "../../forecast/src/obs.ts";
 import { v0Ladder, type V0Ladder } from "../../forecast/src/v0.ts";
 import { loadCloseTime } from "../../forecast/src/close-config.ts";
-import type { CloseTimeStats } from "../../forecast/src/closetime.ts";
-import { localDayUtcRange, station } from "../../forecast/src/stations.ts";
+import { localMinuteOf, type MarketData } from "./data-core.ts";
 
-export interface LadderData {
-  pm: LiveLadder | null;
-  pmFetchedMs: number | null;
-  pmError?: string;
-  obs: ObservedMax | null;
-  v0: V0Ladder | null;
-  v0Error?: string;
-  intraday: CloseTimeStats | null;
-  localMinute: number | null; // minutes after local midnight if `isoDate` is the station's today
-}
-
-export interface MarketData {
-  get(stationIcao: string, isoDate: string, nowMs: number): Promise<LadderData>;
-}
-
-export function localMinuteOf(stationIcao: string, isoDate: string, nowMs: number): number | null {
-  const [s, e] = localDayUtcRange(isoDate, station(stationIcao).utcOffsetMin);
-  return nowMs >= s && nowMs < e ? Math.floor((nowMs - s) / 60_000) : null;
-}
+export * from "./data-core.ts";
 
 export function liveMarketData(opts: { pmTtlSec: number; obsTtlSec: number; v0RefreshSec: number }): MarketData {
   const lastPm = new Map<string, { l: LiveLadder; at: number }>();

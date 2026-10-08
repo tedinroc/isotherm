@@ -1,0 +1,11 @@
+live read-only smoke 2026-10-08T15:57:26.437Z: block 69296207; tick 1 57368 ms (cold), tick 2 15570 ms
+mode shadow; reasons ["env MAKER_MODE is shadow","Durable Object live flag is off","watch-only addresses (no key secrets): shadow only"]; errors []
+rolls ["RCSS:20261009:true"]; intents 1; txs 0; snapshot POSTs 0
+ladder RCSS:20261009 active
+  >=28 fair 0.9824 (polymarket) desired {"pull":["fair 0.9824 outside (0.03, 0.97): outcome ~known"]} resting null/null -> none [fair 0.9824 outside (0.03, 0.97): outcome ~known] | live maker: fair 0.9825 quote null/null
+  >=29 fair 0.9344 (polymarket) desired {"bid":0.9,"ask":0.97,"bidSize":100,"askSize":100} resting 0.9/0.97 -> none [quote still good] | live maker: fair 0.9347 quote 0.9/0.97
+  >=30 fair 0.7156 (polymarket) desired {"bid":0.68,"ask":0.75,"bidSize":100,"askSize":100} resting 0.68/0.75 -> none [quote still good] | live maker: fair 0.7171 quote 0.68/0.75
+  >=31 fair 0.2513 (polymarket; guard-wide) desired {"bid":0.19,"ask":0.32,"bidSize":100,"askSize":100} resting 0.18/0.31 -> none [quote still good] | live maker: fair 0.25 quote 0.18/0.31
+  >=32 fair 0.0326 (polymarket; guard-wide) desired {"bid":0.01,"ask":0.1,"bidSize":100,"askSize":100} resting 0.01/0.1 -> none [quote still good] | live maker: fair 0.0324 quote 0.01/0.1
+intents: ["margin.deposit AUSD 152.4999"]
+watcher: {"from":69292343,"head":69296343,"pages":41,"events":0,"verdicts":[]}

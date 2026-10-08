@@ -1,8 +1,8 @@
 // Chain context: clients, role keys (never printed), and the one tx sender every write goes through:
 //   live guard -> eth_call simulate (decoded revert) -> estimate -> limit = ceil(est x mult) -> MON budget check
 //   -> balance check -> send -> report the hash immediately (resumable roll) -> receipt -> meter what was billed.
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+// Runtime-agnostic (no Node APIs): the Node runner (context.ts, node-io.ts) and the Cloudflare Worker
+// (apps/maker-worker) build a Ctx and plug their own persistence in through the optional hooks below.
 import {
   createPublicClient,
   createWalletClient,
@@ -16,13 +16,14 @@ import {
   type PublicClient,
   type TransactionReceipt,
 } from "viem";
-import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
+import type { PrivateKeyAccount } from "viem/accounts";
 import { monadTestnet } from "viem/chains";
 import { ERROR_ABIS } from "./abis.ts";
-import { canSpend, recordSpend, type SpendKind } from "./budget.ts";
-import type { MakerConfig, Role } from "./config.ts";
-import type { Deployment } from "./deployment.ts";
-import type { MakerState } from "./state.ts";
+import { budgetCfgOf, canSpend, recordSpend, type SpendKind } from "./budget.ts";
+import type { CloseTimeStats } from "../../forecast/src/closetime.ts";
+import type { MakerConfig, Role } from "./config-core.ts";
+import type { Deployment } from "./deployment-core.ts";
+import type { MakerState } from "./state-core.ts";
 
 export class LiveRefused extends Error {}
 export class BudgetRefused extends Error {}
@@ -40,24 +41,6 @@ export interface Logger {
   error(msg: string, extra?: Record<string, unknown>): void;
 }
 
-export function makeLogger(file: string | null, quiet = false): Logger {
-  if (file) mkdirSync(dirname(file), { recursive: true });
-  const w = (level: string) => (msg: string, extra?: Record<string, unknown>) => {
-    const line = { t: new Date().toISOString(), level, msg, ...(extra ?? {}) };
-    if (file) appendFileSync(file, JSON.stringify(line, (_k, v) => (typeof v === "bigint" ? v.toString() : v)) + "\n");
-    // logs go to stderr so command output on stdout stays machine-readable JSON
-    if (!quiet || level !== "info") console.error(`${line.t.slice(11, 19)} ${level === "info" ? "" : level.toUpperCase() + " "}${msg}`);
-  };
-  return { info: w("info"), warn: w("warn"), error: w("error") };
-}
-
-export function loadKey(keysDir: string, name: string): PrivateKeyAccount | null {
-  const f = join(keysDir, `${name}.key`);
-  if (!existsSync(f)) return null;
-  const raw = readFileSync(f, "utf8").trim();
-  return privateKeyToAccount((raw.startsWith("0x") ? raw : `0x${raw}`) as Hex);
-}
-
 export interface Ctx {
   cfg: MakerConfig;
   dep: Deployment;
@@ -73,7 +56,63 @@ export interface Ctx {
   save(): void;
   log: Logger;
   gasPriceWei?: bigint;
-  txLogFile: string;
+  /** Close-time analysis per station (forecast results/close_time.json): the roll's vault closeTime and kill-switch time. */
+  closeTimes: Record<string, CloseTimeStats> | null;
+  /** Node: var/txs.jsonl (context.ts). Informational; recordTx is what writes it. */
+  txLogFile?: string;
+  /** Called once per broadcast tx after its receipt (Node: append to txs.jsonl; Worker: Durable Object log). */
+  recordTx?(line: TxRecord): void;
+  /** Dry-run / shadow: called with every tx the maker WOULD send, after simulate + estimate + budget check. */
+  onDryRun?(intent: TxIntent): void;
+  /** Nonce source per sender (Worker: Durable Object tracker). Default: eth_getTransactionCount(pending). */
+  nonces?: NonceSource;
+  /** Wallet factory (unit tests inject a fake chain). Default: a viem http wallet on ctx.rpc. */
+  wallet?(account: PrivateKeyAccount): { sendTransaction(args: any): Promise<Hex> };
+  /** Last gate right before a broadcast; throw (LiveRefused) to stop it (Worker: the live switch must still be on). */
+  guard?(role: Role, label: string): void;
+}
+
+/** One broadcast tx, as written to txs.jsonl (bigints as strings when serialised). */
+export interface TxRecord {
+  t: string;
+  role: Role;
+  from: Address;
+  label: string;
+  kind: SpendKind;
+  hash: Hex;
+  nonce: number;
+  block: bigint;
+  gasUsed: bigint;
+  gasLimit: bigint;
+  mon: number;
+  ms: number;
+  status: "success" | "reverted";
+  overBudget: boolean;
+}
+
+/** A tx the maker would have sent (dry-run / shadow mode). Nothing is broadcast. */
+export interface TxIntent {
+  t: string;
+  role: Role;
+  from: Address;
+  to: Address;
+  label: string;
+  kind: SpendKind;
+  functionName: string;
+  data: Hex;
+  value?: bigint;
+  estimate: bigint;
+  gasLimit: bigint;
+  costMon: number;
+  budget: string;
+}
+
+export interface NonceSource {
+  /** The nonce to use for `address`; `chainPending` reads eth_getTransactionCount(pending). */
+  next(address: Address, chainPending: () => Promise<number>): Promise<number>;
+  sent(address: Address, nonce: number, hash: Hex, label: string): void;
+  mined(address: Address, nonce: number, hash: Hex): void;
+  failed(address: Address, nonce: number, error: string): void;
 }
 
 export function explainRevert(e: unknown): string {
@@ -166,27 +205,37 @@ async function sendInner(ctx: Ctx, role: Role, req: SendReq, opts: SendOpts): Pr
   const gp = await gasPrice(ctx);
   const costMon = Number(formatEther(gasLimit * gp));
   const nowMs = Date.now();
-  const bc = { dayUtcOffsetMin: ctx.cfg.budget.dayUtcOffsetMin, dailyCapMon: ctx.cfg.budget.dailyCapMon, reserveMon: ctx.cfg.budget.reserveMon };
+  const bc = budgetCfgOf(ctx.cfg);
   const dec = canSpend(ctx.state.budget, role, costMon, opts.kind, bc, nowMs);
   if (!dec.ok) throw new BudgetRefused(`${opts.label}: ${dec.reason}`);
   if (ctx.cfg.dryRun) {
     ctx.log.info(`[dry-run] ${role} ${opts.label}: est ${est} limit ${gasLimit} ~${costMon.toFixed(4)} MON`);
+    ctx.onDryRun?.({ t: new Date(nowMs).toISOString(), role, from: account.address, to: req.to, label: opts.label, kind: opts.kind, functionName: req.functionName, data, value: req.value, estimate: est, gasLimit, costMon, budget: dec.reason });
     return { dryRun: true, gasLimit, costMon, estimate: est };
   }
   const bal = await ctx.pub.getBalance({ address: account.address });
   const minBal = BigInt(Math.round(ctx.cfg.budget.minBalanceMon * 1e18));
   if (bal < gasLimit * gp + minBal) throw new BudgetRefused(`${opts.label}: ${role} ${account.address} holds ${formatEther(bal)} MON, needs ${costMon.toFixed(4)} + ${ctx.cfg.budget.minBalanceMon} reserve`);
-  const wallet = createWalletClient({ chain: ctx.chain, transport: http(ctx.rpc, { retryCount: 1, timeout: 45_000 }), account });
-  const nonce = await ctx.pub.getTransactionCount({ address: account.address, blockTag: "pending" });
+  ctx.guard?.(role, opts.label);
+  const wallet = ctx.wallet ? ctx.wallet(account) : createWalletClient({ chain: ctx.chain, transport: http(ctx.rpc, { retryCount: 1, timeout: 45_000 }), account });
+  const chainPending = () => ctx.pub.getTransactionCount({ address: account.address, blockTag: "pending" });
+  const nonce = ctx.nonces ? await ctx.nonces.next(account.address, chainPending) : await chainPending();
   const t0 = Date.now();
-  const hash = await wallet.sendTransaction({ account, chain: ctx.chain, to: req.to, data, value: req.value, gas: gasLimit, nonce } as any);
+  let hash: Hex;
+  try {
+    hash = await wallet.sendTransaction({ account, chain: ctx.chain, to: req.to, data, value: req.value, gas: gasLimit, nonce } as any);
+  } catch (e) {
+    ctx.nonces?.failed(account.address, nonce, explainRevert(e));
+    throw e;
+  }
+  ctx.nonces?.sent(account.address, nonce, hash, opts.label);
   opts.onHash?.(hash, nonce);
   const receipt = await ctx.pub.waitForTransactionReceipt({ hash, pollingInterval: 400, timeout: 180_000 });
+  ctx.nonces?.mined(account.address, nonce, hash);
   const billed = Number(formatEther(gasLimit * receipt.effectiveGasPrice));
-  recordSpend(ctx.state.budget, role, billed, Date.now(), bc);
-  const line = { t: new Date().toISOString(), role, from: account.address, label: opts.label, kind: opts.kind, hash, nonce, block: receipt.blockNumber, gasUsed: receipt.gasUsed, gasLimit, mon: +billed.toFixed(6), ms: Date.now() - t0, status: receipt.status, overBudget: dec.overBudget };
-  mkdirSync(dirname(ctx.txLogFile), { recursive: true });
-  appendFileSync(ctx.txLogFile, JSON.stringify(line, (_k, v) => (typeof v === "bigint" ? v.toString() : v)) + "\n");
+  recordSpend(ctx.state.budget, role, billed, Date.now(), bc, opts.kind);
+  const line: TxRecord = { t: new Date().toISOString(), role, from: account.address, label: opts.label, kind: opts.kind, hash, nonce, block: receipt.blockNumber, gasUsed: receipt.gasUsed, gasLimit, mon: +billed.toFixed(6), ms: Date.now() - t0, status: receipt.status, overBudget: dec.overBudget };
+  ctx.recordTx?.(line);
   ctx.log.info(`tx ${role.padEnd(13)} ${opts.label.padEnd(48)} used ${String(receipt.gasUsed).padStart(8)} limit ${String(gasLimit).padStart(8)} ${billed.toFixed(4)} MON ${Date.now() - t0}ms ${hash.slice(0, 12)}…`);
   ctx.save();
   if (receipt.status !== "success") throw new TxReverted(`${opts.label} reverted on-chain`, hash);

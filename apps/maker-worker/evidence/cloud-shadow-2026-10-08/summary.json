@@ -1,0 +1,28 @@
+{
+ "since": "2026-10-08T16:25:28.396Z",
+ "ticks": 4,
+ "liveTicks": 0,
+ "lastTickAt": "2026-10-08T16:29:31.751Z",
+ "actions": {
+  "none": 20
+ },
+ "intents": {
+  "margin.deposit": 1
+ },
+ "intentMon": {
+  "maker": 0.012815
+ },
+ "rolls": 1,
+ "kills": 0,
+ "errors": 0,
+ "alerts": 0,
+ "compare": {
+  "n": 20,
+  "fairAbsDiffSum": 0.0069,
+  "fairAbsDiffMax": 0.002,
+  "restingMatchesDesired": 20,
+  "wouldChange": 0,
+  "macMissing": 0
+ },
+ "recentDiffs": []
+}

@@ -3,7 +3,9 @@ import { join, dirname } from "node:path";
 import type { Address } from "viem";
 import { loadConfig, type MakerConfig, type Role } from "./config.ts";
 import { loadDeployment, probeZapRegistry } from "./deployment.ts";
-import { loadKey, makeClients, makeLogger, type Ctx, type Logger } from "./chain.ts";
+import { loadCloseTime } from "../../forecast/src/close-config.ts";
+import { makeClients, type Ctx, type Logger } from "./chain.ts";
+import { appendTxLog, loadKey, makeLogger } from "./node-io.ts";
 import { loadState, saveState } from "./state.ts";
 
 export async function buildContext(opts: { cfg?: MakerConfig; overrides?: any; quiet?: boolean; logger?: Logger } = {}): Promise<Ctx> {
@@ -33,6 +35,7 @@ export async function buildContext(opts: { cfg?: MakerConfig; overrides?: any; q
   const addr = Object.fromEntries(Object.entries(accounts).map(([r, a]) => [r, a.address])) as Record<Role, Address>;
   const depRef = { vault: dep.vault, resolver: dep.resolver, zap: dep.zap, source: dep.source, variant: dep.variant };
   const state = loadState(cfg.paths.state, depRef);
+  const txLogFile = join(dirname(cfg.paths.state), "txs.jsonl");
   const ctx: Ctx = {
     cfg,
     dep,
@@ -47,7 +50,9 @@ export async function buildContext(opts: { cfg?: MakerConfig; overrides?: any; q
     state,
     save: () => saveState(cfg.paths.state, state),
     log,
-    txLogFile: join(dirname(cfg.paths.state), "txs.jsonl"),
+    closeTimes: loadCloseTime()?.stations ?? null,
+    txLogFile,
+    recordTx: (line) => appendTxLog(txLogFile, line),
   };
   await probeZapRegistry(pub, dep);
   return ctx;

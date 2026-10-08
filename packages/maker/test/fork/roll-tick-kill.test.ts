@@ -12,7 +12,8 @@ import { ladderFromGamma, type LiveLadder } from "../../../forecast/src/polymark
 import type { V0Ladder } from "../../../forecast/src/v0.ts";
 import { addDays, localDateOf } from "../../../forecast/src/stations.ts";
 import { erc20Abi, kuruBookAbi, resolverCommonAbi } from "../../src/abis.ts";
-import { loadKey, LiveRefused, nowSec, read, send, type Ctx } from "../../src/chain.ts";
+import { LiveRefused, nowSec, read, send, type Ctx } from "../../src/chain.ts";
+import { loadKey } from "../../src/node-io.ts";
 import { loadConfig, PKG_ROOT } from "../../src/config.ts";
 import { buildContext } from "../../src/context.ts";
 import type { LadderData, MarketData } from "../../src/data.ts";
@@ -90,7 +91,7 @@ after(async () => {
 
 test("roll + idempotent re-roll + 3 ticks + kill switch on an anvil fork", { timeout: 30 * 60_000 }, async () => {
   const now0 = await nowSec(ctx);
-  const isoDate = addDays(localDateOf(now0 * 1000, 480), 1); // tomorrow in Taipei
+  const isoDate = addDays(localDateOf(now0 * 1000, 480), Number(process.env.FORK_DAYS_AHEAD ?? 1)); // tomorrow in Taipei (FORK_DAYS_AHEAD=2 when live already has tomorrow's ladder)
   say(`chain time ${new Date(now0 * 1000).toISOString()}; rolling RCSS ${isoDate}`);
 
   // the live guard: a non-anvil context must refuse to broadcast
@@ -205,8 +206,10 @@ test("roll + idempotent re-roll + 3 ticks + kill switch on an anvil fork", { tim
   // ---- budget meter == sum of billed tx costs
   const txs = readFileSync(join(VAR, "txs.jsonl"), "utf8").trim().split("\n").map((l) => JSON.parse(l));
   const byRole: Record<string, number> = {};
-  for (const x of txs) byRole[x.role] = (byRole[x.role] ?? 0) + x.mon;
-  for (const [role, mon] of Object.entries(byRole)) assert.ok(Math.abs((ctx.state.budget.spent[role] ?? 0) - mon) < 1e-6, `${role} meter`);
+  const nByRole: Record<string, number> = {};
+  for (const x of txs) (byRole[x.role] = (byRole[x.role] ?? 0) + x.mon), (nByRole[x.role] = (nByRole[x.role] ?? 0) + 1);
+  // txs.jsonl rounds each cost to 6 decimals while the meter keeps 9: allow 0.5e-6 of rounding per tx
+  for (const [role, mon] of Object.entries(byRole)) assert.ok(Math.abs((ctx.state.budget.spent[role] ?? 0) - mon) < 5e-7 * (nByRole[role] + 1), `${role} meter`);
   // anvil's fork base fee decays on empty blocks, so its receipts under-bill; live Monad bills gasLimit x ~102 gwei
   const at102: Record<string, number> = {};
   for (const x of txs) at102[x.role] = (at102[x.role] ?? 0) + (Number(x.gasLimit) * 102) / 1e9;

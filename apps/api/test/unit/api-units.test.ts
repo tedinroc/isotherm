@@ -466,7 +466,7 @@ describe('v1 stats store (classified at scan time) -> raw per-origin data', () =
     expect(await st.get('scan:migration')).toBeUndefined();
   });
 
-  it('wrangler.toml lists the Dynamic embedded wallet as team, so its Zap buy is not traction', () => {
+  it('wrangler.toml lists the Dynamic embedded wallet as team, so its Zap buy counts as a team fill', () => {
     const toml = readFileSync(join(__dirname, '../../wrangler.toml'), 'utf8');
     const vars: Record<string, string> = {};
     for (const m of toml.slice(toml.indexOf('[vars]')).matchAll(/^([A-Z_0-9]+)\s*=\s*"([^"]*)"/gm)) vars[m[1]] = m[2];

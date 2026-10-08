@@ -2,7 +2,7 @@
 // matters: no quote yet, a side filled/refill needed, the desired price moved >= requoteTicks, the resting quote is
 // now on the wrong side of fair (urgent), or it is older than staleHours. Close-time and certainty pull everything.
 import type { QuoteDecision } from "./pricing.ts";
-import type { SeriesMode } from "./state.ts";
+import type { SeriesMode } from "./state-core.ts";
 
 export interface RestingSide {
   id: number;

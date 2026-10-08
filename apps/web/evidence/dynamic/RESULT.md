@@ -1,6 +1,6 @@
 # Dynamic round: RESULT (2026-10-07)
 
-> **Update, 2026-10-07 13:30 UTC: the proof has now run, on the live site.** A team member signed in with Dynamic email login on https://isotherm.pages.dev, and the resulting embedded wallet made a relayed (gasless) mint and a Zap Buy Yes on Monad testnet. It is a team test wallet, so this is a team test, not traction. See [§5](#5-live-proof-on-2026-10-07). Sections 1–4 and the runbook are the original record from before the login.
+> **Update, 2026-10-07 13:30 UTC: the proof has now run, on the live site.** A team member signed in with Dynamic email login on https://isotherm.pages.dev, and the resulting embedded wallet made a relayed (gasless) mint and a Zap Buy Yes on Monad testnet. The wallet is a team test wallet. See [§5](#5-live-proof-on-2026-10-07). Sections 1–4 and the runbook are the original record from before the login.
 
 **Status (original, 08:40 UTC): partly done. The code is ready, but the Dynamic proof has not run.**
 
@@ -152,7 +152,7 @@ The app adds 10143 and 143 itself through `overrides.evmNetworks` with `mergeNet
 
 ## 5. Live proof on 2026-10-07
 
-**Status: done on the live site, with a team test wallet. This is a team test, not traction.**
+**Status: done on the live site, with a team test wallet.**
 
 **Who and where.**
 - A team member signed in with Dynamic email login on **https://isotherm.pages.dev** (Sandbox environment `3eaae4f7-b9bb-4a0a-a578-00ff7008a460`), then traded from a phone.

@@ -1,0 +1,72 @@
+{
+ "worker": "isotherm-maker",
+ "version": {
+  "id": "07fd9e32-c81a-433b-ac2b-d093a4e79d58",
+  "tag": "",
+  "timestamp": "2026-10-08T16:25:51.498435Z"
+ },
+ "mode": "shadow",
+ "envMode": "shadow",
+ "liveFlag": false,
+ "reasons": [
+  "env MAKER_MODE is shadow",
+  "Durable Object live flag is off"
+ ],
+ "control": {
+  "seq": 0,
+  "armedAt": null,
+  "disarmedAt": null,
+  "last": null
+ },
+ "keys": {
+  "maker": "0xd572638F07829D1c3636400FB73CF34Ca6c7448a",
+  "operator": "0x602dbf3937558B1d18d76315635fD5410089bd51",
+  "guardian": "0x30C8E371719Ff00577284dd9c10587Fa89357d50",
+  "snapshotToken": true,
+  "watchOnly": false
+ },
+ "rpc": "monad-testnet public RPC",
+ "stations": [
+  "RCSS"
+ ],
+ "lastTick": {
+  "at": "2026-10-08T16:29:31.751Z",
+  "ms": 6857,
+  "mode": "shadow",
+  "block": 69302811,
+  "errors": 0,
+  "alerts": [],
+  "intents": 0,
+  "txs": 0
+ },
+ "budget": {
+  "day": "2026-10-09",
+  "spent": {
+   "maker:roll": 0.012814974
+  },
+  "txs": {
+   "maker:roll": 1
+  },
+  "history": []
+ },
+ "ladders": [
+  {
+   "key": "RCSS:20261009",
+   "status": "active",
+   "paused": false,
+   "stopAt": "2026-10-09T09:20:00.000Z",
+   "strikes": [
+    "28:pending",
+    "29:quoting b0.9 a0.97",
+    "30:quoting b0.62 a0.75",
+    "31:quoting b0.18 a0.31",
+    "32:pending"
+   ]
+  }
+ ],
+ "alerts": [],
+ "watcher": {
+  "lastBlock": 69302598,
+  "verdicts": {}
+ }
+}

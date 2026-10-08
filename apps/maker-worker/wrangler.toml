@@ -1,0 +1,68 @@
+name = "isotherm-maker"
+main = "src/index.ts"
+compatibility_date = "2025-07-18"
+# NO public hostname: no workers.dev subdomain, no version preview URLs, no routes. The cron trigger, the Durable
+# Object alarm, the service binding to isotherm-api and the control KV need none. scripts/deploy.mjs refuses to deploy
+# if any of these three is changed.
+workers_dev = false
+preview_urls = false
+
+# Every minute: make sure the MakerDO alarm loop is armed (the DO ticks itself every TICK_SEC).
+[triggers]
+crons = ["* * * * *"]
+
+# Bundle one copy of viem (the shared packages/maker core resolves it from its own node_modules otherwise).
+[alias]
+"viem" = "./node_modules/viem/_esm/index.js"
+"viem/accounts" = "./node_modules/viem/_esm/accounts/index.js"
+"viem/chains" = "./node_modules/viem/_esm/chains/index.js"
+
+[version_metadata]
+binding = "CF_VERSION_METADATA"
+
+[observability]
+enabled = true
+
+[[durable_objects.bindings]]
+name = "MAKER"
+class_name = "MakerDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MakerDO"]
+
+# The API Worker, through a service binding (no URL): GET /api/snapshot (interlock, shadow comparison) and, in live
+# mode only, POST /api/snapshot.
+[[services]]
+binding = "API"
+service = "isotherm-api"
+
+# Control + outbox KV (scripts/control.mjs). The real namespace id is account-specific and is NOT committed:
+# `npm run deploy` (scripts/deploy.mjs) substitutes it from $ISO_MAKER_KV_NAMESPACE_ID or
+# ~/.config/isotherm/maker-kv-namespace-id. preview_id is for local runs.
+[[kv_namespaces]]
+binding = "MAKER_KV"
+id = "<MAKER_KV_NAMESPACE_ID>"
+preview_id = "isotherm-maker-local-preview"
+
+[vars]
+# SHADOW until the cutover runbook (docs/OPERATIONS.md section 8). Live also needs the Durable Object flag
+# (scripts/control.mjs arm) and the key secrets; with either switch off, nothing is ever broadcast.
+MAKER_MODE = "shadow"
+RPC_URL = "https://testnet-rpc.monad.xyz"
+STATIONS = "RCSS"
+ROLL_NOT_BEFORE_LOCAL = "12:00"
+ROLL_AUTO = "1"
+TICK_SEC = "60"
+WATCH_EVERY_SEC = "120"
+WATCH_LOOKBACK_BLOCKS = "4000"
+WATCH_RECHECK_SEC = "20"
+WATCH_AUTO_CHALLENGE = "1"
+WATCH_BACKSTOP_SEC = "600"
+INTERLOCK_FRESH_SEC = "300"
+SHADOW_ROLL_EVERY_SEC = "3600"
+# Every 5 min re-scan the books of ladders closed in the last 2 days and cancel any maker order still open (the Mac's
+# `watchdog --verify` job).
+WATCHDOG_VERIFY_SEC = "300"
+# Secrets (set with scripts/put-secrets.mjs, from stdin; never here): MAKER_KEY, OPERATOR_KEY, GUARDIAN_KEY,
+# SNAPSHOT_TOKEN.

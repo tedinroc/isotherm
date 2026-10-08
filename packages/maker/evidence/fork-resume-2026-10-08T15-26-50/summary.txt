@@ -1,0 +1,9 @@
+anvil :19851 pid 20905; v1 vault 0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39
+crash: roll stopped with Error: simulated crash after broadcasting deployProxy >=30
+    at Object.onHash (file://<repo>/packages/maker/src/roll.ts:244:172)
+    at sendInner (file://<repo>/packages/maker/src/chain.ts:232:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5); pending 0x85268db1c6933dca4da78373b9c07b96b5ee4d3bc8a5cd56b3bcfe0d97f59964
+resume: >=30 market 0x1d26FFF114985d7E25683F47642D552dcdEF7775 recovered from the pending tx; 3 deployProxy txs in total for 4 strikes; all canonical
+budget: non-urgent re-quote of >=30 refused (requote >=30 100@0.46 / 100@0.53 cancel 2: daily maker cap 0.099842213 MON: spent 0.0998 + 0.0020 would exceed it); quotes stay
+budget: fair crossed the resting ask -> urgent; re-quote refused, quotes pulled from the reserve (tx 0xc5c177ac1a7ac011a0ccdde344f5ca69cce19ecd074a53c6166a9ed4c0a802fb)
+manual pull: cancelled 6, ladder paused (0 txs on the next tick)

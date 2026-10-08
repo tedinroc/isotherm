@@ -1,0 +1,32 @@
+[2026-10-08T18:05:09Z] mode=official rpc=https://testnet-rpc.monad.xyz cre-login=yes broadcast=1
+[2026-10-08T18:05:19Z] attester 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9 == Resolver.attester(); tx sender 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9 has 0.400000000000000000 MON; vault ladders 2
+[2026-10-08T18:05:19Z] OFFICIAL: cre workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 --broadcast
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...
+✓ Workflow compiled
+✓ Simulation limits enabled
+  HTTP: req=120kb resp=250kb timeout=10s | ConfHTTP: req=125kb resp=500kb timeout=1m30s | Consensus obs=25kb | ChainWrite evm_report=50kb evm_gas=10000000 solana_report=265b solana_cu=300000 | WASM binary=100mb compressed=20mb
+  Binary hash: 413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938
+  Config hash: d5686d50ab6b5f3e6736ed6dea92121b3b8fd0f9ce1832e0cf71ebe7655f5b65
+2026-10-08T11:05:32Z [SIMULATION] Simulator Initialized
+
+2026-10-08T11:05:32Z [SIMULATION] Running trigger trigger=cron-trigger@1.0.0
+2026-10-08T11:05:37Z [USER LOG] RCSS 2026-10-08: SETTLED (2-of-3 fallback agree) | IEM 28C n=39 h=22 last=22:30 incomplete | AWC 28C n=47 h=24 last=23:30 complete | OGIMET 28C n=47 h=24 last=23:30 complete
+2026-10-08T11:05:37Z [USER LOG] RCSS 2026-10-08: isotherm-sources-v1|RCSS|20261008|SETTLED|IEM:28,39,22,22:30,0|AWC:28,47,24,23:30,1|OGIMET:28,47,24,23:30,1 digest=0xd9bb50e7e44b0fb9bcd9356cc79c911dbad2cd9c485928b60fd3c99043357241 validUntil=1791484232
+2026-10-08T11:05:39Z [USER LOG] RCSS 2026-10-08: tx 0x65eee8ef9ac201c1c8155267b0e24cb1fef3c897327030705e2ebfe661d9963d -> resolved
+
+✓ Workflow Simulation Result:
+"{\"triggerTime\":\"2026-10-08T18:05:32.000Z\",\"scheduledTime\":\"2026-10-08T18:30:00.000Z\",\"resolver\":\"0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B\",\"outcomes\":[{\"station\":\"RCSS\",\"date\":20261008,\"action\":\"settled\",\"reason\":\"2-of-3 fallback agree\",\"tmaxC\":28,\"sources\":{\"IEM\":\"28C n=39 h=22 last=22:30 incomplete\",\"AWC\":\"28C n=47 h=24 last=23:30 complete\",\"OGIMET\":\"28C n=47 h=24 last=23:30 complete\"},\"sourcesHash\":\"0x1c45302330484eb5b5effd1fc415a85577a6a0ed101e4546a5eaf5d124120944\",\"validUntil\":\"1791484232\",\"txHash\":\"0x65eee8ef9ac201c1c8155267b0e24cb1fef3c897327030705e2ebfe661d9963d\",\"onchain\":{\"status\":1,\"tmaxC\":28},\"confirmed\":\"resolved\"}],\"skipped\":[],\"budget\":{\"http\":\"3/15\",\"evmReads\":\"4/15\",\"reports\":\"1/5\",\"ogimet\":\"1/1\"},\"ladders\":{\"count\":2,\"scanned\":[0,2],\"due\":1}}"
+
+2026-10-08T11:05:39Z [SIMULATION] Execution finished signal received
+2026-10-08T11:05:39Z [SIMULATION] Skipping WorkflowEngineV2
+
+╭──────────────────────────────────────────────────────╮
+│ Simulation complete! Ready to deploy your workflow?  │
+│                                                      │
+│ Run cre account access to request deployment access. │
+╰──────────────────────────────────────────────────────╯
+0x65eee8ef9ac201c1c8155267b0e24cb1fef3c897327030705e2ebfe661d9963d block 69321897 status=success gasUsed=200000 ReportProcessed.result=true LadderResolved: RCSS 20261008 status=Settled tmaxC=28 OK
+[2026-10-08T18:05:40Z] done; log: <local path>

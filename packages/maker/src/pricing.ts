@@ -3,7 +3,7 @@
 //   inventory skew shifts both sides against the position; bid < fair < ask always (never a negative-edge quote);
 //   prices on the maker grid inside [minPrice, maxPrice]; post-only safe (never crosses anybody else's quote);
 //   sizes capped by free margin and by the position limit. Prices are handled in integer 0.001 units.
-import type { QuoteCfg } from "./config.ts";
+import type { QuoteCfg } from "./config-core.ts";
 
 export interface QuoteInput {
   fair: number | null;

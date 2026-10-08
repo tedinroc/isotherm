@@ -1,0 +1,118 @@
+Shadow (Cloudflare Worker isotherm-maker) vs live (Mac maker), recorded 2026-10-08T16:31:46.338Z .. 2026-10-08T17:26:01.930Z.
+Recorder: Worker KV outbox tick:last polled every 12 s (every tick captured), Mac var/snapshot.json on change; Mac txs from maker.log.
+Versions: 07fd9e32 (16:29 .. 16:52 UTC, the first deploy); d034e1c9 (16:52:42, fixes 1-5), bdb169ea (16:57:3x, repeat metering), bff587c6 (17:05, structured tick lines). Shadow reset 16:58:59.
+
+== BEFORE the fixes (07fd9e32): 19 shadow ticks 2026-10-08T16:31:46.338Z .. 2026-10-08T16:51:54.457Z; tick period 64.7-71.6 s; tick duration median 6818 ms, max 11091 ms; errors 0
+   pairing with the Mac's next tick (compare.py): {"worker_ticks": 19, "pairs": 95, "agree": 90, "timing:fair-crossed-guard-threshold": 1, "timing:v0-refresh": 4}
+   Mac txs in the window: 1: {"agreed after (the next shadow tick wanted no change)": 1} (scripts/shadow-compare.mjs)
+== AFTER the fixes (d034e1c9 / bdb169ea / bff587c6): 34 shadow ticks 2026-10-08T16:52:59.600Z .. 2026-10-08T17:26:01.930Z; tick period 60.0-60.1 s; tick duration median 4731.0 ms, max 20099 ms; errors 0
+   pairing with the Mac's next tick (compare.py): {"worker_ticks": 34, "pairs": 170, "agree": 168, "agree:concurrent": 1, "agree:same-action,price-from-newer-fair": 1}
+   Mac txs in the window: 8: {"predicted by the shadow": 7, "agreed after (the next shadow tick wanted no change)": 1} (scripts/shadow-compare.mjs)
+
+---- compare.py, before the fixes ----
+{
+ "worker_ticks": 19,
+ "pairs": 95,
+ "agree": 90,
+ "timing:fair-crossed-guard-threshold": 1,
+ "timing:v0-refresh": 4
+}
+fair |diff| n=95 mean=0.0002 median=0.0000 p95=0.0008 max=0.0051
+
+Shadow would-sends (distinct):
+  ('2026-10-08T16:48:26.452Z', 'maker', 'requote >=30 100@0.62 / 100@0.75 cancel 2', 0.057877, '567417')
+
+Mac txs in window:
+  2026-10-08T16:36:05.595Z tx maker         requote >=30 100@0.65 / 100@0.72 cancel 2        used   567431 limit   567431 0.0579 MON 1580
+  2026-10-08T16:53:08.683Z tx maker         requote >=30 100@0.62 / 100@0.75 cancel 2        used   567417 limit   567417 0.0579 MON 808m
+
+Non-trivial rows (any action != none or verdict != agree):
+  W 16:35:04 M 16:36:11 RCSS:20261009 >=30 fair W 0.6825 M 0.6875 guard W 0.8364 M 0.8364 flags W ['guard-wide'] M [] | W none want 0.62/0.75 rest 0.62/0.75 | M requote -> 0.65/0.72 (before 0.62/0.75) | timing:fair-crossed-guard-threshold | W: quote still good | M: bid 0.62 -> 0.65; ask 0.75 -> 0.72
+  W 16:48:26 M 16:49:08 RCSS:20261009 >=30 fair W 0.686 M 0.686 guard W 0.8364 M 0.8353 flags W ['guard-wide'] M [] | W requote want 0.62/0.75 rest 0.65/0.72 | M none -> 0.65/0.72 (before 0.65/0.72) | timing:v0-refresh | W: bid 0.65 -> 0.62; ask 0.72 -> 0.75 | M: quote still good
+  W 16:49:34 M 16:50:20 RCSS:20261009 >=30 fair W 0.686 M 0.686 guard W 0.8364 M 0.8353 flags W ['guard-wide'] M [] | W requote want 0.62/0.75 rest 0.65/0.72 | M none -> 0.65/0.72 (before 0.65/0.72) | timing:v0-refresh | W: bid 0.65 -> 0.62; ask 0.72 -> 0.75 | M: quote still good
+  W 16:50:45 M 16:51:14 RCSS:20261009 >=30 fair W 0.686 M 0.686 guard W 0.8364 M 0.8353 flags W ['guard-wide'] M [] | W requote want 0.62/0.75 rest 0.65/0.72 | M none -> 0.65/0.72 (before 0.65/0.72) | timing:v0-refresh | W: bid 0.65 -> 0.62; ask 0.72 -> 0.75 | M: quote still good
+  W 16:51:54 M 16:52:12 RCSS:20261009 >=30 fair W 0.686 M 0.686 guard W 0.8364 M 0.8353 flags W ['guard-wide'] M [] | W requote want 0.62/0.75 rest 0.65/0.72 | M none -> 0.65/0.72 (before 0.65/0.72) | timing:v0-refresh | W: bid 0.65 -> 0.62; ask 0.72 -> 0.75 | M: quote still good
+
+---- compare.py, after the fixes ----
+{
+ "worker_ticks": 34,
+ "pairs": 170,
+ "agree": 168,
+ "agree:concurrent": 1,
+ "agree:same-action,price-from-newer-fair": 1
+}
+fair |diff| n=170 mean=0.0001 median=0.0000 p95=0.0012 max=0.0034
+
+Shadow would-sends (distinct):
+  ('2026-10-08T16:52:59.600Z', 'maker', 'requote >=30 100@0.62 / 100@0.75 cancel 2', 0.057877, '567417')
+  ('2026-10-08T16:55:59.835Z', 'operator', 'createLadder RCSS 20261010 [28,29,30,31,32]', 0.146886, '1440061')
+  ('2026-10-08T16:58:59.838Z', 'maker', 'margin.deposit AUSD 140.5', 0.012815, '125637')
+  ('2026-10-08T16:58:59.838Z', 'maker', 'requote >=29 100@0.88 / 100@0.95 cancel 2', 0.054762, '536884')
+  ('2026-10-08T17:00:59.998Z', 'maker', 'requote >=30 100@0.6 / 100@0.73 cancel 2', 0.057881, '567464')
+  ('2026-10-08T17:00:59.998Z', 'maker', 'requote >=31 100@0.14 / 100@0.27 cancel 2', 0.057878, '567431')
+  ('2026-10-08T17:03:00.064Z', 'maker', 'requote >=31 100@0.18 / 100@0.31 cancel 2', 0.057871, '567366')
+  ('2026-10-08T17:06:00.306Z', 'maker', 'requote >=30 100@0.65 / 100@0.72 cancel 2', 0.057878, '567431')
+
+Mac txs in window:
+  2026-10-08T16:53:08.683Z tx maker         requote >=30 100@0.62 / 100@0.75 cancel 2        used   567417 limit   567417 0.0579 MON 808m
+  2026-10-08T16:59:13.139Z tx maker         requote >=29 100@0.88 / 100@0.95 cancel 2        used   536884 limit   536884 0.0548 MON 2018
+  2026-10-08T17:01:34.700Z tx maker         requote >=30 100@0.6 / 100@0.73 cancel 2         used   567464 limit   567464 0.0579 MON 810m
+  2026-10-08T17:01:39.499Z tx maker         requote >=31 100@0.14 / 100@0.27 cancel 2        used   567431 limit   567431 0.0579 MON 818m
+  2026-10-08T17:03:20.710Z tx maker         requote >=30 100@0.62 / 100@0.75 cancel 2        used   567417 limit   567417 0.0579 MON 1586
+  2026-10-08T17:03:25.576Z tx maker         requote >=31 100@0.18 / 100@0.31 cancel 2        used   567366 limit   567366 0.0579 MON 803m
+  2026-10-08T17:06:16.557Z tx maker         requote >=30 100@0.65 / 100@0.72 cancel 2        used   567431 limit   567431 0.0579 MON 816m
+  2026-10-08T17:09:20.832Z tx maker         requote >=30 100@0.61 / 100@0.74 cancel 2        used   536992 limit   536992 0.0548 MON 783m
+
+Non-trivial rows (any action != none or verdict != agree):
+  W 16:52:59 M 16:54:13 RCSS:20261009 >=30 fair W 0.6844 M 0.6844 guard W 0.8364 M 0.8353 flags W ['guard-wide'] M ['guard-wide'] | W requote want 0.62/0.75 rest 0.65/0.72 | M none -> 0.62/0.75 (before 0.62/0.75) | agree:concurrent | W: bid 0.65 -> 0.62; ask 0.72 -> 0.75 | M: quote still good
+  W 16:58:59 M 16:59:21 RCSS:20261009 >=29 fair W 0.9175 M 0.9175 guard W 0.9526 M 0.9529 flags W [] M [] | W requote want 0.88/0.95 rest 0.9/0.97 | M requote -> 0.88/0.95 (before 0.9/0.97) | agree | W: bid 0.9 -> 0.88; ask 0.97 -> 0.95 | M: bid 0.9 -> 0.88; ask 0.97 -> 0.95; fair moved 0.9393 -> 0.9175
+  W 17:00:59 M 17:01:42 RCSS:20261009 >=30 fair W 0.6658 M 0.6658 guard W 0.8364 M 0.8353 flags W ['guard-wide'] M ['guard-wide'] | W requote want 0.6/0.73 rest 0.62/0.75 | M requote -> 0.6/0.73 (before 0.62/0.75) | agree | W: bid 0.62 -> 0.6; ask 0.75 -> 0.73 | M: bid 0.62 -> 0.6; ask 0.75 -> 0.73
+  W 17:00:59 M 17:01:42 RCSS:20261009 >=31 fair W 0.2047 M 0.2047 guard W 0.5397 M 0.5336 flags W ['guard-wide'] M ['guard-wide'] | W requote want 0.14/0.27 rest 0.18/0.31 | M requote -> 0.14/0.27 (before 0.18/0.31) | agree | W: bid 0.18 -> 0.14; ask 0.31 -> 0.27; fair moved 0.2334 -> 0.2047 | M: bid 0.18 -> 0.14; ask 0.31 -> 0.27; fair moved 0.2487 -> 0.2047
+  W 17:03:00 M 17:03:28 RCSS:20261009 >=30 fair W 0.682 M 0.682 guard W 0.8364 M 0.8353 flags W ['guard-wide'] M ['guard-wide'] | W requote want 0.62/0.75 rest 0.6/0.73 | M requote -> 0.62/0.75 (before 0.6/0.73) | agree | W: bid 0.6 -> 0.62; ask 0.73 -> 0.75 | M: bid 0.6 -> 0.62; ask 0.73 -> 0.75
+  W 17:03:00 M 17:03:28 RCSS:20261009 >=31 fair W 0.2431 M 0.2431 guard W 0.5397 M 0.5336 flags W ['guard-wide'] M ['guard-wide'] | W requote want 0.18/0.31 rest 0.14/0.27 | M requote -> 0.18/0.31 (before 0.14/0.27) | agree | W: bid 0.14 -> 0.18; ask 0.27 -> 0.31; fair moved 0.2036 -> 0.2431 | M: bid 0.14 -> 0.18; ask 0.27 -> 0.31; fair moved 0.2047 -> 0.2431
+  W 17:06:00 M 17:06:21 RCSS:20261009 >=30 fair W 0.687 M 0.687 guard W 0.8364 M 0.8353 flags W [] M [] | W requote want 0.65/0.72 rest 0.62/0.75 | M requote -> 0.65/0.72 (before 0.62/0.75) | agree | W: bid 0.62 -> 0.65; ask 0.75 -> 0.72 | M: bid 0.62 -> 0.65; ask 0.75 -> 0.72
+  W 17:09:00 M 17:09:26 RCSS:20261009 >=30 fair W 0.6818 M 0.6784 guard W 0.8364 M 0.8353 flags W ['guard-wide'] M ['guard-wide'] | W requote want 0.62/0.75 rest 0.65/0.72 | M requote -> 0.61/0.74 (before 0.65/0.72) | agree:same-action,price-from-newer-fair | W: bid 0.65 -> 0.62; ask 0.72 -> 0.75 | M: bid 0.65 -> 0.61; ask 0.72 -> 0.74
+
+---- scripts/shadow-compare.mjs (control.mjs compare), after the fixes ----
+{
+ "window": [
+  "2026-10-08T16:52:59.600Z",
+  "2026-10-08T17:26:01.930Z"
+ ],
+ "ticks": 34,
+ "pairs": 170,
+ "agreementPct": 99.4,
+ "explainedPct": 100,
+ "verdicts": {
+  "agree": 162,
+  "agree (the live maker sent the same tx)": 7,
+  "timing: Polymarket moved between the two ticks": 1
+ },
+ "macTxs": 8,
+ "macVerdicts": {
+  "predicted by the shadow": 7,
+  "agreed after (the next shadow tick wanted no change)": 1
+ }
+}
+  2026-10-08T16:52:59.600Z RCSS:20261009 >=30 agree (the live maker sent the same tx) | shadow: requote want 0.62/0.75 rest 0.65/0.72 fair 0.6844 guard 0.8364 [guard-wide] | live: fair 0.686 guard 0.8353 quote 0.65/0.72
+  2026-10-08T16:58:59.838Z RCSS:20261009 >=29 agree (the live maker sent the same tx) | shadow: requote want 0.88/0.95 rest 0.9/0.97 fair 0.9175 guard 0.9526 [] | live: fair 0.9272 guard 0.9529 quote 0.9/0.97
+  2026-10-08T17:00:59.998Z RCSS:20261009 >=30 agree (the live maker sent the same tx) | shadow: requote want 0.6/0.73 rest 0.62/0.75 fair 0.6658 guard 0.8364 [guard-wide] | live: fair 0.6811 guard 0.8353 quote 0.62/0.75
+  2026-10-08T17:00:59.998Z RCSS:20261009 >=31 agree (the live maker sent the same tx) | shadow: requote want 0.14/0.27 rest 0.18/0.31 fair 0.2047 guard 0.5397 [guard-wide] | live: fair 0.2334 guard 0.5336 quote 0.18/0.31
+  2026-10-08T17:03:00.064Z RCSS:20261009 >=30 agree (the live maker sent the same tx) | shadow: requote want 0.62/0.75 rest 0.6/0.73 fair 0.682 guard 0.8364 [guard-wide] | live: fair 0.6658 guard 0.8353 quote 0.6/0.73
+  2026-10-08T17:03:00.064Z RCSS:20261009 >=31 agree (the live maker sent the same tx) | shadow: requote want 0.18/0.31 rest 0.14/0.27 fair 0.2431 guard 0.5397 [guard-wide] | live: fair 0.2047 guard 0.5336 quote 0.14/0.27
+  2026-10-08T17:06:00.306Z RCSS:20261009 >=30 agree (the live maker sent the same tx) | shadow: requote want 0.65/0.72 rest 0.62/0.75 fair 0.687 guard 0.8364 [] | live: fair 0.6821 guard 0.8353 quote 0.62/0.75
+  2026-10-08T17:09:00.522Z RCSS:20261009 >=30 timing: Polymarket moved between the two ticks | shadow: requote want 0.62/0.75 rest 0.65/0.72 fair 0.6818 guard 0.8364 [guard-wide] | live: fair 0.6867 guard 0.8353 quote 0.65/0.72
+
+---- Mac actual MON per Taipei day (txs.jsonl), by role and kind ----
+2026-10-07 maker          pull      0.0281
+2026-10-07 maker          quote     0.9071
+2026-10-07 maker          roll      0.2430
+2026-10-07 marketCreator  roll      0.5986
+2026-10-07 operator       roll      0.1777
+2026-10-08 maker          pull      0.2055
+2026-10-08 maker          quote     1.9709
+2026-10-08 maker          roll      0.2732
+2026-10-08 marketCreator  roll      0.7482
+2026-10-08 operator       roll      0.2159
+2026-10-09 maker          pull      0.0281
+2026-10-09 maker          quote     0.6304

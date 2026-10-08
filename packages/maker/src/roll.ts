@@ -5,15 +5,15 @@
 //   -> maker inventory (faucet if short, mint complete sets) -> Kuru markets (Router.deployProxy, market creator)
 //   -> canonical market in the v1 Zap (operator) -> margin deposits (maker) -> initial quotes (one tick)
 import { decodeEventLog, encodeFunctionData, maxUint256, stringToHex, type Address, type Hex } from "viem";
-import { closeFor } from "../../forecast/src/close-config.ts";
-import { pickStrikes } from "../../forecast/src/polymarket.ts";
+import { closeFromStats } from "../../forecast/src/closetime.ts";
+import { pickStrikes } from "../../forecast/src/polymarket-core.ts";
 import { isoToYmd, localDateOf, station as stationOf } from "../../forecast/src/stations.ts";
 import { erc20Abi, faucetAbi, kuruRouterAbi, marginAbi, resolverCommonAbi, vaultCommonAbi, zapRegistryAbi } from "./abis.ts";
 import { explainRevert, nowSec, read, send, TxReverted, type Ctx, type SendResult } from "./chain.ts";
-import type { Role } from "./config.ts";
-import type { MarketData } from "./data.ts";
+import type { Role } from "./config-core.ts";
+import type { MarketData } from "./data-core.ts";
 import { marginBalance } from "./kuru.ts";
-import { ladderKey, note, type LadderState, type SeriesState } from "./state.ts";
+import { ladderKey, note, type LadderState, type SeriesState } from "./state-core.ts";
 import { tickLadder } from "./tick.ts";
 
 export const station4 = (code: string) => stringToHex(code, { size: 4 });
@@ -70,7 +70,7 @@ export async function roll(ctx: Ctx, o: RollOpts): Promise<RollReport> {
   const st = stationOf(o.station);
   const date = isoToYmd(o.isoDate);
   const key = ladderKey(st.icao, date);
-  const close = closeFor(st.icao, o.isoDate, ctx.cfg.roll.closeMarginMin);
+  const close = closeFromStats(ctx.closeTimes?.[st.icao], st.icao, o.isoDate, ctx.cfg.roll.closeMarginMin);
   const rep: RollReport = { key, station: st.icao, date: o.isoDate, strikes: [], strikeSource: "", closeLocal: close.closeLocal, stopQuotingLocal: close.stopQuotingLocal, closeTime: Math.floor(close.closeUtcMs / 1000), ok: false, steps: [], monByRole: {}, estimatedMonByRole: {} };
   const dry = ctx.cfg.dryRun;
   let dependsOnDry = false; // a dry-run step "created" something later steps would need
@@ -241,7 +241,7 @@ export async function roll(ctx: Ctx, o: RollOpts): Promise<RollReport> {
           lad.pending[`market:${k}`] = { hash, from: ctx.addr.marketCreator, nonce, at: Math.floor(Date.now() / 1000), what: `deployProxy >=${k}` };
           ctx.save();
           // test hook: simulate the process dying between broadcast and receipt (fork tests only)
-          if (ctx.isAnvil && process.env.MAKER_TEST_CRASH_AFTER === `deployProxy:${k}`) throw new Error(`simulated crash after broadcasting deployProxy >=${k}`);
+          if (ctx.isAnvil && (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.MAKER_TEST_CRASH_AFTER === `deployProxy:${k}`) throw new Error(`simulated crash after broadcasting deployProxy >=${k}`);
         },
       );
       if (r.dryRun) continue;
@@ -308,7 +308,9 @@ export async function roll(ctx: Ctx, o: RollOpts): Promise<RollReport> {
 
     // ------------------------------------------------------------ initial quotes
     if (!o.skipQuotes) {
-      const t = await tickLadder(ctx, lad, o.data);
+      // with a separate roll budget the opening quotes are part of the roll (a spent quoting day cannot leave the new
+      // ladder unquoted); with one shared meter nothing changes
+      const t = await tickLadder(ctx, lad, o.data, ctx.cfg.budget.rollCapMon ? { quoteKind: "roll" } : {});
       add("quotes", dry ? "dry-run" : "done", t.actions.map((a) => `>=${a.strike}:${a.kind}`).join(" "));
     }
     rep.ok = true;

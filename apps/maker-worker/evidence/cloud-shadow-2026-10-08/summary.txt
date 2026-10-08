@@ -1,0 +1,10 @@
+Deployed Worker isotherm-maker, version 07fd9e32-c81a-433b-ac2b-d093a4e79d58 (uploaded 2026-10-08T16:25:51.498435Z), MAKER_MODE=shadow, DO live flag False -> mode shadow
+keys (public addresses only): maker 0xd572638F07829D1c3636400FB73CF34Ca6c7448a, operator 0x602dbf3937558B1d18d76315635fD5410089bd51, guardian 0x30C8E371719Ff00577284dd9c10587Fa89357d50; SNAPSHOT_TOKEN set: True
+summary since 2026-10-08T16:25:28.396Z: 4 ticks, 0 live, errors 0, alerts 0, intents {'margin.deposit': 1}, compare {'n': 20, 'fairAbsDiffSum': 0.0069, 'fairAbsDiffMax': 0.002, 'restingMatchesDesired': 20, 'wouldChange': 0, 'macMissing': 0}
+last tick 2026-10-08T16:30:39.019Z: 6772 ms, block 69303034, txs 0, snapshot {'posted': False, 'detail': 'shadow: not published (GET /api/snapshot through the binding: 200)'}
+ladder RCSS:20261009 active
+  >=28 fair 0.9829 (polymarket) desired {'pull': ['fair 0.9829 outside (0.03, 0.97): outcome ~known']} resting None/None -> none | live Mac maker: {'fair': 0.9829, 'bid': None, 'ask': None, 'mode': 'pulled', 'action': 'none'}
+  >=29 fair 0.9275 (polymarket) desired {'bid': 0.89, 'ask': 0.96, 'bidSize': 100, 'askSize': 100} resting 0.9/0.97 -> none | live Mac maker: {'fair': 0.9275, 'bid': 0.9, 'ask': 0.97, 'mode': 'quoting', 'action': 'none'}
+  >=30 fair 0.686 (polymarket; guard-wide) desired {'bid': 0.62, 'ask': 0.75, 'bidSize': 100, 'askSize': 100} resting 0.62/0.75 -> none | live Mac maker: {'fair': 0.686, 'bid': 0.62, 'ask': 0.75, 'mode': 'quoting', 'action': 'none'}
+  >=31 fair 0.233 (polymarket; guard-wide) desired {'bid': 0.17, 'ask': 0.3, 'bidSize': 100, 'askSize': 100} resting 0.18/0.31 -> none | live Mac maker: {'fair': 0.233, 'bid': 0.18, 'ask': 0.31, 'mode': 'quoting', 'action': 'none'}
+  >=32 fair 0.0267 (polymarket; guard-wide) desired {'pull': ['fair 0.0267 outside (0.03, 0.97): outcome ~known']} resting None/None -> none | live Mac maker: {'fair': 0.0267, 'bid': None, 'ask': None, 'mode': 'pulled', 'action': 'none'}

@@ -8,11 +8,12 @@ import type { Address, Hex } from "viem";
 import { computeFairs, type StrikeFair } from "../../forecast/src/fair.ts";
 import { erc20Abi, kuruBookAbi, marginAbi, vaultCommonAbi } from "./abis.ts";
 import { BudgetRefused, explainRevert, LiveRefused, nowSec, read, send, type Ctx } from "./chain.ts";
-import type { LadderData, MarketData } from "./data.ts";
+import type { SpendKind } from "./budget.ts";
+import type { LadderData, MarketData } from "./data-core.ts";
 import { createdOrders, fromSizeUnits, getBook, marginBalance, orderStatus, othersBest, scanOpenOrders, toPriceUnits, toSizeUnits, type Book } from "./kuru.ts";
 import { decide, type Action } from "./policy.ts";
 import { makeQuote, type QuoteDecision } from "./pricing.ts";
-import { note, type LadderState, type SeriesState } from "./state.ts";
+import { note, type LadderState, type SeriesState } from "./state-core.ts";
 
 export interface StrikeView {
   strike: number;
@@ -75,7 +76,8 @@ export async function killLadder(ctx: Ctx, lad: LadderState, reason: string, opt
       s.mode = close ? "closed" : "pulled";
     }
   }
-  if (withdraw && !ctx.cfg.dryRun) {
+  // a dry run (CLI --dry-run, the Worker's shadow) simulates and records the withdraw too, so the would-be kill is complete
+  if (withdraw) {
     const yes: Address[] = [];
     for (const k of lad.strikes) {
       const s = lad.series[k];
@@ -163,7 +165,9 @@ async function topUpAusd(ctx: Ctx, now: number, lad: LadderState) {
   note(ctx.state, "replenish", `${lad.key}: margin AUSD topped up by ${Number(amt) / 1e6}`, now);
 }
 
-export async function tickLadder(ctx: Ctx, lad: LadderState, data: MarketData): Promise<LadderTick> {
+/** One pass over one ladder. `opts.quoteKind` is the budget kind of new quotes ("quote"; the roll passes "roll" for the
+ *  opening quotes when the config has a separate roll budget). */
+export async function tickLadder(ctx: Ctx, lad: LadderState, data: MarketData, opts: { quoteKind?: SpendKind } = {}): Promise<LadderTick> {
   ctx.gasPriceWei = undefined;
   const now = await nowSec(ctx);
   const res: LadderTick = { key: lad.key, now, data: null, fairs: [], strikes: [], actions: [], marginAusd: null };
@@ -243,7 +247,7 @@ export async function tickLadder(ctx: Ctx, lad: LadderState, data: MarketData): 
           ctx,
           "maker",
           { to: s.market, abi: kuruBookAbi, functionName: "batchUpdate", args: [bids.map((x) => toPriceUnits(x.p)), bids.map((x) => toSizeUnits(x.s)), asks.map((x) => toPriceUnits(x.p)), asks.map((x) => toSizeUnits(x.s)), cancelIds, true] },
-          { label: `${action.kind} >=${f.k} ${desired.bidSize}@${desired.bid ?? "-"} / ${desired.askSize}@${desired.ask ?? "-"}${cancelIds.length ? ` cancel ${cancelIds.length}` : ""}`, kind: "quote" },
+          { label: `${action.kind} >=${f.k} ${desired.bidSize}@${desired.bid ?? "-"} / ${desired.askSize}@${desired.ask ?? "-"}${cancelIds.length ? ` cancel ${cancelIds.length}` : ""}`, kind: opts.quoteKind ?? "quote" },
         );
         if (r.dryRun) continue;
         act.tx = r.hash;

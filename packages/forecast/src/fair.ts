@@ -2,10 +2,11 @@
 // v0 (or, on the day itself, the 2-year intraday increment table) is a GUARDRAIL: a large disagreement widens the
 // maker's spread, a huge one pulls the strike. Without a usable Polymarket ladder the guard becomes a FALLBACK fair
 // (the maker widens further). Pure: no I/O.
-import { pAtLeast, type LiveLadder } from "./polymarket.ts";
-import type { ObservedMax } from "./obs.ts";
+// Imports only runtime-agnostic modules (the *-core.ts files, closetime.ts), so the Cloudflare Worker uses it as is.
+import { pAtLeast, type LiveLadder } from "./polymarket-core.ts";
+import type { ObservedMax } from "./obs-core.ts";
 import { pIncrementAtLeast, type CloseTimeStats } from "./closetime.ts";
-import { v0At, type V0Ladder } from "./v0.ts";
+import { v0At, type V0Ladder } from "./v0-core.ts";
 
 export interface FairCfg {
   pmMaxAgeSec: number; // older Polymarket data is not used as the quote source

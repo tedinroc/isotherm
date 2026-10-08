@@ -1,0 +1,22 @@
+fork of Monad testnet at block 69310440 (chain time 2026-10-08T17:07:57.000Z); taking over RCSS:20261009 [28,29,30,31,32] (stopAt 2026-10-09T09:20:00.000Z)
+Mac state imported: 2 ladder(s); budget 2026-10-09 re-booked for the Worker's meters: maker 0.6038
+fork-only setup: throwaway operator authorised on the vault (owner impersonated); throwaway maker: 10k AUSD from the faucet, 300 sets minted per strike, 300 YES per strike + 400 AUSD in the Kuru margin account. The real maker's open orders on the books: {"28":0,"29":2,"30":2,"31":2,"32":0}
+1. imported (imported live state from import:state: 2 ladder(s)); armed; interlock "another writer (source "isotherm.snapshot/v1") published a snapshot 20s ago (< 300s): stop it before going live" -> shadow, 0 txs, nothing posted
+2. first live tick: 3 txs (quote >=29 100@0.88 / 100@0.95 | quote >=30 100@0.62 / 100@0.75 | quote >=31 100@0.17 / 100@0.3); snapshot posted (source isotherm-maker-worker)
+   RCSS:20261009 >=28 fair 0.9823 (polymarket) none -> book -/-
+   RCSS:20261009 >=29 fair 0.9182 (polymarket) quote -> book 0.88/0.95
+   RCSS:20261009 >=30 fair 0.6818 (polymarket; guard-wide) quote -> book 0.62/0.75
+   RCSS:20261009 >=31 fair 0.2384 (polymarket; guard-wide) quote -> book 0.17/0.3
+   RCSS:20261009 >=32 fair 0.0266 (polymarket; guard-wide) none -> book -/-
+   next tick: live, interlock "latest snapshot from "isotherm-maker-worker" 0s ago", 0 txs
+3. 2026-10-09T12:00 local: roll RCSS:20261010 strikes [28,29,30,31,32] (Polymarket median 30 (https://polymarket.com/event/highest-temperature-in-taipei-on-october-10-2026, fetched 2026-10-08T17:09:58.763Z)
+   35 txs (createLadder, mintSet, Kuru, Zap.setCanonicalMarket, margin.deposit, approve, requote, quote); MON by role {"operator":0.0069,"maker":0.011,"marketCreator":0.0155}; meters {"maker":0.612775212,"operator:roll":0.00696554,"maker:roll":0.009276308,"marketCreator:roll":0.015435043}
+   RCSS:20261010 >=28 fair 0.9362 (polymarket) quote -> book 0.9/0.97
+   RCSS:20261010 >=29 fair 0.826 (polymarket) quote -> book 0.79/0.86
+   RCSS:20261010 >=30 fair 0.524 (polymarket; guard-wide) quote -> book 0.46/0.59
+   RCSS:20261010 >=31 fair 0.1932 (polymarket; guard-wide) quote -> book 0.13/0.26
+   RCSS:20261010 >=32 fair 0.0686 (polymarket) quote -> book 0.03/0.1
+4. 2026-10-09T17:18:35 local (stopAt - 85 s): kill [{"key":"RCSS:20261009","cancelled":6,"leftOpen":0,"mode":"live"}]; KILL >=29 cancel x2 0.000225 MON | KILL >=30 cancel x2 0.000237 MON | KILL >=31 cancel x2 0.000249 MON | withdraw YES margin x5 after close 0.00044 MON; every RCSS:20261009 book is free of maker orders and the YES margin is 0; RCSS:20261010 still active
+   next tick: no kill; +310 s verify pass: nothing left open
+5. pull all: KILL >=28 cancel x2 | KILL >=29 cancel x2 | KILL >=30 cancel x2 | KILL >=31 cancel x2 | KILL >=32 cancel x2; disarm -> shadow, 0 txs
+47 live txs on the fork (txs.tsv); MON by role {"maker":0.0211,"operator":0.0069,"marketCreator":0.0155}

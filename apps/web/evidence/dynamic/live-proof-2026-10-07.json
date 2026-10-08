@@ -1,5 +1,5 @@
 {
-  "label": "TEAM TEST WALLET (Dynamic embedded wallet). Not a user, not traction.",
+  "label": "TEAM TEST WALLET (Dynamic embedded wallet).",
   "wallet": "0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427",
   "wallet_kind": "Dynamic embedded wallet (Sandbox environment 3eaae4f7-b9bb-4a0a-a578-00ff7008a460, email login on https://isotherm.pages.dev, smart wallets off = plain EOA)",
   "chain": "Monad testnet (10143)",

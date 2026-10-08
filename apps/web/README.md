@@ -26,8 +26,8 @@ wallet) is the default and the labelled dev wallet (a testnet burner key in brow
 `VITE_DYNAMIC_ENVIRONMENT_ID= npm run build` makes a dev-wallet-only build. Status: Dynamic is enabled on the live site
 (since 2026-10-07 13:21 UTC, with the Open-Meteo credit; redeployed about 16:24 UTC with the same-origin API, Pages
 deployment `6b18d972`, main chunk `index-Cd8KBz0E.js`). The first embedded-wallet
-login, relayed mint (`0xca08d015…bf04`) and Zap Buy Yes (`0x361668d8…681c`) ran on Monad testnet from the team's own
-wallet `0xF4a3…2427`, a team wallet, not traction: see [`evidence/dynamic/RESULT.md`](evidence/dynamic/RESULT.md) §5.
+login, relayed mint (`0xca08d015…bf04`) and Zap Buy Yes (`0x361668d8…681c`) ran on Monad testnet from a team test
+wallet: see [`evidence/dynamic/RESULT.md`](evidence/dynamic/RESULT.md) §5.
 
 **Buy No** is two transactions behind one tap: `vault.mintSet(seriesId, n)`, then `zap.sellYes(seriesId, market, n,
 minAusdOut)`, with a progress list in the trade sheet (`src/lib/buyNo.ts`, `src/lib/buyNoPlan.ts`). The app never calls

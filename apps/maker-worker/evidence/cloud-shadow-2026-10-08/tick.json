@@ -1,0 +1,191 @@
+{
+ "at": "2026-10-08T16:30:39.019Z",
+ "ms": 6772,
+ "mode": "shadow",
+ "envMode": "shadow",
+ "liveFlag": false,
+ "reasons": [
+  "env MAKER_MODE is shadow",
+  "Durable Object live flag is off"
+ ],
+ "block": 69303034,
+ "chainTime": 1791477039,
+ "control": null,
+ "interlock": null,
+ "kill": [],
+ "rolls": [],
+ "reconcile": [],
+ "ladders": [
+  {
+   "key": "RCSS:20261009",
+   "status": "active",
+   "paused": false,
+   "stopAt": 1791537600,
+   "strikes": [
+    {
+     "k": 28,
+     "fair": 0.9829,
+     "source": "polymarket",
+     "flags": [],
+     "desired": {
+      "pull": [
+       "fair 0.9829 outside (0.03, 0.97): outcome ~known"
+      ]
+     },
+     "resting": {
+      "bid": null,
+      "ask": null
+     },
+     "action": "none",
+     "reasons": [
+      "fair 0.9829 outside (0.03, 0.97): outcome ~known"
+     ],
+     "mac": {
+      "fair": 0.9829,
+      "bid": null,
+      "ask": null,
+      "mode": "pulled",
+      "action": "none"
+     }
+    },
+    {
+     "k": 29,
+     "fair": 0.9275,
+     "source": "polymarket",
+     "flags": [],
+     "desired": {
+      "bid": 0.89,
+      "ask": 0.96,
+      "bidSize": 100,
+      "askSize": 100
+     },
+     "resting": {
+      "bid": 0.9,
+      "ask": 0.97
+     },
+     "action": "none",
+     "reasons": [
+      "quote still good"
+     ],
+     "mac": {
+      "fair": 0.9275,
+      "bid": 0.9,
+      "ask": 0.97,
+      "mode": "quoting",
+      "action": "none"
+     }
+    },
+    {
+     "k": 30,
+     "fair": 0.686,
+     "source": "polymarket",
+     "flags": [
+      "guard-wide"
+     ],
+     "desired": {
+      "bid": 0.62,
+      "ask": 0.75,
+      "bidSize": 100,
+      "askSize": 100
+     },
+     "resting": {
+      "bid": 0.62,
+      "ask": 0.75
+     },
+     "action": "none",
+     "reasons": [
+      "quote still good"
+     ],
+     "mac": {
+      "fair": 0.686,
+      "bid": 0.62,
+      "ask": 0.75,
+      "mode": "quoting",
+      "action": "none"
+     }
+    },
+    {
+     "k": 31,
+     "fair": 0.233,
+     "source": "polymarket",
+     "flags": [
+      "guard-wide"
+     ],
+     "desired": {
+      "bid": 0.17,
+      "ask": 0.3,
+      "bidSize": 100,
+      "askSize": 100
+     },
+     "resting": {
+      "bid": 0.18,
+      "ask": 0.31
+     },
+     "action": "none",
+     "reasons": [
+      "quote still good"
+     ],
+     "mac": {
+      "fair": 0.233,
+      "bid": 0.18,
+      "ask": 0.31,
+      "mode": "quoting",
+      "action": "none"
+     }
+    },
+    {
+     "k": 32,
+     "fair": 0.0267,
+     "source": "polymarket",
+     "flags": [
+      "guard-wide"
+     ],
+     "desired": {
+      "pull": [
+       "fair 0.0267 outside (0.03, 0.97): outcome ~known"
+      ]
+     },
+     "resting": {
+      "bid": null,
+      "ask": null
+     },
+     "action": "none",
+     "reasons": [
+      "fair 0.0267 outside (0.03, 0.97): outcome ~known"
+     ],
+     "mac": {
+      "fair": 0.0267,
+      "bid": null,
+      "ask": null,
+      "mode": "pulled",
+      "action": "none"
+     }
+    }
+   ]
+  }
+ ],
+ "intents": [],
+ "txs": [],
+ "watcher": {
+  "from": 69302599,
+  "head": 69303046,
+  "pages": 5,
+  "events": 0,
+  "ladders": null,
+  "checked": 0,
+  "verdicts": [],
+  "intents": [],
+  "challenges": [],
+  "guardian": "guardian key 0x30C8E371719Ff00577284dd9c10587Fa89357d50"
+ },
+ "snapshot": {
+  "posted": false,
+  "detail": "shadow: not published (GET /api/snapshot through the binding: 200)"
+ },
+ "budget": {
+  "maker:roll": 0.012814974
+ },
+ "alerts": [],
+ "errors": [],
+ "log": []
+}

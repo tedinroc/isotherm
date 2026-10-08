@@ -1,0 +1,178 @@
+{
+ "version": 1,
+ "deployment": {
+  "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+  "resolver": "0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B",
+  "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+  "source": "<repo>/deployments/testnet.json",
+  "variant": "v1"
+ },
+ "ladders": {
+  "RCSS:20261010": {
+   "key": "RCSS:20261010",
+   "station": "RCSS",
+   "date": 20261010,
+   "isoDate": "2026-10-10",
+   "strikes": [
+    28,
+    29,
+    30,
+    31
+   ],
+   "strikeSource": "Polymarket median 29 (https://polymarket.com/event/highest-temperature-in-taipei-on-october-8-2026, fetched 2026-10-08T15:30:32.000Z): P(>=k) 28:0.949 29:0.853 30:0.473 31:0.097",
+   "closeTime": 1791624600,
+   "stopAt": 1791624000,
+   "dayEnd": 1791648000,
+   "status": "closed",
+   "steps": {
+    "series": {
+     "done": true,
+     "at": 1791473469
+    },
+    "marginAusd": {
+     "done": true,
+     "at": 1791473464,
+     "tx": "0x08d67dc5ca503dc6edfc39faf5abec4b45f54a8ec6b45bc192b506cb8263fc73"
+    },
+    "roll": {
+     "done": true,
+     "at": 1791473469
+    }
+   },
+   "pending": {},
+   "series": {
+    "28": {
+     "strike": 28,
+     "seriesId": "0x9ef7ba847f92724d40fa48060f18f8cc3e0da2cfa261660283f7f8307bfe8e5d",
+     "yes": "0xD72b2a11de883A0c3CeE455e0e61E9CA8D8e19F3",
+     "no": "0x624856B21A6903D50e06294FB34a9353D365F0FF",
+     "market": "0xC6806c67a2faCd6e7fd72e26DA9d037eb2E2a7D3",
+     "canonical": true,
+     "mode": "closed",
+     "orders": {},
+     "marketBlock": 69291059,
+     "marginDone": true,
+     "lastQuote": {
+      "fair": 0.949,
+      "bid": 0.91,
+      "ask": 0.98,
+      "bidSize": 100,
+      "askSize": 100,
+      "at": 1791473468,
+      "tx": "0x8eb53982e6b3b579f0be459b8779e70245474735db648c02527bd2b0da3033ed"
+     },
+     "reason": "observed max >= strike: YES certain",
+     "lastPullAt": 1791473472
+    },
+    "29": {
+     "strike": 29,
+     "seriesId": "0x96531067e90ff12fcd563f1a78e7900d211d2bfde19a91f908de15e83c98d20e",
+     "yes": "0x30571e664a87bcf7D4FB27361e07b5405c9A4957",
+     "no": "0x9E487A06E9F03BE5879BC8182909552afe80Bec0",
+     "market": "0xA747e78cd80DF26b57c4d6E264f3bec39892B5EB",
+     "canonical": true,
+     "mode": "closed",
+     "orders": {},
+     "marketBlock": 69291060,
+     "marginDone": true,
+     "lastQuote": {
+      "fair": 0.7376,
+      "bid": 0.7,
+      "ask": 0.77,
+      "bidSize": 100,
+      "askSize": 100,
+      "at": 1791473472,
+      "tx": "0xde4daccf087b4857bd65981353357c429c4b2dd53b83d5b0da5342ab25767973"
+     },
+     "reason": "resting bid 0.82 >= fair 0.7376; bid 0.82 -> 0.7; ask 0.89 -> 0.77; fair moved 0.8527 -> 0.7376"
+    },
+    "30": {
+     "strike": 30,
+     "seriesId": "0x6287b9ef1c55ec884539bc2dd455c44959e33cb7251ae7e34d802fbccef4791c",
+     "yes": "0xABd60e1607aEd8b956e2BBccCb2B2b4001802Ca5",
+     "no": "0xef11BE9DBde6CfFd12d618B22677B434D8f5bD34",
+     "market": "0x1d26FFF114985d7E25683F47642D552dcdEF7775",
+     "canonical": true,
+     "mode": "closed",
+     "orders": {},
+     "marketBlock": 69291061,
+     "marginDone": true,
+     "lastQuote": {
+      "fair": 0.498,
+      "bid": 0.47,
+      "ask": 0.54,
+      "bidSize": 100,
+      "askSize": 100,
+      "at": 1791473472,
+      "tx": "0xa22a386dc18f94e0019388c233fa277c3fd0f90fcf482fe90a62869cc4b72d92"
+     },
+     "reason": "bid 0.44 -> 0.47; ask 0.51 -> 0.54; fair moved 0.4726 -> 0.498"
+    },
+    "31": {
+     "strike": 31,
+     "seriesId": "0xb3f6f8abed2a7df5142e4e80de4da5247407de5182d4b6265fcfdad104f9d627",
+     "yes": "0x58Ad67FD0fF6E88ECD253D0Ac81aa11aaaF01389",
+     "no": "0x3f9F2c4b6d6ADB633f1F0654B689e0B82eF0BfdD",
+     "market": "0x5033f84041827549C0BB4774426341a7128e171b",
+     "canonical": true,
+     "mode": "closed",
+     "orders": {},
+     "marketBlock": 69291062,
+     "marginDone": true,
+     "lastQuote": {
+      "fair": 0.0972,
+      "bid": 0.06,
+      "ask": 0.13,
+      "bidSize": 100,
+      "askSize": 100,
+      "at": 1791473468,
+      "tx": "0x673d32e266f6460dfcf90f51b027c9b136c5dacbafd20c5602fd7694c63be44e"
+     },
+     "reason": "no resting quote"
+    }
+   },
+   "createdAt": 1791473432,
+   "polymarket": {
+    "slug": "highest-temperature-in-taipei-on-october-8-2026",
+    "url": "https://polymarket.com/event/highest-temperature-in-taipei-on-october-8-2026"
+   },
+   "closedAt": 1791624005
+  }
+ },
+ "budget": {
+  "day": "2026-10-08",
+  "spent": {
+   "operator": 0.117460509,
+   "maker": 0.107673885,
+   "marketCreator": 0.227737118
+  },
+  "txs": {
+   "operator": 5,
+   "maker": 25,
+   "marketCreator": 4
+  },
+  "history": []
+ },
+ "events": [
+  {
+   "at": 1791473432,
+   "kind": "roll",
+   "msg": "planned RCSS:20261010 strikes [28,29,30,31] (Polymarket median 29 (https://polymarket.com/event/highest-temperature-in-taipei-on-october-8-2026, fetched 2026-10-08T15:30:32.000Z): P(>=k) 28:0.949 29:0.853 30:0.473 31:0.097)"
+  },
+  {
+   "at": 1791473468,
+   "kind": "roll",
+   "msg": "RCSS:20261010 active: markets >=28:0xC6806c67a2faCd6e7fd72e26DA9d037eb2E2a7D3 >=29:0xA747e78cd80DF26b57c4d6E264f3bec39892B5EB >=30:0x1d26FFF114985d7E25683F47642D552dcdEF7775 >=31:0x5033f84041827549C0BB4774426341a7128e171b"
+  },
+  {
+   "at": 1791473469,
+   "kind": "roll",
+   "msg": "RCSS:20261010 active: markets >=28:0xC6806c67a2faCd6e7fd72e26DA9d037eb2E2a7D3 >=29:0xA747e78cd80DF26b57c4d6E264f3bec39892B5EB >=30:0x1d26FFF114985d7E25683F47642D552dcdEF7775 >=31:0x5033f84041827549C0BB4774426341a7128e171b"
+  },
+  {
+   "at": 1791624005,
+   "kind": "kill",
+   "msg": "RCSS:20261010 closed (stop-quoting time): cancelled 6 order(s)"
+  }
+ ]
+}

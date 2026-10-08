@@ -1,0 +1,10 @@
+{
+  "_comment": "Overlay on packages/maker/config/default.json for the Cloudflare Worker. Caps mirror the Mac's go-live config/local.json (maker 3.0 MON/day in total), but the roll now has its own meter (rollCapMon) so quoting can never starve the next day's roll (the 2026-10-08 incident): maker quoting 2.2 + roll 0.8. Measured roll costs at 102 gwei: maker ~0.48 + opening quotes ~0.3, operator createLadder 0.12 + 4-5 x setCanonical 0.014, market creator 4-5 x deployProxy 0.15. Vars in wrangler.toml (STATIONS, RPC_URL) and CONFIG_OVERRIDES override this file.",
+  "stations": ["RCSS"],
+  "budget": {
+    "dailyCapMon": { "maker": 2.2, "operator": 0.5, "marketCreator": 0.8 },
+    "reserveMon": { "maker": 0.2, "operator": 0.05, "marketCreator": 0.05 },
+    "rollCapMon": { "maker": 0.8, "operator": 0.5, "marketCreator": 0.8 }
+  },
+  "gas": { "makerMult": 1.08, "opMult": 1.1, "fixedGasPriceGwei": null }
+}

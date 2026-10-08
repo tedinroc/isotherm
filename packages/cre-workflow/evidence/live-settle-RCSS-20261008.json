@@ -1,0 +1,96 @@
+{
+  "job": "xyz.isotherm.cre-settle",
+  "startedAt": "2026-10-08T18:05:02Z",
+  "finishedAt": "2026-10-08T18:05:40.790Z",
+  "path": "official",
+  "pathLabel": "OFFICIAL: cre workflow simulate ./settle -T testnet --broadcast (CRE engine running the compiled WASM; one local node, MockKeystoneForwarder + v1 attestation)",
+  "pathReason": "cre whoami succeeded",
+  "creLogin": true,
+  "network": "LIVE Monad testnet 10143",
+  "testDataRelabel": null,
+  "dryRun": false,
+  "exitCode": 0,
+  "exitMeaning": "ok / nothing to do / skipped",
+  "runner": [
+    "mode=official rpc=https://testnet-rpc.monad.xyz cre-login=yes broadcast=1",
+    "attester 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9 == Resolver.attester(); tx sender 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9 has 0.400000000000000000 MON; vault ladders 2",
+    "OFFICIAL: cre workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 --broadcast",
+    "done; log: packages/cre-workflow/var/logs/run-20261008T180506Z.log"
+  ],
+  "workflow": {
+    "triggerTime": "2026-10-08T18:05:32.000Z",
+    "ladders": {
+      "count": 2,
+      "scanned": [
+        0,
+        2
+      ],
+      "due": 1
+    },
+    "paused": false,
+    "outcomes": [
+      {
+        "station": "RCSS",
+        "date": 20261008,
+        "action": "settled",
+        "reason": "2-of-3 fallback agree",
+        "tmaxC": 28,
+        "sources": {
+          "IEM": "28C n=39 h=22 last=22:30 incomplete",
+          "AWC": "28C n=47 h=24 last=23:30 complete",
+          "OGIMET": "28C n=47 h=24 last=23:30 complete"
+        },
+        "sourcesHash": "0x1c45302330484eb5b5effd1fc415a85577a6a0ed101e4546a5eaf5d124120944",
+        "validUntil": "1791484232",
+        "txHash": "0x65eee8ef9ac201c1c8155267b0e24cb1fef3c897327030705e2ebfe661d9963d",
+        "onchain": {
+          "status": 1,
+          "tmaxC": 28
+        },
+        "confirmed": "resolved"
+      }
+    ],
+    "skipped": [],
+    "budget": {
+      "http": "3/15",
+      "evmReads": "4/15",
+      "reports": "1/5",
+      "ogimet": "1/1"
+    }
+  },
+  "reportsSent": [
+    {
+      "station": "RCSS",
+      "date": 20261008,
+      "action": "settled",
+      "tmaxC": 28,
+      "txHash": "0x65eee8ef9ac201c1c8155267b0e24cb1fef3c897327030705e2ebfe661d9963d",
+      "confirmed": "resolved",
+      "sourcesHash": "0x1c45302330484eb5b5effd1fc415a85577a6a0ed101e4546a5eaf5d124120944"
+    }
+  ],
+  "receiptChecks": [
+    "0x65eee8ef9ac201c1c8155267b0e24cb1fef3c897327030705e2ebfe661d9963d block 69321897 status=success gasUsed=200000 ReportProcessed.result=true LadderResolved: RCSS 20261008 status=Settled tmaxC=28 OK"
+  ],
+  "log": "packages/cre-workflow/var/logs/job-20261008T180502Z.log",
+  "thisReport": {
+    "station": "RCSS",
+    "date": 20261008,
+    "action": "settled",
+    "reason": "2-of-3 fallback agree",
+    "tmaxC": 28,
+    "sources": {
+      "IEM": "28C n=39 h=22 last=22:30 incomplete",
+      "AWC": "28C n=47 h=24 last=23:30 complete",
+      "OGIMET": "28C n=47 h=24 last=23:30 complete"
+    },
+    "sourcesHash": "0x1c45302330484eb5b5effd1fc415a85577a6a0ed101e4546a5eaf5d124120944",
+    "validUntil": "1791484232",
+    "txHash": "0x65eee8ef9ac201c1c8155267b0e24cb1fef3c897327030705e2ebfe661d9963d",
+    "onchain": {
+      "status": 1,
+      "tmaxC": 28
+    },
+    "confirmed": "resolved"
+  }
+}

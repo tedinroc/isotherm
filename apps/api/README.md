@@ -70,7 +70,7 @@ Current team wallets that are not deployment roles:
 - `0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427`: a team test **Dynamic embedded wallet**. It was created by email login on the live site
   (Dynamic Sandbox environment) on 2026-10-07. The deployer funded it with 0.25 MON and 10,000 faucet AUSD. Its
   gasless relayed mint (`0xca08d015…`) and its Zap "Buy YES" (`0x361668d8…`, RCSS 2026-10-08 ≥28) are our own
-  testing, so they are team, not traction.
+  testing, so they count as team fills.
   Any further wallet a team member creates through Dynamic (or any other login) must be added here as well.
 
 Upgrade from the v1 scanner (which classified at scan time): on first load, the v1 keys are migrated once into the

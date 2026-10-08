@@ -1,0 +1,78 @@
+{"t":"2026-10-08T16:20:02.008Z","level":"info","msg":"tick 150 done in 19892 ms; no changes; budget {\"maker\":0.085981512}"}
+{"t":"2026-10-08T16:20:59.422Z","level":"info","msg":"tick 151 done in 16834 ms; no changes; budget {\"maker\":0.085981512}"}
+{"t":"2026-10-08T16:22:00.262Z","level":"info","msg":"tick 152 done in 16458 ms; no changes; budget {\"maker\":0.085981512}"}
+{"t":"2026-10-08T16:23:01.817Z","level":"info","msg":"tick 153 done in 17478 ms; no changes; budget {\"maker\":0.085981512}"}
+{"t":"2026-10-08T16:24:02.104Z","level":"info","msg":"tick 154 done in 16912 ms; no changes; budget {\"maker\":0.085981512}"}
+{"t":"2026-10-08T16:25:07.262Z","level":"info","msg":"tick 155 done in 20903 ms; no changes; budget {\"maker\":0.085981512}"}
+{"t":"2026-10-08T16:26:03.787Z","level":"info","msg":"tick 156 done in 16946 ms; no changes; budget {\"maker\":0.085981512}"}
+{"t":"2026-10-08T16:27:18.176Z","level":"info","msg":"tick 157 done in 31228 ms; no changes; budget {\"maker\":0.085981512}"}
+{"t":"2026-10-08T16:28:02.470Z","level":"info","msg":"tx maker         requote >=30 100@0.62 / 100@0.75 cancel 2        used   567417 limit   567417 0.0579 MON 1628ms 0x0c1de6c3bb…"}
+{"t":"2026-10-08T16:28:09.297Z","level":"info","msg":"tick 158 done in 22059 ms; RCSS:20261009>=30:requote; budget {\"maker\":0.143858046}"}
+{"t":"2026-10-08T16:29:07.320Z","level":"info","msg":"tick 159 done in 19954 ms; no changes; budget {\"maker\":0.143858046}"}
+{"t":"2026-10-08T16:30:06.466Z","level":"info","msg":"tick 160 done in 18575 ms; no changes; budget {\"maker\":0.143858046}"}
+{"t":"2026-10-08T16:31:04.398Z","level":"info","msg":"tick 161 done in 16360 ms; no changes; budget {\"maker\":0.143858046}"}
+{"t":"2026-10-08T16:32:10.380Z","level":"info","msg":"tick 162 done in 21899 ms; no changes; budget {\"maker\":0.143858046}"}
+{"t":"2026-10-08T16:33:05.214Z","level":"info","msg":"tick 163 done in 16259 ms; no changes; budget {\"maker\":0.143858046}"}
+{"t":"2026-10-08T16:34:05.958Z","level":"info","msg":"tick 164 done in 16665 ms; no changes; budget {\"maker\":0.143858046}"}
+{"t":"2026-10-08T16:35:08.153Z","level":"info","msg":"tick 165 done in 18610 ms; no changes; budget {\"maker\":0.143858046}"}
+{"t":"2026-10-08T16:36:05.595Z","level":"info","msg":"tx maker         requote >=30 100@0.65 / 100@0.72 cancel 2        used   567431 limit   567431 0.0579 MON 1580ms 0xe6b5d40011…"}
+{"t":"2026-10-08T16:36:13.288Z","level":"info","msg":"tick 166 done in 23559 ms; RCSS:20261009>=30:requote; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:37:07.060Z","level":"info","msg":"tick 167 done in 17204 ms; no changes; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:38:09.242Z","level":"info","msg":"tick 168 done in 18657 ms; no changes; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:39:07.483Z","level":"info","msg":"tick 169 done in 16661 ms; no changes; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:40:09.740Z","level":"info","msg":"tick 170 done in 18613 ms; no changes; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:41:12.386Z","level":"info","msg":"tick 171 done in 21064 ms; no changes; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:42:10.060Z","level":"info","msg":"tick 172 done in 18606 ms; no changes; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:43:08.046Z","level":"info","msg":"tick 173 done in 16411 ms; no changes; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:44:10.861Z","level":"info","msg":"tick 174 done in 18734 ms; no changes; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:45:11.576Z","level":"info","msg":"tick 175 done in 19134 ms; no changes; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:46:10.053Z","level":"info","msg":"tick 176 done in 17411 ms; no changes; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:47:09.877Z","level":"info","msg":"tick 177 done in 16752 ms; no changes; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:48:21.803Z","level":"info","msg":"tick 178 done in 28348 ms; no changes; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:49:09.845Z","level":"info","msg":"tick 179 done in 15986 ms; no changes; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:50:21.589Z","level":"info","msg":"tick 180 done in 27161 ms; no changes; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:51:16.434Z","level":"info","msg":"tick 181 done in 21786 ms; no changes; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:52:13.553Z","level":"info","msg":"tick 182 done in 18557 ms; no changes; budget {\"maker\":0.201736008}"}
+{"t":"2026-10-08T16:53:08.683Z","level":"info","msg":"tx maker         requote >=30 100@0.62 / 100@0.75 cancel 2        used   567417 limit   567417 0.0579 MON 808ms 0x53a65c349c…"}
+{"t":"2026-10-08T16:53:16.195Z","level":"info","msg":"tick 183 done in 21067 ms; RCSS:20261009>=30:requote; budget {\"maker\":0.259612542}"}
+{"t":"2026-10-08T16:54:15.168Z","level":"info","msg":"tick 184 done in 19730 ms; no changes; budget {\"maker\":0.259612542}"}
+{"t":"2026-10-08T16:55:11.590Z","level":"info","msg":"tick 185 done in 15856 ms; no changes; budget {\"maker\":0.259612542}"}
+{"t":"2026-10-08T16:56:13.984Z","level":"info","msg":"tick 186 done in 17816 ms; no changes; budget {\"maker\":0.259612542}"}
+{"t":"2026-10-08T16:57:14.328Z","level":"info","msg":"tick 187 done in 17583 ms; no changes; budget {\"maker\":0.259612542}"}
+{"t":"2026-10-08T16:58:25.761Z","level":"info","msg":"tick 188 done in 24740 ms; no changes; budget {\"maker\":0.259612542}"}
+{"t":"2026-10-08T16:59:13.139Z","level":"info","msg":"tx maker         requote >=29 100@0.88 / 100@0.95 cancel 2        used   536884 limit   536884 0.0548 MON 2018ms 0x512d0c4e57…"}
+{"t":"2026-10-08T16:59:22.542Z","level":"info","msg":"tick 189 done in 21083 ms; RCSS:20261009>=29:requote; budget {\"maker\":0.31437471}"}
+{"t":"2026-10-08T17:00:18.923Z","level":"info","msg":"tick 190 done in 17214 ms; no changes; budget {\"maker\":0.31437471}"}
+{"t":"2026-10-08T17:01:34.700Z","level":"info","msg":"tx maker         requote >=30 100@0.6 / 100@0.73 cancel 2         used   567464 limit   567464 0.0579 MON 810ms 0x22116bbdcf…"}
+{"t":"2026-10-08T17:01:39.499Z","level":"info","msg":"tx maker         requote >=31 100@0.14 / 100@0.27 cancel 2        used   567431 limit   567431 0.0579 MON 818ms 0x2d0aa15025…"}
+{"t":"2026-10-08T17:01:43.424Z","level":"info","msg":"tick 191 done in 41370 ms; RCSS:20261009>=30:requote RCSS:20261009>=31:requote; budget {\"maker\":0.430134}"}
+{"t":"2026-10-08T17:02:17.967Z","level":"info","msg":"tick 192 done in 15482 ms; no changes; budget {\"maker\":0.430134}"}
+{"t":"2026-10-08T17:03:20.710Z","level":"info","msg":"tx maker         requote >=30 100@0.62 / 100@0.75 cancel 2        used   567417 limit   567417 0.0579 MON 1586ms 0xc85cbaa2da…"}
+{"t":"2026-10-08T17:03:25.576Z","level":"info","msg":"tx maker         requote >=31 100@0.18 / 100@0.31 cancel 2        used   567366 limit   567366 0.0579 MON 803ms 0xad2a94fb65…"}
+{"t":"2026-10-08T17:03:29.632Z","level":"info","msg":"tick 193 done in 26530 ms; RCSS:20261009>=30:requote RCSS:20261009>=31:requote; budget {\"maker\":0.545881866}"}
+{"t":"2026-10-08T17:04:28.083Z","level":"info","msg":"tick 194 done in 24850 ms; no changes; budget {\"maker\":0.545881866}"}
+{"t":"2026-10-08T17:05:22.760Z","level":"info","msg":"tick 195 done in 19107 ms; no changes; budget {\"maker\":0.545881866}"}
+{"t":"2026-10-08T17:06:16.557Z","level":"info","msg":"tx maker         requote >=30 100@0.65 / 100@0.72 cancel 2        used   567431 limit   567431 0.0579 MON 816ms 0x50c6f36842…"}
+{"t":"2026-10-08T17:06:22.442Z","level":"info","msg":"tick 196 done in 18583 ms; RCSS:20261009>=30:requote; budget {\"maker\":0.603759828}"}
+{"t":"2026-10-08T17:07:21.953Z","level":"info","msg":"tick 197 done in 17936 ms; no changes; budget {\"maker\":0.603759828}"}
+{"t":"2026-10-08T17:08:21.518Z","level":"warn","msg":"snapshot POST failed: fetch failed"}
+{"t":"2026-10-08T17:08:21.519Z","level":"info","msg":"tick 198 done in 16974 ms; no changes; budget {\"maker\":0.603759828}"}
+{"t":"2026-10-08T17:09:20.832Z","level":"info","msg":"tx maker         requote >=30 100@0.61 / 100@0.74 cancel 2        used   536992 limit   536992 0.0548 MON 783ms 0xda7c2377dc…"}
+{"t":"2026-10-08T17:09:28.171Z","level":"info","msg":"tick 199 done in 23067 ms; RCSS:20261009>=30:requote; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:10:23.069Z","level":"info","msg":"tick 200 done in 17831 ms; no changes; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:11:21.710Z","level":"info","msg":"tick 201 done in 16066 ms; no changes; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:12:43.665Z","level":"info","msg":"tick 202 done in 37883 ms; no changes; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:13:23.492Z","level":"info","msg":"tick 203 done in 17289 ms; no changes; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:14:22.438Z","level":"info","msg":"tick 204 done in 15869 ms; no changes; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:15:24.861Z","level":"info","msg":"tick 205 done in 17844 ms; no changes; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:16:27.264Z","level":"info","msg":"tick 206 done in 19825 ms; no changes; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:17:23.951Z","level":"info","msg":"tick 207 done in 16109 ms; no changes; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:18:27.094Z","level":"info","msg":"tick 208 done in 19052 ms; no changes; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:19:26.453Z","level":"info","msg":"tick 209 done in 18276 ms; no changes; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:20:25.429Z","level":"info","msg":"tick 210 done in 16900 ms; no changes; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:21:25.484Z","level":"info","msg":"tick 211 done in 16479 ms; no changes; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:22:25.603Z","level":"info","msg":"tick 212 done in 16035 ms; no changes; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:23:27.306Z","level":"info","msg":"tick 213 done in 17625 ms; no changes; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:24:25.982Z","level":"info","msg":"tick 214 done in 16095 ms; no changes; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:25:26.825Z","level":"info","msg":"tick 215 done in 16762 ms; no changes; budget {\"maker\":0.658533012}"}
+{"t":"2026-10-08T17:26:27.749Z","level":"info","msg":"tick 216 done in 17341 ms; no changes; budget {\"maker\":0.658533012}"}

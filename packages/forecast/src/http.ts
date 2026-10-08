@@ -6,16 +6,13 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { FetchOpts } from "./fetch-types.ts";
+
+export type { FetchOpts } from "./fetch-types.ts";
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CACHE_DIR = process.env.FORECAST_CACHE_DIR ?? join(ROOT, "data", "cache");
 const SEED_DIRS = (process.env.FORECAST_SEED_CACHE ?? join(ROOT, "../../spikes/weather/data/cache")).split(":").filter(Boolean);
-
-export interface FetchOpts {
-  ttlSec?: number; // default: Infinity (never refetch)
-  retries?: number;
-  timeoutMs?: number;
-}
 
 const hostLast = new Map<string, number>();
 const HOST_GAP_MS: Record<string, number> = {

@@ -1,0 +1,28 @@
+{
+  "name": "isotherm-maker-worker",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Isotherm market maker on Cloudflare: cron -> one Durable Object that quotes, rolls, runs the close-time kill switch and watches settlements, reusing packages/maker + packages/forecast. Starts in SHADOW mode (sends nothing).",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run test/unit",
+    "test:fork": "vitest run test/integration",
+    "build": "wrangler deploy --dry-run --outdir .wrangler/dist",
+    "deploy": "node scripts/deploy.mjs",
+    "secrets": "node scripts/put-secrets.mjs",
+    "control": "node scripts/control.mjs"
+  },
+  "dependencies": {
+    "viem": "2.57.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.20251001.0",
+    "@types/node": "22.20.5",
+    "miniflare": "3.20250718.3",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7",
+    "wrangler": "3.114.17"
+  },
+  "license": "MIT"
+}

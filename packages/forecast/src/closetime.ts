@@ -7,9 +7,10 @@
 //   massLeft(C) = 1 - F(C)                         -> probability the max still goes up after C
 //   inc_d(C)    = P(M - runningMax(<C) >= d)       -> by how much (the maker's intraday guard table)
 // The vault's closeTime (mint stops) and the maker's stop-quoting time come from F (t95 / t99 below).
-import type { Obs } from "./obs.ts";
-import { groupByLocalDay, summarizeDay } from "./obs.ts";
-import type { Station } from "./stations.ts";
+// Pure (no Node APIs): it imports only obs-core.ts and stations.ts, so the Cloudflare Worker can use it as is.
+import type { Obs } from "./obs-core.ts";
+import { groupByLocalDay, summarizeDay } from "./obs-core.ts";
+import { localTimeToUtcMs, station, type Station } from "./stations.ts";
 
 export interface DayPath {
   date: string;
@@ -184,4 +185,20 @@ export function pIncrementAtLeast(stats: Pick<CloseTimeStats, "incrementTable">,
   const rows = stats.incrementTable.filter((r) => r.markMin <= nowMin);
   const row = rows.length ? rows[rows.length - 1] : stats.incrementTable[0];
   return d <= row.pIncGE.length ? row.pIncGE[d - 1] : 0;
+}
+
+/** Fallback when no analysis exists for a station (unvalidated stations): 17:30 local. */
+export const FALLBACK_CLOSE = "17:30";
+
+/** The concrete close for a station-local date from its close-time analysis (`stats`; undefined -> 17:30 fallback):
+ *  vault closeTime (minting stops), the maker's stop-quoting time (kill switch) and the local day end. Pure; the Node
+ *  side passes results/close_time.json (close-config.ts closeFor), the Worker its bundled copy. */
+export function closeFromStats(stats: CloseTimeStats | null | undefined, icao: string, date: string, marginMin = 10): CloseRecommendation & { closeUtcMs: number; stopUtcMs: number; dayEndUtcMs: number } {
+  const st = station(icao);
+  const month = Number(date.slice(5, 7));
+  const rec: CloseRecommendation = stats
+    ? recommendClose(stats, month, marginMin)
+    : { station: icao, closeLocal: FALLBACK_CLOSE, stopQuotingLocal: "17:20", marginMin, massLeftAtClose: NaN, massLeftAtCloseAllYear: NaN, basis: "no close-time analysis for this station: fixed 17:30 local fallback" };
+  const closeUtcMs = localTimeToUtcMs(date, rec.closeLocal, st.utcOffsetMin);
+  return { ...rec, stopQuotingLocal: rec.stopQuotingLocal, closeUtcMs, stopUtcMs: closeUtcMs - marginMin * 60_000, dayEndUtcMs: localTimeToUtcMs(date, "24:00", st.utcOffsetMin) };
 }

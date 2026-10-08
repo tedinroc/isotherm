@@ -52,7 +52,7 @@ before(async () => {
 after(async () => anvil?.stop());
 
 test("crash after broadcasting deployProxy -> resume recovers the market, no duplicate; budget refusal; manual pull", { timeout: 20 * 60_000 }, async () => {
-  const isoDate = addDays(localDateOf((await nowSec(ctx)) * 1000, 480), 1);
+  const isoDate = addDays(localDateOf((await nowSec(ctx)) * 1000, 480), Number(process.env.FORK_DAYS_AHEAD ?? 1));
   process.env.MAKER_TEST_CRASH_AFTER = "deployProxy:30";
   const first = await roll(ctx, { station: "RCSS", isoDate, data: stub });
   delete process.env.MAKER_TEST_CRASH_AFTER;
