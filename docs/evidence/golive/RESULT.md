@@ -64,19 +64,19 @@ All 43 live transactions are re-checked from their receipts in `live-txs.tsv`; e
 
 Maker meter for Taipei day 2026-10-07: maker 0.651 / cap 0.8, operator 0.178 / 0.5, marketCreator 0.599 / 0.8.
 
-## Not done / caveats
+## Follow-ups at go-live (2026-10-07)
 
 - **Tomorrow's roll (Oct 9 ladder) needs MON.** The operator holds 0.12 and needs ≈0.85 before 12:00 Taipei on Oct 8. Until then the hourly roll is refused before broadcasting anything and retries every hour.
-- **Settlement of the Oct 8 ladder is not running from this step.** It is the CRE workstream's launchd job (`packages/cre-workflow`). That job will hit the same `~/Documents` TCC block unless it runs from a copy outside `~/Documents` or `/bin/bash` gets Full Disk Access. If nothing settles, `voidIfStale` pays 0.5/0.5 after 2026-10-11 00:00 Taipei.
+- **Settlement of the Oct 8 ladder is not running from this step.** It is the CRE workstream's launchd job (`packages/cre-workflow`). That job will hit the same `~/Documents` TCC block unless it runs from a copy outside `~/Documents` or `/bin/bash` gets Full Disk Access. If nothing settles, `voidIfStale` pays 0.5/0.5 after 2026-10-11 00:00 Taipei. *Outcome:* the job runs from `~/isotherm-live` and settled the Oct 8 ladder at 28 °C on 2026-10-08 18:05 UTC ([evidence](../../../packages/cre-workflow/evidence/live-settle-RCSS-20261008.json)).
 - **The relayer can fund only about 2 more new users** at 0.15 MON per drip; it holds 0.75 and needs 0.45 headroom to drip. Gasless relayed mints cost ≈0.03 each.
-- **Login was not exercised fresh.** The smoke test reused an existing, empty dev wallet. Dynamic login is still unconfigured.
+- **Login was not exercised fresh.** The smoke test reused an existing, empty dev wallet. Dynamic login was enabled later that day ([evidence](../../../apps/web/evidence/dynamic/RESULT.md)).
 - **Maker fork tests were not re-run.** `config/local.json` (lower caps, absolute var paths) is merged into every `loadConfig`. The fork tests override paths and adjust caps themselves; the maker unit tests pass 24/24 with it.
-- **Code edits outside my folder, for go-live:**
+- **Code edits made for go-live:**
   - `apps/api/src/relayer.ts` (nonce fix) and `apps/api/wrangler.toml` (`TEAM_ADDRESSES`);
   - `packages/maker/config/local.json` and `packages/maker/scripts/deploy-runtime.sh`;
   - `packages/maker/var/` emptied (live state moved to `~/isotherm-live`; README.txt left there).
 
-## Human actions
+## Operator checklist at go-live
 
 1. Claim testnet MON daily and fund from the deployer with `cd docs/evidence/golive && node fund.mjs operator=0.8 maker=0.8 relayer=1.0`. The operator must have ≥0.85 before 12:00 Taipei on Oct 8 for the automatic Oct 9 ladder.
 2. Keep the Mac awake and logged in; the launchd agents live in the GUI session.

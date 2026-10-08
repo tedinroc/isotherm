@@ -5,8 +5,8 @@ watch the 900 s challenge window. Nobody needs to be at the keyboard.
 
 **Status.** Done. Both LaunchAgents are installed and loaded from `~/isotherm-live/packages/cre-workflow`, and both have
 already run on live testnet from launchd with exit 0. Nothing was due, so nothing was signed or sent: 0 MON this
-round. `cre login` has not been run, so the first settlement will use the labelled **harness fallback** unless someone
-logs in before then.
+round. `cre login` was run later on 2026-10-07; since then the job takes the official path, and it settled the first live
+ladder, RCSS 2026-10-08 at 28 °C, on 2026-10-08 18:05 UTC (`evidence/live-settle-RCSS-20261008.json`).
 
 | # | Change | Evidence |
 |---|---|---|

@@ -52,9 +52,9 @@ Verifier: separate agent. I re-ran the builders' evidence from a clean shell, in
 
 - **Kuru "live YES/AUSD market"**: the live base token is a stand-in SpikeToken, not our OutcomeToken. Our clones trading on Kuru is proven on forks only (rows 10–11).
 - **"Not run on the live chain"** (contracts) versus the CRE spike: the **Resolver alone** is live at 0xb7b9…. The Vault and OutcomeTokens have never been deployed live.
-- **CRE "official simulator broadcast"**: this came from a patched CLI build. The unpatched binary refuses without a login. The builder disclosed this, but say it explicitly in any submission.
+- **CRE "official simulator broadcast"**: this came from a patched CLI build. The unpatched binary refuses without a login. (Since 2026-10-07 the official, unpatched CLI runs after `cre login`; see `packages/cre-workflow`.)
 - **mm "setup works from a fresh home"**: it does so only after `mm init` or a seeded session has run (row 22).
-- **Test count**: there are now 84 tests in the snapshot I tested, and 115 in the current tree (finding E). Another agent is adding `test/security/` and changed `src/Resolver.sol` at 07:25:59, during this verification.
+- **Test count**: there are now 84 tests in the snapshot I tested, and 115 in the current tree (finding E). `test/security/` was being added in parallel, and `src/Resolver.sol` changed at 07:25:59, during this verification.
 
 ## New findings
 

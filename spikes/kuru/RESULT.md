@@ -180,7 +180,7 @@ Only YES has a book, so:
 - **Testing traps.**
   - Under `via_ir`, `block.timestamp` is cached in tests; use `vm.getBlockTimestamp()`.
   - Only target `evm_version=prague`, which is what Kuru deploys with.
-- **My cleanup interfered with the CRE spike.** I ran `pkill -f 'anvil --fork-url https://testnet-rpc.monad.xyz'`, which also killed the CRE spike's anvil on :18845 at about 06:29. Its `sim-patched-broadcast.log` shows connection refused. That agent has since restarted it (pid 76031 now listens on :18845). Any contracts it had deployed on that fork were lost and must be redeployed.
+- **A fork cleanup also stopped the CRE spike's anvil.** `pkill -f 'anvil --fork-url https://testnet-rpc.monad.xyz'` also stopped the CRE spike's anvil on :18845 at about 06:29 (its `sim-patched-broadcast.log` shows connection refused). It was restarted, and contracts on that fork had to be redeployed.
 
 ## 8. Things the team needs to do
 

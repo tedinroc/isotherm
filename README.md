@@ -106,7 +106,7 @@ flowchart LR
 ## Why Monad
 
 - **A real order book for every strike.** Kuru is a fully onchain CLOB, so each strike is a book that contracts and agents can read and trade. Opening one costs 1,467,042 gas (about 0.15 testnet MON); a ladder opens 4–6 of them every day, which only makes sense where blockspace is cheap ([gas table](ARCHITECTURE.md#11-gas-and-testnet-mon-budget)).
-- **Fast enough for a phone.** Blocks averaged 0.305 s over 1,000 blocks ([verification](spikes/verify/RESULT.md)); send-to-receipt had a median of 1,403 ms over the public RPC across a 56-transaction live run ([log](spikes/e2e/logs/live-2026-10-06T15-04-29/console.txt)); the go-live phone buy filled in 1.5 s ([go-live](docs/evidence/golive/RESULT.md)).
+- **Fast enough for a phone.** Blocks averaged 0.305 s over 1,000 blocks ([verification](spikes/verify/RESULT.md)); send-to-receipt had a median of 1,403 ms over the public RPC across a 56-transaction live run ([log](spikes/e2e/logs/live-2026-10-06T15-04-29/console.txt)); the go-live buy in a phone-size browser filled in 1.5 s ([go-live](docs/evidence/golive/RESULT.md)).
 - **Cheap re-quotes.** A live re-quote of one strike (cancel 2 + place 2) billed 0.055–0.058 MON, so the maker can follow the market through the day.
 - **Fast payout.** Redemption opens 15 minutes after the CRE report, instead of an optimistic-oracle proposal and dispute period.
 
@@ -175,7 +175,7 @@ Summary in [NOTICE.md](NOTICE.md); each component keeps its own license.
 |---|---|---|
 | OpenZeppelin Contracts 5.7.0 | MIT | Vendored in `lib/`: ERC-20, EIP-2612, EIP-712, clones, SafeERC20, reentrancy guard |
 | forge-std 1.17.0 | MIT or Apache-2.0 | Tests and scripts |
-| Kuru v1 interfaces (Kuru-Labs/Kuru-contracts-dex-public, commit `2060bb2`) | GPL-2.0-or-later | `src/interfaces/IKuru.sol`, `spikes/kuru/src/interfaces/IKuru.sol` and `spikes/e2e/src/IsothermZap.sol` are derived from Kuru's public interfaces and carry GPL-2.0-or-later headers. `src/IsothermZap.sol` (MIT) imports that interface, so the compiled IsothermZap is distributed under GPL-2.0-or-later terms; text in [`LICENSES/GPL-2.0-or-later.txt`](LICENSES/GPL-2.0-or-later.txt). A comment-only SPDX relabel of `src/interfaces/IKuru.sol` came after Sourcify verification; the executable bytecode is identical ([check](docs/evidence/docs-pass/ikuru-header-bytecode-check.txt)) |
+| Kuru v1 interfaces (Kuru-Labs/Kuru-contracts-dex-public, commit `2060bb2`) | GPL-2.0-or-later | `src/interfaces/IKuru.sol`, `spikes/kuru/src/interfaces/IKuru.sol` and `spikes/e2e/src/IsothermZap.sol` are derived from Kuru's public interfaces and carry GPL-2.0-or-later headers. `src/IsothermZap.sol` (MIT) imports that interface, so the compiled IsothermZap is distributed under GPL-2.0-or-later terms; text in [`LICENSES/GPL-2.0-or-later.txt`](LICENSES/GPL-2.0-or-later.txt). |
 | Chainlink CRE TypeScript SDK 1.23.0 | BUSL-1.1 | npm dependency of the workflow |
 | Chainlink CRE CLI v1.37.0; KeystoneForwarder and IReceiver | MIT | Build and run the workflow; called onchain |
 | Dynamic SDK (`@dynamic-labs/*` 5.9.4, `@dynamic-labs-sdk/*` 1.38.0) | MIT (`@dynamic-labs-sdk/*`: Dynamic's terms) | Login and embedded wallet |
