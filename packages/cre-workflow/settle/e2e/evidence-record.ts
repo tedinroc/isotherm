@@ -2,6 +2,8 @@
 // Parses the run log and appends ONE JSON line to <out>/settle-runs.jsonl stating which path was used:
 //   "official"         = `cre workflow simulate --broadcast` (CRE engine, compiled WASM)
 //   "harness-fallback" = the same handler under Bun in the CRE SDK test harness, NOT the CRE engine
+// A third path, "don" (the workflow deployed to a Chainlink DON, delivered through the production KeystoneForwarder),
+// is not run by this Mac job; e2e/don-evidence.ts records it from the chain into don-runs.jsonl (DON-CUTOVER.md).
 // It also writes <out>/LATEST.json and, for every run that sent a report, <out>/settlement-<ICAO>-<date>-<path>.json.
 //   bun e2e/evidence-record.ts --log F --path official|harness --why S --login yes|no --rpc URL --rc N --started ISO --out DIR [--dry 0|1]
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -36,6 +38,8 @@ for (let i = 0; i < lines.length && !summary; i++) {
 const confirms = lines.filter((l) => /^0x[0-9a-f]{64} block \d+ status=/.test(l))
 const runnerSays = lines.filter((l) => /^\[\d{4}-\d\d-\d\dT[\d:]+Z\] /.test(l) && !l.includes('[settle-job]')).map((l) => l.replace(/^\[[^\]]+\] /, ''))
 const test = lines.find((l) => l.startsWith('[TEST] '))
+// run-official.sh stands down (exit 0, nothing signed) once the Resolver points at the production forwarder
+const stoodDownForDon = runnerSays.some((l) => l.startsWith('SKIPPED: Resolver.forwarder()'))
 const outcomes: any[] = summary?.outcomes ?? []
 const sent = outcomes.filter((o) => o.txHash && !/^0x0+$/.test(o.txHash))
 
@@ -49,12 +53,13 @@ const record = {
       ? 'OFFICIAL: cre workflow simulate ./settle -T testnet --broadcast (CRE engine running the compiled WASM; one local node, MockKeystoneForwarder + v1 attestation)'
       : 'HARNESS FALLBACK: the same workflow handler under Bun in the CRE SDK test harness, NOT the CRE engine; same decide() rule, same v1 EIP-712 attestation, same MockKeystoneForwarder call',
   pathReason: opt('why'),
+  stoodDownForDon,
   creLogin: opt('login') === 'yes',
   network: rpc === LIVE_RPC ? 'LIVE Monad testnet 10143' : `anvil fork (${rpc})`,
   testDataRelabel: test ?? null,
   dryRun: opt('dry') === '1',
   exitCode: Number(opt('rc')),
-  exitMeaning: ({ 0: 'ok / nothing to do / skipped', 2: 'preflight failed', 3: 'not logged in to CRE (official)', 4: 'a report was sent but NOT accepted on chain' } as Record<string, string>)[opt('rc') ?? ''] ?? 'run failed',
+  exitMeaning: stoodDownForDon ? 'stood down: settlement runs on the Chainlink DON (Resolver.forwarder() is not the MockKeystoneForwarder); nothing signed or sent' : ({ 0: 'ok / nothing to do / skipped', 2: 'preflight failed', 3: 'not logged in to CRE (official)', 4: 'a report was sent but NOT accepted on chain' } as Record<string, string>)[opt('rc') ?? ''] ?? 'run failed',
   runner: runnerSays,
   workflow: summary
     ? { triggerTime: summary.triggerTime, ladders: summary.ladders ?? null, paused: summary.paused ?? false, outcomes, skipped: summary.skipped, budget: summary.budget }

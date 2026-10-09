@@ -64,5 +64,15 @@ SHADOW_ROLL_EVERY_SEC = "3600"
 # Every 5 min re-scan the books of ladders closed in the last 2 days and cancel any maker order still open (the Mac's
 # `watchdog --verify` job).
 WATCHDOG_VERIFY_SEC = "300"
+# Settlement guardrails (src/watcher.ts; the CRE settlement itself still runs through the official CRE CLI):
+# "SETTLEMENT OVERDUE <ICAO>:<date>" when a vault ladder has no result 3 h after its local day end, repeated at most
+# hourly per ladder; "OVERDUE CLEARED" once a result lands.
+SETTLE_OVERDUE_SEC = "10800"
+SETTLE_OVERDUE_REPEAT_SEC = "3600"
+# From Resolver.staleAt (day end + 48 h) and only while the Resolver is NOT paused: simulate, then send voidIfStale
+# from the operator key (live mode only, <= 0.05 MON/day, <= 1 attempt per ladder per hour). "0" = alert only.
+AUTO_STALE_VOID = "1"
+# Per-title rate limit for the optional push channel (secret ALERT_WEBHOOK_URL).
+ALERT_PUSH_MIN_SEC = "3600"
 # Secrets (set with scripts/put-secrets.mjs, from stdin; never here): MAKER_KEY, OPERATOR_KEY, GUARDIAN_KEY,
-# SNAPSHOT_TOKEN.
+# SNAPSHOT_TOKEN, and optionally ALERT_WEBHOOK_URL (absent = alerts stay in the Durable Object and the KV outbox).

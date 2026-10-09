@@ -25,6 +25,7 @@ import { buildSnapshot } from "../../../packages/maker/src/snapshot-core.ts";
 import { assertStateDeployment, emptyState, ladderKey, note, type LadderState, type MakerState } from "../../../packages/maker/src/state-core.ts";
 import { killLadder, runWatchdog, tickLadder, type LadderTick } from "../../../packages/maker/src/tick.ts";
 import deploymentsJson from "../../../deployments/testnet.json";
+import { parseWebhook, pushAlerts, pushLog, type PushOutcome, type Webhook } from "./alert-push.ts";
 import type { ApiClient } from "./api.ts";
 import { workerConfig } from "./config.ts";
 import { SNAPSHOT_SOURCE, type Settings } from "./env.ts";
@@ -47,6 +48,8 @@ export interface ControlDoc {
   resume?: string; // ladder key
   roll?: { station: string; date: string; strikes?: number[] }[];
   resetShadow?: boolean;
+  /** raise one "TEST ALERT" on the next tick (checks the optional push channel end to end) */
+  testAlert?: boolean;
   note?: string;
 }
 
@@ -68,6 +71,8 @@ export interface Keys {
   operator?: string;
   guardian?: string;
   snapshotToken?: string;
+  /** Optional ALERT_WEBHOOK_URL secret: alerts are also pushed there (src/alert-push.ts). */
+  alertWebhook?: string;
   /** Public addresses for a key-less, watch-only shadow (MAKER_ADDRESS / OPERATOR_ADDRESS vars). */
   makerAddress?: string;
   operatorAddress?: string;
@@ -87,6 +92,9 @@ export interface EngineDeps {
   version?: { id: string; tag: string; timestamp: string } | null;
   log?: (level: "info" | "warn" | "error", msg: string) => void;
   sleep?: (ms: number) => Promise<void>;
+  /** for the alert push (tests inject a stub); default globalThis.fetch */
+  fetch?: typeof fetch;
+  pushTimeoutMs?: number;
 }
 
 export interface TickReport {
@@ -112,6 +120,8 @@ export interface TickReport {
   snapshot: { posted: boolean; status?: number; detail: string } | null;
   budget: Record<string, number>;
   alerts: string[];
+  /** what happened to this tick's alerts on the optional push channel (no URL) */
+  push: PushOutcome[];
   errors: string[];
   log: string[];
 }
@@ -222,6 +232,9 @@ export class MakerEngine {
   private written = new Map<string, string>();
   private liveNow = false;
   private sleep: (ms: number) => Promise<void>;
+  private hook: Webhook | null = null;
+  private hookError: string | null = null;
+  private pushQueue: { title: string; body: string }[] = [];
   maker: PrivateKeyAccount | null;
   operator: PrivateKeyAccount | null;
   watchOnly = false;
@@ -250,6 +263,9 @@ export class MakerEngine {
       this.operator = watchOnlyAccount(d.keys.operatorAddress, "OPERATOR_ADDRESS");
     }
     this.guardian = parseKey(d.keys.guardian, "GUARDIAN_KEY");
+    const h = parseWebhook(d.keys.alertWebhook, this.s.rpcIsLoopback);
+    if (h && "error" in h) this.hookError = h.error; // the message never contains the URL
+    else this.hook = h;
   }
 
   // ------------------------------------------------------------------ control + mode
@@ -318,6 +334,7 @@ export class MakerEngine {
     }
     if (doc.pull) this.store.put("pending:pull", doc.pull), done.push(`pull ${doc.pull} queued`);
     if (doc.resume) this.store.put("pending:resume", doc.resume), done.push(`resume ${doc.resume} queued`);
+    if (doc.testAlert) this.store.put("pending:testAlert", doc.seq), done.push("test alert raised");
     cs.seq = doc.seq;
     const applied = done.join("; ") || "no-op";
     cs.history = [...cs.history, { seq: doc.seq, at, applied }].slice(-50);
@@ -451,7 +468,8 @@ export class MakerEngine {
         // change) is metered once: live would have sent it once. Otherwise a lasting disagreement (e.g. the v0 guard
         // refreshed at a different minute) would run the shadow's meter into its cap and make it refuse everything.
         const repeat = this.dryRepeat(`${mode}:${i.role}:${i.to.toLowerCase()}:${i.data}`);
-        if (!repeat) recordSpend(state.budget, i.role, i.costMon, this.now(), bc, i.kind);
+        // metered at the instant the shared send() checked the cap (its clock), so check and meter agree on the day
+        if (!repeat) recordSpend(state.budget, i.role, i.costMon, Date.parse(i.t), bc, i.kind);
         report.intents.push({ t: i.t, role: i.role, from: i.from, to: i.to, label: i.label, kind: i.kind, functionName: i.functionName, costMon: +i.costMon.toFixed(6), budget: i.budget, gasLimit: i.gasLimit.toString(), data: i.data.length > 74 ? i.data.slice(0, 74) + "…" : i.data, ...(repeat ? { repeat: true } : {}) });
       },
       nonces: mode === "live" ? this.nonces : undefined,
@@ -466,7 +484,8 @@ export class MakerEngine {
   async tick(opts: { forceWatch?: boolean } = {}): Promise<TickReport> {
     const t0 = this.now();
     const cs0 = this.control();
-    const report: TickReport = { at: new Date(t0).toISOString(), ms: 0, mode: "shadow", envMode: this.s.envMode, liveFlag: cs0.live, reasons: [], block: null, chainTime: null, control: null, interlock: null, kill: [], rolls: [], reconcile: [], ladders: [], intents: [], txs: [], watcher: null, snapshot: null, budget: {}, alerts: [], errors: [], log: [] };
+    const report: TickReport = { at: new Date(t0).toISOString(), ms: 0, mode: "shadow", envMode: this.s.envMode, liveFlag: cs0.live, reasons: [], block: null, chainTime: null, control: null, interlock: null, kill: [], rolls: [], reconcile: [], ladders: [], intents: [], txs: [], watcher: null, snapshot: null, budget: {}, alerts: [], push: [], errors: [], log: [] };
+    this.pushQueue = [];
     const push = (level: "info" | "warn" | "error", msg: string) => {
       report.log.push(`${level === "info" ? "" : level.toUpperCase() + " "}${msg}`.slice(0, 400));
       if (report.log.length > 400) report.log.splice(0, report.log.length - 400);
@@ -477,9 +496,15 @@ export class MakerEngine {
       report.alerts.push(title);
       push("error", `ALERT ${title}: ${body.split("\n")[0]}`);
       this.store.append("alerts", { at: new Date(this.now()).toISOString(), title, body }, 200);
+      this.pushQueue.push({ title, body });
     };
     try {
       report.control = await this.applyControl((m) => push("warn", m));
+      const testSeq = this.store.get<number>("pending:testAlert");
+      if (testSeq !== undefined) {
+        this.store.delete("pending:testAlert");
+        alert(`TEST ALERT ${testSeq} (isotherm-maker)`, `Raised on request (scripts/control.mjs test-alert) at ${new Date(this.now()).toISOString()}. If this reached you, SETTLEMENT OVERDUE and STALE VOID alerts will too.`);
+      }
       const md = this.modeDecision();
       let mode = md.mode;
       report.reasons = md.reasons;
@@ -712,6 +737,17 @@ export class MakerEngine {
         sources: this.sources,
         wallet: ctx.wallet!,
         nonces: this.nonces,
+        operator: this.watchOnly ? null : this.operator,
+        liveOperator: this.dep.roles.operator,
+        overdueSec: this.s.settleOverdueSec,
+        overdueRepeatSec: this.s.settleOverdueRepeatSec,
+        autoStaleVoid: this.s.autoStaleVoid,
+        onVoidTx: (t) => {
+          // same log and operator meter as the shared send() path (Monad bills the gas limit)
+          this.store.append(`txs:${mode}`, { t: new Date(this.now()).toISOString(), role: t.role, from: t.from, label: t.label, kind: "void", hash: t.hash, nonce: t.nonce, block: t.block, gasUsed: t.gasUsed, gasLimit: t.gasLimit, mon: +t.mon.toFixed(6), status: t.status }, 3000);
+          report.txs.push({ label: t.label, role: t.role, hash: t.hash, mon: +t.mon.toFixed(6), status: t.status });
+          recordSpend(ctx.state.budget, "operator", t.mon, Date.now(), budgetCfgOf(ctx.cfg));
+        },
         alert,
         log: (m) => logger.info(`watch: ${m}`),
         sleep: this.sleep,
@@ -861,14 +897,29 @@ export class MakerEngine {
       budget: st.budget,
       ladders: Object.values(st.ladders).map((l) => ({ key: l.key, status: l.status, paused: !!l.paused, stopAt: new Date(l.stopAt * 1000).toISOString(), strikes: l.strikes.map((k) => `${k}:${l.series[k]?.mode ?? "-"}${l.series[k]?.orders.bid ? ` b${l.series[k].orders.bid!.price}` : ""}${l.series[k]?.orders.ask ? ` a${l.series[k].orders.ask!.price}` : ""}`) })),
       alerts: this.store.tail<{ at: string; title: string }>("alerts", 5).map((a) => `${a.at} ${a.title}`),
+      push: this.hook ? { channel: this.hook.kind, last: pushLog(this.store, 5) } : { channel: this.hookError ? `invalid ALERT_WEBHOOK_URL, ignored (${this.hookError})` : "off (no ALERT_WEBHOOK_URL secret)" },
       watcher: (() => {
-        const w = this.store.get<{ lastBlock: number; results: Record<string, { verdict: string }> }>("watch:state");
-        return w ? { lastBlock: w.lastBlock, verdicts: Object.fromEntries(Object.entries(w.results).slice(-10).map(([k, v]) => [k, v.verdict])) } : null;
+        const w = this.store.get<{ lastBlock: number; results: Record<string, { verdict: string }>; overdue?: Record<string, { dayEnd: number; firstAt: number; alerts: number }>; voids?: Record<string, { at: number; outcome: string; hash?: string }> }>("watch:state");
+        return w
+          ? {
+              lastBlock: w.lastBlock,
+              verdicts: Object.fromEntries(Object.entries(w.results).slice(-10).map(([k, v]) => [k, v.verdict])),
+              overdue: Object.fromEntries(Object.entries(w.overdue ?? {}).map(([k, v]) => [k, { dayEnd: new Date(v.dayEnd * 1000).toISOString(), since: new Date(v.firstAt * 1000).toISOString(), alerts: v.alerts }])),
+              staleVoids: Object.fromEntries(Object.entries(w.voids ?? {}).map(([k, v]) => [k, { at: new Date(v.at * 1000).toISOString(), outcome: v.outcome, ...(v.hash ? { hash: v.hash } : {}) }])),
+            }
+          : null;
       })(),
     };
   }
 
   private async finish(report: TickReport, t0: number, _state: MakerState | null, mode: Mode): Promise<TickReport> {
+    // the optional push channel: rate-limited per title, 5 s timeout, never breaks the tick
+    if (this.hook && this.pushQueue.length) {
+      const f = this.deps.fetch ?? ((input: RequestInfo | URL, init?: RequestInit) => fetch(input, init));
+      report.push = await pushAlerts({ store: this.store, hook: this.hook, minSec: this.s.alertPushMinSec, now: this.now, fetch: f as typeof fetch, timeoutMs: this.deps.pushTimeoutMs }, this.pushQueue);
+      for (const p of report.push) if (!/^sent|^rate-limited/.test(p.result)) this.deps.log?.("warn", `alert push "${p.title.slice(0, 80)}": ${p.result}`);
+    }
+    this.pushQueue = [];
     report.ms = this.now() - t0;
     this.store.put("tick:last", report);
     this.store.append("ticks", { at: report.at, ms: report.ms, mode: report.mode, block: report.block, intents: report.intents.length, txs: report.txs.length, errors: report.errors.length, alerts: report.alerts.length, kill: report.kill.length, rolls: report.rolls.map((r) => `${r.key}:${r.ok}`), actions: report.ladders.flatMap((l) => l.strikes.map((k) => `${l.key}>=${k.k}:${k.action ?? "-"}`)) }, 5000);

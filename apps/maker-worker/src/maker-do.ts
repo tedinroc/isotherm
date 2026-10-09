@@ -29,7 +29,7 @@ export class MakerDO extends DurableObject<Env> {
         store: this.store,
         kv: env.MAKER_KV ? { get: (k) => env.MAKER_KV!.get(k), put: (k, v) => env.MAKER_KV!.put(k, v) } : null,
         api: bindingApi(env.API),
-        keys: { maker: env.MAKER_KEY, operator: env.OPERATOR_KEY, guardian: env.GUARDIAN_KEY, snapshotToken: env.SNAPSHOT_TOKEN, makerAddress: env.MAKER_ADDRESS, operatorAddress: env.OPERATOR_ADDRESS },
+        keys: { maker: env.MAKER_KEY, operator: env.OPERATOR_KEY, guardian: env.GUARDIAN_KEY, snapshotToken: env.SNAPSHOT_TOKEN, alertWebhook: env.ALERT_WEBHOOK_URL, makerAddress: env.MAKER_ADDRESS, operatorAddress: env.OPERATOR_ADDRESS },
         version: env.CF_VERSION_METADATA ? { id: env.CF_VERSION_METADATA.id, tag: env.CF_VERSION_METADATA.tag, timestamp: env.CF_VERSION_METADATA.timestamp } : null,
         log: (level, msg) => (level === "error" ? console.error : level === "warn" ? console.warn : console.log)(`[maker] ${msg}`),
       });

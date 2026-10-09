@@ -12,9 +12,21 @@
 //      the challenge is simulated and recorded as an intent. A recompute that cannot settle is UNVERIFIED: alert, no
 //      automatic challenge (a challenge voids the ladder 0.5/0.5).
 //   4. A reported Void is final at once on v1: recomputed, alerted if the rule would have settled it.
-// Safety: the LIVE guardian key is refused on a non-live RPC (a tx signed for chain 10143 on a fork is valid on live).
+//   5. Liveness guardrails, for a vault ladder with NO result yet (the CRE settlement still runs off-Cloudflare):
+//      - SETTLEMENT OVERDUE: chain time > Resolver.dayEnd + SETTLE_OVERDUE_SEC (3 h) -> alert, repeated per ladder at
+//        most every SETTLE_OVERDUE_REPEAT_SEC (1 h); "OVERDUE CLEARED" once a result lands. Overdue ladders are
+//        re-read every pass (not only at the backstop), so the clear is prompt.
+//      - automatic stale void: chain time >= Resolver.staleAt(station, date) (day end + STALE_WINDOW 48 h, later after
+//        an unpause) and the Resolver is NOT paused -> eth_call simulation of voidIfStale, then, ONLY in live mode with
+//        AUTO_STALE_VOID on, send it from OPERATOR_KEY through the nonce tracker with gas = estimate x the operator
+//        multiplier (1.10; the Worker refuses multipliers outside 1.05..1.10 because Monad bills the limit), within a
+//        0.05 MON/day void meter, at most once per ladder per hour, with an alert either way. Shadow records an intent.
+//        voidIfStale is permissionless: the operator key only pays the gas. A paused Resolver is never voided here.
+// Safety: the LIVE guardian key, and the LIVE operator key for a void, are refused on a non-live RPC (a tx signed for
+// chain 10143 on a fork is valid on live).
 import { encodeFunctionData, formatEther, keccak256, parseAbi, stringToBytes, stringToHex, type Address, type Hex, type PublicClient } from "viem";
 import type { PrivateKeyAccount } from "viem/accounts";
+import { budgetDay } from "../../../packages/maker/src/budget.ts";
 import { STATIONS, ymdToIso } from "../../../packages/forecast/src/stations.ts";
 import { observe, sourceUrl, toDayStats, type SourceKind, type SourceStats } from "../../../packages/cre-workflow/settle/sources.ts";
 import { decide } from "../../../packages/cre-workflow/settle/settle-core.ts";
@@ -31,11 +43,27 @@ export const RESOLVER_WATCH_ABI = parseAbi([
   "function challenge(bytes4 station, uint32 date, bytes32 reasonHash)",
   "function ladderCount() view returns (uint256)",
   "function ladderAt(uint256 index) view returns ((bytes4 station, uint32 date))",
+  "function dayEnd(bytes4 station, uint32 date) view returns (uint256)",
+  "function staleAt(bytes4 station, uint32 date) view returns (uint256)",
+  "function paused() view returns (bool)",
+  "function voidIfStale(bytes4 station, uint32 date)",
 ]);
 const [EV_RESOLVED, EV_CHALLENGED] = [RESOLVER_WATCH_ABI[0], RESOLVER_WATCH_ABI[1]];
 const STATUS = ["None", "Settled", "Void"] as const;
 export const LOG_PAGE = 100; // Monad: eth_getLogs over at most 100 blocks
 const MIN_EXTRA_WEI = 2_000_000_000_000_000n; // keep 0.002 MON above the billed gas
+/** Resolver v1 constants (src/Resolver.sol; deployments/testnet.json params): staleAt >= dayEnd + STALE_WINDOW always. */
+export const STALE_WINDOW_SEC = 172_800;
+/** The CRE workflow's own VOID deadlines (packages/cre-workflow/settle/config.ts defaults voidAfterSec, hardVoidAfterSec). */
+const WORKFLOW_VOID_SEC = 129_600;
+const WORKFLOW_HARD_VOID_SEC = 165_600;
+/** A stale-void attempt per ladder at most this often (whatever its outcome). */
+export const VOID_RETRY_SEC = 3600;
+/** Daily cap for automatic stale voids (Taipei day, MON billed = gas limit x gas price). One void on the anvil fork:
+ *  76,537 gas used, limit 84,191 (estimate x 1.10), so about 0.0086 MON at 102 gwei: the cap allows 5 a day. */
+export const VOID_DAILY_CAP_MON = 0.05;
+const iso = (t: number) => new Date(t * 1000).toISOString().replace(".000Z", "Z");
+const hrs = (s: number) => (s / 3600).toFixed(1);
 
 // ---------------------------------------------------------------- canonical source summary (CRE report.ts, verbatim rule)
 export type NamedStats = { name: "IEM" | "AWC" | "OGIMET"; stats: (SourceStats | null) };
@@ -100,6 +128,26 @@ interface WatchState {
   lastBlock: number;
   results: Record<string, Verdict>;
   lastBackstopAt?: number;
+  /** ladders with no result past day end + SETTLE_OVERDUE_SEC (entry made at the first alert, removed once resolved) */
+  overdue?: Record<string, { dayEnd: number; firstAt: number; lastAlertAt: number; alerts: number }>;
+  /** the last automatic stale-void attempt per ladder */
+  voids?: Record<string, { at: number; outcome: string; hash?: Hex }>;
+  /** the void meter (Taipei day) */
+  voidSpend?: { day: string; mon: number; n: number };
+}
+
+/** A void tx for the engine's tx log and meters. */
+export interface VoidTx {
+  label: string;
+  role: "operator";
+  from: Address;
+  hash: Hex;
+  nonce: number;
+  block: bigint;
+  gasUsed: bigint;
+  gasLimit: bigint;
+  mon: number; // billed: gas limit x effective gas price (unrounded; the engine meters it)
+  status: string;
 }
 
 export interface WatchDeps {
@@ -120,6 +168,13 @@ export interface WatchDeps {
   sources: SourceGet;
   wallet: (account: PrivateKeyAccount) => { sendTransaction(args: any): Promise<Hex> };
   nonces: NonceSource;
+  /** OPERATOR_KEY: pays for an automatic voidIfStale (live mode only). null = no key (alerts and intents only). */
+  operator?: PrivateKeyAccount | null;
+  liveOperator?: Address; // deployments/testnet.json roles.operator: refused on a non-live RPC
+  overdueSec?: number; // default 10800
+  overdueRepeatSec?: number; // default 3600
+  autoStaleVoid?: boolean; // default true
+  onVoidTx?(tx: VoidTx): void;
   alert(title: string, body: string): void;
   log(msg: string): void;
   sleep(ms: number): Promise<void>;
@@ -134,9 +189,13 @@ export interface WatchReport {
   ladders: number | null;
   checked: number;
   verdicts: Verdict[];
-  intents: { key: string; what: string; reasonHash: Hex; gasLimit: string }[];
+  intents: { key: string; what: string; reasonHash?: Hex; gasLimit: string }[];
   challenges: { key: string; hash: Hex; ok: boolean }[];
   guardian: string;
+  /** vault ladders with no result past day end + SETTLE_OVERDUE_SEC, as seen this pass */
+  overdue: { key: string; hoursLate: number; staleAt: number | null }[];
+  /** automatic stale-void attempts this pass */
+  voids: { key: string; outcome: string; ok: boolean; hash?: Hex }[];
 }
 
 export async function watchPass(w: WatchDeps): Promise<WatchReport> {
@@ -151,7 +210,7 @@ export async function watchPass(w: WatchDeps): Promise<WatchReport> {
     guardian = null;
     guardianWhy = "REFUSED: the LIVE guardian key on a non-live RPC";
   }
-  const rep: WatchReport = { from: 0, head, pages: 0, events: 0, ladders: null, checked: 0, verdicts: [], intents: [], challenges: [], guardian: guardianWhy };
+  const rep: WatchReport = { from: 0, head, pages: 0, events: 0, ladders: null, checked: 0, verdicts: [], intents: [], challenges: [], guardian: guardianWhy, overdue: [], voids: [] };
 
   // 1. events since the last pass, in <= 100-block pages
   const from = Math.max(state.lastBlock + 1, head - w.lookbackBlocks, 0);
@@ -185,15 +244,22 @@ export async function watchPass(w: WatchDeps): Promise<WatchReport> {
     state.lastBackstopAt = now * 1000;
   }
   for (const [k, r] of Object.entries(state.results)) if (!r.final && !keys.has(k)) keys.set(k, { b4: stringToHex(k.split(":")[0], { size: 4 }), date: Number(k.split(":")[1]), via: "state" });
+  // overdue ladders are re-read every pass: the clear (or the stale void) does not wait for the next backstop
+  for (const k of Object.keys(state.overdue ?? {})) if (!keys.has(k)) keys.set(k, { b4: stringToHex(k.split(":")[0], { size: 4 }), date: Number(k.split(":")[1]), via: "overdue" });
 
   const record = (v: Verdict) => {
     state.results[v.key] = v;
     rep.verdicts.push(v);
   };
+  const g = guardrails(w, state, rep, now);
   for (const [k, c] of keys) {
     const r = (await w.pub.readContract({ address: w.resolver, abi: RESOLVER_WATCH_ABI, functionName: "resultOf", args: [c.b4, c.date] })) as any;
     const status = STATUS[Number(r.status)];
-    if (status === "None") continue;
+    if (status === "None") {
+      await g.unresolved(k, c);
+      continue;
+    }
+    g.resolved(k, status, Number(r.tmaxC), Number(r.resolvedAt));
     const sig = `${status}:${r.tmaxC}:${r.resolvedAt}:${r.finalAt}`;
     const prev = state.results[k];
     if (prev && prev.final && `${prev.status}:${prev.tmaxC}:${prev.resolvedAt}:${prev.finalAt}` === sig) continue;
@@ -295,6 +361,185 @@ export async function watchPass(w: WatchDeps): Promise<WatchReport> {
   state.lastBlock = head;
   // keep two weeks of verdicts (final ones older than that can never change again)
   for (const [k, v] of Object.entries(state.results)) if (v.final && now - v.resolvedAt > 14 * 86_400) delete state.results[k];
+  // an overdue entry leaves when its ladder resolves; one still unresolved after 14 days (e.g. a long pause) is kept
+  // while it is still seen, or every backstop would re-create it and re-alert every 10 min instead of hourly
+  const seenOverdue = new Set(rep.overdue.map((o) => o.key));
+  for (const [k, v] of Object.entries(state.overdue ?? {})) if (now - v.dayEnd > 14 * 86_400 && !seenOverdue.has(k)) delete state.overdue![k];
+  for (const [k, v] of Object.entries(state.voids ?? {})) if (now - v.at > 14 * 86_400) delete state.voids![k];
   w.store.put("watch:state", state);
   return rep;
+}
+
+// ---------------------------------------------------------------- liveness guardrails (no result yet)
+type LadderRef = { b4: Hex; date: number };
+
+function guardrails(w: WatchDeps, state: WatchState, rep: WatchReport, now: number) {
+  const overdueSec = w.overdueSec ?? 10_800;
+  const repeatSec = w.overdueRepeatSec ?? 3600;
+  const auto = w.autoStaleVoid ?? true;
+  let paused: boolean | undefined;
+  const isPaused = async () => (paused ??= (await w.pub.readContract({ address: w.resolver, abi: RESOLVER_WATCH_ABI, functionName: "paused" })) as boolean);
+  const read = async <T>(functionName: "dayEnd" | "staleAt" | "resultOf", c: LadderRef) => (await w.pub.readContract({ address: w.resolver, abi: RESOLVER_WATCH_ABI, functionName, args: [c.b4, c.date] })) as T;
+
+  const stage = (late: number) =>
+    late < WORKFLOW_VOID_SEC
+      ? "the settlement workflow retries hourly; on its own it voids only from day end + 36 h (healthy sources) or 46 h (backstop)"
+      : late < WORKFLOW_HARD_VOID_SEC
+        ? "past the workflow's 36 h VOID deadline: a running workflow that could not settle would void now, unless a source is failing"
+        : "past the workflow's 46 h backstop: the settlement workflow is not delivering at all";
+
+  async function unresolved(k: string, c: LadderRef) {
+    let end: number;
+    try {
+      end = Number(await read<bigint>("dayEnd", c));
+    } catch (e) {
+      w.log(`${k}: Resolver.dayEnd unreadable (${explainRevert(e)}): no overdue check`);
+      return;
+    }
+    if (now <= end + overdueSec) return; // not overdue (yet)
+    state.overdue ??= {};
+    const od = state.overdue[k];
+    const alertDue = !od || now - od.lastAlertAt >= repeatSec;
+    // staleAt >= dayEnd + STALE_WINDOW always, so before that nothing needs the extra reads except the alert text
+    const mayBeStale = now >= end + STALE_WINDOW_SEC;
+    let staleAt: number | null = null;
+    if (alertDue || mayBeStale) staleAt = Number(await read<bigint>("staleAt", c));
+    const p = staleAt !== null ? await isPaused() : false;
+    rep.overdue.push({ key: k, hoursLate: +hrs(now - end), staleAt });
+    if (alertDue) {
+      const voidLine =
+        staleAt === null
+          ? ""
+          : p
+            ? `Stale void: the Resolver is PAUSED, so voidIfStale is blocked until ${iso(staleAt)} (day end + 7 d); this Worker never voids a paused Resolver.`
+            : `Stale void: allowed from ${iso(staleAt)}${auto ? "; this Worker then sends Resolver.voidIfStale (live mode only; pays 0.5/0.5)" : "; AUTO_STALE_VOID=0, so call Resolver.voidIfStale by hand then (permissionless)"}.`;
+      w.alert(
+        `SETTLEMENT OVERDUE ${k}`,
+        [
+          `No result on the Resolver ${hrs(now - end)} h after the local day end (${iso(end)}). The CRE settlement normally lands from day end + 2 h.`,
+          `Stage: ${stage(now - end)}.`,
+          `Check the settlement job: "path" in its latest evidence record (packages/cre-workflow/var/evidence/LATEST.json) should be "official"; \`cre whoami\` should succeed; the attester needs about 0.0204 MON per report.`,
+          voidLine,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      );
+      state.overdue[k] = { dayEnd: end, firstAt: od?.firstAt ?? now, lastAlertAt: now, alerts: (od?.alerts ?? 0) + 1 };
+    }
+    if (staleAt !== null && now >= staleAt) await staleVoid(k, c, end, staleAt, p);
+  }
+
+  function resolved(k: string, status: string, tmaxC: number, resolvedAt: number) {
+    const od = state.overdue?.[k];
+    if (!od) return;
+    delete state.overdue![k];
+    w.alert(`OVERDUE CLEARED ${k}`, `${status}${status === "Settled" ? ` ${tmaxC} C` : ""} at ${iso(resolvedAt)}, ${hrs(resolvedAt - od.dayEnd)} h after the local day end (${od.alerts} overdue alert(s) before).`);
+  }
+
+  async function staleVoid(k: string, c: LadderRef, end: number, staleAt: number, isPausedNow: boolean) {
+    state.voids ??= {};
+    const prev = state.voids[k];
+    if (prev && now - prev.at < VOID_RETRY_SEC) return; // at most once per ladder per hour
+    const what = `Resolver.voidIfStale(${c.b4}, ${c.date})`;
+    const mark = (outcome: string, hash?: Hex) => (state.voids![k] = { at: now, outcome: outcome.slice(0, 300), ...(hash ? { hash } : {}) });
+    const done = (outcome: string, ok = false, hash?: Hex) => {
+      mark(outcome, hash);
+      rep.voids.push({ key: k, outcome: outcome.slice(0, 300), ok, ...(hash ? { hash } : {}) });
+    };
+    if (isPausedNow) {
+      done("held: the Resolver is paused");
+      w.alert(`STALE VOID HELD ${k}`, `${what} is allowed by time (staleAt ${iso(staleAt)}) but the Resolver is PAUSED (guardian/owner emergency stop). This Worker never voids a paused Resolver: owner decision (unpause, or void by hand).`);
+      return;
+    }
+    if (!auto) {
+      done("AUTO_STALE_VOID=0: not sent");
+      w.alert(`STALE VOID DUE ${k}`, `AUTO_STALE_VOID=0: call ${what} by hand (permissionless; pays 0.5/0.5). Allowed since ${iso(staleAt)}.`);
+      return;
+    }
+    let op = w.operator ?? null;
+    let opWhy = op ? `operator ${op.address}` : "no OPERATOR_KEY secret";
+    if (op && !w.liveRpc && w.liveOperator && op.address.toLowerCase() === w.liveOperator.toLowerCase()) {
+      op = null;
+      opWhy = "REFUSED: the LIVE operator key on a non-live RPC";
+    }
+    const from = (op?.address ?? w.liveOperator ?? "0x0000000000000000000000000000000000000000") as Address;
+    const data = encodeFunctionData({ abi: RESOLVER_WATCH_ABI, functionName: "voidIfStale", args: [c.b4, c.date] });
+    // 1. simulate, 2. estimate: gas limit = ceil(estimate x the operator multiplier) (Monad bills the limit)
+    let gasLimit: bigint;
+    try {
+      await w.pub.call({ account: from, to: w.resolver, data });
+      const est = await w.pub.estimateGas({ account: from, to: w.resolver, data });
+      gasLimit = BigInt(Math.ceil(Number(est) * w.gasMult));
+    } catch (e) {
+      done(`simulation reverted: ${explainRevert(e)}`);
+      w.alert(`STALE VOID REFUSED ${k}`, `The eth_call simulation of ${what} from ${from} reverts: ${explainRevert(e)}. Nothing sent; retried in ${VOID_RETRY_SEC / 60} min.`);
+      return;
+    }
+    rep.intents.push({ key: k, what: `${what} from ${from}`, gasLimit: gasLimit.toString() });
+    if (!w.live) {
+      done("shadow mode: not sent (would send it now)");
+      w.alert(`STALE VOID DUE ${k} (shadow: not sent)`, `${what} simulates fine (gas limit ${gasLimit}); live mode would send it now from the operator key.`);
+      return;
+    }
+    if (!op) {
+      done(`not sent: ${opWhy}`);
+      w.alert(`STALE VOID NOT SENT ${k}`, `Why: ${opWhy}. Anyone may call ${what} (permissionless; gas limit about ${gasLimit}).`);
+      return;
+    }
+    // 3. the void meter and the balance
+    const price = await w.pub.getGasPrice();
+    const cost = gasLimit * price;
+    const mon = Number(formatEther(cost));
+    const day = budgetDay(now * 1000, 480);
+    const meter = state.voidSpend?.day === day ? state.voidSpend : { day, mon: 0, n: 0 };
+    if (meter.mon + mon > VOID_DAILY_CAP_MON + 1e-12) {
+      done(`not sent: void meter ${meter.mon.toFixed(4)} + ${mon.toFixed(4)} MON > ${VOID_DAILY_CAP_MON} MON/day`);
+      w.alert(`STALE VOID NOT SENT ${k}`, `The automatic void meter is spent for ${day} (${meter.mon.toFixed(4)} of ${VOID_DAILY_CAP_MON} MON). Anyone may call ${what} (permissionless).`);
+      return;
+    }
+    const bal = await w.pub.getBalance({ address: op.address });
+    if (bal < cost + MIN_EXTRA_WEI) {
+      done(`not sent: operator ${op.address} holds ${formatEther(bal)} MON < ${formatEther(cost + MIN_EXTRA_WEI)} MON`);
+      w.alert(`STALE VOID NOT SENT ${k}`, `The operator ${op.address} holds ${formatEther(bal)} MON, needs ${formatEther(cost + MIN_EXTRA_WEI)}. Fund it, or call ${what} from any funded wallet (permissionless).`);
+      return;
+    }
+    // 4. send through the nonce tracker; the attempt is stored before the tx leaves
+    mark("sending");
+    w.store.put("watch:state", state);
+    const label = `voidIfStale ${k}`;
+    let hash: Hex | undefined;
+    try {
+      const nonce = await w.nonces.next(op.address, () => w.pub.getTransactionCount({ address: op!.address, blockTag: "pending" }));
+      try {
+        hash = await w.wallet(op).sendTransaction({ account: op, to: w.resolver, data, gas: gasLimit, nonce });
+      } catch (e) {
+        w.nonces.failed(op.address, nonce, explainRevert(e));
+        throw e;
+      }
+      w.nonces.sent(op.address, nonce, hash, label);
+      meter.mon = +(meter.mon + mon).toFixed(9); // billed at send: Monad charges the limit even on a revert
+      meter.n++;
+      state.voidSpend = meter;
+      w.store.put("watch:state", state); // the meter survives a later failure in this pass
+      const rc = await w.pub.waitForTransactionReceipt({ hash, timeout: 60_000, pollingInterval: 400 });
+      w.nonces.mined(op.address, nonce, hash);
+      // logged and metered on the receipt, before any further read can fail
+      w.onVoidTx?.({ label, role: "operator", from: op.address, hash, nonce, block: rc.blockNumber, gasUsed: rc.gasUsed, gasLimit, mon: Number(formatEther(gasLimit * (rc.effectiveGasPrice ?? price))), status: rc.status });
+      const after = await read<any>("resultOf", c);
+      const ok = rc.status === "success" && Number(after.status) === 2 && /^0x0+$/.test(after.sourcesHash);
+      done(ok ? "voided" : `tx ${rc.status}; resultOf now ${STATUS[Number(after.status)]}`, ok, hash);
+      if (ok) delete state.overdue?.[k];
+      w.alert(
+        ok ? `STALE VOIDED ${k}` : `STALE VOID FAILED ${k}`,
+        ok
+          ? `${what} from the operator key: tx ${hash} (gas used ${rc.gasUsed} of limit ${gasLimit}). The ladder pays 0.5/0.5; redemption is open. No CRE result had landed ${hrs(now - end)} h after the local day end.`
+          : `tx ${hash} status ${rc.status}; Resolver.resultOf is ${STATUS[Number(after.status)]}. Retried in ${VOID_RETRY_SEC / 60} min if still unresolved.`,
+      );
+    } catch (e) {
+      done(`${hash ? "error after broadcast" : "send failed"}: ${explainRevert(e)}`, false, hash);
+      w.alert(`STALE VOID FAILED ${k}`, `${what}: ${explainRevert(e)}${hash ? ` (tx ${hash} was broadcast and may still land; the next pass reads Resolver.resultOf)` : ""}. Retried in ${VOID_RETRY_SEC / 60} min if still unresolved.`);
+    }
+  }
+
+  return { unresolved, resolved };
 }

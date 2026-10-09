@@ -9,3 +9,9 @@ testnet:
   rpcs:
     - chain-name: monad-testnet
       url: https://testnet-rpc.monad.xyz
+
+# Chainlink DON deployment (private registry). Same chain and RPC as `testnet`; the DON nodes use their own RPCs.
+testnet-don:
+  rpcs:
+    - chain-name: monad-testnet
+      url: https://testnet-rpc.monad.xyz

@@ -8,6 +8,9 @@
 //      binding with the bearer token.
 //   3. Settlement watch: a WRONG attested result is recomputed from recorded METAR archives with the CRE rule and
 //      CHALLENGED by the guardian secret inside the 900 s window (Void); a correct one is a MATCH.
+//   4. Settlement guardrails: chain warped past the ladder's day end + 3 h with no result -> "SETTLEMENT OVERDUE",
+//      pushed to a stand-in ALERT_WEBHOOK_URL, no tx; warped to Resolver.staleAt (day end + 48 h) -> the Worker sends
+//      voidIfStale from the operator secret, accepted on the fork (Void, sourcesHash 0), and the next pass is quiet.
 // Throwaway keys only (generated here, fork-only roles granted by impersonating the owner). Ports: anvil 19800,
 // stubs 19801, Miniflare 19802 (override with MW_ANVIL_PORT / MW_STUB_PORT / MW_MF_PORT, all within 19800-19849).
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
@@ -65,6 +68,9 @@ const resolverAbi = parseAbi([
   "function setGuardian(address)",
   "function setAttester(address)",
   "function resultOf(bytes4,uint32) view returns ((uint8 status, int16 tmaxC, uint64 resolvedAt, uint64 finalAt, bytes32 sourcesHash))",
+  "function dayEnd(bytes4,uint32) view returns (uint256)",
+  "function staleAt(bytes4,uint32) view returns (uint256)",
+  "event LadderResolved(bytes4 indexed station, uint32 indexed date, uint8 status, int16 tmaxC, bytes32 sourcesHash, address caller)",
 ]);
 const zapAbi = parseAbi(["function canonicalMarket(bytes32) view returns (address)"]);
 const bookAbi = parseAbi([
@@ -107,6 +113,7 @@ function ladderData(icao: string, isoDate: string, nowMs: number) {
 }
 
 let stubServer: Server;
+const hooks: { title: string; body: string }[] = []; // what the Worker pushed to the stand-in ALERT_WEBHOOK_URL
 const api = { latest: { version: 1, empty: true, ladders: [] } as any, posts: [] as { auth: string | null; body: any }[], gets: 0 };
 
 // ---------------------------------------------------------------- helpers
@@ -239,6 +246,18 @@ beforeAll(async () => {
     if (u.pathname === "/data") {
       res.setHeader("content-type", "application/json");
       return res.end(JSON.stringify(ladderData(u.searchParams.get("station")!, u.searchParams.get("date")!, Number(u.searchParams.get("now")))));
+    }
+    if (u.pathname === "/hook" && req.method === "POST") {
+      let b = "";
+      req.on("data", (c) => (b += c));
+      req.on("end", () => {
+        try {
+          const j = JSON.parse(b);
+          hooks.push({ title: String(j.title), body: String(j.body) });
+        } catch {}
+        res.end("ok");
+      });
+      return;
     }
     if (u.pathname === "/src") {
       const body = sourceBodies.get(u.searchParams.get("url") ?? "");
@@ -428,6 +447,58 @@ describe("isotherm-maker Worker on a Monad testnet fork", () => {
     if (v[`${right.icao}:${right.date}`]) expect(v[`${right.icao}:${right.date}`]).toBe("MATCH");
     expect(r.watcher.pages).toBeGreaterThan(0);
     say(`watcher (live, guardian secret): ${wrong.icao} ${wrong.date} attested ${truth.d.tmaxC! + 2} C vs the rule's ${truth.d.tmaxC} C -> challenge ${r.watcher.challenges[0].hash} -> Void; ${right.icao} ${right.date} -> ${v[`${right.icao}:${right.date}`] ?? "already resolved on live"}; getLogs in ${r.watcher.pages} page(s) of <= 100 blocks`);
+  });
+
+  it("guardrails: SETTLEMENT OVERDUE after day end + 3 h (pushed), then the automatic stale void from the operator secret", async () => {
+    await mf.setOptions(mfOptions(vars({ MAKER_MODE: "live", ROLL_AUTO: "0", ALERT_WEBHOOK_URL: `${STUB}/hook` })) as any);
+    const b4 = stringToHex("RJTT", { size: 4 });
+    const key = `RJTT:${date}`;
+    const rr = async () => (await pub.readContract({ address: D.resolver as Address, abi: resolverAbi, functionName: "resultOf", args: [b4, date] })) as { status: number; tmaxC: number; sourcesHash: Hex };
+    expect((await rr()).status).toBe(0); // the ladder the Worker rolled on the fork has no result
+    const end = Number(await pub.readContract({ address: D.resolver as Address, abi: resolverAbi, functionName: "dayEnd", args: [b4, date] }));
+    // 1. day end + 3 h + 1 min: overdue -> alert (and push), nothing sent
+    await warp(end + 3 * 3600 + 60 - (await chainNow()));
+    const n0 = await nonceOf(A.operator.address);
+    let r = await tick("&watch=1");
+    expect(r.errors).toEqual([]);
+    expect(r.mode).toBe("live");
+    expect(r.alerts).toContain(`SETTLEMENT OVERDUE ${key}`);
+    expect(r.watcher.overdue).toEqual(expect.arrayContaining([expect.objectContaining({ key, staleAt: end + 172_800 })]));
+    expect(r.watcher.voids).toEqual([]);
+    expect(r.txs).toEqual([]);
+    expect(await nonceOf(A.operator.address)).toBe(n0);
+    expect(r.push).toEqual(expect.arrayContaining([{ title: `SETTLEMENT OVERDUE ${key}`, result: "sent 200" }]));
+    const pushed = hooks.find((h) => h.title === `SETTLEMENT OVERDUE ${key}`)!;
+    expect(pushed.body).toMatch(/No result on the Resolver 3\.0 h after the local day end/);
+    say(`guardrails: chain at day end + 3h01 (${new Date((await chainNow()) * 1000).toISOString()}), no result for ${key} -> alerts ${JSON.stringify(r.alerts)}; pushed to the stand-in webhook: "${pushed.title}"; 0 txs`);
+    // 2. Resolver.staleAt (day end + 48 h): voidIfStale from the operator secret, accepted
+    const staleAt = Number(await pub.readContract({ address: D.resolver as Address, abi: resolverAbi, functionName: "staleAt", args: [b4, date] }));
+    expect(staleAt).toBe(end + 172_800);
+    await warp(staleAt - (await chainNow()) + 5);
+    r = await tick("&watch=1");
+    expect(r.errors).toEqual([]);
+    expect(r.watcher.voids).toEqual(expect.arrayContaining([expect.objectContaining({ key, ok: true, outcome: "voided" })]));
+    const tx = r.txs.find((t: any) => t.label === `voidIfStale ${key}`);
+    expect(tx).toMatchObject({ role: "operator", status: "success" });
+    const res = await rr();
+    expect([res.status, res.tmaxC, res.sourcesHash]).toEqual([2, 0, `0x${"00".repeat(32)}`]);
+    const [sent, rc] = await Promise.all([pub.getTransaction({ hash: tx.hash }), pub.getTransactionReceipt({ hash: tx.hash })]);
+    expect(sent.from.toLowerCase()).toBe(A.operator.address.toLowerCase());
+    expect(rc.status).toBe("success");
+    const ev = rc.logs.filter((l) => l.address.toLowerCase() === (D.resolver as string).toLowerCase());
+    expect(ev).toHaveLength(1);
+    expect(Number(sent.gas)).toBeGreaterThanOrEqual(Number(rc.gasUsed));
+    expect(Number(sent.gas) / Number(rc.gasUsed)).toBeLessThanOrEqual(1.15); // limit = estimate x 1.10 (Monad bills the limit)
+    expect(r.alerts).toContain(`STALE VOIDED ${key}`);
+    expect(hooks.map((h) => h.title)).toContain(`STALE VOIDED ${key}`);
+    say(`guardrails: chain at staleAt + 5 s -> voidIfStale ${key} from the operator secret ${tx.hash}: gas used ${rc.gasUsed}, limit ${sent.gas}; resultOf Void, sourcesHash 0, LadderResolved emitted; all voids this pass ${JSON.stringify(r.watcher.voids.map((v: any) => `${v.key}:${v.outcome}`))}`);
+    // 3. the next pass reads the Void as a stale void; nothing more is sent
+    await warp(120);
+    r = await tick("&watch=1");
+    expect(r.txs).toEqual([]);
+    expect(r.watcher.verdicts).toEqual(expect.arrayContaining([expect.objectContaining({ key, verdict: "STALE-VOID" })]));
+    expect(r.watcher.overdue.map((o: any) => o.key)).not.toContain(key);
+    say(`guardrails: next pass -> ${key} STALE-VOID (final), 0 txs`);
   });
 
   it("cron re-arms the Durable Object alarm; the tx log is the evidence", async () => {

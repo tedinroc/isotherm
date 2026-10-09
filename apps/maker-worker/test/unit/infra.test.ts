@@ -18,6 +18,13 @@ describe("settings", () => {
     expect(() => settingsFrom({ RPC_URL: "https://rpc.monad.xyz" } as Env)).toThrow(/loopback/);
     expect(() => settingsFrom({ RPC_URL: "http://10.0.0.2:8545" } as Env)).toThrow(/loopback/);
   });
+  it("settlement guardrails: overdue after 3 h, repeated hourly, automatic stale void on, push limited to 1 per title per hour", () => {
+    expect(settingsFrom({} as Env)).toMatchObject({ settleOverdueSec: 10_800, settleOverdueRepeatSec: 3600, autoStaleVoid: true, alertPushMinSec: 3600 });
+    expect(settingsFrom({ AUTO_STALE_VOID: "0", SETTLE_OVERDUE_SEC: "7200" } as Env)).toMatchObject({ autoStaleVoid: false, settleOverdueSec: 7200 });
+    expect(() => settingsFrom({ SETTLE_OVERDUE_SEC: "60" } as Env)).toThrow(/out of range/); // below 10 min
+    expect(() => settingsFrom({ SETTLE_OVERDUE_SEC: "200000" } as Env)).toThrow(/out of range/); // beyond the 48 h stale window
+    expect(() => settingsFrom({ SETTLE_OVERDUE_REPEAT_SEC: "10" } as Env)).toThrow(/out of range/);
+  });
   it("honours the test hooks only on a loopback fork", () => {
     const live = settingsFrom({ TEST_MARKET_DATA_URL: "http://127.0.0.1:1/x", TEST_SOURCE_PROXY: "http://127.0.0.1:1/s" } as Env);
     expect([live.testMarketDataUrl, live.testSourceProxy]).toEqual([null, null]);

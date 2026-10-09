@@ -31,6 +31,31 @@ describe('config files', () => {
       expect(c.extraTargets).toEqual([])
     })
   }
+  test('config.don.json (DON target) equals config.testnet.json except a gasLimit sized for the production forwarder', () => {
+    const read = (n: string) => JSON.parse(readFileSync(new URL(`../${n}`, import.meta.url), 'utf8'))
+    const don = configSchema.parse(read('config.don.json'))
+    const mac = configSchema.parse(read('config.testnet.json'))
+    expect({ ...don, gasLimit: 'x' }).toEqual({ ...mac, gasLimit: 'x' })
+    // evidence/don-gas-fork.json: a 278,875-278,887 gas minimum (it varies with the report bytes) through
+    // KeystoneForwarder 1.0.0 with 4 DON signatures; rule max(350k, ceil10k(1.5 x 278,887)) = 420k. The DON
+    // transmitter pays it, not the attester.
+    expect(BigInt(don.gasLimit)).toBeGreaterThanOrEqual(420000n)
+    expect(BigInt(don.gasLimit)).toBeLessThanOrEqual(1000000n)
+    const ev = new URL('../../evidence/don-gas-fork.json', import.meta.url)
+    if (existsSync(ev)) expect(Number(don.gasLimit)).toBeGreaterThanOrEqual(JSON.parse(readFileSync(ev, 'utf8')).recommendedGasLimit)
+  })
+  test('workflow.yaml: testnet-don deploys to the private registry with config.don.json; testnet keeps the Mac config', () => {
+    const wf = Bun.YAML.parse(readFileSync(new URL('../workflow.yaml', import.meta.url), 'utf8')) as any
+    const proj = Bun.YAML.parse(readFileSync(new URL('../../project.yaml', import.meta.url), 'utf8')) as any
+    expect(wf['testnet-don']['user-workflow']).toEqual({ 'workflow-name': 'isotherm-settle', 'deployment-registry': 'private' })
+    expect(wf['testnet-don']['workflow-artifacts']).toEqual({ 'workflow-path': './main.ts', 'config-path': './config.don.json', 'secrets-path': '../secrets.yaml' })
+    expect(wf.testnet['workflow-artifacts']['config-path']).toBe('./config.testnet.json')
+    expect(wf.testnet['user-workflow']['deployment-registry']).toBeUndefined()
+    expect(proj['testnet-don'].rpcs).toEqual(proj.testnet.rpcs)
+    // secrets.yaml holds names only (the value goes to the Vault DON from the owner's terminal)
+    const secrets = Bun.YAML.parse(readFileSync(new URL('../../secrets.yaml', import.meta.url), 'utf8')) as any
+    expect(secrets).toEqual({ secretsNames: { ISOTHERM_ATTESTER_KEY: ['ISOTHERM_ATTESTER_KEY_ALL'] } })
+  })
   test('rejects a void deadline at or beyond the on-chain STALE_WINDOW', () => {
     expect(() => testnetConfig({ voidAfterSec: 171300, hardVoidAfterSec: 171300 })).toThrow('staleWindowSec') // 171300 + 1500 >= 172800
     expect(testnetConfig({ voidAfterSec: 171000, hardVoidAfterSec: 171000 }).voidAfterSec).toBe(171000) // 171000 + 1500 < 172800

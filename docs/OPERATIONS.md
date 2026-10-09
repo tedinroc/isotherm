@@ -169,7 +169,20 @@ The Oct 8 ladder is settled by the CRE workflow in `packages/cre-workflow`, thro
 - **Where it runs:** from the runtime copy `~/isotherm-live/packages/cre-workflow`, because launchd cannot read `~/Documents` (exit 126, as the maker hit). Ship changes with `packages/cre-workflow/scripts/deploy-runtime.sh`; check with `bash ~/isotherm-live/packages/cre-workflow/scripts/install-launchd.sh --status` and `launchctl list | grep xyz.isotherm`.
 - **Cost:** each report transaction bills about 0.0204 MON to the attester key (0.40 MON at 2026-10-07 07:55 UTC, about 19 reports).
 - **After it lands:** confirm `LadderResolved` or `Resolver.resultOf(0x52435353, 20261008)`, never the transaction status alone. `xyz.isotherm.challenge-watch` recomputes the result and challenges a reproduced mismatch within the 900 s window; a human check is still worth it (challenge first, then pause; section 3).
-- **Fallback:** if nothing settles, anyone can call `voidIfStale` after 2026-10-11 00:00 Taipei, which pays 0.5/0.5.
+- **Fallback:** if nothing settles, `voidIfStale` opens 48 h after the local day end and pays 0.5/0.5. The
+  Cloudflare Worker sends it itself (next bullet), and anyone else can too.
+- **Guardrails on Cloudflare (no new key).** The maker Worker's settlement watcher (section 8.8) checks every vault
+  ladder that has no result yet:
+  - **Overdue alert.** More than 3 h after the local day end it raises `SETTLEMENT OVERDUE RCSS:<date>`. For Taipei
+    that is 19:00 UTC, about an hour after the first attempt at 18:05. The alert repeats hourly until a result
+    lands, and then `OVERDUE CLEARED` is raised once. Read it with `node scripts/control.mjs alerts` from
+    `apps/maker-worker`, or on a phone through the optional push channel.
+  - **Automatic stale void.** Once `Resolver.staleAt` has passed (day end + 48 h) with still no result, and only
+    while the Resolver is not paused, the Worker simulates `voidIfStale` and, in live mode, sends it from its
+    operator key. It makes at most one attempt per ladder per hour, within 0.05 MON a day, with an alert either way.
+  - **Settlement itself is unchanged.** It still runs through the official CRE CLI (`xyz.isotherm.cre-settle`)
+    until the DON cutover. The Worker never signs a settlement and holds no attester key. It cannot settle a
+    ladder at its real temperature; it makes a failure visible within hours and bounds it at 0.5/0.5.
 
 ## 7. Known limits
 
@@ -201,6 +214,8 @@ judging (Oct 14 – Nov 3), so that judging does not depend on this Mac staying 
 - **Cutover to LIVE 2026-10-08 23:00 UTC** (runbook 8.3): Mac writers stopped at 23:00:31, state imported (2 ladders,
   Oct 9 spend 2.87 MON re-booked), armed, `033804cc` deployed with `MAKER_MODE = "live"`; live from 23:06 UTC, first tx a
   >=31 requote (success); the API snapshot source is `isotherm-maker-worker`.
+- **Settlement guardrails** (8.8): the `SETTLEMENT OVERDUE` alert, the automatic stale void at 48 h and an optional
+  phone push. They are in the code from 2026-10-09 and go live with the next `npm run deploy -- --live`.
 
 ### 8.1 Who does what
 
@@ -209,9 +224,9 @@ judging (Oct 14 – Nov 3), so that judging does not depend on this Mac staying 
 | quoting loop, kill switch (`xyz.isotherm.maker`, `xyz.isotherm.watchdog`) | Mac (live); Worker in shadow | Worker (kill switch at stop − 90 s, plus a verify pass every 5 min like `watchdog --verify`) |
 | daily roll (`xyz.isotherm.roll`) | Mac (live; the hourly job acts at the first run after 12:00, about 12:45 Taipei); Worker in shadow | Worker (from 12:00 station time; retries every 5 min until the ladder is active) |
 | challenge watcher (`xyz.isotherm.challenge-watch`) | Mac (live); Worker recomputes and alerts | Worker (guardian key) |
-| CRE settlement (`xyz.isotherm.cre-settle`) | Mac | **stays on the Mac** (the official CRE CLI cannot run in a Worker; the attester key is not in Cloudflare) |
+| CRE settlement (`xyz.isotherm.cre-settle`) | Mac | **stays on the Mac** (the official CRE CLI cannot run in a Worker; the attester key is not in Cloudflare). The Worker alerts when a result is overdue and stale-voids at 48 h (8.8) |
 
-**Live needs two switches, and both are off now:**
+**Live needs two switches. Both have been on since the cutover (2026-10-08 23:06 UTC):**
 1. `MAKER_MODE = "live"` in `apps/maker-worker/wrangler.toml`. `scripts/deploy.mjs` refuses it without `--live`,
    and once it is in the file, refuses any deploy without `--live`.
 2. The Durable Object flag, set by `node scripts/control.mjs arm`. It confirms with the maker address derived from
@@ -355,13 +370,16 @@ Run everything from `apps/maker-worker` with `XDG_CONFIG_HOME` set as in 8.2.
 | Pull all quotes now and pause | `node scripts/control.mjs pull all`; undo with `resume RCSS:20261010` |
 | Roll a date by hand (idempotent) | `node scripts/control.mjs roll RCSS 2026-10-10` |
 | Change caps or settings | edit `config/worker.json` or the `[vars]` in `wrangler.toml`, then `npm run deploy` (`-- --live` once live) |
-| Rotate a secret | `node scripts/put-secrets.mjs --only MAKER_KEY` |
+| Rotate a secret | `node scripts/put-secrets.mjs --only MAKER_KEY --live` (`--live` is required since the cutover) |
+| Overdue ladders, stale voids, push channel | `node scripts/control.mjs status` (`watcher.overdue`, `watcher.staleVoids`, `push`); `alerts` for the texts |
+| Check the phone push | `node scripts/control.mjs test-alert`, then `result`; one `TEST ALERT <seq>` arrives (8.8) |
 | Reset the shadow's own state and summary | `node scripts/control.mjs reset-shadow` |
-| Tests | `npm test` (32 unit), `npm run test:fork` (anvil fork + the bundled Worker in Miniflare, live on the fork), `MW_REHEARSAL=1 npx vitest run test/integration/cutover-rehearsal.fork.test.ts` (this runbook on a fork with the Mac's real state), `MW_LIVE_SMOKE=1 npx vitest run test/integration/live-readonly.smoke.test.ts` (read-only, no keys) |
+| Tests | `npm test` (48 unit), `npm run test:fork` (anvil fork + the bundled Worker in Miniflare, live on the fork), `MW_REHEARSAL=1 npx vitest run test/integration/cutover-rehearsal.fork.test.ts` (this runbook on a fork with the Mac's real state), `MW_LIVE_SMOKE=1 npx vitest run test/integration/live-readonly.smoke.test.ts` (read-only, no keys) |
 
 **Known limits.**
-- **Settlement still depends on the Mac.** If the Mac sleeps, ladders still resolve by `voidIfStale` after 48 h
-  (0.5/0.5), but not by the CRE settlement.
+- **Settlement still depends on the Mac.** If the Mac sleeps or loses its network, the Worker raises
+  `SETTLEMENT OVERDUE` after 3 h and voids the ladder itself at 48 h (0.5/0.5, section 8.8). Only the CRE
+  settlement pays out at the real temperature.
 - **The Worker is a single region-pinned Durable Object.** One alarm per minute and 4 KV writes per minute. A warm
   tick takes 3–15 s of sequential public-RPC reads; the first tick of a fresh isolate takes about 45 s, because it
   downloads the v0 guard's Open-Meteo history and caches it in the DO.
@@ -540,3 +558,68 @@ its assertion in `test/unit/infra.test.ts`. Run `npm test`, then `npm run deploy
 - Alternatively, set `CONFIG_OVERRIDES = '{"policy":{"requoteTicks":2},"fair":{"guardWarnExit":null}}'` in the
   `[vars]` and deploy.
 - Old states keep working in both directions: `wide` is optional.
+
+### 8.8 Settlement guardrails and the alert push (prepared 2026-10-09)
+
+Settlement still runs through the official CRE CLI on the Mac (section 6). The Worker cannot settle, but it now
+makes a missed settlement visible and bounds its cost. It adds no key: `voidIfStale` is permissionless, and the
+operator key already in the Worker only pays the gas. Details are in `apps/maker-worker/README.md`, "Settlement
+guardrails".
+
+| Chain time, for a vault ladder with no result | The Worker |
+|---|---|
+| day end + 3 h (Taipei: 19:00 UTC) | `SETTLEMENT OVERDUE <ICAO>:<date>`, repeated hourly; `OVERDUE CLEARED` once a result lands |
+| `Resolver.staleAt` (day end + 48 h), Resolver not paused | simulates `voidIfStale`, then sends it from `OPERATOR_KEY` (live mode; gas = estimate × 1.10; at most once per ladder per hour; 0.05 MON/day). Alert `STALE VOIDED` / `STALE VOID FAILED` |
+| Resolver paused | `STALE VOID HELD`: never voided by the Worker (owner decision) |
+
+The settlement workflow's own VOID deadlines (36 h, 46 h backstop) come first, so the Worker's void only fires when
+the workflow has not delivered at all. Settings live in `wrangler.toml` `[vars]`: `SETTLE_OVERDUE_SEC` (10800),
+`SETTLE_OVERDUE_REPEAT_SEC` (3600), `AUTO_STALE_VOID` ("1"; "0" = alerts only) and `ALERT_PUSH_MIN_SEC` (3600).
+
+**Verified.**
+- 48 unit tests, run against the fake chain and stubbed push endpoints. The guardrail tests cover the gate edges,
+  the hourly dedupe (also for a ladder left unresolved for weeks), the clear once settled, no void before
+  `staleAt`, refusal while paused, shadow never sending, the hourly retry, a mined void logged and metered even
+  when the read-back fails, the void meter, the live operator key refused on a fork, and push rate limits,
+  failures and timeouts.
+- The anvil fork test runs the bundled Worker in workerd (`apps/maker-worker/evidence/fork-2026-10-09T14-11-36/`):
+  - day end + 3h01: `SETTLEMENT OVERDUE`, pushed to a stand-in webhook, 0 txs;
+  - `staleAt`: `voidIfStale` from the operator secret, accepted (Void, `sourcesHash` 0, 76,537 gas of an 84,191
+    limit);
+  - the next pass: `STALE-VOID`, 0 txs.
+- A read-only run of the same bundle against live testnet, in watch-only shadow with no keys
+  (`apps/maker-worker/evidence/live-readonly-2026-10-09T14-08-54/`), had 0 errors and 0 txs. Its watcher pass read
+  the live Resolver for the open RCSS ladders: none overdue, no stale void due, no alert.
+
+**Deploy** (the Worker is live). Run from `apps/maker-worker` with `XDG_CONFIG_HOME` set as in 8.2:
+```bash
+npm test && npm run typecheck                 # 48 unit tests
+npm run test:fork                             # optional: anvil fork + Miniflare, throwaway keys
+npm run deploy -- --live                      # the output must show MAKER_MODE "live", AUTO_STALE_VOID "1", the cron
+                                              # and no workers.dev URL; note the version id
+node scripts/control.mjs status               # "version.id" = the new version; "push": {"channel": "off (...)"} until
+                                              # the webhook is set; "watcher.overdue": {} while every ladder is on time
+```
+
+**Phone push (owner, optional).** Pick a channel and store its URL as the Worker secret yourself:
+- ntfy: subscribe to a long random topic in the ntfy app; the URL is `https://ntfy.sh/<topic>`. The topic name is the
+  only secret, so make it unguessable.
+- Telegram: create a bot with @BotFather, send it a message, and read your chat id from
+  `https://api.telegram.org/bot<token>/getUpdates`. The URL is
+  `https://api.telegram.org/bot<token>/sendMessage?chat_id=<id>`.
+
+```bash
+umask 077; pbpaste > ~/.config/isotherm/alert-webhook.url        # or any editor; never echo it into the shell history
+node scripts/put-secrets.mjs --only ALERT_WEBHOOK_URL --live    # piped on stdin to `wrangler secret put`
+node scripts/control.mjs test-alert && node scripts/control.mjs result   # one "TEST ALERT <seq>" arrives on the phone
+```
+Every alert is then also pushed: at most once per title per hour, 5 s timeout, never blocking a tick. The URL never
+appears in logs or KV. Remove it with `npx wrangler secret delete ALERT_WEBHOOK_URL --name isotherm-maker`.
+
+**Off switch.** Set `AUTO_STALE_VOID = "0"` in `wrangler.toml` and run `npm run deploy -- --live`: the alerts stay,
+and a due void becomes a `STALE VOID DUE` alert to act on by hand.
+
+**Still on the owner** (the Worker does not cover these):
+- keep the Mac that runs `xyz.isotherm.cre-settle` awake on AC power and online;
+- keep the attester funded (about 0.0204 MON per report, section 2);
+- keep `cre whoami` valid (section 6).

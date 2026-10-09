@@ -1,0 +1,60 @@
+# 2026-10-09T14:21:47Z testnet-don target validation (no CRE login: HOME points at an empty scratch directory, so nothing reads ~/.cre)
+# CRE CLI version v1.37.0, bun 1.4.2
+
+$ cd settle && bun test
+ 93 pass
+ 11 skip
+ 0 fail
+ 356 expect() calls
+Ran 104 tests across 9 files. [196.00ms]
+
+$ cd settle && bun run typecheck
+$ tsc --noEmit -p tsconfig.json
+exit 0
+
+$ cre workflow build . -T testnet-don -R ..   (from settle/)
+  Compiling workflow...
+✓ Workflow compiled successfully
+  Binary hash: 413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938
+✓ Build output written to settle/binary.wasm
+sha256 settle/binary.wasm: 413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938  (2816479 bytes; evidence/build.txt (2026-10-07): 413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938)
+
+$ cre workflow hash ./settle -T testnet --public_key 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11   (the Resolver owner address as a stand-in workflow owner)
+Compiling workflow...
+✓ Workflow compiled
+  Binary hash:   600f0a3e1a163c2aa1753722558cd9ae5299ab3a553205e108b8638dc45bc676
+  Config hash:   d5686d50ab6b5f3e6736ed6dea92121b3b8fd0f9ce1832e0cf71ebe7655f5b65
+  Workflow hash: 001aaae8bdc6749c813786d86f5a3e7fa82ff4c2f5f4ad62dcb7f40ca4de73ef
+
+$ cre workflow hash ./settle -T testnet-don --public_key 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11   (the Resolver owner address as a stand-in workflow owner)
+! Failed to load credentials for workflow hash
+Compiling workflow...
+✓ Workflow compiled
+  Binary hash:   600f0a3e1a163c2aa1753722558cd9ae5299ab3a553205e108b8638dc45bc676
+  Config hash:   7acd53078eb3d0dd3e0356681462cccda3c403ff3b9bad37d80dfaecd3a6c25c
+  Workflow hash: 006c6bc425c55391ba0b8cccc14f56507d67b235c18d3c037a11a6a0d99a6fea
+
+sha256 settle/config.testnet.json d5686d50ab6b5f3e6736ed6dea92121b3b8fd0f9ce1832e0cf71ebe7655f5b65
+sha256 settle/config.don.json     7acd53078eb3d0dd3e0356681462cccda3c403ff3b9bad37d80dfaecd3a6c25c
+diff config.testnet.json config.don.json:
+7c7
+<   "gasLimit": "200000",
+---
+>   "gasLimit": "420000",
+
+$ cre workflow simulate ./settle -T testnet-don --non-interactive --trigger-index 2   (no --broadcast; run with no login on purpose)
+Initializing...
+! You are not logged in
+✗ Authentication required: not logged in and no CRE_API_KEY set
+  → Run 'cre login' interactively, or
+  → Set CRE_API_KEY environment variable for non-interactive use
+✗ authentication required: no credentials found: you are not logged in, run cre login and try again
+exit 1
+
+# Not run with a login: `cre workflow simulate` needs a CRE login (simulate is not login-exempt), and this preparation
+# does not use or refresh the login session; the run above stops at authentication. Build and hash above parse the
+# same target settings. The SDK-harness test 'DON target (config.don.json): same
+# decisions and report bytes as the Mac target, only the gas limit changes' runs the handler with config.don.json.
+# The deployed workflow ID is computed with the organization's owner at deploy time, so it will differ from
+# 006c6bc4... above (computed with a stand-in owner); scripts/don-cutover.sh recomputes it with the real owner and
+# requires a match.

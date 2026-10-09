@@ -1,0 +1,43 @@
+# 2026-10-09T14:23:42Z DRY RUNS against LIVE Monad testnet: reads only (eth_call, eth_estimateGas). Nothing signed or sent.
+# Run without a CRE login (HOME = an empty scratch directory) and without querying launchd, so the CRE gates cannot
+# pass here. On cutover day the owner runs the same command in their own logged-in terminal.
+
+$ scripts/don-cutover.sh --no-launchd-probe
+[2026-10-09T14:23:42Z] don-cutover: mode=dry
+[2026-10-09T14:23:43Z] network: LIVE Monad testnet 10143
+[2026-10-09T14:23:45Z] GATE FAIL  CRE deploy access: unknown (cre whoami failed: not logged in?)
+[2026-10-09T14:23:45Z] GATE FAIL  testnet-don workflow active: status not deployed
+[2026-10-09T14:23:45Z] GATE FAIL  shadow executions: 0 SUCCESS execution(s); latest execution none
+[2026-10-09T14:23:45Z] GATE FAIL  shadow run read the chain: no 'nothing to settle (ladders=N…)' line with N >= 1 in the latest execution's logs (cre execution logs). Check step C3 by hand, then pass --shadow-checked
+[2026-10-09T14:23:45Z] GATE FAIL  organization owner (workflow owner in DON report metadata): unknown
+[2026-10-09T14:23:45Z] GATE FAIL  deployed workflow ID reproduces from this checkout with that owner: deployed ?, local ?
+[2026-10-09T14:23:45Z] GATE SKIP  Mac job xyz.isotherm.cre-settle unloaded: not probed (dry run with --no-launchd-probe) (always checked by --execute)
+chain 10143 block 69562188 at 2026-10-09T14:23:47.000Z (clock); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T14:23:52Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T14:23:52Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T14:23:52Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T14:23:52Z] GATE OK    challenge window clear: []
+[2026-10-09T14:23:52Z] GATE OK    time window: 2026-10-09T14:23:47.000Z UTC: outside every scheduled run
+[2026-10-09T14:23:52Z] owner calls (from Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, in this order):
+[2026-10-09T14:23:54Z]   1. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xF8344CFd5c43616a4366C34E3EEE75af79a74482]
+[2026-10-09T14:23:54Z]      calldata 0xb9998a24000000000000000000000000f8344cfd5c43616a4366c34e3eee75af79a74482  (eth_estimateGas from the owner: 34996; sent with a 1.2x limit)
+[2026-10-09T14:23:54Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T14:23:54Z]   2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,<organization owner>] (owner unknown until the workflow is deployed)
+[2026-10-09T14:23:54Z]   then: eth_call checks (production forwarder + org owner accepted, owner 0xaa…aa and the mock rejected) and deployments/testnet.json activeForwarder -> 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+[2026-10-09T14:23:54Z] DRY RUN: NOT READY (6 gate(s) failed). Nothing was sent.
+--> exit 10
+
+$ scripts/don-rollback.sh
+[2026-10-09T14:23:54Z] don-rollback: mode=dry
+[2026-10-09T14:23:56Z] network: LIVE Monad testnet 10143
+chain 10143 block 69562223 at 2026-10-09T14:23:57.000Z (clock); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T14:24:02Z] rollback steps (owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11):
+[2026-10-09T14:24:02Z]   R1. cre workflow pause ./settle -T testnet-don --yes
+[2026-10-09T14:24:02Z]   R2. setExpectedWorkflow(0,0): already zero, skipped
+[2026-10-09T14:24:02Z]   R3. setForwarder(mock): already the mock, skipped
+[2026-10-09T14:24:02Z]   R4. eth_call checks + deployments/testnet.json activeForwarder -> 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T14:24:02Z]   R5. runtime copy activeForwarder -> mock, then launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/xyz.isotherm.cre-settle.plist   (only xyz.isotherm.cre-settle)
+[2026-10-09T14:24:02Z] DRY RUN: nothing was sent and nothing was reloaded. Re-run with --execute as the owner.
+--> exit 0

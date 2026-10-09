@@ -1,0 +1,11 @@
+live read-only smoke 2026-10-09T14:10:20.818Z: block 69559249; tick 1 65539 ms (cold), tick 2 19387 ms
+mode shadow; reasons ["env MAKER_MODE is shadow","Durable Object live flag is off","watch-only addresses (no key secrets): shadow only"]; errors []
+rolls ["RCSS:20261010:true"]; intents 8; txs 0; snapshot POSTs 0
+ladder RCSS:20261010 active
+  >=28 fair 0.9443 (polymarket) desired {"bid":0.91,"ask":0.98,"bidSize":100,"askSize":100} resting 0.9/0.97 -> requote [quote older than 6 h] | live maker: fair 0.9443 quote 0.9/0.97
+  >=29 fair 0.7146 (polymarket) desired {"bid":0.68,"ask":0.75,"bidSize":100,"askSize":100} resting null/null -> quote [no resting quote] | live maker: fair 0.7146 quote null/null
+  >=30 fair 0.2893 (polymarket; guard-wide) desired {"bid":0.22,"ask":0.35,"bidSize":100,"askSize":100} resting null/null -> quote [no resting quote] | live maker: fair 0.2893 quote null/null
+  >=31 fair 0.0401 (polymarket; guard-wide) desired {"bid":0.01,"ask":0.11,"bidSize":100,"askSize":100} resting 0.04/0.11 -> requote [bid 0.04 -> 0.01; quote older than 6 h] | live maker: fair 0.0401 quote 0.04/0.11
+intents: ["margin.deposit AUSD 32","quote >=29 100@0.68 / 100@0.75","quote >=30 100@0.22 / 100@0.35","requote >=31 100@0.01 / 100@0.11 cancel 2","requote >=28 100@0.91 / 100@0.98 cancel 2","quote >=29 100@0.68 / 100@0.75","quote >=30 100@0.22 / 100@0.35","requote >=31 100@0.01 / 100@0.11 cancel 2"]
+watcher: {"from":69555393,"head":69559393,"pages":41,"events":0,"verdicts":["RCSS:20261008:MATCH"],"overdue":[],"staleVoids":[]}
+alerts: []

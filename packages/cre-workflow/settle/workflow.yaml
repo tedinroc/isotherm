@@ -1,6 +1,10 @@
 # Isotherm settlement workflow: per-target settings.
 #   anvil-fork : simulate --broadcast against a local `anvil --fork-url https://testnet-rpc.monad.xyz` (no MON spent)
 #   testnet    : simulate --broadcast against live Monad testnet 10143 (CRE_ETH_PRIVATE_KEY pays ~0.02 MON per report)
+#   testnet-don: `cre workflow deploy` to a Chainlink DON on the private registry (prepared; needs deploy access).
+#                Same code and settings as testnet; only gasLimit differs (config.don.json, 420k): reports go through
+#                the production KeystoneForwarder, whose routing minimum needs 278,887 gas (evidence/don-gas-fork.txt).
+#                The DON transmitter pays that gas. Cutover and rollback: DON-CUTOVER.md.
 # The anvil fork keeps the live v1 addresses, so both configs point at the same Resolver / Vault.
 anvil-fork:
   user-workflow:
@@ -16,4 +20,13 @@ testnet:
   workflow-artifacts:
     workflow-path: "./main.ts"
     config-path: "./config.testnet.json"
+    secrets-path: "../secrets.yaml"
+
+testnet-don:
+  user-workflow:
+    workflow-name: "isotherm-settle"
+    deployment-registry: "private"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.don.json"
     secrets-path: "../secrets.yaml"

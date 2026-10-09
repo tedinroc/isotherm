@@ -32,6 +32,10 @@ export interface Env {
   INTERLOCK_FRESH_SEC?: string; // another writer's snapshot younger than this blocks live sends
   SHADOW_ROLL_EVERY_SEC?: string;
   WATCHDOG_VERIFY_SEC?: string; // re-scan recently closed ladders for open maker orders (Mac: watchdog --verify, 300 s)
+  SETTLE_OVERDUE_SEC?: string; // alert "SETTLEMENT OVERDUE" when a vault ladder has no result this long after its local day end
+  SETTLE_OVERDUE_REPEAT_SEC?: string; // repeat that alert per ladder at most this often until a result lands
+  AUTO_STALE_VOID?: string; // "0" = alert only; otherwise (live mode only) send Resolver.voidIfStale once it is allowed
+  ALERT_PUSH_MIN_SEC?: string; // per-title rate limit for the optional ALERT_WEBHOOK_URL push
   CONFIG_OVERRIDES?: string; // JSON merged over config/worker.json (e.g. caps); optional
   // test-only (honoured only when RPC_URL is a loopback anvil): deterministic market data and settlement sources
   TEST_MARKET_DATA_URL?: string;
@@ -44,6 +48,9 @@ export interface Env {
   OPERATOR_KEY?: string;
   GUARDIAN_KEY?: string;
   SNAPSHOT_TOKEN?: string;
+  /** Optional push channel for alerts (an ntfy topic URL, a Telegram bot sendMessage URL or any JSON webhook). Absent =
+   *  alerts stay in the Durable Object log and the KV outbox only. Never logged or echoed. */
+  ALERT_WEBHOOK_URL?: string;
 }
 
 export const LIVE_RPC = "https://testnet-rpc.monad.xyz";
@@ -67,6 +74,10 @@ export interface Settings {
   interlockFreshSec: number;
   shadowRollEverySec: number;
   watchdogVerifySec: number;
+  settleOverdueSec: number;
+  settleOverdueRepeatSec: number;
+  autoStaleVoid: boolean;
+  alertPushMinSec: number;
   configOverrides: unknown;
   testMarketDataUrl: string | null;
   testSourceProxy: string | null;
@@ -105,6 +116,11 @@ export function settingsFrom(env: Env): Settings {
     interlockFreshSec: num(env.INTERLOCK_FRESH_SEC, 300, 0, 86400),
     shadowRollEverySec: num(env.SHADOW_ROLL_EVERY_SEC, 3600, 0, 86400),
     watchdogVerifySec: num(env.WATCHDOG_VERIFY_SEC, 300, 0, 86400),
+    // 3 h after the local day end: the workflow's first attempt is at day end + 2 h (02:00 local), retried hourly
+    settleOverdueSec: num(env.SETTLE_OVERDUE_SEC, 10_800, 600, 172_800),
+    settleOverdueRepeatSec: num(env.SETTLE_OVERDUE_REPEAT_SEC, 3600, 300, 86_400),
+    autoStaleVoid: (env.AUTO_STALE_VOID ?? "1").trim() !== "0",
+    alertPushMinSec: num(env.ALERT_PUSH_MIN_SEC, 3600, 0, 86_400),
     configOverrides,
     // test hooks only ever apply to a local fork: a live RPC ignores them
     testMarketDataUrl: loop && env.TEST_MARKET_DATA_URL ? env.TEST_MARKET_DATA_URL : null,

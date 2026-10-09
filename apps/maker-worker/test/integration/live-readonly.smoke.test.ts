@@ -59,7 +59,8 @@ describe.skipIf(!RUN_IT)("live read-only smoke (shadow, watch-only, no keys)", (
         `rolls ${JSON.stringify(r.rolls.map((x: any) => `${x.key}:${x.ok}`))}; intents ${r.intents.length + r2.intents.length}; txs ${r.txs.length + r2.txs.length}; snapshot POSTs ${posts}`,
         ...r2.ladders.flatMap((l: any) => [`ladder ${l.key} ${l.status}`, ...l.strikes.map((s: any) => `  >=${s.k} fair ${s.fair} (${s.source}${s.flags.length ? `; ${s.flags.join(",")}` : ""}) desired ${JSON.stringify(s.desired)} resting ${s.resting.bid}/${s.resting.ask} -> ${s.action} [${s.reasons.join("; ")}] | live maker: ${s.mac ? `fair ${s.mac.fair} quote ${s.mac.bid}/${s.mac.ask}` : "-"}`)]),
         `intents: ${JSON.stringify([...r.intents, ...r2.intents].map((i: any) => i.label))}`,
-        `watcher: ${JSON.stringify(r.watcher && "verdicts" in r.watcher ? { from: r.watcher.from, head: r.watcher.head, pages: r.watcher.pages, events: r.watcher.events, verdicts: r.watcher.verdicts.map((v: any) => `${v.key}:${v.verdict}`) } : r.watcher)}`,
+        `watcher: ${JSON.stringify(r.watcher && "verdicts" in r.watcher ? { from: r.watcher.from, head: r.watcher.head, pages: r.watcher.pages, events: r.watcher.events, verdicts: r.watcher.verdicts.map((v: any) => `${v.key}:${v.verdict}`), overdue: r.watcher.overdue, staleVoids: r.watcher.voids } : r.watcher)}`,
+        `alerts: ${JSON.stringify([...r.alerts, ...r2.alerts])}`,
       ];
       mkdirSync(OUT, { recursive: true });
       writeFileSync(join(OUT, "summary.txt"), lines.join("\n") + "\n");

@@ -1,0 +1,712 @@
+# 2026-10-09T15:04:36Z DON switch rehearsal on an anvil fork of live Monad testnet at block 69570289 (2026-10-09T15:04:34Z chain time), port 19342
+# test org owner 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9, test workflow id 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8; Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11 is impersonated (no key)
+
+=== setup (fork only): public test attester; test DON config (donId 1, v1, f=3, 10 signers) on the production forwarder
+[fork] {"setup":"ok","attester":"0xa0Ee7A142d267C1f36714E4a8F75612F20a79720","forwarderOwnerImpersonated":"0xfbede32a7135855e41e2608d942f18ed97e9cac0","testDon":{"donId":1,"configVersion":1,"f":3,"signers":10}}
+[fork] {"now":"2026-10-09T18:05:00Z","safe":"2026-10-09T18:40:00Z","unsafe":"2026-10-09T18:28:00Z","settledOnTheWay":[{"path":"mock","forwarder":"0xB9F79d863261869B234c481D1f9A7af84AeAd192","station":"RCSS","date":20261009,"tmaxC":27,"gasLimit":200000,"tx":"0x0c48fcc4201dbad6effcf2ee5424db6e14f6db020681407620d980bcf39578e3","status":"0x1","gasUsed":149863,"reportProcessed":true,"ladderResolved":{"status":1,"tmaxC":27,"caller":"0xB9F79d863261869B234c481D1f9A7af84AeAd192"},"at":"2026-10-09T18:05:00Z","why":"due on the way: settled through the Mac path, as the hourly job would"}],"ladders":["RCSS 20261008 Settled","RCSS 20261009 Settled","RCSS 20261010 open"]}
+=== next cutover window on the fork: {"now":"2026-10-09T18:05:00Z","unsafe":"2026-10-09T18:28:00Z","safe":"2026-10-09T18:40:00Z","settledOnTheWay":["RCSS 20261009 1 at 2026-10-09T18:05:00Z"],"ladders":["RCSS 20261008 Settled","RCSS 20261009 Settled","RCSS 20261010 open"]}
+[fork] {"warpedTo":"2026-10-09T18:28:00Z"}
+
+=== cutover dry run at 2026-10-09T18:28:00Z: refused by the time window (DON :30 run)
+$ scripts/don-cutover.sh --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-ok.json
+[2026-10-09T15:04:55Z] don-cutover: mode=dry
+[2026-10-09T15:04:55Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+[2026-10-09T15:04:55Z] CRE and launchd facts from var/don/rehearsal/facts-ok.json (fork rehearsal; the CRE CLI is not called)
+[2026-10-09T15:04:55Z] GATE OK    CRE deploy access: Enabled
+[2026-10-09T15:04:55Z] GATE OK    testnet-don workflow active: status ACTIVE, workflow ID 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8
+[2026-10-09T15:04:55Z] GATE OK    shadow executions: 2 SUCCESS execution(s); latest execution SUCCESS
+[2026-10-09T15:04:55Z] GATE OK    shadow run read the chain: latest execution logged 'nothing to settle (ladders=3, due=0, skipped=0)' on 4 node(s)
+[2026-10-09T15:04:55Z] GATE OK    organization owner (workflow owner in DON report metadata): 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9
+[2026-10-09T15:04:55Z] GATE OK    deployed workflow ID reproduces from this checkout with that owner: deployed 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8, local (facts)
+[2026-10-09T15:04:55Z] GATE OK    Mac job xyz.isotherm.cre-settle unloaded: not loaded
+[2026-10-09T15:04:55Z] GATE OK    installed Mac job stands down after the switch: the runtime copy's run-official.sh checks Resolver.forwarder()
+chain 10143 block 69570532 at 2026-10-09T18:28:00.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: NO (minute :25-:35: the DON workflow runs hourly at :30)
+[2026-10-09T15:04:55Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T15:04:55Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:04:55Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T15:04:55Z] GATE OK    challenge window clear: []
+[2026-10-09T15:04:55Z] GATE FAIL  time window: 2026-10-09T18:28:00.000Z UTC: minute :25-:35: the DON workflow runs hourly at :30
+[2026-10-09T15:04:55Z] owner calls (from Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, in this order):
+[2026-10-09T15:04:55Z]   1. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xF8344CFd5c43616a4366C34E3EEE75af79a74482]
+[2026-10-09T15:04:55Z]      calldata 0xb9998a24000000000000000000000000f8344cfd5c43616a4366c34e3eee75af79a74482  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:04:55Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:55Z]   2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9]
+[2026-10-09T15:04:55Z]      calldata 0xad59c268000000000000000000000000000000000000000000000000000000000000000000000000000000000000000093cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9  (eth_estimateGas from the owner: 51564; sent with a 1.2x limit)
+[2026-10-09T15:04:55Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:55Z]   then: eth_call checks (production forwarder + org owner accepted, owner 0xaa…aa and the mock rejected) and deployments/testnet.json activeForwarder -> 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+[2026-10-09T15:04:55Z] DRY RUN: NOT READY (1 gate(s) failed). Nothing was sent.
+--> exit 10 (expected 10): PASS
+[fork] {"warpedTo":"2026-10-09T18:40:00Z"}
+
+=== cutover dry run: deploy access not enabled (today's real state)
+$ scripts/don-cutover.sh --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-no-access.json
+[2026-10-09T15:04:55Z] don-cutover: mode=dry
+[2026-10-09T15:04:55Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+[2026-10-09T15:04:55Z] CRE and launchd facts from var/don/rehearsal/facts-no-access.json (fork rehearsal; the CRE CLI is not called)
+[2026-10-09T15:04:55Z] GATE FAIL  CRE deploy access: Not enabled
+[2026-10-09T15:04:55Z] GATE OK    testnet-don workflow active: status ACTIVE, workflow ID 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8
+[2026-10-09T15:04:55Z] GATE FAIL  shadow executions: 0 SUCCESS execution(s); latest execution none
+[2026-10-09T15:04:55Z] GATE OK    shadow run read the chain: latest execution logged 'nothing to settle (ladders=3, due=0, skipped=0)' on 4 node(s)
+[2026-10-09T15:04:55Z] GATE OK    organization owner (workflow owner in DON report metadata): 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9
+[2026-10-09T15:04:55Z] GATE OK    deployed workflow ID reproduces from this checkout with that owner: deployed 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8, local (facts)
+[2026-10-09T15:04:55Z] GATE OK    Mac job xyz.isotherm.cre-settle unloaded: not loaded
+[2026-10-09T15:04:55Z] GATE OK    installed Mac job stands down after the switch: the runtime copy's run-official.sh checks Resolver.forwarder()
+chain 10143 block 69570612 at 2026-10-09T18:40:00.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T15:04:55Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T15:04:55Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:04:55Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T15:04:55Z] GATE OK    challenge window clear: []
+[2026-10-09T15:04:55Z] GATE OK    time window: 2026-10-09T18:40:00.000Z UTC: outside every scheduled run
+[2026-10-09T15:04:55Z] owner calls (from Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, in this order):
+[2026-10-09T15:04:55Z]   1. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xF8344CFd5c43616a4366C34E3EEE75af79a74482]
+[2026-10-09T15:04:55Z]      calldata 0xb9998a24000000000000000000000000f8344cfd5c43616a4366c34e3eee75af79a74482  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:04:55Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:55Z]   2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9]
+[2026-10-09T15:04:55Z]      calldata 0xad59c268000000000000000000000000000000000000000000000000000000000000000000000000000000000000000093cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9  (eth_estimateGas from the owner: 51564; sent with a 1.2x limit)
+[2026-10-09T15:04:55Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:55Z]   then: eth_call checks (production forwarder + org owner accepted, owner 0xaa…aa and the mock rejected) and deployments/testnet.json activeForwarder -> 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+[2026-10-09T15:04:55Z] DRY RUN: NOT READY (2 gate(s) failed). Nothing was sent.
+--> exit 10 (expected 10): PASS
+
+=== cutover dry run: workflow deployed but no successful execution yet
+$ scripts/don-cutover.sh --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-no-runs.json
+[2026-10-09T15:04:55Z] don-cutover: mode=dry
+[2026-10-09T15:04:55Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+[2026-10-09T15:04:56Z] CRE and launchd facts from var/don/rehearsal/facts-no-runs.json (fork rehearsal; the CRE CLI is not called)
+[2026-10-09T15:04:56Z] GATE OK    CRE deploy access: Enabled
+[2026-10-09T15:04:56Z] GATE OK    testnet-don workflow active: status ACTIVE, workflow ID 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8
+[2026-10-09T15:04:56Z] GATE FAIL  shadow executions: 0 SUCCESS execution(s); latest execution none
+[2026-10-09T15:04:56Z] GATE OK    shadow run read the chain: latest execution logged 'nothing to settle (ladders=3, due=0, skipped=0)' on 4 node(s)
+[2026-10-09T15:04:56Z] GATE OK    organization owner (workflow owner in DON report metadata): 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9
+[2026-10-09T15:04:56Z] GATE OK    deployed workflow ID reproduces from this checkout with that owner: deployed 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8, local (facts)
+[2026-10-09T15:04:56Z] GATE OK    Mac job xyz.isotherm.cre-settle unloaded: not loaded
+[2026-10-09T15:04:56Z] GATE OK    installed Mac job stands down after the switch: the runtime copy's run-official.sh checks Resolver.forwarder()
+chain 10143 block 69570612 at 2026-10-09T18:40:00.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T15:04:56Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T15:04:56Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:04:56Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T15:04:56Z] GATE OK    challenge window clear: []
+[2026-10-09T15:04:56Z] GATE OK    time window: 2026-10-09T18:40:00.000Z UTC: outside every scheduled run
+[2026-10-09T15:04:56Z] owner calls (from Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, in this order):
+[2026-10-09T15:04:56Z]   1. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xF8344CFd5c43616a4366C34E3EEE75af79a74482]
+[2026-10-09T15:04:56Z]      calldata 0xb9998a24000000000000000000000000f8344cfd5c43616a4366c34e3eee75af79a74482  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:04:56Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:56Z]   2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9]
+[2026-10-09T15:04:56Z]      calldata 0xad59c268000000000000000000000000000000000000000000000000000000000000000000000000000000000000000093cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9  (eth_estimateGas from the owner: 51564; sent with a 1.2x limit)
+[2026-10-09T15:04:56Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:56Z]   then: eth_call checks (production forwarder + org owner accepted, owner 0xaa…aa and the mock rejected) and deployments/testnet.json activeForwarder -> 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+[2026-10-09T15:04:56Z] DRY RUN: NOT READY (1 gate(s) failed). Nothing was sent.
+--> exit 10 (expected 10): PASS
+
+=== cutover dry run: latest DON execution failed
+$ scripts/don-cutover.sh --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-failed-run.json
+[2026-10-09T15:04:56Z] don-cutover: mode=dry
+[2026-10-09T15:04:56Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+[2026-10-09T15:04:56Z] CRE and launchd facts from var/don/rehearsal/facts-failed-run.json (fork rehearsal; the CRE CLI is not called)
+[2026-10-09T15:04:56Z] GATE OK    CRE deploy access: Enabled
+[2026-10-09T15:04:56Z] GATE OK    testnet-don workflow active: status ACTIVE, workflow ID 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8
+[2026-10-09T15:04:56Z] GATE FAIL  shadow executions: 1 SUCCESS execution(s); latest execution FAILURE
+[2026-10-09T15:04:56Z] GATE OK    shadow run read the chain: latest execution logged 'nothing to settle (ladders=3, due=0, skipped=0)' on 4 node(s)
+[2026-10-09T15:04:56Z] GATE OK    organization owner (workflow owner in DON report metadata): 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9
+[2026-10-09T15:04:56Z] GATE OK    deployed workflow ID reproduces from this checkout with that owner: deployed 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8, local (facts)
+[2026-10-09T15:04:56Z] GATE OK    Mac job xyz.isotherm.cre-settle unloaded: not loaded
+[2026-10-09T15:04:56Z] GATE OK    installed Mac job stands down after the switch: the runtime copy's run-official.sh checks Resolver.forwarder()
+chain 10143 block 69570612 at 2026-10-09T18:40:00.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T15:04:56Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T15:04:56Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:04:56Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T15:04:56Z] GATE OK    challenge window clear: []
+[2026-10-09T15:04:56Z] GATE OK    time window: 2026-10-09T18:40:00.000Z UTC: outside every scheduled run
+[2026-10-09T15:04:56Z] owner calls (from Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, in this order):
+[2026-10-09T15:04:56Z]   1. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xF8344CFd5c43616a4366C34E3EEE75af79a74482]
+[2026-10-09T15:04:56Z]      calldata 0xb9998a24000000000000000000000000f8344cfd5c43616a4366c34e3eee75af79a74482  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:04:56Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:56Z]   2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9]
+[2026-10-09T15:04:56Z]      calldata 0xad59c268000000000000000000000000000000000000000000000000000000000000000000000000000000000000000093cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9  (eth_estimateGas from the owner: 51564; sent with a 1.2x limit)
+[2026-10-09T15:04:56Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:56Z]   then: eth_call checks (production forwarder + org owner accepted, owner 0xaa…aa and the mock rejected) and deployments/testnet.json activeForwarder -> 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+[2026-10-09T15:04:56Z] DRY RUN: NOT READY (1 gate(s) failed). Nothing was sent.
+--> exit 10 (expected 10): PASS
+
+=== cutover dry run: the shadow run's logs show no chain read
+$ scripts/don-cutover.sh --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-silent-run.json
+[2026-10-09T15:04:56Z] don-cutover: mode=dry
+[2026-10-09T15:04:56Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+[2026-10-09T15:04:56Z] CRE and launchd facts from var/don/rehearsal/facts-silent-run.json (fork rehearsal; the CRE CLI is not called)
+[2026-10-09T15:04:56Z] GATE OK    CRE deploy access: Enabled
+[2026-10-09T15:04:56Z] GATE OK    testnet-don workflow active: status ACTIVE, workflow ID 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8
+[2026-10-09T15:04:56Z] GATE OK    shadow executions: 2 SUCCESS execution(s); latest execution SUCCESS
+[2026-10-09T15:04:56Z] GATE FAIL  shadow run read the chain: no 'nothing to settle (ladders=N…)' line with N >= 1 in the latest execution's logs (cre execution logs). Check step C3 by hand, then pass --shadow-checked
+[2026-10-09T15:04:56Z] GATE OK    organization owner (workflow owner in DON report metadata): 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9
+[2026-10-09T15:04:56Z] GATE OK    deployed workflow ID reproduces from this checkout with that owner: deployed 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8, local (facts)
+[2026-10-09T15:04:56Z] GATE OK    Mac job xyz.isotherm.cre-settle unloaded: not loaded
+[2026-10-09T15:04:56Z] GATE OK    installed Mac job stands down after the switch: the runtime copy's run-official.sh checks Resolver.forwarder()
+chain 10143 block 69570612 at 2026-10-09T18:40:00.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T15:04:56Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T15:04:56Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:04:56Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T15:04:56Z] GATE OK    challenge window clear: []
+[2026-10-09T15:04:56Z] GATE OK    time window: 2026-10-09T18:40:00.000Z UTC: outside every scheduled run
+[2026-10-09T15:04:56Z] owner calls (from Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, in this order):
+[2026-10-09T15:04:57Z]   1. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xF8344CFd5c43616a4366C34E3EEE75af79a74482]
+[2026-10-09T15:04:57Z]      calldata 0xb9998a24000000000000000000000000f8344cfd5c43616a4366c34e3eee75af79a74482  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:04:57Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:57Z]   2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9]
+[2026-10-09T15:04:57Z]      calldata 0xad59c268000000000000000000000000000000000000000000000000000000000000000000000000000000000000000093cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9  (eth_estimateGas from the owner: 51564; sent with a 1.2x limit)
+[2026-10-09T15:04:57Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:57Z]   then: eth_call checks (production forwarder + org owner accepted, owner 0xaa…aa and the mock rejected) and deployments/testnet.json activeForwarder -> 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+[2026-10-09T15:04:57Z] DRY RUN: NOT READY (1 gate(s) failed). Nothing was sent.
+--> exit 10 (expected 10): PASS
+
+=== cutover dry run: the deployed workflow ID does not reproduce with the organization owner
+$ scripts/don-cutover.sh --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-id-mismatch.json
+[2026-10-09T15:04:57Z] don-cutover: mode=dry
+[2026-10-09T15:04:57Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+[2026-10-09T15:04:57Z] CRE and launchd facts from var/don/rehearsal/facts-id-mismatch.json (fork rehearsal; the CRE CLI is not called)
+[2026-10-09T15:04:57Z] GATE OK    CRE deploy access: Enabled
+[2026-10-09T15:04:57Z] GATE OK    testnet-don workflow active: status ACTIVE, workflow ID 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8
+[2026-10-09T15:04:57Z] GATE OK    shadow executions: 2 SUCCESS execution(s); latest execution SUCCESS
+[2026-10-09T15:04:57Z] GATE OK    shadow run read the chain: latest execution logged 'nothing to settle (ladders=3, due=0, skipped=0)' on 4 node(s)
+[2026-10-09T15:04:57Z] GATE OK    organization owner (workflow owner in DON report metadata): 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9
+[2026-10-09T15:04:57Z] GATE FAIL  deployed workflow ID reproduces from this checkout with that owner: deployed 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8, local (facts)
+[2026-10-09T15:04:57Z] GATE OK    Mac job xyz.isotherm.cre-settle unloaded: not loaded
+[2026-10-09T15:04:57Z] GATE OK    installed Mac job stands down after the switch: the runtime copy's run-official.sh checks Resolver.forwarder()
+chain 10143 block 69570612 at 2026-10-09T18:40:00.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T15:04:57Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T15:04:57Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:04:57Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T15:04:57Z] GATE OK    challenge window clear: []
+[2026-10-09T15:04:57Z] GATE OK    time window: 2026-10-09T18:40:00.000Z UTC: outside every scheduled run
+[2026-10-09T15:04:57Z] owner calls (from Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, in this order):
+[2026-10-09T15:04:57Z]   1. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xF8344CFd5c43616a4366C34E3EEE75af79a74482]
+[2026-10-09T15:04:57Z]      calldata 0xb9998a24000000000000000000000000f8344cfd5c43616a4366c34e3eee75af79a74482  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:04:57Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:57Z]   2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9]
+[2026-10-09T15:04:57Z]      calldata 0xad59c268000000000000000000000000000000000000000000000000000000000000000000000000000000000000000093cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9  (eth_estimateGas from the owner: 51564; sent with a 1.2x limit)
+[2026-10-09T15:04:57Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:57Z]   then: eth_call checks (production forwarder + org owner accepted, owner 0xaa…aa and the mock rejected) and deployments/testnet.json activeForwarder -> 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+[2026-10-09T15:04:57Z] DRY RUN: NOT READY (1 gate(s) failed). Nothing was sent.
+--> exit 10 (expected 10): PASS
+
+=== cutover dry run: the Mac job is still loaded
+$ scripts/don-cutover.sh --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-mac-loaded.json
+[2026-10-09T15:04:57Z] don-cutover: mode=dry
+[2026-10-09T15:04:57Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+[2026-10-09T15:04:57Z] CRE and launchd facts from var/don/rehearsal/facts-mac-loaded.json (fork rehearsal; the CRE CLI is not called)
+[2026-10-09T15:04:57Z] GATE OK    CRE deploy access: Enabled
+[2026-10-09T15:04:57Z] GATE OK    testnet-don workflow active: status ACTIVE, workflow ID 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8
+[2026-10-09T15:04:57Z] GATE OK    shadow executions: 2 SUCCESS execution(s); latest execution SUCCESS
+[2026-10-09T15:04:57Z] GATE OK    shadow run read the chain: latest execution logged 'nothing to settle (ladders=3, due=0, skipped=0)' on 4 node(s)
+[2026-10-09T15:04:57Z] GATE OK    organization owner (workflow owner in DON report metadata): 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9
+[2026-10-09T15:04:57Z] GATE OK    deployed workflow ID reproduces from this checkout with that owner: deployed 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8, local (facts)
+[2026-10-09T15:04:57Z] GATE FAIL  Mac job xyz.isotherm.cre-settle unloaded: loaded: launchctl bootout gui/$(id -u)/xyz.isotherm.cre-settle first
+[2026-10-09T15:04:57Z] GATE OK    installed Mac job stands down after the switch: the runtime copy's run-official.sh checks Resolver.forwarder()
+chain 10143 block 69570612 at 2026-10-09T18:40:00.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T15:04:57Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T15:04:57Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:04:57Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T15:04:57Z] GATE OK    challenge window clear: []
+[2026-10-09T15:04:57Z] GATE OK    time window: 2026-10-09T18:40:00.000Z UTC: outside every scheduled run
+[2026-10-09T15:04:57Z] owner calls (from Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, in this order):
+[2026-10-09T15:04:57Z]   1. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xF8344CFd5c43616a4366C34E3EEE75af79a74482]
+[2026-10-09T15:04:57Z]      calldata 0xb9998a24000000000000000000000000f8344cfd5c43616a4366c34e3eee75af79a74482  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:04:57Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:57Z]   2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9]
+[2026-10-09T15:04:57Z]      calldata 0xad59c268000000000000000000000000000000000000000000000000000000000000000000000000000000000000000093cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9  (eth_estimateGas from the owner: 51564; sent with a 1.2x limit)
+[2026-10-09T15:04:57Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:57Z]   then: eth_call checks (production forwarder + org owner accepted, owner 0xaa…aa and the mock rejected) and deployments/testnet.json activeForwarder -> 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+[2026-10-09T15:04:57Z] DRY RUN: NOT READY (1 gate(s) failed). Nothing was sent.
+--> exit 10 (expected 10): PASS
+
+=== cutover dry run: the installed Mac job has no stand-down check (launchd reloads it at the next login)
+$ scripts/don-cutover.sh --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-stale-runtime.json
+[2026-10-09T15:04:57Z] don-cutover: mode=dry
+[2026-10-09T15:04:57Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+[2026-10-09T15:04:57Z] CRE and launchd facts from var/don/rehearsal/facts-stale-runtime.json (fork rehearsal; the CRE CLI is not called)
+[2026-10-09T15:04:57Z] GATE OK    CRE deploy access: Enabled
+[2026-10-09T15:04:57Z] GATE OK    testnet-don workflow active: status ACTIVE, workflow ID 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8
+[2026-10-09T15:04:57Z] GATE OK    shadow executions: 2 SUCCESS execution(s); latest execution SUCCESS
+[2026-10-09T15:04:57Z] GATE OK    shadow run read the chain: latest execution logged 'nothing to settle (ladders=3, due=0, skipped=0)' on 4 node(s)
+[2026-10-09T15:04:58Z] GATE OK    organization owner (workflow owner in DON report metadata): 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9
+[2026-10-09T15:04:58Z] GATE OK    deployed workflow ID reproduces from this checkout with that owner: deployed 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8, local (facts)
+[2026-10-09T15:04:58Z] GATE OK    Mac job xyz.isotherm.cre-settle unloaded: not loaded
+[2026-10-09T15:04:58Z] GATE FAIL  installed Mac job stands down after the switch: the runtime copy runs an older run-official.sh without the forwarder check, and launchd reloads the job at the next login: run scripts/deploy-runtime.sh first (sync only, no --load)
+chain 10143 block 69570612 at 2026-10-09T18:40:00.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T15:04:58Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T15:04:58Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:04:58Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T15:04:58Z] GATE OK    challenge window clear: []
+[2026-10-09T15:04:58Z] GATE OK    time window: 2026-10-09T18:40:00.000Z UTC: outside every scheduled run
+[2026-10-09T15:04:58Z] owner calls (from Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, in this order):
+[2026-10-09T15:04:58Z]   1. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xF8344CFd5c43616a4366C34E3EEE75af79a74482]
+[2026-10-09T15:04:58Z]      calldata 0xb9998a24000000000000000000000000f8344cfd5c43616a4366c34e3eee75af79a74482  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:04:58Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:58Z]   2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9]
+[2026-10-09T15:04:58Z]      calldata 0xad59c268000000000000000000000000000000000000000000000000000000000000000000000000000000000000000093cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9  (eth_estimateGas from the owner: 51564; sent with a 1.2x limit)
+[2026-10-09T15:04:58Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:58Z]   then: eth_call checks (production forwarder + org owner accepted, owner 0xaa…aa and the mock rejected) and deployments/testnet.json activeForwarder -> 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+[2026-10-09T15:04:58Z] DRY RUN: NOT READY (1 gate(s) failed). Nothing was sent.
+--> exit 10 (expected 10): PASS
+
+=== fork-only flags are refused on live testnet (one chain-id read, nothing else)
+$ scripts/don-cutover.sh --rpc https://testnet-rpc.monad.xyz --fork-unlocked --facts var/don/rehearsal/facts-ok.json
+[2026-10-09T15:04:58Z] don-cutover: mode=dry
+[2026-10-09T15:04:59Z] REFUSED: --fork-unlocked and --facts exist for anvil-fork rehearsals only, never on live testnet
+--> exit 2 (expected 2): PASS
+
+=== cutover dry run at 2026-10-09T18:40:00Z: READY; prints the exact owner calls, sends nothing
+$ scripts/don-cutover.sh --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-ok.json
+[2026-10-09T15:04:59Z] don-cutover: mode=dry
+[2026-10-09T15:04:59Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+[2026-10-09T15:04:59Z] CRE and launchd facts from var/don/rehearsal/facts-ok.json (fork rehearsal; the CRE CLI is not called)
+[2026-10-09T15:04:59Z] GATE OK    CRE deploy access: Enabled
+[2026-10-09T15:04:59Z] GATE OK    testnet-don workflow active: status ACTIVE, workflow ID 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8
+[2026-10-09T15:04:59Z] GATE OK    shadow executions: 2 SUCCESS execution(s); latest execution SUCCESS
+[2026-10-09T15:04:59Z] GATE OK    shadow run read the chain: latest execution logged 'nothing to settle (ladders=3, due=0, skipped=0)' on 4 node(s)
+[2026-10-09T15:04:59Z] GATE OK    organization owner (workflow owner in DON report metadata): 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9
+[2026-10-09T15:04:59Z] GATE OK    deployed workflow ID reproduces from this checkout with that owner: deployed 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8, local (facts)
+[2026-10-09T15:04:59Z] GATE OK    Mac job xyz.isotherm.cre-settle unloaded: not loaded
+[2026-10-09T15:04:59Z] GATE OK    installed Mac job stands down after the switch: the runtime copy's run-official.sh checks Resolver.forwarder()
+chain 10143 block 69570612 at 2026-10-09T18:40:00.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T15:04:59Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T15:04:59Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:04:59Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T15:04:59Z] GATE OK    challenge window clear: []
+[2026-10-09T15:04:59Z] GATE OK    time window: 2026-10-09T18:40:00.000Z UTC: outside every scheduled run
+[2026-10-09T15:04:59Z] owner calls (from Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, in this order):
+[2026-10-09T15:04:59Z]   1. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xF8344CFd5c43616a4366C34E3EEE75af79a74482]
+[2026-10-09T15:04:59Z]      calldata 0xb9998a24000000000000000000000000f8344cfd5c43616a4366c34e3eee75af79a74482  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:04:59Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:59Z]   2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9]
+[2026-10-09T15:04:59Z]      calldata 0xad59c268000000000000000000000000000000000000000000000000000000000000000000000000000000000000000093cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9  (eth_estimateGas from the owner: 51564; sent with a 1.2x limit)
+[2026-10-09T15:04:59Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:04:59Z]   then: eth_call checks (production forwarder + org owner accepted, owner 0xaa…aa and the mock rejected) and deployments/testnet.json activeForwarder -> 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+[2026-10-09T15:04:59Z] DRY RUN: READY. Nothing was sent. Re-run with --execute as the owner.
+--> exit 0 (expected 0): PASS
+    Resolver.forwarder() after the dry run: 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (unchanged)
+
+=== cutover --execute signed by a key that is not the owner: refused
+$ env ISOTHERM_OWNER_KEY_FILE=var/don/rehearsal/not-owner.key scripts/don-cutover.sh --execute --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-ok.json --confirm-owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11
+[2026-10-09T15:05:00Z] don-cutover: mode=execute
+[2026-10-09T15:05:00Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+[2026-10-09T15:05:00Z] CRE and launchd facts from var/don/rehearsal/facts-ok.json (fork rehearsal; the CRE CLI is not called)
+[2026-10-09T15:05:00Z] GATE OK    CRE deploy access: Enabled
+[2026-10-09T15:05:00Z] GATE OK    testnet-don workflow active: status ACTIVE, workflow ID 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8
+[2026-10-09T15:05:00Z] GATE OK    shadow executions: 2 SUCCESS execution(s); latest execution SUCCESS
+[2026-10-09T15:05:00Z] GATE OK    shadow run read the chain: latest execution logged 'nothing to settle (ladders=3, due=0, skipped=0)' on 4 node(s)
+[2026-10-09T15:05:00Z] GATE OK    organization owner (workflow owner in DON report metadata): 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9
+[2026-10-09T15:05:00Z] GATE OK    deployed workflow ID reproduces from this checkout with that owner: deployed 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8, local (facts)
+[2026-10-09T15:05:00Z] GATE OK    Mac job xyz.isotherm.cre-settle unloaded: not loaded
+[2026-10-09T15:05:00Z] GATE OK    installed Mac job stands down after the switch: the runtime copy's run-official.sh checks Resolver.forwarder()
+chain 10143 block 69570612 at 2026-10-09T18:40:00.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T15:05:00Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T15:05:00Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:05:00Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T15:05:00Z] GATE OK    challenge window clear: []
+[2026-10-09T15:05:00Z] GATE OK    time window: 2026-10-09T18:40:00.000Z UTC: outside every scheduled run
+[2026-10-09T15:05:00Z] owner calls (from Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, in this order):
+[2026-10-09T15:05:00Z]   1. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xF8344CFd5c43616a4366C34E3EEE75af79a74482]
+[2026-10-09T15:05:00Z]      calldata 0xb9998a24000000000000000000000000f8344cfd5c43616a4366c34e3eee75af79a74482  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:05:00Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:05:00Z]   2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9]
+[2026-10-09T15:05:00Z]      calldata 0xad59c268000000000000000000000000000000000000000000000000000000000000000000000000000000000000000093cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9  (eth_estimateGas from the owner: 51564; sent with a 1.2x limit)
+[2026-10-09T15:05:00Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:05:00Z]   then: eth_call checks (production forwarder + org owner accepted, owner 0xaa…aa and the mock rejected) and deployments/testnet.json activeForwarder -> 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+[2026-10-09T15:05:00Z] signer: address of the owner key file 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc (key not printed)
+[2026-10-09T15:05:00Z] GATE FAIL  run by the owner: signer 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc, Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11
+[2026-10-09T15:05:00Z] GATE OK    operator confirmation: typed '0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11' (must equal Resolver.owner(); --confirm-owner or the prompt)
+[2026-10-09T15:05:00Z] REFUSED: 1 gate(s) failed; nothing was sent
+--> exit 10 (expected 10): PASS
+
+=== cutover --execute with a wrong typed confirmation: refused
+$ scripts/don-cutover.sh --execute --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-ok.json --fork-unlocked --confirm-owner 0x0000000000000000000000000000000000000001
+[2026-10-09T15:05:00Z] don-cutover: mode=execute
+[2026-10-09T15:05:00Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+[2026-10-09T15:05:00Z] CRE and launchd facts from var/don/rehearsal/facts-ok.json (fork rehearsal; the CRE CLI is not called)
+[2026-10-09T15:05:00Z] GATE OK    CRE deploy access: Enabled
+[2026-10-09T15:05:00Z] GATE OK    testnet-don workflow active: status ACTIVE, workflow ID 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8
+[2026-10-09T15:05:00Z] GATE OK    shadow executions: 2 SUCCESS execution(s); latest execution SUCCESS
+[2026-10-09T15:05:00Z] GATE OK    shadow run read the chain: latest execution logged 'nothing to settle (ladders=3, due=0, skipped=0)' on 4 node(s)
+[2026-10-09T15:05:00Z] GATE OK    organization owner (workflow owner in DON report metadata): 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9
+[2026-10-09T15:05:00Z] GATE OK    deployed workflow ID reproduces from this checkout with that owner: deployed 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8, local (facts)
+[2026-10-09T15:05:00Z] GATE OK    Mac job xyz.isotherm.cre-settle unloaded: not loaded
+[2026-10-09T15:05:00Z] GATE OK    installed Mac job stands down after the switch: the runtime copy's run-official.sh checks Resolver.forwarder()
+chain 10143 block 69570612 at 2026-10-09T18:40:00.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T15:05:00Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T15:05:00Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:05:00Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T15:05:00Z] GATE OK    challenge window clear: []
+[2026-10-09T15:05:00Z] GATE OK    time window: 2026-10-09T18:40:00.000Z UTC: outside every scheduled run
+[2026-10-09T15:05:00Z] owner calls (from Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, in this order):
+[2026-10-09T15:05:00Z]   1. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xF8344CFd5c43616a4366C34E3EEE75af79a74482]
+[2026-10-09T15:05:00Z]      calldata 0xb9998a24000000000000000000000000f8344cfd5c43616a4366c34e3eee75af79a74482  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:05:00Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:05:00Z]   2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9]
+[2026-10-09T15:05:00Z]      calldata 0xad59c268000000000000000000000000000000000000000000000000000000000000000000000000000000000000000093cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9  (eth_estimateGas from the owner: 51564; sent with a 1.2x limit)
+[2026-10-09T15:05:00Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:05:00Z]   then: eth_call checks (production forwarder + org owner accepted, owner 0xaa…aa and the mock rejected) and deployments/testnet.json activeForwarder -> 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+[2026-10-09T15:05:00Z] signer: Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11 impersonated on the fork (anvil_impersonateAccount; no key)
+[2026-10-09T15:05:00Z] GATE OK    run by the owner: signer 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11
+[2026-10-09T15:05:00Z] GATE FAIL  operator confirmation: typed '0x0000000000000000000000000000000000000001' (must equal Resolver.owner(); --confirm-owner or the prompt)
+[2026-10-09T15:05:00Z] REFUSED: 1 gate(s) failed; nothing was sent
+--> exit 10 (expected 10): PASS
+
+=== CUTOVER --execute as the impersonated Resolver owner
+$ scripts/don-cutover.sh --execute --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-ok.json --fork-unlocked --confirm-owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11
+[2026-10-09T15:05:00Z] don-cutover: mode=execute
+[2026-10-09T15:05:00Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+[2026-10-09T15:05:00Z] CRE and launchd facts from var/don/rehearsal/facts-ok.json (fork rehearsal; the CRE CLI is not called)
+[2026-10-09T15:05:00Z] GATE OK    CRE deploy access: Enabled
+[2026-10-09T15:05:00Z] GATE OK    testnet-don workflow active: status ACTIVE, workflow ID 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8
+[2026-10-09T15:05:00Z] GATE OK    shadow executions: 2 SUCCESS execution(s); latest execution SUCCESS
+[2026-10-09T15:05:01Z] GATE OK    shadow run read the chain: latest execution logged 'nothing to settle (ladders=3, due=0, skipped=0)' on 4 node(s)
+[2026-10-09T15:05:01Z] GATE OK    organization owner (workflow owner in DON report metadata): 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9
+[2026-10-09T15:05:01Z] GATE OK    deployed workflow ID reproduces from this checkout with that owner: deployed 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8, local (facts)
+[2026-10-09T15:05:01Z] GATE OK    Mac job xyz.isotherm.cre-settle unloaded: not loaded
+[2026-10-09T15:05:01Z] GATE OK    installed Mac job stands down after the switch: the runtime copy's run-official.sh checks Resolver.forwarder()
+chain 10143 block 69570612 at 2026-10-09T18:40:00.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T15:05:01Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T15:05:01Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:05:01Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T15:05:01Z] GATE OK    challenge window clear: []
+[2026-10-09T15:05:01Z] GATE OK    time window: 2026-10-09T18:40:00.000Z UTC: outside every scheduled run
+[2026-10-09T15:05:01Z] owner calls (from Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, in this order):
+[2026-10-09T15:05:01Z]   1. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xF8344CFd5c43616a4366C34E3EEE75af79a74482]
+[2026-10-09T15:05:01Z]      calldata 0xb9998a24000000000000000000000000f8344cfd5c43616a4366c34e3eee75af79a74482  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:05:01Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:05:01Z]   2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9]
+[2026-10-09T15:05:01Z]      calldata 0xad59c268000000000000000000000000000000000000000000000000000000000000000000000000000000000000000093cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9  (eth_estimateGas from the owner: 51564; sent with a 1.2x limit)
+[2026-10-09T15:05:01Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:05:01Z]   then: eth_call checks (production forwarder + org owner accepted, owner 0xaa…aa and the mock rejected) and deployments/testnet.json activeForwarder -> 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+[2026-10-09T15:05:01Z] signer: Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11 impersonated on the fork (anvil_impersonateAccount; no key)
+[2026-10-09T15:05:01Z] GATE OK    run by the owner: signer 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11
+[2026-10-09T15:05:01Z] GATE OK    operator confirmation: typed '0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11' (must equal Resolver.owner(); --confirm-owner or the prompt)
+chain 10143 block 69570612 at 2026-10-09T18:40:00.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T15:05:01Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T15:05:01Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:05:01Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T15:05:01Z] GATE OK    challenge window clear: []
+[2026-10-09T15:05:01Z] GATE OK    time window: 2026-10-09T18:40:00.000Z UTC: outside every scheduled run
+[2026-10-09T15:05:01Z] EXECUTE: switching the Resolver to the Chainlink DON
+setForwarder(address) 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 from 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11: tx 0xd85c41d3b4510311c2732ed5f616d32bf561657799f508d4d19a1a856ae518ca status success block 69570613 gas limit 41565
+[2026-10-09T15:05:02Z] sent setForwarder(address)(0xF8344CFd5c43616a4366C34E3EEE75af79a74482): 0xd85c41d3b4510311c2732ed5f616d32bf561657799f508d4d19a1a856ae518ca (block 69570613, gas limit 41565)
+setExpectedWorkflow(bytes32,address) 0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9 from 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11: tx 0x79fa0fae11c5762b3f6d2f5611c54475870a048dd51bfa03d2084dd7f5015175 status success block 69570614 gas limit 61877
+[2026-10-09T15:05:03Z] sent setExpectedWorkflow(bytes32,address)(0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9): 0x79fa0fae11c5762b3f6d2f5611c54475870a048dd51bfa03d2084dd7f5015175 (block 69570614, gas limit 61877)
+  OK   Resolver.forwarder(): 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+  OK   Resolver.expectedWorkflowId(): 0x0000000000000000000000000000000000000000000000000000000000000000
+  OK   Resolver.expectedWorkflowOwner(): 0x93CF74f0Cb2dF7A43a8BB8ff1445fc622bEaf4F9
+  OK   onReport from the production forwarder, workflow owner = org owner: InvalidAttestation
+  OK   onReport from the production forwarder, workflow owner = 0xaa…aa: InvalidWorkflowOwner
+  OK   onReport from the MockKeystoneForwarder: InvalidSender
+  (InvalidAttestation = the sender and workflow metadata were accepted; the probe carries a non-attester signature on purpose)
+[don-ops] {"mode":"don","ok":true,"checks":[{"name":"Resolver.forwarder()","got":"0xF8344CFd5c43616a4366C34E3EEE75af79a74482","want":"0xF8344CFd5c43616a4366C34E3EEE75af79a74482"},{"name":"Resolver.expectedWorkflowId()","got":"0x0000000000000000000000000000000000000000000000000000000000000000","want":"0x0000000000000000000000000000000000000000000000000000000000000000"},{"name":"Resolver.expectedWorkflowOwner()","got":"0x93CF74f0Cb2dF7A43a8BB8ff1445fc622bEaf4F9","want":"0x93CF74f0Cb2dF7A43a8BB8ff1445fc622bEaf4F9"},{"name":"onReport from the production forwarder, workflow owner = org owner","got":"InvalidAttestation","want":"InvalidAttestation"},{"name":"onReport from the production forwarder, workflow owner = 0xaa…aa","got":"InvalidWorkflowOwner","want":"InvalidWorkflowOwner"},{"name":"onReport from the MockKeystoneForwarder","got":"InvalidSender","want":"InvalidSender"}]}
+[2026-10-09T15:05:03Z] DONE: settlement now runs on the Chainlink DON. activeForwarder updated in var/don/rehearsal-deployments.json
+[2026-10-09T15:05:03Z] next: watch the first DON settlement (scripts/don-evidence.sh), keep the Mac plist installed but unloaded; rollback: scripts/don-rollback.sh
+[2026-10-09T15:05:03Z] log: var/don/cutover-20261009T150500Z.log
+--> exit 0 (expected 0): PASS
+
+=== the Mac job stands down while the DON is active (run-official.sh preflight; harness mode, test attester key)
+$ env ISOTHERM_RPC=http://127.0.0.1:19342 ISOTHERM_ATTESTER_KEY_FILE=var/don/rehearsal/test-attester.key ISOTHERM_STATE_DIR=var/don/rehearsal/state scripts/run-official.sh --harness --preflight-only
+[2026-10-09T15:05:05Z] mode=harness rpc=http://127.0.0.1:19342 cre-login=no broadcast=1
+[2026-10-09T15:05:05Z] SKIPPED: Resolver.forwarder() is 0xF8344CFd5c43616a4366C34E3EEE75af79a74482, not the MockKeystoneForwarder: settlement runs on the Chainlink DON. Nothing signed or sent.
+--> exit 0 (expected 0): PASS
+
+=== cutover again: nothing to do (idempotent)
+$ scripts/don-cutover.sh --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-ok.json
+[2026-10-09T15:05:05Z] don-cutover: mode=dry
+[2026-10-09T15:05:05Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+[2026-10-09T15:05:05Z] CRE and launchd facts from var/don/rehearsal/facts-ok.json (fork rehearsal; the CRE CLI is not called)
+[2026-10-09T15:05:05Z] GATE OK    CRE deploy access: Enabled
+[2026-10-09T15:05:05Z] GATE OK    testnet-don workflow active: status ACTIVE, workflow ID 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8
+[2026-10-09T15:05:05Z] GATE OK    shadow executions: 2 SUCCESS execution(s); latest execution SUCCESS
+[2026-10-09T15:05:05Z] GATE OK    shadow run read the chain: latest execution logged 'nothing to settle (ladders=3, due=0, skipped=0)' on 4 node(s)
+[2026-10-09T15:05:05Z] GATE OK    organization owner (workflow owner in DON report metadata): 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9
+[2026-10-09T15:05:05Z] GATE OK    deployed workflow ID reproduces from this checkout with that owner: deployed 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8, local (facts)
+[2026-10-09T15:05:05Z] GATE OK    Mac job xyz.isotherm.cre-settle unloaded: not loaded
+[2026-10-09T15:05:05Z] GATE OK    installed Mac job stands down after the switch: the runtime copy's run-official.sh checks Resolver.forwarder()
+chain 10143 block 69570614 at 2026-10-09T18:40:07.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 (keystone), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x93CF74f0Cb2dF7A43a8BB8ff1445fc622bEaf4F9)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T15:05:05Z] nothing to do: the Resolver already points at the production forwarder with the owner pinned
+--> exit 0 (expected 0): PASS
+[fork] {"station":"RCSS","date":20261010,"inVault":true,"attemptAt":"2026-10-10T18:00:30Z","dayEnd":"2026-10-10T16:00:00Z"}
+[fork] {"warpedTo":"2026-10-10T18:00:30Z"}
+
+=== 2026-10-10T18:00:30Z (its 02:00-local cron + 30 s): a DON-signed report for RCSS 20261010 (the live vault ladder; day end 2026-10-10T16:00:00Z) through the production forwarder, gas limit 420000 (config.don.json)
+[fork] {"path":"don","forwarder":"0xF8344CFd5c43616a4366C34E3EEE75af79a74482","transmitter":"0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC","station":"RCSS","date":20261010,"tmaxC":27,"gasLimit":420000,"tx":"0xf95885813da2a63cd125583e7ee6ebdb814364ee79a1a3ef0cabe7cbcf25c6d1","status":"0x1","gasUsed":170726,"reportProcessed":false,"ladderResolved":null}
+{"path":"don","forwarder":"0xF8344CFd5c43616a4366C34E3EEE75af79a74482","transmitter":"0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC","station":"RCSS","date":20261010,"tmaxC":27,"gasLimit":420000,"tx":"0xf95885813da2a63cd125583e7ee6ebdb814364ee79a1a3ef0cabe7cbcf25c6d1","status":"0x1","gasUsed":170726,"reportProcessed":false,"ladderResolved":null}
+--> a DON report from another workflow owner: ReportProcessed(result=false), nothing settled: PASS
+
+=== diagnosis of that rejected report (don-evidence.sh --tx): names the owner mismatch and the fix
+$ scripts/don-evidence.sh --rpc http://127.0.0.1:19342 --tx 0xf95885813da2a63cd125583e7ee6ebdb814364ee79a1a3ef0cabe7cbcf25c6d1
+{
+  "txHash": "0xf95885813da2a63cd125583e7ee6ebdb814364ee79a1a3ef0cabe7cbcf25c6d1",
+  "block": 69570695,
+  "forwarder": "KeystoneForwarder (DON)",
+  "receiver": "0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B",
+  "reportProcessed": false,
+  "station": "RCSS",
+  "date": 20261010,
+  "tmaxC": 27,
+  "isVoid": false,
+  "report": {
+    "workflowId": "0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8",
+    "workflowOwner": "0x1111111111111111111111111111111111111111",
+    "donId": 1,
+    "signatures": 4
+  },
+  "resolverAtBlock": {
+    "forwarder": "0xF8344CFd5c43616a4366C34E3EEE75af79a74482",
+    "expectedWorkflowId": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "expectedWorkflowOwner": "0x93CF74f0Cb2dF7A43a8BB8ff1445fc622bEaf4F9",
+    "attester": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720"
+  },
+  "attestationSigner": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+  "hints": [
+    "the report's workflow owner 0x1111111111111111111111111111111111111111 is not the pinned owner (InvalidWorkflowOwner): fix with setExpectedWorkflow(0x00…00, 0x1111111111111111111111111111111111111111) only if the report's workflow ID 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8 is our deployed one (cre workflow get); otherwise it came from another workflow and the pin did its job"
+  ]
+}
+[don-evidence] {"tx":"0xf95885813da2a63cd125583e7ee6ebdb814364ee79a1a3ef0cabe7cbcf25c6d1","reportProcessed":false,"hints":1}
+--> exit 0 (expected 0): PASS
+--> the diagnosis reports InvalidWorkflowOwner: PASS
+
+=== then the report from our organization's workflow (owner 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9), same ladder, same gas limit
+[fork] {"path":"don","forwarder":"0xF8344CFd5c43616a4366C34E3EEE75af79a74482","transmitter":"0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC","station":"RCSS","date":20261010,"tmaxC":27,"gasLimit":420000,"tx":"0x271d36dbff8386a11084f6bc715d3cc0cc06cd5065ae04d69dfb6d077d1b5081","status":"0x1","gasUsed":239511,"reportProcessed":true,"ladderResolved":{"status":1,"tmaxC":27,"caller":"0xF8344CFd5c43616a4366C34E3EEE75af79a74482"}}
+{"path":"don","forwarder":"0xF8344CFd5c43616a4366C34E3EEE75af79a74482","transmitter":"0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC","station":"RCSS","date":20261010,"tmaxC":27,"gasLimit":420000,"tx":"0x271d36dbff8386a11084f6bc715d3cc0cc06cd5065ae04d69dfb6d077d1b5081","status":"0x1","gasUsed":239511,"reportProcessed":true,"ladderResolved":{"status":1,"tmaxC":27,"caller":"0xF8344CFd5c43616a4366C34E3EEE75af79a74482"}}
+--> ReportProcessed(result=true) + LadderResolved(Settled): PASS
+
+=== evidence record for the DON settlement (path 'don'), read from the chain
+$ scripts/don-evidence.sh --rpc http://127.0.0.1:19342 --out var/don/rehearsal/evidence --no-cre --ladders 3
+  NEW    don        RCSS 20261010 Settled 27 C tx 0x271d36dbff8386a11084f6bc715d3cc0cc06cd5065ae04d69dfb6d077d1b5081 block 69570696 from 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc (4 DON sigs, workflow owner 0x93CF74f0Cb2dF7A43a8BB8ff1445fc622bEaf4F9, ReportProcessed.result=true, attestation by the attester)
+  NEW    mac        RCSS 20261009 Settled 27 C tx 0x0c48fcc4201dbad6effcf2ee5424db6e14f6db020681407620d980bcf39578e3 block 69570452 from 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc (0 unchecked simulator sigs, workflow owner 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa, ReportProcessed.result=true, attestation by the attester)
+  NEW    mac        RCSS 20261008 Settled 28 C tx 0x65eee8ef9ac201c1c8155267b0e24cb1fef3c897327030705e2ebfe661d9963d block 69321897 from 0x63d2523ddc4bb055a19682bf2d61fe94959d0bb9 (4 unchecked simulator sigs, workflow owner 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa, ReportProcessed.result=true, attestation by the attester)
+[don-evidence] {"scanned":3,"added":3,"file":"var/don/rehearsal/evidence/don-runs.jsonl"}
+--> exit 0 (expected 0): PASS
+--> don-runs.jsonl has the 'don' record (4 DON signatures, attestation by the attester): PASS
+
+=== rollback dry run: prints R1-R5, sends nothing
+$ scripts/don-rollback.sh --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-ok.json
+[2026-10-09T15:05:17Z] don-rollback: mode=dry
+[2026-10-09T15:05:17Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+chain 10143 block 69570696 at 2026-10-10T18:00:32.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 (keystone), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x93CF74f0Cb2dF7A43a8BB8ff1445fc622bEaf4F9)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open [{"station":"RCSS","date":20261010,"finalAt":"2026-10-10T18:15:32.000Z"}]; time window: NO (16:45-18:15 UTC: the daily first settlement attempts (RJTT 17:00Z, RCSS 18:00Z))
+[2026-10-09T15:05:17Z] note: 16:45-18:15 UTC: the daily first settlement attempts (RJTT 17:00Z, RCSS 18:00Z) (rollback is not gated on time)
+[2026-10-09T15:05:17Z] rollback steps (owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11):
+[2026-10-09T15:05:17Z]   R1. cre workflow pause ./settle -T testnet-don --yes
+[2026-10-09T15:05:17Z]   R2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x0000000000000000000000000000000000000000]
+[2026-10-09T15:05:17Z]      calldata 0xad59c26800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000  (eth_estimateGas from the owner: 34324; sent with a 1.2x limit)
+[2026-10-09T15:05:17Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:05:17Z]   R3. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xB9F79d863261869B234c481D1f9A7af84AeAd192]
+[2026-10-09T15:05:17Z]      calldata 0xb9998a24000000000000000000000000b9f79d863261869b234c481d1f9a7af84aead192  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:05:17Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xB9F79d863261869B234c481D1f9A7af84AeAd192 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:05:17Z]   R4. eth_call checks + deployments/testnet.json activeForwarder -> 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:05:17Z]   R5. runtime copy activeForwarder -> mock, then launchctl bootstrap gui/$(id -u) var/don/rehearsal/home/Library/LaunchAgents/xyz.isotherm.cre-settle.plist   (only xyz.isotherm.cre-settle)
+[2026-10-09T15:05:17Z] DRY RUN: nothing was sent and nothing was reloaded. Re-run with --execute as the owner.
+--> exit 0 (expected 0): PASS
+
+=== ROLLBACK --execute as the impersonated owner (CRE pause and launchd reload are printed, not run, on a fork)
+$ scripts/don-rollback.sh --execute --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-ok.json --fork-unlocked --confirm-owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11
+[2026-10-09T15:05:17Z] don-rollback: mode=execute
+[2026-10-09T15:05:17Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+chain 10143 block 69570696 at 2026-10-10T18:00:32.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 (keystone), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x93CF74f0Cb2dF7A43a8BB8ff1445fc622bEaf4F9)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open [{"station":"RCSS","date":20261010,"finalAt":"2026-10-10T18:15:32.000Z"}]; time window: NO (16:45-18:15 UTC: the daily first settlement attempts (RJTT 17:00Z, RCSS 18:00Z))
+[2026-10-09T15:05:17Z] note: 16:45-18:15 UTC: the daily first settlement attempts (RJTT 17:00Z, RCSS 18:00Z) (rollback is not gated on time)
+[2026-10-09T15:05:17Z] rollback steps (owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11):
+[2026-10-09T15:05:17Z]   R1. cre workflow pause ./settle -T testnet-don --yes
+[2026-10-09T15:05:17Z]   R2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x0000000000000000000000000000000000000000]
+[2026-10-09T15:05:17Z]      calldata 0xad59c26800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000  (eth_estimateGas from the owner: 34324; sent with a 1.2x limit)
+[2026-10-09T15:05:17Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:05:17Z]   R3. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xB9F79d863261869B234c481D1f9A7af84AeAd192]
+[2026-10-09T15:05:17Z]      calldata 0xb9998a24000000000000000000000000b9f79d863261869b234c481d1f9a7af84aead192  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:05:17Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xB9F79d863261869B234c481D1f9A7af84AeAd192 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:05:17Z]   R4. eth_call checks + deployments/testnet.json activeForwarder -> 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:05:17Z]   R5. runtime copy activeForwarder -> mock, then launchctl bootstrap gui/$(id -u) var/don/rehearsal/home/Library/LaunchAgents/xyz.isotherm.cre-settle.plist   (only xyz.isotherm.cre-settle)
+[2026-10-09T15:05:17Z] signer: Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11 impersonated on the fork (anvil_impersonateAccount; no key)
+[2026-10-09T15:05:17Z] GATE OK    run by the owner: signer 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11
+[2026-10-09T15:05:17Z] GATE OK    operator confirmation: typed '0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11' (must equal Resolver.owner(); --confirm-owner or the prompt)
+[2026-10-09T15:05:17Z] R1 (rehearsal): would run: cre workflow pause ./settle -T testnet-don --yes
+setExpectedWorkflow(bytes32,address) 0x0000000000000000000000000000000000000000000000000000000000000000,0x0000000000000000000000000000000000000000 from 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11: tx 0x1ec63c527de64b5a8b7b7dd03c9759bcf157ceded78364163720a09a40884634 status success block 69570697 gas limit 41189
+[2026-10-09T15:05:18Z] sent setExpectedWorkflow(bytes32,address)(0x0000000000000000000000000000000000000000000000000000000000000000,0x0000000000000000000000000000000000000000): 0x1ec63c527de64b5a8b7b7dd03c9759bcf157ceded78364163720a09a40884634 (block 69570697, gas limit 41189)
+setForwarder(address) 0xB9F79d863261869B234c481D1f9A7af84AeAd192 from 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11: tx 0xfc61ed8c5f15e72ea3d2f08d3a1ad272a01084aca0ae1b59ebc99dfd8224fee3 status success block 69570698 gas limit 41565
+[2026-10-09T15:05:19Z] sent setForwarder(address)(0xB9F79d863261869B234c481D1f9A7af84AeAd192): 0xfc61ed8c5f15e72ea3d2f08d3a1ad272a01084aca0ae1b59ebc99dfd8224fee3 (block 69570698, gas limit 41565)
+  OK   Resolver.forwarder(): 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+  OK   Resolver.expectedWorkflowId(): 0x0000000000000000000000000000000000000000000000000000000000000000
+  OK   Resolver.expectedWorkflowOwner(): 0x0000000000000000000000000000000000000000
+  OK   onReport from the MockKeystoneForwarder (simulator metadata): InvalidAttestation
+  OK   onReport from the production forwarder: InvalidSender
+  (InvalidAttestation = the sender and workflow metadata were accepted; the probe carries a non-attester signature on purpose)
+[don-ops] {"mode":"mock","ok":true,"checks":[{"name":"Resolver.forwarder()","got":"0xB9F79d863261869B234c481D1f9A7af84AeAd192","want":"0xB9F79d863261869B234c481D1f9A7af84AeAd192"},{"name":"Resolver.expectedWorkflowId()","got":"0x0000000000000000000000000000000000000000000000000000000000000000","want":"0x0000000000000000000000000000000000000000000000000000000000000000"},{"name":"Resolver.expectedWorkflowOwner()","got":"0x0000000000000000000000000000000000000000","want":"0x0000000000000000000000000000000000000000"},{"name":"onReport from the MockKeystoneForwarder (simulator metadata)","got":"InvalidAttestation","want":"InvalidAttestation"},{"name":"onReport from the production forwarder","got":"InvalidSender","want":"InvalidSender"}]}
+[2026-10-09T15:05:19Z] R5 (rehearsal): would run: launchctl bootstrap gui/$(id -u) var/don/rehearsal/home/Library/LaunchAgents/xyz.isotherm.cre-settle.plist
+[2026-10-09T15:05:19Z] DONE: settlement is back on the Mac path (MockKeystoneForwarder + attestation). activeForwarder updated in var/don/rehearsal-deployments.json. log: var/don/rollback-20261009T150517Z.log
+--> exit 0 (expected 0): PASS
+
+=== the Mac path is back: run-official.sh preflight passes
+$ env ISOTHERM_RPC=http://127.0.0.1:19342 ISOTHERM_ATTESTER_KEY_FILE=var/don/rehearsal/test-attester.key ISOTHERM_STATE_DIR=var/don/rehearsal/state scripts/run-official.sh --harness --preflight-only
+[2026-10-09T15:05:20Z] mode=harness rpc=http://127.0.0.1:19342 cre-login=no broadcast=1
+[2026-10-09T15:05:20Z] attester 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720 == Resolver.attester(); tx sender 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720 has 1.000000000000000000 MON; vault ladders 3
+[2026-10-09T15:05:20Z] preflight OK
+--> exit 0 (expected 0): PASS
+[fork] {"station":"RJTT","date":20261010,"ymd":"2026-10-10","dayEnd":"2026-10-10T15:00:00Z"}
+
+=== after the rollback: a Mac-path report (simulator header) through the MockKeystoneForwarder settles RJTT 20261010 (Tokyo day over at 2026-10-10T15:00:00Z, no result)
+[fork] {"path":"mock","forwarder":"0xB9F79d863261869B234c481D1f9A7af84AeAd192","station":"RJTT","date":20261010,"tmaxC":24,"gasLimit":200000,"tx":"0x51c8015def1882213721f384538251030c41d371d7aa9a85e43b23c643e23976","status":"0x1","gasUsed":149875,"reportProcessed":true,"ladderResolved":{"status":1,"tmaxC":24,"caller":"0xB9F79d863261869B234c481D1f9A7af84AeAd192"}}
+{"path":"mock","forwarder":"0xB9F79d863261869B234c481D1f9A7af84AeAd192","station":"RJTT","date":20261010,"tmaxC":24,"gasLimit":200000,"tx":"0x51c8015def1882213721f384538251030c41d371d7aa9a85e43b23c643e23976","status":"0x1","gasUsed":149875,"reportProcessed":true,"ladderResolved":{"status":1,"tmaxC":24,"caller":"0xB9F79d863261869B234c481D1f9A7af84AeAd192"}}
+--> accepted through the MockKeystoneForwarder: PASS
+
+=== rollback again: nothing left to change (idempotent dry run)
+$ scripts/don-rollback.sh --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-ok.json
+[2026-10-09T15:05:22Z] don-rollback: mode=dry
+[2026-10-09T15:05:22Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+chain 10143 block 69570699 at 2026-10-10T18:00:46.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open [{"station":"RCSS","date":20261010,"finalAt":"2026-10-10T18:15:32.000Z"}]; time window: NO (16:45-18:15 UTC: the daily first settlement attempts (RJTT 17:00Z, RCSS 18:00Z))
+[2026-10-09T15:05:22Z] note: 16:45-18:15 UTC: the daily first settlement attempts (RJTT 17:00Z, RCSS 18:00Z) (rollback is not gated on time)
+[2026-10-09T15:05:22Z] rollback steps (owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11):
+[2026-10-09T15:05:22Z]   R1. cre workflow pause ./settle -T testnet-don --yes
+[2026-10-09T15:05:22Z]   R2. setExpectedWorkflow(0,0): already zero, skipped
+[2026-10-09T15:05:22Z]   R3. setForwarder(mock): already the mock, skipped
+[2026-10-09T15:05:22Z]   R4. eth_call checks + deployments/testnet.json activeForwarder -> 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:05:22Z]   R5. runtime copy activeForwarder -> mock, then launchctl bootstrap gui/$(id -u) var/don/rehearsal/home/Library/LaunchAgents/xyz.isotherm.cre-settle.plist   (only xyz.isotherm.cre-settle)
+[2026-10-09T15:05:22Z] DRY RUN: nothing was sent and nothing was reloaded. Re-run with --execute as the owner.
+--> exit 0 (expected 0): PASS
+
+=== cutover dry run right after a settlement: refused (challenge window open, 16:45-18:15 UTC)
+$ scripts/don-cutover.sh --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-ok.json
+[2026-10-09T15:05:22Z] don-cutover: mode=dry
+[2026-10-09T15:05:22Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+[2026-10-09T15:05:22Z] CRE and launchd facts from var/don/rehearsal/facts-ok.json (fork rehearsal; the CRE CLI is not called)
+[2026-10-09T15:05:22Z] GATE OK    CRE deploy access: Enabled
+[2026-10-09T15:05:22Z] GATE OK    testnet-don workflow active: status ACTIVE, workflow ID 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8
+[2026-10-09T15:05:22Z] GATE OK    shadow executions: 2 SUCCESS execution(s); latest execution SUCCESS
+[2026-10-09T15:05:22Z] GATE OK    shadow run read the chain: latest execution logged 'nothing to settle (ladders=3, due=0, skipped=0)' on 4 node(s)
+[2026-10-09T15:05:22Z] GATE OK    organization owner (workflow owner in DON report metadata): 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9
+[2026-10-09T15:05:22Z] GATE OK    deployed workflow ID reproduces from this checkout with that owner: deployed 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8, local (facts)
+[2026-10-09T15:05:22Z] GATE OK    Mac job xyz.isotherm.cre-settle unloaded: not loaded
+[2026-10-09T15:05:22Z] GATE OK    installed Mac job stands down after the switch: the runtime copy's run-official.sh checks Resolver.forwarder()
+chain 10143 block 69570699 at 2026-10-10T18:00:46.000Z (chain); Resolver owner 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open [{"station":"RCSS","date":20261010,"finalAt":"2026-10-10T18:15:32.000Z"}]; time window: NO (16:45-18:15 UTC: the daily first settlement attempts (RJTT 17:00Z, RCSS 18:00Z))
+[2026-10-09T15:05:22Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T15:05:22Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:05:22Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T15:05:22Z] GATE FAIL  challenge window clear: [{"station":"RCSS","date":20261010,"finalAt":"2026-10-10T18:15:32.000Z"}]
+[2026-10-09T15:05:22Z] GATE FAIL  time window: 2026-10-10T18:00:46.000Z UTC: 16:45-18:15 UTC: the daily first settlement attempts (RJTT 17:00Z, RCSS 18:00Z)
+[2026-10-09T15:05:22Z] owner calls (from Resolver.owner() 0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11, in this order):
+[2026-10-09T15:05:22Z]   1. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xF8344CFd5c43616a4366C34E3EEE75af79a74482]
+[2026-10-09T15:05:22Z]      calldata 0xb9998a24000000000000000000000000f8344cfd5c43616a4366c34e3eee75af79a74482  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:05:22Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:05:22Z]   2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9]
+[2026-10-09T15:05:22Z]      calldata 0xad59c268000000000000000000000000000000000000000000000000000000000000000000000000000000000000000093cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9  (eth_estimateGas from the owner: 51564; sent with a 1.2x limit)
+[2026-10-09T15:05:22Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:05:22Z]   then: eth_call checks (production forwarder + org owner accepted, owner 0xaa…aa and the mock rejected) and deployments/testnet.json activeForwarder -> 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+[2026-10-09T15:05:22Z] DRY RUN: NOT READY (2 gate(s) failed). Nothing was sent.
+--> exit 10 (expected 10): PASS
+
+=== key-file path: Resolver ownership moved on the fork to anvil #3 (public key), so the signing code path runs without a real key
+[fork] {"resolverOwner":"0x90f79bf6eb2c4f870365e785982e1f101e93b906"}
+[fork] {"now":"2026-10-10T18:00:48Z","safe":"2026-10-10T18:40:00Z","unsafe":"2026-10-10T18:28:00Z","settledOnTheWay":[],"ladders":["RCSS 20261008 Settled","RCSS 20261009 Settled","RCSS 20261010 Settled"]}
+[fork] {"warpedTo":"2026-10-10T18:40:00Z"}
+    next cutover window: 2026-10-10T18:40:00Z (after the challenge window, outside the time blocks)
+
+=== CUTOVER --execute signed from a key file (throwaway owner)
+$ env ISOTHERM_OWNER_KEY_FILE=var/don/rehearsal/fork-owner.key scripts/don-cutover.sh --execute --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-ok.json --confirm-owner 0x90F79bf6EB2c4f870365E785982E1f101E93b906
+[2026-10-09T15:05:23Z] don-cutover: mode=execute
+[2026-10-09T15:05:23Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+[2026-10-09T15:05:23Z] CRE and launchd facts from var/don/rehearsal/facts-ok.json (fork rehearsal; the CRE CLI is not called)
+[2026-10-09T15:05:23Z] GATE OK    CRE deploy access: Enabled
+[2026-10-09T15:05:23Z] GATE OK    testnet-don workflow active: status ACTIVE, workflow ID 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8
+[2026-10-09T15:05:23Z] GATE OK    shadow executions: 2 SUCCESS execution(s); latest execution SUCCESS
+[2026-10-09T15:05:23Z] GATE OK    shadow run read the chain: latest execution logged 'nothing to settle (ladders=3, due=0, skipped=0)' on 4 node(s)
+[2026-10-09T15:05:23Z] GATE OK    organization owner (workflow owner in DON report metadata): 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9
+[2026-10-09T15:05:23Z] GATE OK    deployed workflow ID reproduces from this checkout with that owner: deployed 0xbd9abc13b7b397df63e738b649aa8610fe70da7e721be5986bf7037a34399ad8, local (facts)
+[2026-10-09T15:05:23Z] GATE OK    Mac job xyz.isotherm.cre-settle unloaded: not loaded
+[2026-10-09T15:05:23Z] GATE OK    installed Mac job stands down after the switch: the runtime copy's run-official.sh checks Resolver.forwarder()
+chain 10143 block 69570781 at 2026-10-10T18:40:00.000Z (chain); Resolver owner 0x90F79bf6EB2c4f870365E785982E1f101E93b906, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T15:05:23Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T15:05:23Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:05:23Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T15:05:23Z] GATE OK    challenge window clear: []
+[2026-10-09T15:05:23Z] GATE OK    time window: 2026-10-10T18:40:00.000Z UTC: outside every scheduled run
+[2026-10-09T15:05:23Z] owner calls (from Resolver.owner() 0x90F79bf6EB2c4f870365E785982E1f101E93b906, in this order):
+[2026-10-09T15:05:23Z]   1. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xF8344CFd5c43616a4366C34E3EEE75af79a74482]
+[2026-10-09T15:05:23Z]      calldata 0xb9998a24000000000000000000000000f8344cfd5c43616a4366c34e3eee75af79a74482  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:05:23Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:05:23Z]   2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9]
+[2026-10-09T15:05:23Z]      calldata 0xad59c268000000000000000000000000000000000000000000000000000000000000000000000000000000000000000093cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9  (eth_estimateGas from the owner: 51564; sent with a 1.2x limit)
+[2026-10-09T15:05:23Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:05:23Z]   then: eth_call checks (production forwarder + org owner accepted, owner 0xaa…aa and the mock rejected) and deployments/testnet.json activeForwarder -> 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+[2026-10-09T15:05:23Z] signer: address of the owner key file 0x90F79bf6EB2c4f870365E785982E1f101E93b906 (key not printed)
+[2026-10-09T15:05:23Z] GATE OK    run by the owner: signer 0x90F79bf6EB2c4f870365E785982E1f101E93b906, Resolver.owner() 0x90F79bf6EB2c4f870365E785982E1f101E93b906
+[2026-10-09T15:05:23Z] GATE OK    operator confirmation: typed '0x90F79bf6EB2c4f870365E785982E1f101E93b906' (must equal Resolver.owner(); --confirm-owner or the prompt)
+chain 10143 block 69570781 at 2026-10-10T18:40:00.000Z (chain); Resolver owner 0x90F79bf6EB2c4f870365E785982E1f101E93b906, paused=false, forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192 (mock), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T15:05:23Z] GATE OK    Resolver not paused: paused=false
+[2026-10-09T15:05:23Z] GATE OK    Resolver on the MockKeystoneForwarder (the Mac path): forwarder 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:05:23Z] GATE OK    nothing due: due [], due within 1 h []
+[2026-10-09T15:05:23Z] GATE OK    challenge window clear: []
+[2026-10-09T15:05:23Z] GATE OK    time window: 2026-10-10T18:40:00.000Z UTC: outside every scheduled run
+[2026-10-09T15:05:23Z] EXECUTE: switching the Resolver to the Chainlink DON
+setForwarder(address) 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 from 0x90F79bf6EB2c4f870365E785982E1f101E93b906: tx 0x6a4355faed65a768d896134b24f73a1ecbe57704881045cd1a8b562c1d479153 status success block 69570782 gas limit 41565
+[2026-10-09T15:05:24Z] sent setForwarder(address)(0xF8344CFd5c43616a4366C34E3EEE75af79a74482): 0x6a4355faed65a768d896134b24f73a1ecbe57704881045cd1a8b562c1d479153 (block 69570782, gas limit 41565)
+setExpectedWorkflow(bytes32,address) 0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9 from 0x90F79bf6EB2c4f870365E785982E1f101E93b906: tx 0x78cd8d137bf1acc4562c66310b185bc9cabb0fdb1f4a4d408bf9040fa8c0be18 status success block 69570783 gas limit 61877
+[2026-10-09T15:05:25Z] sent setExpectedWorkflow(bytes32,address)(0x0000000000000000000000000000000000000000000000000000000000000000,0x93cf74f0cb2df7a43a8bb8ff1445fc622beaf4f9): 0x78cd8d137bf1acc4562c66310b185bc9cabb0fdb1f4a4d408bf9040fa8c0be18 (block 69570783, gas limit 61877)
+  OK   Resolver.forwarder(): 0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+  OK   Resolver.expectedWorkflowId(): 0x0000000000000000000000000000000000000000000000000000000000000000
+  OK   Resolver.expectedWorkflowOwner(): 0x93CF74f0Cb2dF7A43a8BB8ff1445fc622bEaf4F9
+  OK   onReport from the production forwarder, workflow owner = org owner: InvalidAttestation
+  OK   onReport from the production forwarder, workflow owner = 0xaa…aa: InvalidWorkflowOwner
+  OK   onReport from the MockKeystoneForwarder: InvalidSender
+  (InvalidAttestation = the sender and workflow metadata were accepted; the probe carries a non-attester signature on purpose)
+[don-ops] {"mode":"don","ok":true,"checks":[{"name":"Resolver.forwarder()","got":"0xF8344CFd5c43616a4366C34E3EEE75af79a74482","want":"0xF8344CFd5c43616a4366C34E3EEE75af79a74482"},{"name":"Resolver.expectedWorkflowId()","got":"0x0000000000000000000000000000000000000000000000000000000000000000","want":"0x0000000000000000000000000000000000000000000000000000000000000000"},{"name":"Resolver.expectedWorkflowOwner()","got":"0x93CF74f0Cb2dF7A43a8BB8ff1445fc622bEaf4F9","want":"0x93CF74f0Cb2dF7A43a8BB8ff1445fc622bEaf4F9"},{"name":"onReport from the production forwarder, workflow owner = org owner","got":"InvalidAttestation","want":"InvalidAttestation"},{"name":"onReport from the production forwarder, workflow owner = 0xaa…aa","got":"InvalidWorkflowOwner","want":"InvalidWorkflowOwner"},{"name":"onReport from the MockKeystoneForwarder","got":"InvalidSender","want":"InvalidSender"}]}
+[2026-10-09T15:05:25Z] DONE: settlement now runs on the Chainlink DON. activeForwarder updated in var/don/rehearsal-deployments.json
+[2026-10-09T15:05:25Z] next: watch the first DON settlement (scripts/don-evidence.sh), keep the Mac plist installed but unloaded; rollback: scripts/don-rollback.sh
+[2026-10-09T15:05:25Z] log: var/don/cutover-20261009T150523Z.log
+--> exit 0 (expected 0): PASS
+
+=== ROLLBACK --execute signed from a key file (throwaway owner)
+$ env ISOTHERM_OWNER_KEY_FILE=var/don/rehearsal/fork-owner.key scripts/don-rollback.sh --execute --rpc http://127.0.0.1:19342 --facts var/don/rehearsal/facts-ok.json --confirm-owner 0x90F79bf6EB2c4f870365E785982E1f101E93b906
+[2026-10-09T15:05:25Z] don-rollback: mode=execute
+[2026-10-09T15:05:25Z] network: anvil FORK of Monad testnet (http://127.0.0.1:19342)
+chain 10143 block 69570783 at 2026-10-10T18:40:01.000Z (chain); Resolver owner 0x90F79bf6EB2c4f870365E785982E1f101E93b906, paused=false, forwarder 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 (keystone), expectedWorkflow (0x0000000000000000000000000000000000000000000000000000000000000000, 0x93CF74f0Cb2dF7A43a8BB8ff1445fc622bEaf4F9)
+ladders: 3 (newest 3 scanned); due []; due within 1 h []; challenge window open []; time window: OK (outside every scheduled run)
+[2026-10-09T15:05:25Z] rollback steps (owner 0x90F79bf6EB2c4f870365E785982E1f101E93b906):
+[2026-10-09T15:05:25Z]   R1. cre workflow pause ./settle -T testnet-don --yes
+[2026-10-09T15:05:26Z]   R2. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setExpectedWorkflow(bytes32,address) args [0x0000000000000000000000000000000000000000000000000000000000000000,0x0000000000000000000000000000000000000000]
+[2026-10-09T15:05:26Z]      calldata 0xad59c26800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000  (eth_estimateGas from the owner: 34324; sent with a 1.2x limit)
+[2026-10-09T15:05:26Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setExpectedWorkflow(bytes32,address)' 0x0000000000000000000000000000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:05:26Z]   R3. Resolver(0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B).setForwarder(address) args [0xB9F79d863261869B234c481D1f9A7af84AeAd192]
+[2026-10-09T15:05:26Z]      calldata 0xb9998a24000000000000000000000000b9f79d863261869b234c481d1f9a7af84aead192  (eth_estimateGas from the owner: 34637; sent with a 1.2x limit)
+[2026-10-09T15:05:26Z]      by hand: cast send 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'setForwarder(address)' 0xB9F79d863261869B234c481D1f9A7af84AeAd192 --account <owner keystore> --rpc-url https://testnet-rpc.monad.xyz
+[2026-10-09T15:05:26Z]   R4. eth_call checks + deployments/testnet.json activeForwarder -> 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+[2026-10-09T15:05:26Z]   R5. runtime copy activeForwarder -> mock, then launchctl bootstrap gui/$(id -u) var/don/rehearsal/home/Library/LaunchAgents/xyz.isotherm.cre-settle.plist   (only xyz.isotherm.cre-settle)
+[2026-10-09T15:05:26Z] signer: address of the owner key file 0x90F79bf6EB2c4f870365E785982E1f101E93b906 (key not printed)
+[2026-10-09T15:05:26Z] GATE OK    run by the owner: signer 0x90F79bf6EB2c4f870365E785982E1f101E93b906, Resolver.owner() 0x90F79bf6EB2c4f870365E785982E1f101E93b906
+[2026-10-09T15:05:26Z] GATE OK    operator confirmation: typed '0x90F79bf6EB2c4f870365E785982E1f101E93b906' (must equal Resolver.owner(); --confirm-owner or the prompt)
+[2026-10-09T15:05:26Z] R1 (rehearsal): would run: cre workflow pause ./settle -T testnet-don --yes
+setExpectedWorkflow(bytes32,address) 0x0000000000000000000000000000000000000000000000000000000000000000,0x0000000000000000000000000000000000000000 from 0x90F79bf6EB2c4f870365E785982E1f101E93b906: tx 0x9b4c18dee29643acf5b0140f746a71a20cc12d91003f8f8d4fe5e03e0fd889af status success block 69570784 gas limit 41189
+[2026-10-09T15:05:27Z] sent setExpectedWorkflow(bytes32,address)(0x0000000000000000000000000000000000000000000000000000000000000000,0x0000000000000000000000000000000000000000): 0x9b4c18dee29643acf5b0140f746a71a20cc12d91003f8f8d4fe5e03e0fd889af (block 69570784, gas limit 41189)
+setForwarder(address) 0xB9F79d863261869B234c481D1f9A7af84AeAd192 from 0x90F79bf6EB2c4f870365E785982E1f101E93b906: tx 0x6c17750fde213c223ccf468ba12a57c6d8fa1d2a50be7f2f0d30ec3caf078873 status success block 69570785 gas limit 41565
+[2026-10-09T15:05:27Z] sent setForwarder(address)(0xB9F79d863261869B234c481D1f9A7af84AeAd192): 0x6c17750fde213c223ccf468ba12a57c6d8fa1d2a50be7f2f0d30ec3caf078873 (block 69570785, gas limit 41565)
+  OK   Resolver.forwarder(): 0xB9F79d863261869B234c481D1f9A7af84AeAd192
+  OK   Resolver.expectedWorkflowId(): 0x0000000000000000000000000000000000000000000000000000000000000000
+  OK   Resolver.expectedWorkflowOwner(): 0x0000000000000000000000000000000000000000
+  OK   onReport from the MockKeystoneForwarder (simulator metadata): InvalidAttestation
+  OK   onReport from the production forwarder: InvalidSender
+  (InvalidAttestation = the sender and workflow metadata were accepted; the probe carries a non-attester signature on purpose)
+[don-ops] {"mode":"mock","ok":true,"checks":[{"name":"Resolver.forwarder()","got":"0xB9F79d863261869B234c481D1f9A7af84AeAd192","want":"0xB9F79d863261869B234c481D1f9A7af84AeAd192"},{"name":"Resolver.expectedWorkflowId()","got":"0x0000000000000000000000000000000000000000000000000000000000000000","want":"0x0000000000000000000000000000000000000000000000000000000000000000"},{"name":"Resolver.expectedWorkflowOwner()","got":"0x0000000000000000000000000000000000000000","want":"0x0000000000000000000000000000000000000000"},{"name":"onReport from the MockKeystoneForwarder (simulator metadata)","got":"InvalidAttestation","want":"InvalidAttestation"},{"name":"onReport from the production forwarder","got":"InvalidSender","want":"InvalidSender"}]}
+[2026-10-09T15:05:28Z] R5 (rehearsal): would run: launchctl bootstrap gui/$(id -u) var/don/rehearsal/home/Library/LaunchAgents/xyz.isotherm.cre-settle.plist
+[2026-10-09T15:05:28Z] DONE: settlement is back on the Mac path (MockKeystoneForwarder + attestation). activeForwarder updated in var/don/rehearsal-deployments.json. log: var/don/rollback-20261009T150525Z.log
+--> exit 0 (expected 0): PASS
+
+# rehearsal finished: 0 failure(s)

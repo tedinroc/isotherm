@@ -79,6 +79,8 @@ export class FakeChain {
   markets = new Map<string, Market>();
   results = new Map<string, { status: number; tmaxC: number; resolvedAt: bigint; finalAt: bigint; sourcesHash: Hex }>();
   guardian: Address = D.guardian;
+  paused = false; // Resolver.paused()
+  lastUnpausedAt = 0; // Resolver.lastUnpausedAt
   logs: { address: Address; eventName: string; args: any; blockNumber: bigint; transactionHash: Hex }[] = [];
   receipts = new Map<Hex, any>();
   sent: SentTx[] = [];
@@ -205,6 +207,8 @@ export class FakeChain {
       }
       if (functionName === "resultOf") return this.results.get(`${String(args[0]).toLowerCase()}:${args[1]}`) ?? { status: 0, tmaxC: 0, resolvedAt: 0n, finalAt: 0n, sourcesHash: `0x${"00".repeat(32)}` };
       if (functionName === "guardian") return this.guardian;
+      if (functionName === "paused") return this.paused;
+      if (functionName === "staleAt") return BigInt(this.staleAt(args[0], args[1]));
     }
     if (a === lc(D.zap) && functionName === "canonicalMarket") return this.canonical.get(args[0]) ?? "0x0000000000000000000000000000000000000000";
     if (a === lc(D.router) && functionName === "verifiedMarket") {
@@ -231,9 +235,23 @@ export class FakeChain {
     return ("0x" + words.map((w) => w.toString(16).padStart(64, "0")).join("")) as Hex;
   }
 
+  /** Resolver.staleAt (src/Resolver.sol): paused -> dayEnd + 7 d; else min(max(dayEnd + 48 h, lastUnpausedAt + 24 h), dayEnd + 7 d). */
+  staleAt(b4: Hex, date: number): number {
+    const end = Number(this.read(D.resolver, "dayEnd", [b4, date]));
+    const hard = end + 7 * 86_400;
+    if (this.paused) return hard;
+    return Math.min(Math.max(end + 48 * 3600, this.lastUnpausedAt + 24 * 3600), hard);
+  }
+  /** Resolver.voidIfStale's checks (NotStale / AlreadyResolved), at the next block's time. */
+  private checkVoid(b4: Hex, date: number) {
+    const t = this.staleAt(b4, date);
+    if (this.time < t) throw Object.assign(new Error("execution reverted"), { shortMessage: `NotStale(${b4}, ${date}, ${t})` });
+    if ((this.results.get(`${String(b4).toLowerCase()}:${date}`)?.status ?? 0) !== 0) throw Object.assign(new Error("execution reverted"), { shortMessage: `AlreadyResolved(${b4}, ${date})` });
+  }
+
   // ------------------------------------------------------------ writes
   private gasFor(fn: string) {
-    return ({ batchUpdate: 450_000n, batchCancelOrdersNoRevert: 250_000n, batchWithdrawMaxTokens: 330_000n, deposit: 150_000n, approve: 60_000n, mintSet: 277_000n, challenge: 44_000n } as Record<string, bigint>)[fn] ?? 200_000n;
+    return ({ batchUpdate: 450_000n, batchCancelOrdersNoRevert: 250_000n, batchWithdrawMaxTokens: 330_000n, deposit: 150_000n, approve: 60_000n, mintSet: 277_000n, challenge: 44_000n, voidIfStale: 52_000n } as Record<string, bigint>)[fn] ?? 200_000n;
   }
   decode(data: Hex) {
     for (const abi of ALL_ABIS)
@@ -274,6 +292,11 @@ export class FakeChain {
       if (!r || r.status !== 1 || BigInt(this.time) >= r.finalAt || lc(from) !== lc(this.guardian)) throw new Error("NotChallengeable");
       r.status = 2;
       r.finalAt = BigInt(this.time);
+    } else if (lc(to) === lc(D.resolver) && functionName === "voidIfStale") {
+      this.checkVoid(args[0], Number(args[1]));
+      const at = BigInt(this.time);
+      this.results.set(`${String(args[0]).toLowerCase()}:${args[1]}`, { status: 2, tmaxC: 0, resolvedAt: at, finalAt: at, sourcesHash: `0x${"00".repeat(32)}` });
+      this.logs.push({ address: D.resolver, eventName: "LadderResolved", args: { station: args[0], date: Number(args[1]), status: 2, tmaxC: 0, sourcesHash: `0x${"00".repeat(32)}`, caller: from }, blockNumber: this.block + 1n, transactionHash: keccak256(stringToHex(`void${args[1]}${this.block}`)) });
     }
     return { logs };
   }
@@ -315,15 +338,17 @@ export class FakeChain {
       },
       async call({ account, to, data }: any) {
         self.calls.sims++;
-        const { functionName } = self.decode(data) as { functionName: string };
+        const { functionName, args = [] } = self.decode(data) as { functionName: string; args: readonly any[] };
         if (self.revertOn.has(functionName)) throw Object.assign(new Error("execution reverted"), { shortMessage: `${functionName} reverted (fake)` });
+        if (functionName === "voidIfStale") self.checkVoid(args[0], Number(args[1]));
         void account;
         void to;
         return { data: "0x" };
       },
       async estimateGas({ data }: any) {
-        const { functionName } = self.decode(data) as { functionName: string };
+        const { functionName, args = [] } = self.decode(data) as { functionName: string; args: readonly any[] };
         if (self.revertOn.has(functionName)) throw new Error(`${functionName} would revert (fake)`);
+        if (functionName === "voidIfStale") self.checkVoid(args[0], Number(args[1]));
         return self.gasFor(functionName);
       },
       async waitForTransactionReceipt({ hash }: { hash: Hex }) {

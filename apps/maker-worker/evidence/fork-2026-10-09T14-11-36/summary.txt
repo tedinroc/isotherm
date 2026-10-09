@@ -1,0 +1,20 @@
+anvil :19800 fork of Monad testnet at block 69559788 (chain time 2026-10-09T14:15:50.000Z); RJTT ladder date 2026-10-10
+fork-only setup: operator authorised on the vault, guardian + attester set on the Resolver (owner impersonated), 10k AUSD from the faucet to maker and taker
+shadow: roll RJTT 2026-10-10 simulated -> would send createLadder [21,22,23,24] (operator, gas limit 1171224); estimated MON {"operator":0.6895,"maker":0.495}; 0 txs, nonces unchanged, no snapshot POST (1 GETs through the binding)
+live armed, interlock: "another writer (source "isotherm.snapshot/v1") published a snapshot 20s ago (< 300s): stop it before going live" -> tick stayed shadow, 0 txs
+live roll: 28 txs sent by the Worker (createLadder, approve, mintSet, Kuru, Zap.setCanonicalMarket, margin.deposit, quote)
+  >=21 market 0x26FF66Ab5D66B09e752bFa54EC03D1a283d883d0 fair 0.9 -> book 0.87 / 0.93 (canonical in the Zap)
+  >=22 market 0x03877B18e96829ca263868f3Db1DB093A25a2C93 fair 0.65 -> book 0.62 / 0.68 (canonical in the Zap)
+  >=23 market 0xEf2c85b053AA159649329C8Afe88BF54155286be fair 0.35 -> book 0.32 / 0.38 (canonical in the Zap)
+  >=24 market 0x230c84e77423F6D9760D7412E6866ecD27b3A8A9 fair 0.1 -> book 0.07 / 0.13 (canonical in the Zap)
+snapshot POSTed through the service binding (Bearer token ok): 4 strikes, budget {"operator:roll":0.046083626,"maker:roll":0.039474733,"marketCreator:roll":0.081243474}
+tick: nothing changed -> 0 txs
+Polymarket >=22 0.65 -> 0.75: requote -> 0.72 / 0.78 (0x0090362094617055ed23a7863dc5ee4fefd7ab9e78d74e1da25cab9047e249da)
+taker bought the >=23 ask (0.38): requote "ask side empty (filled)" -> 0.32 / 0.39
+observed max 22 C: >=21, >=22 pulled (certain); actions {"21":"pull","22":"pull","23":"requote","24":"requote"}
+kill switch at 2026-10-10T10:18:36.000Z (stopAt 2026-10-10T10:20:00.000Z): [{"key":"RJTT:20261010","cancelled":4,"leftOpen":0,"mode":"live"}]; 3 txs; all books empty, YES margin withdrawn
+watcher (live, guardian secret): RCSS 20261005 attested 31 C vs the rule's 29 C -> challenge 0xee878d6f6d7431cd3805d8a263af2fad5682e95a2135675d22dfd414022954ed -> Void; RJTT 20261005 -> MATCH; getLogs in 1 page(s) of <= 100 blocks
+guardrails: chain at day end + 3h01 (2026-10-10T18:01:01.000Z), no result for RJTT:20261010 -> alerts ["SETTLEMENT OVERDUE RJTT:20261010","SETTLEMENT OVERDUE RCSS:20261009"]; pushed to the stand-in webhook: "SETTLEMENT OVERDUE RJTT:20261010"; 0 txs
+guardrails: chain at staleAt + 5 s -> voidIfStale RJTT:20261010 from the operator secret 0xd7e07e5ecd02fb33481b82a8821eecf33753d36b47691ee4e955cb3bd98a405f: gas used 76537, limit 84191; resultOf Void, sourcesHash 0, LadderResolved emitted; all voids this pass ["RJTT:20261010:voided","RCSS:20261009:voided"]
+guardrails: next pass -> RJTT:20261010 STALE-VOID (final), 0 txs
+disarmed; cron -> alarm armed; 39 live txs in txs.tsv

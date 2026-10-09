@@ -1,9 +1,11 @@
 // Handler tests in the official CRE SDK test harness (no login, no WASM): HTTP served from real captured fixtures,
 // EVM reads/writes served by a model of the v1 Resolver + Vault that applies Resolver.onReport's acceptance rules.
 import { describe, expect } from 'bun:test'
+import { readFileSync } from 'node:fs'
 import { test } from '@chainlink/cre-sdk/test'
 import { type Hex, recoverTypedDataAddress } from 'viem'
 import { STATUS } from '../abi'
+import { configSchema } from '../config'
 import { dayEndSec } from '../plan'
 import { decodeReport, SETTLEMENT_TYPES, settlementDomain, stationToBytes4 } from '../report'
 import type { RunSummary } from '../workflow'
@@ -278,6 +280,21 @@ describe('quotas, safety and confirmation', () => {
     expect(out.skipped).toContainEqual({ icao: 'RJTT', date: 20261005, reason: 'already-resolved' })
   })
 
+  test('DON target (config.don.json): same decisions and report bytes as the Mac target, only the gas limit changes (420k)', () => {
+    const donCfg = configSchema.parse(JSON.parse(readFileSync(new URL('../config.don.json', import.meta.url), 'utf8')))
+    const ladders = [{ station: 'RCSS', date: 20261006 }, { station: 'RJTT', date: 20261006 }]
+    const now = T(20261006) + 7200
+    const mMac = newModel({ ladders })
+    installHttp()
+    const mac = run(now, mMac)
+    const mDon = newModel({ ladders })
+    installHttp()
+    const don = run(now, mDon, donCfg)
+    expect(don.outcomes).toEqual(mac.outcomes)
+    expect(mDon.writes.map((w) => w.payload)).toEqual(mMac.writes.map((w) => w.payload))
+    expect(mDon.writes.map((w) => w.gasLimit)).toEqual([420000n, 420000n])
+    expect(mMac.writes.map((w) => w.gasLimit)).toEqual([200000n, 200000n])
+  })
   test('summary stays tiny (CRE response limit 100 KB) and logs stay under 1 KB per line', () => {
     const m = newModel({ ladders: [{ station: 'RCSS', date: 20261005 }, { station: 'RJTT', date: 20261005 }] })
     installHttp()

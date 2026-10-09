@@ -1,0 +1,145 @@
+{
+  "measuredAt": "2026-10-09T14:18:11.087Z",
+  "forwarder": "0xF8344CFd5c43616a4366C34E3EEE75af79a74482",
+  "resolver": "0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B",
+  "forkBlock": 69561070,
+  "forkTime": "2026-10-09T14:18:39.000Z",
+  "target": {
+    "station": "RCSS",
+    "date": 20261007
+  },
+  "testDon": {
+    "donId": 1,
+    "configVersion": 1,
+    "f": 3,
+    "signers": 10
+  },
+  "fourSignatures": {
+    "sweep": [
+      {
+        "gasLimit": 200000,
+        "outcome": "reverted",
+        "gasUsed": 116644,
+        "why": "InsufficientGasForRouting"
+      },
+      {
+        "gasLimit": 225000,
+        "outcome": "reverted",
+        "gasUsed": 116644,
+        "why": "InsufficientGasForRouting"
+      },
+      {
+        "gasLimit": 250000,
+        "outcome": "reverted",
+        "gasUsed": 116644,
+        "why": "InsufficientGasForRouting"
+      },
+      {
+        "gasLimit": 275000,
+        "outcome": "reverted",
+        "gasUsed": 116644,
+        "why": "InsufficientGasForRouting"
+      },
+      {
+        "gasLimit": 300000,
+        "outcome": "settled",
+        "gasUsed": 239696,
+        "state": "SUCCEEDED"
+      },
+      {
+        "gasLimit": 320000,
+        "outcome": "settled",
+        "gasUsed": 239696,
+        "state": "SUCCEEDED"
+      },
+      {
+        "gasLimit": 350000,
+        "outcome": "settled",
+        "gasUsed": 239696,
+        "state": "SUCCEEDED"
+      },
+      {
+        "gasLimit": 400000,
+        "outcome": "settled",
+        "gasUsed": 239696,
+        "state": "SUCCEEDED"
+      },
+      {
+        "gasLimit": 500000,
+        "outcome": "settled",
+        "gasUsed": 239696,
+        "state": "SUCCEEDED"
+      }
+    ],
+    "minimumSettled": 278887,
+    "minimumVoid": 278875,
+    "belowMinimum": {
+      "gasLimit": 278886,
+      "outcome": "reverted",
+      "gasUsed": 116644,
+      "why": "InsufficientGasForRouting"
+    },
+    "gasUsedAt1M": 239696,
+    "calldataBytes": 1444
+  },
+  "recommendedGasLimit": 420000,
+  "rule": "max(350000, ceil10k(minimum x 1.5))",
+  "sixSignatures": {
+    "minimumSettled": 312814,
+    "atRecommended": "settled"
+  },
+  "configDonGasLimit": 420000,
+  "atConfigDon": "settled",
+  "at200kThroughProduction": {
+    "gasLimit": 200000,
+    "outcome": "reverted",
+    "gasUsed": 116644,
+    "why": "InsufficientGasForRouting"
+  },
+  "liveVsFork": [
+    {
+      "name": "MockKeystoneForwarder.report (rejected attestation)",
+      "live": 90779,
+      "fork": 90455,
+      "delta": 324
+    },
+    {
+      "name": "Resolver.resultOf (cold storage read)",
+      "live": 31324,
+      "fork": 30972,
+      "delta": 352
+    },
+    {
+      "name": "Resolver.settlementDigest (EIP-712 hashing)",
+      "live": 24732,
+      "fork": 24430,
+      "delta": 302
+    }
+  ],
+  "liveDonReference": [
+    {
+      "block": 69560553,
+      "tx": "0xe1316f6f45a29fcb9bc873447cc396fc1e19009d4457cbda7b98154ae3968fb7",
+      "gasLimit": 319518,
+      "receiptGasUsed": 319518,
+      "signatures": 4,
+      "rawReportBytes": 141
+    },
+    {
+      "block": 69559560,
+      "tx": "0x7e9f01d4b09d6a2651bdc5ea86e23ce98c6e8c6cd8363002741eed3aae9946bf",
+      "gasLimit": 319490,
+      "receiptGasUsed": 319490,
+      "signatures": 4,
+      "rawReportBytes": 141
+    },
+    {
+      "block": 69558571,
+      "tx": "0x4338ccf4fe0e28ac3cbbef528e84b6b3a23e886c4b2d37a9361355e82ab4380c",
+      "gasLimit": 319490,
+      "receiptGasUsed": 319490,
+      "signatures": 4,
+      "rawReportBytes": 141
+    }
+  ]
+}

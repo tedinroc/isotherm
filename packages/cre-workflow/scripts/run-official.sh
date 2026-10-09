@@ -110,6 +110,13 @@ fi
 # ---- 3. on-chain preflight (eth_call only)
 ONCHAIN_ATT=$(cast call "$RESOLVER" 'attester()(address)' --rpc-url "$RPC")
 [ "$ONCHAIN_ATT" = "$ATT_ADDR" ] || { say "attester key address $ATT_ADDR != Resolver.attester() $ONCHAIN_ATT"; exit 2; }
+# After the DON cutover (DON-CUTOVER.md) the Resolver accepts only the production KeystoneForwarder: this Mac path
+# could not deliver, so it stands down instead of signing reports nobody can use.
+ONCHAIN_FWD=$(cast call "$RESOLVER" 'forwarder()(address)' --rpc-url "$RPC")
+if [ "$(tr '[:upper:]' '[:lower:]' <<<"$ONCHAIN_FWD")" != "$(tr '[:upper:]' '[:lower:]' <<<"$(jget "$DEP" mockForwarder)")" ]; then
+  say "SKIPPED: Resolver.forwarder() is $ONCHAIN_FWD, not the MockKeystoneForwarder: settlement runs on the Chainlink DON. Nothing signed or sent."
+  exit 0
+fi
 [ "$(cast call "$RESOLVER" 'paused()(bool)' --rpc-url "$RPC")" = "false" ] || { say "Resolver is paused: nothing to do"; exit 0; }
 BAL=$(cast balance "$TX_ADDR" --rpc-url "$RPC")
 say "attester $ATT_ADDR == Resolver.attester(); tx sender $TX_ADDR has $(cast from-wei "$BAL") MON; vault ladders $(cast call "$VAULT" 'ladderCount()(uint256)' --rpc-url "$RPC")"

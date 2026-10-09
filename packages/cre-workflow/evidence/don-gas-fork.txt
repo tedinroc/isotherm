@@ -1,0 +1,37 @@
+# 2026-10-09T14:18:10Z DON gas measurement: anvil 1.8.5 fork of https://testnet-rpc.monad.xyz at block 69561065 (pid 61620, port 19341)
+bun test v1.4.2 (744846f84)
+
+e2e/don-gas.fork.test.ts:
+fork block 69561070 at 2026-10-09T14:18:39.000Z; forwarder owner 0xFbede32a7135855e41E2608d942f18ed97E9CAC0 impersonated; test DON v1 f=3 (4 sigs), v2 f=5 (6 sigs)
+Resolver: forwarder -> 0xF8344CFd5c43616a4366C34E3EEE75af79a74482, attester -> public test key, expected workflow (id, owner) pinned; target RCSS 20261007
+rawReport 461 bytes (109 header + 352 payload), calldata 1444 bytes
+  gas limit  200000 -> reverted      gasUsed 116644 (InsufficientGasForRouting)
+  gas limit  225000 -> reverted      gasUsed 116644 (InsufficientGasForRouting)
+  gas limit  250000 -> reverted      gasUsed 116644 (InsufficientGasForRouting)
+  gas limit  275000 -> reverted      gasUsed 116644 (InsufficientGasForRouting)
+  gas limit  300000 -> settled       gasUsed 239696 transmission SUCCEEDED
+  gas limit  320000 -> settled       gasUsed 239696 transmission SUCCEEDED
+  gas limit  350000 -> settled       gasUsed 239696 transmission SUCCEEDED
+  gas limit  400000 -> settled       gasUsed 239696 transmission SUCCEEDED
+  gas limit  500000 -> settled       gasUsed 239696 transmission SUCCEEDED
+  minimum (Settled report): 278887; at 278886: reverted (InsufficientGasForRouting)
+  minimum (Void report):    278875
+  gas actually used with a 1,000,000 limit: 239696 (anvil reports gas used; Monad bills the limit)
+  recommended gasLimit for testnet-don: max(350,000, ceil10k(278887 x 1.5)) = 420000
+  minimum with 6 signatures: 312814; at the recommended 420000: settled
+  config.don.json gasLimit 420000: settled; config.testnet.json 200000 through the production forwarder: reverted (InsufficientGasForRouting)
+  unknown DON signers -> reverted (InvalidSigner)
+  workflow owner 0xaa…aa (the simulator's fixed owner) -> result=false
+  MockKeystoneForwarder delivery after the switch -> ReportProcessed.result=false (InvalidSender inside the Resolver)
+  MockKeystoneForwarder.report (rejected attestation)  live 90779  fork 90455  live - fork 324 (0.36 %)
+  Resolver.resultOf (cold storage read)                live 31324  fork 30972  live - fork 352 (1.14 %)
+  Resolver.settlementDigest (EIP-712 hashing)          live 24732  fork 24430  live - fork 302 (1.24 %)
+  live DON tx 0xe1316f6f45… block 69560553: gas limit 319518, receipt gasUsed 319518, 4 signatures, rawReport 141 bytes
+  live DON tx 0x7e9f01d4b0… block 69559560: gas limit 319490, receipt gasUsed 319490, 4 signatures, rawReport 141 bytes
+  live DON tx 0x4338ccf4fe… block 69558571: gas limit 319490, receipt gasUsed 319490, 4 signatures, rawReport 141 bytes
+[don-gas] {"recommendedGasLimit":420000,"minimumSettled":278887,"minimumVoid":278875,"sixSignatures":312814}
+
+ 8 pass
+ 0 fail
+ 16 expect() calls
+Ran 8 tests across 1 file. [194.83s]

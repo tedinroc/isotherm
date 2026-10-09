@@ -1,0 +1,34 @@
+{
+  "chainSelectorName": "monad-testnet",
+  "chainId": "10143",
+  "resolverAddress": "0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B",
+  "vaultAddress": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+  "schedules": ["TZ=Asia/Taipei 0 0 2 * * *", "TZ=Asia/Tokyo 0 0 2 * * *", "0 30 * * * *"],
+  "gasLimit": "420000",
+  "attestationTtlSec": 1500,
+  "settleDelaySec": 7200,
+  "voidAfterSec": 129600,
+  "hardVoidAfterSec": 165600,
+  "staleWindowSec": 172800,
+  "maxHttpCalls": 15,
+  "maxEvmReads": 15,
+  "maxReportsPerRun": 5,
+  "maxFallbackCallsPerRun": 1,
+  "ladderCursorStart": 0,
+  "ladderScanWindow": 64,
+  "ladderPageSize": 32,
+  "readBlock": "finalized",
+  "extraTargets": [],
+  "stations": [
+    {
+      "icao": "RCSS",
+      "utcOffsetMin": 480,
+      "tzName": "Asia/Taipei"
+    },
+    {
+      "icao": "RJTT",
+      "utcOffsetMin": 540,
+      "tzName": "Asia/Tokyo"
+    }
+  ]
+}

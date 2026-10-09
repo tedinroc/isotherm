@@ -17,6 +17,8 @@
 //   node scripts/control.mjs resume <RCSS:20261010>
 //   node scripts/control.mjs roll <RCSS> <2026-10-10>     queue a roll (idempotent)
 //   node scripts/control.mjs reset-shadow
+//   node scripts/control.mjs test-alert         raise one "TEST ALERT <seq>" on the next tick: it lands in `alerts` and,
+//                                              if the ALERT_WEBHOOK_URL secret is set, on that push channel
 // A new control document is refused while the previous one has not been applied yet (--force replaces it).
 // Set XDG_CONFIG_HOME to your wrangler config dir if you use several Cloudflare logins.
 import { readFileSync, existsSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
@@ -155,6 +157,9 @@ switch (cmd) {
   case 'reset-shadow':
     putDoc({ resetShadow: true });
     break;
+  case 'test-alert':
+    putDoc({ testAlert: true, note: 'test alert (scripts/control.mjs)' });
+    break;
   default:
-    console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(0, 21).join('\n'));
+    console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(0, 23).join('\n'));
 }
