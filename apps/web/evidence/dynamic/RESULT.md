@@ -211,3 +211,30 @@ The copy is in [`public-sdk-settings-2026-10-07T1324Z.json`](public-sdk-settings
 - The credit rendered: "“Model” is built from Open-Meteo forecasts, bias-corrected by Isotherm (modified). Weather data by Open-Meteo.com (CC BY 4.0)."
 - The page lazy-loaded `dynamic-DKA4llTK.js`, which happens only when an environment ID is configured. There were no console errors.
 - The sign-in sheet itself was not opened. That browser profile already holds a dev wallet, so the header shows an address rather than "Sign in". The Dynamic button's presence was therefore checked in the served main chunk instead (`curl`): "Sign in with email" and `data-testid="dynamic-login"` are both there.
+
+## 6. Recorded Dynamic flow on 2026-10-09
+
+A screen recording of the live site (phone viewport) shows the whole Dynamic path end to end, with a team Sandbox test
+account. Machine-readable record: [`live-recording-2026-10-09.json`](live-recording-2026-10-09.json).
+
+1. **Email sign-in through Dynamic's own flow.** "Sign in with email" opens Dynamic's "Log in or sign up" modal (Sandbox);
+   after the one-time code, Dynamic creates the embedded wallet `0x12320262325e2DF351a7Ed5445F9548640852CbF` (a team test
+   wallet, listed in `TEAM_ADDRESSES`). Screenshot `08-…`.
+2. **Test funds** from the app's faucet: 0.15 MON
+   ([`0xecf252d5…cefb`](https://testnet.monadvision.com/tx/0xecf252d5af5616a931d43d9ccdd2e2e8c9ddec04057762bbd215ae1e26c5cefb))
+   and 1,000 testnet AUSD
+   ([`0xb97415f2…fc3e`](https://testnet.monadvision.com/tx/0xb97415f24df96400dd08f49685a314cf6cae4b79057e2b080eff5fc3d685fc3e)).
+3. **Gasless pair.** Dynamic shows a signature request for an EIP-3009 `ReceiveWithAuthorization` (5 AUSD to the vault); the
+   relayer submits `mintSetWithAuthorization`, so the wallet pays no MON: 5 YES + 5 NO on Taipei Oct 9 ≥ 31 °C
+   ([`0x23fa1a42…650f`](https://testnet.monadvision.com/tx/0x23fa1a42accfe95299234d1b106795dea5ea21a14e0d556915e788a2ff4f650f)).
+   Screenshot `09-…`.
+4. **The embedded wallet trades by itself.** Buy Yes for 5 AUSD: two Dynamic "Confirm Transaction" prompts on Monad Testnet,
+   the AUSD approval
+   ([`0x275bab2e…71df`](https://testnet.monadvision.com/tx/0x275bab2ef58db6b1126fdec924ca113c330f1025adf6d1c5b0c2986ccda871df))
+   and `Zap.buyYes`
+   ([`0x120e87a2…09e6`](https://testnet.monadvision.com/tx/0x120e87a227e6a4c5fcdd9bf562b98ed789a59538e37f35372f154f2285cc09e6)):
+   14.27 YES at 0.35, 6.7 s from tap to confirmed. Screenshots `10-…` and `11-…` (Portfolio with the session log).
+
+All five receipts have status `success` (checked on Monad testnet). The account's email is not published: the screenshots
+and the video never show it.
+

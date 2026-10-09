@@ -1,0 +1,64 @@
+{
+  "recorded": "2026-10-09 02:43-02:50 UTC",
+  "site": "https://isotherm.pages.dev (live production build, main chunk index-Cd8KBz0E.js)",
+  "dynamic": {
+    "environment": "Sandbox 3eaae4f7-b9bb-4a0a-a578-00ff7008a460",
+    "account": "team Sandbox test account (email sign-in with one-time code, typed by a team member in Dynamic's own form; the address is not published)",
+    "embeddedWallet": "0x12320262325e2DF351a7Ed5445F9548640852CbF",
+    "walletClass": "team test wallet (TEAM_ADDRESSES)"
+  },
+  "network": "Monad testnet (10143)",
+  "transactions": [
+    {
+      "step": "test funds, MON leg (relayer drip)",
+      "hash": "0xecf252d5af5616a931d43d9ccdd2e2e8c9ddec04057762bbd215ae1e26c5cefb",
+      "block": 69425178,
+      "from": "relayer 0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f",
+      "to": "embedded wallet",
+      "status": "success",
+      "note": "0.15 MON"
+    },
+    {
+      "step": "test funds, AUSD leg (relayer drip)",
+      "hash": "0xb97415f24df96400dd08f49685a314cf6cae4b79057e2b080eff5fc3d685fc3e",
+      "block": 69425178,
+      "from": "relayer",
+      "to": "AUSD (transfer to the embedded wallet)",
+      "status": "success",
+      "note": "1,000 testnet AUSD"
+    },
+    {
+      "step": "gasless pair: Dynamic signature request (EIP-3009 ReceiveWithAuthorization) -> relayer submits Vault.mintSetWithAuthorization",
+      "hash": "0x23fa1a42accfe95299234d1b106795dea5ea21a14e0d556915e788a2ff4f650f",
+      "block": 69425426,
+      "from": "relayer",
+      "to": "CollateralVault 0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+      "status": "success",
+      "note": "5 AUSD -> 5 YES + 5 NO, Taipei Oct 9 >=31 C; the wallet paid 0 MON; app reported 7 s"
+    },
+    {
+      "step": "Buy Yes, approve (Dynamic Confirm Transaction 1)",
+      "hash": "0x275bab2ef58db6b1126fdec924ca113c330f1025adf6d1c5b0c2986ccda871df",
+      "block": 69425689,
+      "from": "embedded wallet",
+      "to": "AUSD",
+      "status": "success"
+    },
+    {
+      "step": "Buy Yes, Zap.buyYes (Dynamic Confirm Transaction 2)",
+      "hash": "0x120e87a227e6a4c5fcdd9bf562b98ed789a59538e37f35372f154f2285cc09e6",
+      "block": 69425709,
+      "from": "embedded wallet",
+      "to": "IsothermZap 0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+      "status": "success",
+      "note": "5 AUSD -> 14.27 YES at 0.35 on the Kuru book; app reported 6.7 s from tap to confirmed"
+    }
+  ],
+  "verifiedOnChain": "2026-10-09 ~02:55 UTC via https://testnet-rpc.monad.xyz (eth_getTransactionReceipt status 0x1 for all five)",
+  "screenshots": [
+    "08-live-2026-10-09-signed-in-embedded-wallet.jpg",
+    "09-live-2026-10-09-gasless-pair-minted.jpg",
+    "10-live-2026-10-09-zap-buy-yes-filled.jpg",
+    "11-live-2026-10-09-portfolio-session-log.jpg"
+  ]
+}
