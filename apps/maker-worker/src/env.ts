@@ -54,6 +54,10 @@ export interface Env {
 }
 
 export const LIVE_RPC = "https://testnet-rpc.monad.xyz";
+/** Public Monad testnet (10143) endpoints the live maker may use. The official one limits each client IP to 15 requests/s,
+ *  and Workers share egress IPs, so an alternative may be configured; the engine still refuses any RPC whose chain id is
+ *  not 10143 at startup. */
+export const LIVE_RPCS: readonly string[] = [LIVE_RPC, "https://rpc.ankr.com/monad_testnet", "https://10143.rpc.thirdweb.com"];
 /** `source` on every snapshot this Worker publishes; the interlock tells our own snapshots from another writer's. */
 export const SNAPSHOT_SOURCE = "isotherm-maker-worker";
 
@@ -94,7 +98,7 @@ export const isLoopbackRpc = (rpc: string) => /^http:\/\/(127\.0\.0\.1|localhost
 export function settingsFrom(env: Env): Settings {
   const rpc = (env.RPC_URL ?? LIVE_RPC).trim();
   const loop = isLoopbackRpc(rpc);
-  if (!loop && rpc !== LIVE_RPC) throw new Error(`RPC_URL must be ${LIVE_RPC} or a loopback anvil fork, got ${rpc}`);
+  if (!loop && !LIVE_RPCS.includes(rpc)) throw new Error(`RPC_URL must be one of ${LIVE_RPCS.join(", ")} or a loopback anvil fork, got ${rpc}`);
   const hhmm = (env.ROLL_NOT_BEFORE_LOCAL ?? "12:00").trim();
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(hhmm)) throw new Error(`ROLL_NOT_BEFORE_LOCAL must be HH:MM, got ${hhmm}`);
   let configOverrides: unknown = {};
@@ -103,7 +107,7 @@ export function settingsFrom(env: Env): Settings {
     envMode: (env.MAKER_MODE ?? "shadow").trim().toLowerCase() === "live" ? "live" : "shadow",
     rpc,
     rpcIsLoopback: loop,
-    rpcIsLive: rpc === LIVE_RPC,
+    rpcIsLive: LIVE_RPCS.includes(rpc),
     stations: (env.STATIONS ?? "RCSS").split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
     rollNotBeforeLocal: hhmm,
     rollAuto: (env.ROLL_AUTO ?? "1").trim() !== "0",

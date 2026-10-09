@@ -49,7 +49,7 @@ preview_id = "isotherm-maker-local-preview"
 # SHADOW until the cutover runbook (docs/OPERATIONS.md section 8). Live also needs the Durable Object flag
 # (scripts/control.mjs arm) and the key secrets; with either switch off, nothing is ever broadcast.
 MAKER_MODE = "live"
-RPC_URL = "https://testnet-rpc.monad.xyz"
+RPC_URL = "https://rpc.ankr.com/monad_testnet"
 STATIONS = "RCSS"
 ROLL_NOT_BEFORE_LOCAL = "12:00"
 ROLL_AUTO = "1"
