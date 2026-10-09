@@ -209,7 +209,9 @@ test("roll + idempotent re-roll + 3 ticks + kill switch on an anvil fork", { tim
   const nByRole: Record<string, number> = {};
   for (const x of txs) (byRole[x.role] = (byRole[x.role] ?? 0) + x.mon), (nByRole[x.role] = (nByRole[x.role] ?? 0) + 1);
   // txs.jsonl rounds each cost to 6 decimals while the meter keeps 9: allow 0.5e-6 of rounding per tx
-  for (const [role, mon] of Object.entries(byRole)) assert.ok(Math.abs((ctx.state.budget.spent[role] ?? 0) - mon) < 5e-7 * (nByRole[role] + 1), `${role} meter`);
+  // a role's meters: "<role>" (quoting), "<role>:roll" (with rollCapMon) and "<role>:reserve" (pulls, kill switch, withdraws)
+  const metered = (role: string) => Object.entries(ctx.state.budget.spent).filter(([k]) => k === role || k.startsWith(`${role}:`)).reduce((a, [, v]) => a + v, 0);
+  for (const [role, mon] of Object.entries(byRole)) assert.ok(Math.abs(metered(role) - mon) < 5e-7 * (nByRole[role] + 1), `${role} meter`);
   // anvil's fork base fee decays on empty blocks, so its receipts under-bill; live Monad bills gasLimit x ~102 gwei
   const at102: Record<string, number> = {};
   for (const x of txs) at102[x.role] = (at102[x.role] ?? 0) + (Number(x.gasLimit) * 102) / 1e9;

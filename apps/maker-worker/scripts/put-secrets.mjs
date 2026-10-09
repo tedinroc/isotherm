@@ -7,6 +7,11 @@
 //   ALERT_WEBHOOK_URL <- ~/.config/isotherm/alert-webhook.url (OPTIONAL push channel for alerts: an ntfy topic URL
 //                     https://ntfy.sh/<topic>, a Telegram bot URL https://api.telegram.org/bot<token>/sendMessage?chat_id=<id>,
 //                     or any https JSON webhook; skipped when the file is absent, unless named with --only)
+//   ALERT_WEBHOOK_TOKEN <- ~/.config/isotherm/alert-webhook.token (OPTIONAL: an ntfy access token tk_..., sent as
+//                     `Authorization: Bearer`; skipped when absent)
+//   TREASURY_KEY   <- ~/.config/isotherm/treasury.key     (OPTIONAL: the dedicated treasury key that tops up the role keys
+//                     in live mode; its address must be config/worker.json treasury.address, and it is refused if it
+//                     is the deployer's or any other role's key; skipped when absent)
 // Usage: node scripts/put-secrets.mjs [--only NAME[,NAME]] [--dry] [--live]
 //   --dry   validates the files, uploads nothing
 //   --live  required once wrangler.toml has MAKER_MODE = "live" (after the cutover). `wrangler secret put` changes
@@ -17,6 +22,7 @@ import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { privateKeyToAccount } from 'viem/accounts';
 import { withTempConfig } from './deploy.mjs';
 
 const here = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -27,7 +33,26 @@ const SECRETS = [
   { name: 'GUARDIAN_KEY', file: 'guardian.key', kind: 'key' },
   { name: 'SNAPSHOT_TOKEN', file: 'api-snapshot.token', kind: 'token' },
   { name: 'ALERT_WEBHOOK_URL', file: 'alert-webhook.url', kind: 'url', optional: true },
+  { name: 'ALERT_WEBHOOK_TOKEN', file: 'alert-webhook.token', kind: 'bearer', optional: true },
+  { name: 'TREASURY_KEY', file: 'treasury.key', kind: 'key', optional: true, check: checkTreasury },
 ];
+
+/** The treasury key: the configured treasury address, and never the deployer's or another role's key. */
+function checkTreasury(v) {
+  const addr = privateKeyToAccount(v).address;
+  const cfg = JSON.parse(readFileSync(join(here, 'config/worker.json'), 'utf8')).treasury ?? {};
+  if (!cfg.address || cfg.address.toLowerCase() !== addr.toLowerCase()) return `its address ${addr} is not config/worker.json treasury.address ${cfg.address ?? '(unset)'}`;
+  for (const other of ['deployer', 'maker', 'operator', 'guardian', 'attester', 'relayer']) {
+    const f = join(dir, `${other}.key`);
+    if (!existsSync(f)) continue;
+    const raw = readFileSync(f, 'utf8').trim();
+    try {
+      if (privateKeyToAccount(raw.startsWith('0x') ? raw : `0x${raw}`).address.toLowerCase() === addr.toLowerCase()) return `it is the same key as ${other}.key`;
+    } catch {}
+  }
+  for (const [role, r] of Object.entries(cfg.roles ?? {})) if (String(r.address).toLowerCase() === addr.toLowerCase()) return `its address is the funded role ${role}`;
+  return null;
+}
 const argv = process.argv.slice(2);
 const dry = argv.includes('--dry');
 const live = argv.includes('--live');
@@ -51,6 +76,16 @@ for (const s of SECRETS) {
     if (!v.startsWith('0x')) v = `0x${v}`;
     if (!/^0x[0-9a-fA-F]{64}$/.test(v)) {
       console.error(`${s.name}: ~/.config/isotherm/${s.file} is not a 32-byte hex key`); // the value is never echoed
+      process.exit(2);
+    }
+    const bad = s.check?.(v);
+    if (bad) {
+      console.error(`${s.name}: refused: ${bad}`);
+      process.exit(2);
+    }
+  } else if (s.kind === 'bearer') {
+    if (v.length > 512 || !/^[\x21-\x7e]+$/.test(v)) {
+      console.error(`${s.name}: ~/.config/isotherm/${s.file} is not a single printable token`);
       process.exit(2);
     }
   } else if (s.kind === 'url') {

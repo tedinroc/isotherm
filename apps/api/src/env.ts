@@ -1,6 +1,7 @@
 // Worker bindings, vars and secrets, plus the parsed runtime config.
 import { getAddress, isAddress, parseEther, parseUnits, type Address } from 'viem';
 import { DEPLOYMENTS } from './deployments';
+import { chooseRpcUrls, isLoopbackUrl } from './rpc';
 
 export interface Env {
   ISO_KV: KVNamespace;
@@ -8,7 +9,12 @@ export interface Env {
   /** wrangler.toml [version_metadata]: this Worker version's id and upload (deploy) time, shown in /api/health. */
   CF_VERSION_METADATA?: WorkerVersionMetadata;
   // vars (wrangler.toml [vars]); all optional, defaults below
+  /** One endpoint only (an anvil fork for wrangler dev / the fork test). Wins over RPC_URLS; unset in production. */
   RPC_URL?: string;
+  /** Comma list of Monad testnet endpoints, tried in order (default: Ankr, thirdweb, official). See src/rpc.ts. */
+  RPC_URLS?: string;
+  /** Client-side throttle per endpoint, requests per second (default 8; the official RPC allows 15 per client IP). */
+  RPC_MAX_RPS?: string;
   CHAIN_ID?: string;
   ALLOWED_ORIGINS?: string;
   DRIP_ENABLED?: string;
@@ -34,6 +40,8 @@ export interface Env {
   TEAM_ADDRESSES?: string;
   STATS_START_BLOCK?: string;
   STATS_SCAN_MAX_WINDOWS?: string;
+  /** Blocks the log scan stays behind the head (default 5 on public RPCs, 0 on a loopback fork). */
+  STATS_SCAN_LAG_BLOCKS?: string;
   REAL_STATIONS?: string;
   // secrets (wrangler secret put …)
   RELAYER_KEY?: string;
@@ -42,7 +50,12 @@ export interface Env {
 }
 
 export interface Config {
-  rpcUrl: string;
+  /** RPC endpoints in fallback order (RPC_URL, else RPC_URLS, else the defaults in src/rpc.ts). */
+  rpcUrls: string[];
+  /** RPC_URL / RPC_URLS entries that were not valid URLs (reported by position in /api/health, never in full). */
+  rpcIgnored: string[];
+  rpcSource: 'RPC_URL' | 'RPC_URLS' | 'default';
+  rpcMaxRps: number;
   chainId: number;
   allowedOrigins: string[];
   dripEnabled: boolean;
@@ -74,6 +87,9 @@ export interface Config {
   teamAddresses: Address[];
   statsStartBlock: bigint | null;
   statsScanMaxWindows: number;
+  /** The scan reads logs only up to head - this many blocks: a lagging endpoint returns a truncated, error-free
+   *  eth_getLogs result for blocks it has not seen, and load-balanced endpoints differ by a block or two. */
+  statsScanLagBlocks: bigint;
   realStations: string[];
 }
 
@@ -100,8 +116,13 @@ export function configFrom(env: Env): Config {
   for (const m of DEPLOYMENTS.makers) if (!makers.includes(m)) makers.push(m);
   const team = addrList(env.TEAM_ADDRESSES);
   for (const t of DEPLOYMENTS.team) if (!team.includes(t) && !makers.includes(t)) team.push(t);
+  const rpc = chooseRpcUrls(env);
+  const lag = num(env.STATS_SCAN_LAG_BLOCKS, rpc.urls.every(isLoopbackUrl) ? 0 : 5);
   return {
-    rpcUrl: env.RPC_URL || 'https://testnet-rpc.monad.xyz',
+    rpcUrls: rpc.urls,
+    rpcIgnored: rpc.ignored,
+    rpcSource: rpc.source,
+    rpcMaxRps: Math.max(0, num(env.RPC_MAX_RPS, 8)),
     chainId: num(env.CHAIN_ID, 10143),
     allowedOrigins: env.ALLOWED_ORIGINS ? list(env.ALLOWED_ORIGINS) : DEFAULT_ORIGINS,
     dripEnabled: (env.DRIP_ENABLED ?? '1') === '1',
@@ -128,6 +149,7 @@ export function configFrom(env: Env): Config {
     teamAddresses: team,
     statsStartBlock: env.STATS_START_BLOCK ? BigInt(env.STATS_START_BLOCK) : DEPLOYMENTS.deployBlock,
     statsScanMaxWindows: num(env.STATS_SCAN_MAX_WINDOWS, 30),
+    statsScanLagBlocks: BigInt(Math.max(0, Math.min(1000, Math.floor(lag)))),
     realStations: env.REAL_STATIONS ? list(env.REAL_STATIONS) : ['RCSS', 'RJTT', 'ZGSZ', 'RKSI', 'VHHH'],
   };
 }

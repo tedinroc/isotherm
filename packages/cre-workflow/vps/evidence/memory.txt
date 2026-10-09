@@ -1,0 +1,4 @@
+# 2026-10-09T17:14:05Z cre workflow build (the compile step that cre workflow simulate also runs first) under container memory caps, no swap
+cap 1g: exit 0, Binary hash: 413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938, Maximum resident set size (kbytes): 715652
+cap 768m: exit 1, no binary, Maximum resident set size (kbytes): 667472
+cap 512m: exit 1, no binary, Maximum resident set size (kbytes): 442888

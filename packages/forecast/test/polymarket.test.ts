@@ -87,3 +87,24 @@ test("pickStrikes: most-uncertain consecutive window around the median, edges ou
   assert.deepEqual(pickStrikes(l, { mode: "offsets", offsets: [-1, 0, 1, 2], minCount: 4 }), [28, 29, 30, 31]);
   assert.deepEqual(pickStrikes({ ladder: {}, strikes: [], median: null }), []);
 });
+
+test("pickStrikes nearest: at most `count` strikes nearest the median, out-of-band strikes skipped (the MON-saving roll)", () => {
+  const l = ladderFromGamma(OCT8, "RCSS", null, "t");
+  const pol = { mode: "nearest" as const, count: 4, minP: 0.05, maxP: 0.95 };
+  const got = pickStrikes(l, pol);
+  assert.ok(got.length <= 4);
+  for (const k of got) assert.ok(l.ladder[k] >= 0.05 && l.ladder[k] <= 0.95, `>=${k} P ${l.ladder[k]} in band`);
+  for (let i = 1; i < got.length; i++) assert.equal(got[i], got[i - 1] + 1, "consecutive");
+  // a synthetic ladder: median 30; 27 (0.99) and 33 (0.01) are out of band; 28..32 in band -> the 4 nearest 30
+  const syn = { ladder: { 26: 1, 27: 0.99, 28: 0.938, 29: 0.816, 30: 0.516, 31: 0.189, 32: 0.067, 33: 0.01 }, strikes: [26, 27, 28, 29, 30, 31, 32, 33], median: 30 };
+  // |k - 30|: 29 and 31 at 1; 28 and 32 at 2 -> the tie goes to the more uncertain one (32: p(1-p) 0.0625 > 28: 0.058)
+  assert.deepEqual(pickStrikes(syn, pol), [29, 30, 31, 32]);
+  assert.deepEqual(pickStrikes(syn, { ...pol, count: 3 }), [29, 30, 31]);
+  // a sharp ladder: only two strikes inside [0.05, 0.95] -> two strikes, even below minCount
+  const sharp = { ladder: { 28: 0.99, 29: 0.96, 30: 0.7, 31: 0.2, 32: 0.03 }, strikes: [28, 29, 30, 31, 32], median: 30 };
+  assert.deepEqual(pickStrikes(sharp, { ...pol, minCount: 4 }), [30, 31]);
+  // nothing in band -> empty plan (the roll refuses an empty plan and retries later)
+  assert.deepEqual(pickStrikes({ ladder: { 29: 0.99, 30: 0.02 }, strikes: [29, 30], median: 29 }, pol), []);
+  // the window mode is unchanged
+  assert.deepEqual(pickStrikes(syn, { count: 4, minCount: 4, minP: 0.05, maxP: 0.95 }), [29, 30, 31, 32]);
+});

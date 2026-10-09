@@ -368,9 +368,13 @@ export function pAtLeast(l: Pick<LiveLadder, "ladder" | "strikes" | "mean" | "sd
 }
 
 export interface StrikePolicy {
-  count: number; // target number of strikes (4..6)
-  minCount: number; // never go below this when trimming edge strikes
-  mode: "window" | "offsets";
+  count: number; // target number of strikes (4..6); in mode "nearest" the MAXIMUM
+  minCount: number; // never go below this when trimming edge strikes (not used by mode "nearest")
+  /** "window": the most uncertain consecutive window, then edge trimming down to minCount. "offsets": median + offsets.
+   *  "nearest": at most `count` strikes nearest the Polymarket median among those whose implied P(>=k) lies inside
+   *  [minP, maxP]; strikes outside the band are skipped even if fewer than minCount remain (a near-certain strike
+   *  costs a Kuru market, mints and margin for quotes that would be pulled). */
+  mode: "window" | "offsets" | "nearest";
   offsets?: number[]; // relative to the median, for mode "offsets"
   minP: number; // trim edge strikes whose implied P is outside [minP, maxP]
   maxP: number;
@@ -378,12 +382,24 @@ export interface StrikePolicy {
 export const DEFAULT_STRIKE_POLICY: StrikePolicy = { count: 5, minCount: 4, mode: "window", minP: 0.03, maxP: 0.97 };
 
 /** Integer strikes around the Polymarket median. Window mode: the `count` consecutive determined strikes that
- *  maximise sum p(1-p) (most uncertain), ties toward the median; then trim edges outside [minP, maxP]. */
+ *  maximise sum p(1-p) (most uncertain), ties toward the median; then trim edges outside [minP, maxP]. Nearest mode:
+ *  at most `count` in-band strikes nearest the median (see StrikePolicy.mode). */
 export function pickStrikes(l: Pick<LiveLadder, "ladder" | "strikes" | "median">, pol: Partial<StrikePolicy> = {}): number[] {
   const P = { ...DEFAULT_STRIKE_POLICY, ...pol };
   const ks = l.strikes;
   if (!ks.length) return [];
   let pick: number[];
+  if (P.mode === "nearest") {
+    // in-band strikes, nearest the median first (ties: the more uncertain one, i.e. larger p(1-p)). P(>=k) is monotone
+    // in k, so the in-band strikes are consecutive and the nearest `count` of them are consecutive too.
+    const m = l.median ?? ks[Math.floor(ks.length / 2)];
+    const band = ks.filter((k) => Number.isFinite(l.ladder[k]) && l.ladder[k] >= P.minP && l.ladder[k] <= P.maxP);
+    const unc = (k: number) => l.ladder[k] * (1 - l.ladder[k]);
+    return band
+      .sort((a, b) => Math.abs(a - m) - Math.abs(b - m) || unc(b) - unc(a) || a - b)
+      .slice(0, Math.max(0, P.count))
+      .sort((a, b) => a - b);
+  }
   if (P.mode === "offsets" && P.offsets?.length) {
     const m = l.median ?? ks[Math.floor(ks.length / 2)];
     pick = P.offsets.map((d) => m + d).filter((k) => l.ladder[k] !== undefined);

@@ -22,10 +22,10 @@ const log = [
 ].join("\n");
 
 describe("prepareImport (cutover: Mac state.json -> Worker live state)", () => {
-  it("re-books today's roll spend onto <role>:roll and scrubs the local deployment path", () => {
+  it("re-books today's roll spend onto <role>:roll, pulls onto <role>:reserve, and scrubs the local deployment path", () => {
     const { state: out, notes } = prepareImport(state({ maker: 0.1181, operator: 0.1225, marketCreator: 0.1497 }, { maker: 3, operator: 1, marketCreator: 1 }), log);
-    expect(out.budget.spent).toEqual({ maker: 0.086, "operator:roll": 0.1225, "maker:roll": 0.0321, "marketCreator:roll": 0.1497 });
-    expect(out.budget.txs).toEqual({ maker: 2, "operator:roll": 1, "maker:roll": 1, "marketCreator:roll": 1 });
+    expect(out.budget.spent).toEqual({ maker: 0.0579, "maker:reserve": 0.0281, "operator:roll": 0.1225, "maker:roll": 0.0321, "marketCreator:roll": 0.1497 });
+    expect(out.budget.txs).toEqual({ maker: 1, "maker:reserve": 1, "operator:roll": 1, "maker:roll": 1, "marketCreator:roll": 1 });
     expect(out.deployment.source).not.toMatch(/\//);
     expect(notes.join(" ")).toMatch(/re-booked/);
   });

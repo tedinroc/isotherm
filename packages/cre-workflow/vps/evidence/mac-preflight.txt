@@ -1,0 +1,7 @@
+# 2026-10-09T17:14:23Z macOS 27.0.1, /bin/bash 3.2.57(1)-release: run-official.sh --harness --preflight-only with a THROWAWAY key, scratch HOME (no CRE session), live reads only
+## mode 600: passes the mode check, refused at the attester check
+[2026-10-09T17:14:24Z] mode=harness rpc=https://testnet-rpc.monad.xyz cre-login=no broadcast=1
+[2026-10-09T17:14:28Z] attester key address 0xe9B82857d03561dE2383b187504F5D25ed890963 != Resolver.attester() 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9
+exit 2
+## mode 644: refused at the mode check
+[2026-10-09T17:14:29Z] key file must be chmod 600: <scratch>/macpre/throwaway.key

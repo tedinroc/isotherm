@@ -3,7 +3,7 @@
 // challenge only in live mode with a matching guardian key, and the live guardian key refused on a fork.
 import { stringToHex } from "viem";
 import { describe, expect, it } from "vitest";
-import { canonicalSources, recompute, watchPass, type WatchDeps } from "../../src/watcher.ts";
+import { canonicalSources, LOG_LAG, recompute, watchPass, type WatchDeps } from "../../src/watcher.ts";
 import { NonceTracker } from "../../src/nonces.ts";
 import { MemStore } from "../../src/store.ts";
 import { D, FakeChain } from "./fake-chain.ts";
@@ -99,6 +99,7 @@ describe("challenge watcher", () => {
     ] as const) {
       const c = world().chain; // its guardian is the deployment's, not our test key
       c.resolve("RCSS", 20261005, 31);
+      c.mine(LOG_LAG); // log pages stop LOG_LAG blocks behind the head
       const r = await watchPass(deps(c, { live: true, ...over }));
       expect(r.verdicts[0].action).toMatch(why);
       expect(c.sent).toEqual([]);
@@ -107,7 +108,7 @@ describe("challenge watcher", () => {
     c.guardian = GUARDIAN.address;
     c.resolve("RCSS", 20261005, 31);
     c.time += 901;
-    c.mine();
+    c.mine(LOG_LAG);
     const r = await watchPass(deps(c, { live: true }));
     expect(r.verdicts[0].verdict).toBe("MISMATCH-WINDOW-CLOSED");
     expect(c.sent).toEqual([]);

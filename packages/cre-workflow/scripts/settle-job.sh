@@ -12,10 +12,13 @@
 #
 # Must run from the runtime copy (~/isotherm-live/packages/cre-workflow): launchd-started bash cannot read ~/Documents
 # (macOS TCC, exit 126). scripts/deploy-runtime.sh makes the copy and installs the job.
+# On a Linux VPS the same script is started by systemd through vps/settle-vps.sh (isotherm-settle.timer, hourly at
+# :05), which adds the single-writer guard and the optional phone push (vps/README.md).
 #
 # Env (all optional): ISOTHERM_SETTLE_MODE=auto|official|harness (default auto), ISOTHERM_SETTLE_DRY=1 (pass
 #   --no-broadcast: reads + decisions only), ISOTHERM_RPC / ISOTHERM_STATE_DIR / key-file vars (see run-official.sh;
-#   fork tests only), ISOTHERM_TEST_RELABEL (fork only).
+#   fork tests only), ISOTHERM_TEST_RELABEL (fork only), ISOTHERM_HOST_LABEL / ISOTHERM_JOB_LABEL (written into the
+#   evidence record; default: the OS name and xyz.isotherm.cre-settle; the VPS unit sets "vps" / isotherm-settle.service).
 # Evidence: $STATE/evidence/settle-runs.jsonl (one JSON line per run), $STATE/evidence/LATEST.json,
 #           $STATE/evidence/settlement-<ICAO>-<date>-<path>.json for every run that sent a report.
 set -uo pipefail
@@ -70,5 +73,6 @@ note "exit $RC"
 
 # ---- evidence record (never fails the job)
 (cd settle && bun e2e/evidence-record.ts --log "$JOBLOG" --path "$MODE" --why "$WHY" --login "$LOGIN" --rpc "$RPC" \
-  --rc "$RC" --started "$STARTED" --out "$STATE/evidence" --dry "${ISOTHERM_SETTLE_DRY:-0}") 2>&1 | tee -a "$JOBLOG" || true
+  --rc "$RC" --started "$STARTED" --out "$STATE/evidence" --dry "${ISOTHERM_SETTLE_DRY:-0}" \
+  --host "${ISOTHERM_HOST_LABEL:-$(uname -s | tr '[:upper:]' '[:lower:]')}" --job "${ISOTHERM_JOB_LABEL:-xyz.isotherm.cre-settle}") 2>&1 | tee -a "$JOBLOG" || true
 exit "$RC"

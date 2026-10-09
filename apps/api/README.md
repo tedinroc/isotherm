@@ -14,7 +14,7 @@ then 429, although every request carried a different spoofed `X-Real-IP` / `X-Fo
 
 | Route | What |
 |---|---|
-| `GET /api/health` | relayer address + balances, `dripReady` / `relayReady`, relay modes (from vault bytecode), `relayMinAusd`, `limits` (caps, reserve, `dripsToday`, `relaysToday`; memoised 5 s) and `version` (see below) |
+| `GET /api/health` | relayer address + balances, `dripReady` / `relayReady`, relay modes (from vault bytecode), `relayMinAusd`, `limits` (caps, reserve, `dripsToday`, `relaysToday`; memoised 5 s), `rpc` (state of each RPC endpoint, see "RPC endpoints") and `version` (see below) |
 | `POST /api/drip {address}` | 0.15 MON + 1,000 AUSD (float, faucet fallback). 1 per address / 24 h, `DRIP_PER_IP_PER_DAY` per network / UTC day, `DRIP_DAILY_CAP` per UTC day; never to contracts, 7702-delegated accounts or precompiles; never below the reserve |
 | `POST /api/relay/mint` | gasless complete-set mint, **authorization mode only**: `{mode:"authorization", chainId, seriesId, amount, holder, validAfter, validBefore, salt, signature}` (EIP-3009 ReceiveWithAuthorization to the vault, nonce = `keccak256(abi.encode(seriesId, amount, salt))`). 1–500 AUSD; `RELAY_PER_ADDRESS_PER_DAY`, `RELAY_PER_IP_PER_DAY`, `RELAY_DAILY_CAP`. Permit mode is refused for the v1 vault (a permit can be front-run and redirected to another series) |
 | `GET /api/snapshot` | latest maker snapshot, normalised (accepts `packages/maker` "isotherm.snapshot/v1"). Per strike: `fair`, `pmImplied`, `model` (guardrail), `bid`/`ask`, `bidSize`/`askSize` (as placed), `bidRemaining`/`askRemaining` (resting now), `mode`, `action` + `reason` (this tick's decision), `lastChangeReason` + `lastQuoteAt` (why/when the quote last changed), `fairSource` (`polymarket` / `certain` / `fallback-v0` / `fallback-intraday` / `none`) and `guardSource` (`v0` / `v0-truncated` / `intraday` / `certain`), null when not reported or not a short lowercase label |
@@ -42,8 +42,9 @@ a bare `wrangler deploy` skips `prepare-data` and would report the last build id
 ```sh
 npm install
 npm test            # unit tests
-npm run test:fork   # spawns anvil (:19200) + wrangler dev (:8782); ISO_ANVIL_PORT / ISO_API_PORT / ISO_INSPECTOR_PORT override; throwaway keys only
-npm run dev         # wrangler dev :8781 (pass --var RPC_URL:… --var RELAYER_KEY:… for a fork)
+npm run test:fork   # spawns anvil (:19200, fork) + anvil (:19201, chain 31337) + wrangler dev (:8782); ISO_ANVIL_PORT /
+                    # ISO_WRONG_CHAIN_PORT / ISO_API_PORT / ISO_INSPECTOR_PORT override; throwaway keys only
+npm run dev         # wrangler dev :8781 (pass --var RPC_URL:… --var RELAYER_KEY:… for a fork; RPC_URL wins over RPC_URLS)
 npm run deploy                                              # prepare-data (deployments, ABIs, build id) + wrangler 3 deploy
 npm run size-caps -- --days 7                               # read-only: size the MON budget vars (below)
 tr -d '\n' < ~/.config/isotherm/relayer.key | npx wrangler@3 secret put RELAYER_KEY
@@ -51,6 +52,73 @@ tr -d '\n' < ~/.config/isotherm/relayer.key | npx wrangler@3 secret put RELAYER_
 
 Secrets: `RELAYER_KEY` (~/.config/isotherm/relayer.key), `SNAPSHOT_TOKEN` (~/.config/isotherm/api-snapshot.token),
 `ADMIN_TOKEN` (~/.config/isotherm/api-admin.token). Budget knobs are plain vars in `wrangler.toml`.
+
+## RPC endpoints (`RPC_URLS`), rate limits and the relayer's nonces
+
+The official `https://testnet-rpc.monad.xyz` answers "requests limited to 15/sec" per client IP, and Cloudflare Workers
+share egress IPs with other tenants, so a Worker can be rate-limited by traffic that is not its own. On 2026-10-09 the
+maker Worker's ticks failed on it from 14:00 to 15:27 UTC. Every chain read and write of the API runs in the one
+Durable Object, through one RPC pool (`src/rpc.ts`):
+
+- **Endpoints, in order.** `RPC_URLS` in `wrangler.toml` lists `https://rpc.ankr.com/monad_testnet`, then
+  `https://10143.rpc.thirdweb.com`, then the official endpoint. All three answer chain 10143 with `eth_call`,
+  `eth_getLogs` and batches (checked 2026-10-09). dRPC is left out because it lacks `eth_call`.
+  - `RPC_URL` (one URL) overrides the list. It is for anvil forks (`npm run dev`, the fork test) and must stay out of
+    `wrangler.toml`; a unit test checks that.
+  - Invalid entries are dropped and reported by position in `/api/health` `rpc.ignored`. With none valid, the defaults
+    apply.
+- **viem `fallback` transport, unranked.** A request goes to the first usable endpoint in the list. Ranking would ping
+  every endpoint in the background, so it is off.
+- **Chain id.** Each endpoint's `eth_chainId` is checked once, before its first use. An endpoint that serves another
+  chain is never used again (until the Durable Object restarts). After the check, `eth_chainId` is answered without a
+  request, and the relayer still compares it with `CHAIN_ID` before it signs.
+- **Throttle.** Each endpoint gets `RPC_MAX_RPS` requests per second (default 8, burst 8). A request that would wait
+  more than 2 s in an endpoint's queue goes to the next endpoint instead.
+- **Cooldown and retry.**
+  - An endpoint that answers 429 or 403, or a rate-limit code or message, is skipped for 2 s, or for its `Retry-After`
+    (capped at 30 s).
+  - An endpoint that answers 5xx, times out or fails at the network level is skipped for 1 s.
+  - Both cooldowns double with each consecutive failure, up to 30 s.
+  - When every endpoint has failed or is cooling down, the request is retried, up to 4 attempts in all. Each wait is the
+    longer of a backoff (250 ms, doubling) and the time until the first cooldown ends, at most 4 s.
+  - A revert fails at once, without trying another endpoint. Other errors that are the request's fault (invalid
+    params, `nonce too low`, 413 "range too large") go to the next endpoint in the list, once each, as viem's
+    `fallback` does; they are never retried and never cool an endpoint down.
+- **`/api/health` `rpc`.** It returns `{source, endpoints: [...]}`. Each endpoint row has `endpoint`, `state`
+  (`ok` / `unverified` / `cooling` / `wrong-chain`), `coolingForSec`, `head`, the counters `ok` / `rateLimited` /
+  `failed`, `lastError` and `lastErrorAt`. An endpoint outside the default list is shown as `endpoint-N`, never by URL,
+  because a URL can carry an API key.
+
+**Relayer writes** (`src/sender.ts`). Every transaction is signed once, with an explicit nonce. A retry, on the same
+endpoint or another, resends the same bytes (same hash), so it can never become a second transaction.
+- **Next nonce** = max(the RPC's `pending` count, a floor). The floor is the highest nonce seen **mined** in one of our
+  receipts, plus 1. It is kept in Durable Object storage per relayer address.
+  - It covers an endpoint, or a load-balanced backend, that is a block behind the one that served the last receipt.
+  - It can never be ahead of the chain, because a mined nonce is final.
+  - Inside one drip, the AUSD leg still takes the MON leg's nonce + 1 (go-live fix, 2026-10-07).
+- **If the broadcast call fails, the hash decides:**
+  - "already known", or the transaction found by hash within about 4 s: it went out.
+  - "nonce too low" and not found: the nonce was used by something else. The answer is 503 "retry", and nothing is
+    counted.
+  - A provider rejection: 502, nothing counted.
+  - A timeout, 5xx or rate limit on every endpoint, and not found: **uncertain**. A drip's MON leg or a relayed mint
+    in that state is counted as sent and answered 504 with the hash. A retry never sends that MON again, and a relayed
+    mint cannot land twice because its EIP-3009 authorization is single-use. A drip's
+    AUSD leg in that state is marked pending (the answer is 200 with `ausdPending: true`); a retry re-reads the user's
+    AUSD balance and sends AUSD again only if it has not risen.
+
+**Stats scan** (`src/scan.ts`).
+- **Pages of at most 100 blocks** (the official `eth_getLogs` limit).
+- **A lag behind the head.** The scan stays `STATS_SCAN_LAG_BLOCKS` behind the head: default 5 (about 2 s) on public
+  endpoints, 0 on a loopback fork. On 2026-10-09 all three endpoints answered HTTP 200 with a **truncated** result for a
+  range that ends beyond their own head.
+- **Head check per page.** `eth_getLogs` goes only to an endpoint whose last seen head covers the page.
+- **A failed page stops the run.** Finished pages are kept, and the cursor moves to the first unscanned block, so
+  nothing is skipped or counted twice.
+- **Backoff.** After a run stopped on a rate limit or an outage, the cron skips the scan for about 2, then 4, then at
+  most 8 minutes (`scan:backoff`). The cron's own result is not logged; `updatedAt` and `lagBlocks` in `/api/stats`
+  show a stalled scan. `POST /api/admin/tick` runs the scan even during a backoff and returns `scan.stopped` when a
+  page failed.
 
 ## Who counts as traction (`/api/stats` classification)
 

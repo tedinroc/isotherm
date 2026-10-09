@@ -1,0 +1,213 @@
+# 2026-10-09T17:22:22Z mac-cutover-rehearsal: Mac side simulated (scratch HOME, launchctl stub), VPS = the test container over ssh
+    fork-env up: anvil :19370 (block 69597735), attester anvil #9, tx sender 0xC4F385b0CB499DA4882D2198ABdb4b72f9BBE9B8 (fresh key), state /home/isotherm/cutover-test/state
+    Mac (stub launchd): loaded=yes disabled=no; runtime var: writer.released=absent, last-run=1791565342
+
+## C1. dry run without --allow-harness: NOT READY (no CRE login on the test VPS; time gate skipped with --any-time)
+    | [2026-10-09T17:22:35Z] vps cutover: mode=dry, VPS isotherm-test:isotherm/packages/cre-workflow, Mac runtime copy ~/isotherm-live
+    | [2026-10-09T17:22:35Z] GATE SKIP  time window: --any-time (rehearsal)
+    | [2026-10-09T17:22:40Z] GATE OK    VPS reachable: commit 5e89e54 + uncommitted changes, pushed 2026-10-09T17:22:18Z
+    | [2026-10-09T17:22:40Z] GATE OK    VPS toolchain: cre 'CRE CLI version v1.37.0', bun 1.4.2, cast Version: 1.8.5
+    | [2026-10-09T17:22:40Z] GATE OK    VPS code == this checkout: all of: scripts/run-official.sh scripts/settle-job.sh scripts/lib-don.sh settle/e2e/evidence-record.ts vps/settle-vps.sh vps/lib.sh vps/isotherm-vps.sh
+    | [2026-10-09T17:22:40Z] GATE OK    VPS preflight (key file 600, attester == Resolver.attester(), sender MON): rc 0: [2026-10-09T17:22:39Z] preflight OK
+    | [2026-10-09T17:22:40Z] GATE FAIL  CRE login on the VPS (official path): 'no': run ssh -t -L 53682:127.0.0.1:53682 isotherm-test bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh login (or pass --allow-harness)
+    | [2026-10-09T17:22:40Z] GATE OK    VPS units installed: timer disabled/inactive
+    | [2026-10-09T17:22:40Z] GATE OK    VPS linger (timer runs with nobody logged in): Linger=yes (sudo loginctl enable-linger <user>)
+    | [2026-10-09T17:22:40Z] GATE OK    VPS not already the writer: claim: 
+    | [2026-10-09T17:22:40Z] GATE OK    no writer conflict standing on the VPS: 
+    | [2026-10-09T17:22:41Z] GATE OK    no settle job running on this Mac: none
+    | [2026-10-09T17:22:42Z] Mac job xyz.isotherm.cre-settle: loaded=yes disabled=no; runtime state present
+    | [2026-10-09T17:22:42Z] Mac last run: 1791565342 (epoch), last evidence 2026-10-09T17:02:52.000Z path=official
+    | [2026-10-09T17:22:42Z] plan:
+    | [2026-10-09T17:22:42Z]   E1. launchctl bootout gui/501/xyz.isotherm.cre-settle ; launchctl disable gui/501/xyz.isotherm.cre-settle   (verify: not loaded, disabled)
+    | [2026-10-09T17:22:42Z]   E2. scripts/deploy-runtime.sh (sync only) ; write ~/isotherm-live/packages/cre-workflow/var/writer.released
+    | [2026-10-09T17:22:42Z]   E3. ssh isotherm-test isotherm-vps.sh claim  (peer record above; enables isotherm-settle.timer; first signing run >= 50 min after the Mac's last run)
+    | [2026-10-09T17:22:42Z] DRY RUN: nothing changed. NOT READY: 1 gate(s) failed. Re-run with --execute.
+  PASS  NOT READY on the login gate; nothing changed
+
+## C2. dry run with --allow-harness: READY
+    | [2026-10-09T17:22:42Z] GATE SKIP  time window: --any-time (rehearsal)
+    | [2026-10-09T17:22:45Z] GATE OK    VPS reachable: commit 5e89e54 + uncommitted changes, pushed 2026-10-09T17:22:18Z
+    | [2026-10-09T17:22:45Z] GATE OK    VPS toolchain: cre 'CRE CLI version v1.37.0', bun 1.4.2, cast Version: 1.8.5
+    | [2026-10-09T17:22:45Z] GATE OK    VPS code == this checkout: all of: scripts/run-official.sh scripts/settle-job.sh scripts/lib-don.sh settle/e2e/evidence-record.ts vps/settle-vps.sh vps/lib.sh vps/isotherm-vps.sh
+    | [2026-10-09T17:22:46Z] GATE OK    VPS preflight (key file 600, attester == Resolver.attester(), sender MON): rc 0: [2026-10-09T17:22:44Z] preflight OK
+    | [2026-10-09T17:22:46Z] GATE WARN  CRE login on the VPS: 'no'; --allow-harness: the VPS settles through the labelled HARNESS fallback until 'isotherm-vps.sh login'
+    | [2026-10-09T17:22:46Z] GATE OK    VPS units installed: timer disabled/inactive
+    | [2026-10-09T17:22:46Z] GATE OK    VPS linger (timer runs with nobody logged in): Linger=yes (sudo loginctl enable-linger <user>)
+    | [2026-10-09T17:22:46Z] GATE OK    VPS not already the writer: claim: 
+    | [2026-10-09T17:22:46Z] GATE OK    no writer conflict standing on the VPS: 
+    | [2026-10-09T17:22:46Z] GATE OK    no settle job running on this Mac: none
+    | [2026-10-09T17:22:46Z]   E1. launchctl bootout gui/501/xyz.isotherm.cre-settle ; launchctl disable gui/501/xyz.isotherm.cre-settle   (verify: not loaded, disabled)
+    | [2026-10-09T17:22:46Z]   E2. scripts/deploy-runtime.sh (sync only) ; write ~/isotherm-live/packages/cre-workflow/var/writer.released
+    | [2026-10-09T17:22:46Z]   E3. ssh isotherm-test isotherm-vps.sh claim  (peer record above; enables isotherm-settle.timer; first signing run >= 50 min after the Mac's last run)
+    | [2026-10-09T17:22:46Z] DRY RUN: nothing changed. READY. Re-run with --execute.
+  PASS  READY, nothing changed
+
+## C3. --execute while the VPS cannot enable its timer: E3 fails, the VPS confirms no claim, the Mac job is restored
+    enable blocked
+    | [2026-10-09T17:22:51Z]   E1. launchctl bootout gui/501/xyz.isotherm.cre-settle ; launchctl disable gui/501/xyz.isotherm.cre-settle   (verify: not loaded, disabled)
+    | [2026-10-09T17:22:51Z]   E2. write ~/isotherm-live/packages/cre-workflow/var/writer.released
+    | [2026-10-09T17:22:51Z]   E3. ssh isotherm-test isotherm-vps.sh claim  (peer record above; enables isotherm-settle.timer; first signing run >= 50 min after the Mac's last run)
+    | [2026-10-09T17:22:51Z] E1 done: xyz.isotherm.cre-settle not loaded, disabled
+    | [2026-10-09T17:22:51Z] E2 done: ~/isotherm-live/packages/cre-workflow/var/writer.released written
+    | [2026-10-09T17:22:51Z] E3 FAILED on the VPS: Failed to enable unit: Access denied
+    | [2026-10-09T17:22:52Z] the VPS confirmed it holds no claim (timer disabled/inactive)
+    | [2026-10-09T17:22:52Z] UNDO: restoring the Mac job (the VPS did not take the claim)
+    | [2026-10-09T17:22:52Z] UNDO done: xyz.isotherm.cre-settle loaded=yes disabled=no
+    Mac (stub launchd): loaded=yes disabled=no; runtime var: writer.released=absent, last-run=1791565342
+  PASS  Mac job loaded + enabled again, no writer.released, no claim on the VPS
+    enable unblocked
+
+## C4. --execute: E1 Mac job off + disabled, E2 writer.released, E3 the VPS claims and enables its timer
+    | [2026-10-09T17:22:59Z] GATE OK    VPS preflight (key file 600, attester == Resolver.attester(), sender MON): rc 0: [2026-10-09T17:22:57Z] preflight OK
+    | [2026-10-09T17:22:59Z] GATE OK    VPS units installed: timer disabled/inactive
+    | [2026-10-09T17:22:59Z] GATE OK    VPS linger (timer runs with nobody logged in): Linger=yes (sudo loginctl enable-linger <user>)
+    | [2026-10-09T17:22:59Z] GATE OK    VPS not already the writer: claim: 
+    | [2026-10-09T17:22:59Z] GATE OK    no writer conflict standing on the VPS: 
+    | [2026-10-09T17:22:59Z]   E1. launchctl bootout gui/501/xyz.isotherm.cre-settle ; launchctl disable gui/501/xyz.isotherm.cre-settle   (verify: not loaded, disabled)
+    | [2026-10-09T17:22:59Z]   E2. write ~/isotherm-live/packages/cre-workflow/var/writer.released
+    | [2026-10-09T17:22:59Z]   E3. ssh isotherm-test isotherm-vps.sh claim  (peer record above; enables isotherm-settle.timer; first signing run >= 50 min after the Mac's last run)
+    | [2026-10-09T17:22:59Z] E1 done: xyz.isotherm.cre-settle not loaded, disabled
+    | [2026-10-09T17:22:59Z] E2 done: ~/isotherm-live/packages/cre-workflow/var/writer.released written
+    | [2026-10-09T17:23:03Z] E3 done: the VPS holds the claim: {"at":"2026-10-09T17:23:00Z","from":"mac","by":"vps/cutover.sh"}
+    |   writer      CLAIMED: {"at":"2026-10-09T17:23:00Z","from":"mac","by":"vps/cutover.sh"}
+    |   peer        mac last ran 2026-10-09T17:02:22.000Z (handover record)
+    |   timer       enabled/active
+    |               next: Fri 2026-10-09 18:05:00 UTC 41min Fri 2026-10-09 17:11:30 UTC      - isotherm-settle.timer isotherm-settle.service
+    |   guard       {"at":"2026-10-09T17:23:00Z","host":"vps","code":"claimed","detail":"writer role claimed; peer last run 1791565342; tripwire baseline 0"}
+    | [2026-10-09T17:23:04Z] DONE: the VPS settles from now on; its first signing run is expected at 2026-10-09T18:05:00.000Z. Watch it with: ssh isotherm-test bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh logs. log: <repo>/packages/cre-workflow/var/vps/cutover-20261009T172255Z.log
+  PASS  the preflight gate ran a real preflight (the VPS still held writer.released from C3)
+    Mac (stub launchd): loaded=no disabled=yes; runtime var: writer.released=present, last-run=1791565342
+    VPS: claim={"at":"2026-10-09T17:23:00Z","from":"mac","by":"vps/cutover.sh"}, timer=enabled/active
+  PASS  Mac off and disabled, writer.released written; VPS claimed, timer enabled/active
+
+## C5. a manual broadcasting run on the Mac (repo copy, live RPC default) refuses: the runtime state says released
+    | [2026-10-09T17:23:07Z] SKIPPED: this host released the settlement writer role ({"at":"2026-10-09T17:22:59.799Z","to":"vps","dest":"isotherm-test","by":"vps/cutover.sh"}); nothing signed or sent. See packages/cre-workflow/vps/README.md
+  PASS  run-official.sh on the Mac stops before reading any key (exit 0)
+
+## C5b. the role is with isotherm-test: a cutover to another VPS, and a rollback naming another VPS (even 'confirmed off'), are refused
+    | [2026-10-09T17:23:08Z] GATE FAIL  the Mac holds the writer role, or handed it to isotherm-unreachable: the Mac's runtime copy says it handed the role to 'isotherm-test': run vps/rollback.sh isotherm-test first
+    | [2026-10-09T17:23:08Z] REFUSED: 2 gate(s) failed
+    | [2026-10-09T17:23:08Z]   R1. ssh isotherm-unreachable isotherm-vps.sh release   (timer off, claim removed, writer.released; returns the VPS's last run)
+    | [2026-10-09T17:23:08Z]   R2. ~/isotherm-live/packages/cre-workflow/var/last-run := max(Mac, VPS last run); remove ~/isotherm-live/packages/cre-workflow/var/writer.released
+    | [2026-10-09T17:23:08Z]   R3. launchctl enable gui/501/xyz.isotherm.cre-settle ; launchctl bootstrap gui/501 ~/Library/LaunchAgents/xyz.isotherm.cre-settle.plist
+    | [2026-10-09T17:23:08Z] REFUSED: the Mac handed the writer role to 'isotherm-test', not 'isotherm-unreachable'. Run: vps/rollback.sh isotherm-test ... (the same destination as at the cutover). Nothing changed.
+    Mac (stub launchd): loaded=no disabled=yes; runtime var: writer.released=present, last-run=1791565342
+  PASS  both refused; the Mac job stays off and released
+
+## C6. the VPS's first run: the Mac ran 20 min ago -> refused by the 50-min handover guard
+    | [2026-10-09T17:23:08Z] [vps] REFUSED (peer-recent): the previous writer (mac) last ran at 2026-10-09T17:02:52.000Z, 20 min ago (< 50 min); this host signs from 2026-10-09T17:52:52.000Z on
+  PASS  refused peer-recent
+
+## C7. an hour later (peer record aged on purpose): the VPS settles RCSS 2026-10-09 on the fork, harness path
+    | [sent] RCSS 20261009 tmaxC=28 isVoid=false tx 0x74f52b6d9d8b1cb957bad110a13d58a4657bf268db800382cb17185e69d99ac6 status=success gasUsed=149863/200000 2011 ms
+    | 0x74f52b6d9d8b1cb957bad110a13d58a4657bf268db800382cb17185e69d99ac6 block 69597736 status=success gasUsed=149863 ReportProcessed.result=true LadderResolved: RCSS 20261009 status=Settled tmaxC=28 OK
+    | [evidence] path=harness-fallback exit=0 outcomes=RCSS/20261009:settled=28(resolved) -> /home/isotherm/cutover-test/state/evidence/settle-runs.jsonl
+    | [2026-10-09T17:23:19Z] [vps] tripwire: nonce 0 -> 1, own txs 1: single writer
+  PASS  VPS settled through its systemd unit after the cutover
+
+## C8. rollback dry run, then --execute: R1 the VPS releases first, R2 last-run handed back, R3 the Mac job reloaded
+    | [2026-10-09T17:23:20Z] vps rollback: mode=dry, VPS isotherm-test:isotherm/packages/cre-workflow, Mac runtime copy ~/isotherm-live
+    | [2026-10-09T17:23:23Z] VPS: claim={"at":"2026-10-09T17:23:00Z","from":"mac","by":"vps/cutover.sh"} released= timer=enabled/active conflict=
+    | [2026-10-09T17:23:23Z] Mac: xyz.isotherm.cre-settle loaded=no disabled=yes; plist present; writer.released {"at":"2026-10-09T17:22:59.799Z","to":"vps","dest":"isotherm-test","by":"vps/cutover.sh"}
+    | [2026-10-09T17:23:23Z] plan:
+    | [2026-10-09T17:23:23Z]   R1. ssh isotherm-test isotherm-vps.sh release   (timer off, claim removed, writer.released; returns the VPS's last run)
+    | [2026-10-09T17:23:23Z]   R2. ~/isotherm-live/packages/cre-workflow/var/last-run := max(Mac, VPS last run); remove ~/isotherm-live/packages/cre-workflow/var/writer.released
+    | [2026-10-09T17:23:23Z]   R3. launchctl enable gui/501/xyz.isotherm.cre-settle ; launchctl bootstrap gui/501 ~/Library/LaunchAgents/xyz.isotherm.cre-settle.plist
+    | [2026-10-09T17:23:23Z] DRY RUN: nothing changed. Re-run with --execute.
+    | [2026-10-09T17:23:27Z]   R1. ssh isotherm-test isotherm-vps.sh release   (timer off, claim removed, writer.released; returns the VPS's last run)
+    | [2026-10-09T17:23:27Z]   R2. ~/isotherm-live/packages/cre-workflow/var/last-run := max(Mac, VPS last run); remove ~/isotherm-live/packages/cre-workflow/var/writer.released
+    | [2026-10-09T17:23:27Z]   R3. launchctl enable gui/501/xyz.isotherm.cre-settle ; launchctl bootstrap gui/501 ~/Library/LaunchAgents/xyz.isotherm.cre-settle.plist
+    | [2026-10-09T17:23:28Z] R1 done: the VPS released the writer role; its last run 1791566591 (epoch), timer disabled/inactive
+    | [2026-10-09T17:23:28Z] R2: ~/isotherm-live/packages/cre-workflow/var/last-run := 1791566591 (the VPS's last run)
+    | [2026-10-09T17:23:28Z] R2 done
+    | [2026-10-09T17:23:28Z] R3 done: xyz.isotherm.cre-settle loaded and enabled; next run at :05
+    | [2026-10-09T17:23:28Z] DONE: settlement is back on the Mac. Keep the VPS released (its timer stays off; vps/cutover.sh hands it over again). log: <repo>/packages/cre-workflow/var/vps/rollback-20261009T172323Z.log
+    Mac (stub launchd): loaded=yes disabled=no; runtime var: writer.released=absent, last-run=1791566591
+    VPS: claim=null, released={"at":"2026-10-09T17:23:27Z","to":"mac","by":"vps/rollback.sh"}, timer=disabled/inactive
+  PASS  Mac loaded + enabled, Mac last-run = the VPS's last run (1791566591); VPS released, timer disabled/inactive
+  PASS  a VPS run after the rollback refuses (no claim)
+
+## C9. rollback when the VPS cannot be reached: refused without the typed confirmation; nothing changes
+    | [2026-10-09T17:23:31Z] VPS: NOT reachable over ssh
+    | [2026-10-09T17:23:31Z] REFUSED: the VPS is not reachable. If it is powered off at the provider, re-run with --vps-unreachable. Nothing changed.
+    | [2026-10-09T17:23:32Z] REFUSED: --vps-unreachable needs the typed confirmation (or --confirm-vps-off)
+  PASS  both refused; the Mac job stays off
+    | [2026-10-09T17:23:32Z]   R1. ssh isotherm-unreachable isotherm-vps.sh release   (timer off, claim removed, writer.released; returns the VPS's last run)
+    | [2026-10-09T17:23:32Z]   R2. ~/isotherm-live/packages/cre-workflow/var/last-run := max(Mac, VPS last run); remove ~/isotherm-live/packages/cre-workflow/var/writer.released
+    | [2026-10-09T17:23:32Z]   R3. launchctl enable gui/501/xyz.isotherm.cre-settle ; launchctl bootstrap gui/501 ~/Library/LaunchAgents/xyz.isotherm.cre-settle.plist
+    | [2026-10-09T17:23:32Z] R1 skipped: the VPS is unreachable and confirmed powered off; the Mac's spacing guard counts from now
+    | [2026-10-09T17:23:32Z] R2: ~/isotherm-live/packages/cre-workflow/var/last-run := 1791566612 (the VPS's last run)
+    | [2026-10-09T17:23:32Z] R2 done
+    | [2026-10-09T17:23:32Z] R3 done: xyz.isotherm.cre-settle loaded and enabled; next run at :05
+    | [2026-10-09T17:23:32Z] DONE: settlement is back on the Mac. Keep the VPS released (its timer stays off; vps/cutover.sh hands it over again). log: <repo>/packages/cre-workflow/var/vps/rollback-20261009T172332Z.log
+  PASS  with 'THE VPS IS OFF' confirmed: Mac job back, spacing guard counts from now
+
+## C10. cutover again after the rollback: what the Mac sent while it was the writer is not a writer conflict
+    (test) a 0-value tx from the shared tx key, as the Mac settling while it held the role
+    | [2026-10-09T17:23:38Z] E1 done: xyz.isotherm.cre-settle not loaded, disabled
+    | [2026-10-09T17:23:38Z] E2 done: ~/isotherm-live/packages/cre-workflow/var/writer.released written
+    | [2026-10-09T17:23:42Z] E3 done: the VPS holds the claim: {"at":"2026-10-09T17:23:38Z","from":"mac","by":"vps/cutover.sh"}
+    | [2026-10-09T17:23:44Z] DONE: the VPS settles from now on; its first signing run is expected at 2026-10-09T18:05:00.000Z. Watch it with: ssh isotherm-test bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh logs. log: <repo>/packages/cre-workflow/var/vps/cutover-20261009T172333Z.log
+    | [2026-10-09T17:23:46Z] last run 35 s ago (< 1800 s spacing); skipping
+    | [2026-10-09T17:23:46Z] [vps] tripwire: nonce 2 -> 2, own txs 0: single writer
+    | no writer-conflict
+  PASS  the VPS's first run after the second cutover passes the handover guard and finds no conflict (the claim re-baselined the tripwire)
+
+## stub launchd calls, in order
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print-disabled gui/501
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print-disabled gui/501
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print-disabled gui/501
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl bootout gui/501/xyz.isotherm.cre-settle
+    launchctl disable gui/501/xyz.isotherm.cre-settle
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print-disabled gui/501
+    launchctl enable gui/501/xyz.isotherm.cre-settle
+    launchctl bootstrap gui/501 <scratch>/mac/home/Library/LaunchAgents/xyz.isotherm.cre-settle.plist
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print-disabled gui/501
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print-disabled gui/501
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl bootout gui/501/xyz.isotherm.cre-settle
+    launchctl disable gui/501/xyz.isotherm.cre-settle
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print-disabled gui/501
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print-disabled gui/501
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print-disabled gui/501
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print-disabled gui/501
+    launchctl enable gui/501/xyz.isotherm.cre-settle
+    launchctl bootout gui/501/xyz.isotherm.cre-settle
+    launchctl bootstrap gui/501 <scratch>/mac/home/Library/LaunchAgents/xyz.isotherm.cre-settle.plist
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl bootout gui/501/xyz.isotherm.cre-settle
+    launchctl disable gui/501/xyz.isotherm.cre-settle
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print-disabled gui/501
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print-disabled gui/501
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print-disabled gui/501
+    launchctl enable gui/501/xyz.isotherm.cre-settle
+    launchctl bootout gui/501/xyz.isotherm.cre-settle
+    launchctl bootstrap gui/501 <scratch>/mac/home/Library/LaunchAgents/xyz.isotherm.cre-settle.plist
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print-disabled gui/501
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl bootout gui/501/xyz.isotherm.cre-settle
+    launchctl disable gui/501/xyz.isotherm.cre-settle
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print gui/501/xyz.isotherm.cre-settle
+    launchctl print-disabled gui/501
+    fork-env down
+
+# 2026-10-09T17:23:47Z done: 14 passed, 0 failed

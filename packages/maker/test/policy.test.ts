@@ -70,3 +70,101 @@ test("the urgent rule does not depend on requoteTicks: fair at or through a rest
     assert.deepEqual(down.reasons, ["resting bid 0.44 >= fair 0.44"]);
   }
 });
+
+// ---------------------------------------------------------------- the lazy maker (policy.lazy; 2026-10-09)
+const lazyCfg = { ...cfg, requoteTicks: 3, lazy: true, requoteFairMove: 0.04, staleRefreshHours: 2, staleRefreshMinMove: 0.02, oneSided: true };
+const L = (o: Partial<PolicyInput>) => decide({ ...base, cfg: lazyCfg, ...o });
+
+test("lazy: a drifting desired price or a 0.03 fair move is no re-quote; 0.04 is", () => {
+  // the desired price moved 2-3 ticks (skew, a narrower spread, other quotes): no reason by itself
+  assert.equal(L({ desired: { ...want, bid: 0.41, ask: 0.53 } }).kind, "none");
+  assert.equal(L({ desired: { ...want, bid: 0.47, ask: 0.53 }, fair: 0.47 }).kind, "none");
+  // the fair moved 0.039 since the quote (still inside a wide resting spread): quiet; 0.04: re-quote both sides
+  const wide0 = { bid: { id: 1, price: 0.4, remaining: 100 }, ask: { id: 2, price: 0.56, remaining: 100 } };
+  assert.equal(L({ resting: wide0, fair: 0.431, desired: { ...want, bid: 0.4, ask: 0.47 } }).kind, "none");
+  assert.equal(L({ resting: wide0, fair: 0.43, desired: { ...want, bid: 0.4, ask: 0.47 } }).kind, "requote");
+  const a = L({ fair: 0.51, desired: { ...want, bid: 0.48, ask: 0.54 } });
+  assert.equal(a.kind, "requote");
+  assert.equal(a.urgent, true); // 0.51 >= the resting ask 0.50
+  assert.equal(a.sides, undefined);
+  assert.match(a.reasons.join("; "), /fair moved 0.47 -> 0.51 \(>= 0.04\)/);
+  // a wide resting quote, fair +0.04 but nothing crossed: non-urgent re-quote
+  const wide = { bid: { id: 1, price: 0.4, remaining: 100 }, ask: { id: 2, price: 0.56, remaining: 100 } };
+  const b = L({ resting: wide, fair: 0.51, desired: { ...want, bid: 0.48, ask: 0.54 } });
+  assert.deepEqual([b.kind, b.urgent], ["requote", false]);
+});
+
+test("lazy: a stale quote is refreshed only if the fair also moved >= staleRefreshMinMove", () => {
+  const old = { fair: 0.47, at: 1000 - 2 * 3600 };
+  assert.equal(L({ lastQuote: old, fair: 0.485 }).kind, "none"); // 2 h old, moved 0.015
+  const a = L({ lastQuote: old, fair: 0.49, desired: { ...want, bid: 0.46, ask: 0.52 } });
+  assert.equal(a.kind, "requote");
+  assert.match(a.reasons[0], /older than 2 h and fair moved 0.47 -> 0.49/);
+  assert.equal(L({ lastQuote: { fair: 0.47, at: 1000 - 2 * 3600 + 1 }, fair: 0.49 }).kind, "none"); // 1 s short of 2 h
+  // the legacy 6-hour unconditional refresh is gone in lazy mode
+  assert.equal(L({ lastQuote: { fair: 0.47, at: 1000 - 7 * 3600 }, fair: 0.47 }).kind, "none");
+});
+
+test("lazy: urgent, fills and refills still re-quote; without a lastQuote the resting mid is the reference", () => {
+  assert.equal(L({ fair: 0.5 }).urgent, true); // resting ask 0.50 <= fair
+  assert.equal(L({ fair: 0.44 }).urgent, true);
+  assert.equal(L({ resting: { bid: resting.bid } }).kind, "requote"); // the ask filled
+  assert.equal(L({ resting: { ...resting, bid: { ...resting.bid, remaining: 40 } } }).kind, "requote");
+  assert.equal(L({ desired: { ...want, ask: null, askSize: 0 } }).kind, "requote"); // ask no longer wanted
+  // adopted orders (no lastQuote): mid 0.47; fair 0.508 is 0.038 away -> quiet, 0.512 -> re-quote
+  assert.equal(L({ lastQuote: undefined, fair: 0.495, desired: { ...want, bid: 0.46, ask: 0.53 } }).kind, "none");
+  const a = L({ lastQuote: undefined, fair: 0.515, desired: { ...want, bid: 0.48, ask: 0.55 } });
+  assert.equal(a.kind, "requote");
+  assert.match(a.reasons.join("; "), /vs the resting mid/);
+});
+
+test("lazy: entering guard-wide re-quotes (protective), leaving it does not", () => {
+  const narrowLast = { fair: 0.47, at: 900, wide: false };
+  const a = L({ lastQuote: narrowLast, wide: true, desired: { ...want, bid: 0.41, ask: 0.53 } });
+  assert.equal(a.kind, "requote");
+  assert.deepEqual(a.reasons, ["guard disagrees: widen the resting quote"]);
+  assert.equal(L({ lastQuote: { ...narrowLast, wide: true }, wide: false }).kind, "none");
+  assert.equal(L({ lastQuote: { fair: 0.47, at: 900 }, wide: true }).kind, "none"); // a lastQuote without the flag
+});
+
+test("one-sided: a filled side is refilled alone while the other side is still good; otherwise both", () => {
+  const a = L({ resting: { bid: resting.bid } }); // the ask filled, the bid 0.44 is where it should be
+  assert.deepEqual([a.kind, a.sides], ["requote", { bid: false, ask: true }]);
+  const p = L({ resting: { ...resting, bid: { ...resting.bid, remaining: 40 } } });
+  assert.deepEqual(p.sides, { bid: true, ask: false });
+  // the kept side is >= requoteFairMove away from where the maker wants it now (skew after a big fill): both sides
+  assert.equal(L({ resting: { bid: resting.bid }, desired: { ...want, bid: 0.4, ask: 0.46 } }).sides, undefined);
+  // an urgent crossing re-centres both sides, even with the other side still near
+  const u = L({ fair: 0.5, desired: { ...want, bid: 0.47, ask: 0.53 } });
+  assert.deepEqual([u.urgent, u.sides], [true, undefined]);
+  // an unwanted side (position cap) is cancelled alone
+  assert.deepEqual(L({ desired: { ...want, bid: null, bidSize: 0 } }).sides, { bid: true, ask: false });
+  // a fair move >= requoteFairMove re-centres the whole quote
+  assert.equal(L({ resting: { bid: resting.bid }, fair: 0.51, desired: { ...want, bid: 0.48, ask: 0.54 } }).sides, undefined);
+  // off without lastQuote, with oneSided off, and in legacy mode
+  assert.equal(L({ resting: { bid: resting.bid }, lastQuote: undefined }).sides, undefined);
+  assert.equal(L({ resting: { bid: resting.bid }, cfg: { ...lazyCfg, oneSided: false } }).sides, undefined);
+  assert.equal(d({ resting: { bid: resting.bid } }).sides, undefined);
+});
+
+test("budget tiers: soft = only urgent re-quotes (new quotes still allowed); hard = nothing new, urgent -> pull", () => {
+  for (const c of [cfg, lazyCfg]) {
+    const t = (o: Partial<PolicyInput>) => decide({ ...base, cfg: c, ...o });
+    // soft
+    assert.equal(t({ tier: "soft", resting: { bid: resting.bid } }).kind, "none"); // a refill is not urgent
+    assert.match(t({ tier: "soft", resting: { bid: resting.bid } }).reasons[0], /soft threshold: only urgent/);
+    assert.deepEqual([t({ tier: "soft", fair: 0.51, desired: { ...want, bid: 0.45, ask: 0.57 } }).kind, t({ tier: "soft", fair: 0.51 }).urgent], ["requote", true]);
+    assert.equal(t({ tier: "soft", resting: {} }).kind, "quote");
+    // hard
+    assert.equal(t({ tier: "hard", resting: {} }).kind, "none");
+    assert.equal(t({ tier: "hard", resting: {}, mode: "pulled" }).mode, "pulled");
+    assert.equal(t({ tier: "hard", resting: { bid: resting.bid } }).kind, "none");
+    const u = t({ tier: "hard", fair: 0.51, desired: { ...want, bid: 0.45, ask: 0.57 } });
+    assert.deepEqual([u.kind, u.urgent, u.mode], ["pull", true, "pulled"]);
+    assert.match(u.reasons.at(-1)!, /pulled instead of re-quoted/);
+    // the kill switch, certainty and a desired pull are never held back by a tier
+    assert.equal(t({ tier: "hard", now: 10_000 }).kind, "close");
+    assert.equal(t({ tier: "hard", certain: true }).kind, "pull");
+    assert.equal(t({ tier: "hard", desired: { pull: true, reasons: ["fair 0.99"] } }).kind, "pull");
+  }
+});

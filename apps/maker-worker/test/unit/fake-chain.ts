@@ -60,6 +60,7 @@ export interface SentTx {
   gas: bigint;
   nonce: number;
   hash: Hex;
+  value?: bigint;
 }
 
 let addrSeq = 0x1000;
@@ -86,6 +87,8 @@ export class FakeChain {
   sent: SentTx[] = [];
   getLogsRanges: [bigint, bigint][] = [];
   revertOn = new Set<string>(); // function names whose simulation reverts
+  codes = new Map<string, Hex>(); // contract code per address (getCode); EOAs have none
+  refuseSends = 0; // the next N broadcasts are refused by the "RPC"
   calls = { reads: 0, sims: 0 };
 
   constructor(nowSec: number) {
@@ -324,6 +327,9 @@ export class FakeChain {
       async getBalance({ address }: { address: Address }) {
         return self.mon.get(lc(address)) ?? 0n;
       },
+      async getCode({ address }: { address: Address }) {
+        return self.codes.get(lc(address)) ?? "0x";
+      },
       async getTransactionCount({ address }: { address: Address }) {
         return self.nonces.get(lc(address)) ?? 0;
       },
@@ -372,10 +378,29 @@ export class FakeChain {
   wallet() {
     const self = this;
     return (account: { address: Address }) => ({
-      async sendTransaction({ to, data, gas, nonce }: { to: Address; data: Hex; gas: bigint; nonce: number }) {
+      async sendTransaction({ to, data, gas, nonce, value }: { to: Address; data?: Hex; gas: bigint; nonce: number; value?: bigint }) {
         const from = account.address;
+        if (self.refuseSends > 0) {
+          self.refuseSends--;
+          throw new Error("fake RPC: transaction refused");
+        }
         const want = self.nonces.get(lc(from)) ?? 0;
         if (nonce !== want) throw new Error(`nonce ${nonce} != expected ${want}`);
+        if (!data || data === "0x") {
+          // a plain MON transfer (the treasury's top-ups): Monad bills the gas limit
+          if (gas < 21_000n) throw new Error("intrinsic gas too low");
+          const cost = gas * self.gasPrice + (value ?? 0n);
+          const bal = self.mon.get(lc(from)) ?? 0n;
+          if (bal < cost) throw new Error("insufficient MON");
+          self.mon.set(lc(from), bal - cost);
+          self.mon.set(lc(to), (self.mon.get(lc(to)) ?? 0n) + (value ?? 0n));
+          self.nonces.set(lc(from), want + 1);
+          self.mine();
+          const hash = keccak256(toHex(`${from}${nonce}${self.block}`)) as Hex;
+          self.receipts.set(hash, { status: "success", blockNumber: self.block, gasUsed: 21_000n, effectiveGasPrice: self.gasPrice, logs: [], transactionHash: hash });
+          self.sent.push({ from, to, functionName: "(transfer)", args: [], gas, nonce, hash, value: value ?? 0n });
+          return hash;
+        }
         const cost = gas * self.gasPrice; // Monad bills the gas limit
         const bal = self.mon.get(lc(from)) ?? 0n;
         if (bal < cost) throw new Error("insufficient MON");

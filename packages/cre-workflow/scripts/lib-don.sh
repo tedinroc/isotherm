@@ -45,7 +45,8 @@ resolve_signer() {
     say "signer: Resolver.owner() $onchain_owner impersonated on the fork (anvil_impersonateAccount; no key)"
   else
     [ -r "$OWNER_KEY_FILE" ] || { say "REFUSED: owner key file not readable: $OWNER_KEY_FILE"; exit 2; }
-    [ "$(stat -f %Lp "$OWNER_KEY_FILE" 2>/dev/null || stat -c %a "$OWNER_KEY_FILE")" = 600 ] || { say "REFUSED: $OWNER_KEY_FILE must be chmod 600"; exit 2; }
+    # GNU stat first: on Linux `stat -f %Lp` succeeds (file-system mode) with unrelated output, so it cannot go first
+    [ "$(stat -c %a "$OWNER_KEY_FILE" 2>/dev/null || stat -f %Lp "$OWNER_KEY_FILE")" = 600 ] || { say "REFUSED: $OWNER_KEY_FILE must be chmod 600"; exit 2; }
     SIGNER=$(cd "$PKG/settle" && ISOTHERM_OWNER_KEY_FILE="$OWNER_KEY_FILE" bun e2e/don-ops.ts addr)
     if [ "$IS_FORK" = 1 ] && [ "$(lc "$SIGNER")" = "$(lc "$LIVE_OWNER")" ]; then
       say "REFUSED: the LIVE owner key on a fork. A transaction it signs for chain 10143 is valid on live testnet too. Use --fork-unlocked."; exit 2

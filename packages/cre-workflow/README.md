@@ -27,7 +27,7 @@ cron (02:00 Taipei, 02:00 Tokyo, hourly at :30)
 ```bash
 ./setup.sh                                   # CRE CLI v1.37.0 (sha256-pinned) + bun 1.4.2 into .tools/, npm deps
 export PATH="$PWD/.tools/bin:$PWD/.tools/node_modules/.bin:$PATH"
-cd settle && bun test && bun run typecheck && bun run build && cd ..   # 84 tests (+3 fork e2e), WASM build, no login
+cd settle && bun test && bun run typecheck && bun run build && cd ..   # 93 tests (+11 fork e2e, skipped without a fork), WASM build, no login
 scripts/fork-e2e.sh        # live v1 bytecode on an anvil fork: accepted/tampered reports, catch-up, VOID, payouts
 scripts/dry-run.sh         # what a run would do on LIVE testnet right now (0 MON, nothing signed by the real key)
 scripts/run-official.sh    # OFFICIAL: `cre workflow simulate -T testnet --broadcast` (needs `cre login`)
@@ -39,6 +39,11 @@ scripts/jobs-fork-e2e.sh   # both LaunchAgents, started by launchd from the runt
 succeeds, otherwise the labelled harness fallback; evidence record per run) and `xyz.isotherm.challenge-watch` (every
 120 s). Both run from `~/isotherm-live/packages/cre-workflow`, because launchd cannot read `~/Documents` (macOS TCC,
 exit 126). Operations: `docs/OPERATIONS.md` §6. Changes in this round: `FIXES.md`.
+
+**Prepared, not deployed (2026-10-09): the same job on a small Linux VPS** (`vps/`, runbook `vps/README.md`). It is the
+same `settle-job.sh` under a systemd timer at :05, with the official path, the harness fallback, the lock and the
+spacing guard unchanged. Around the job it adds a single-writer guard, so the Mac and the VPS never both settle, and an
+optional ntfy push. `vps/cutover.sh` moves the job from the Mac; `vps/rollback.sh` moves it back.
 
 | Script | What it does | MON | Login |
 |---|---|---|---|
@@ -52,6 +57,9 @@ exit 126). Operations: `docs/OPERATIONS.md` §6. Changes in this round: `FIXES.m
 | `scripts/deploy-runtime.sh` | Copies the package (+ `packages/abi`, `deployments/testnet.json`) to `~/isotherm-live`; `--load` / `--unload` / `--status` | | |
 | `scripts/install-launchd.sh` | Renders `launchd/xyz.isotherm.{cre-settle,challenge-watch}.plist.template`; `--load` refuses a copy under `~/Documents` | | |
 | `scripts/jobs-fork-e2e.sh` | Both jobs started by launchd from the runtime copy on an anvil fork (port 19330) warped to 02:06 Taipei, Oct 9 | 0 | no |
+| `vps/push.sh`, `vps/setup.sh` | Ship the job's code to a VPS; install the pinned toolchain and the systemd units there (Ubuntu 24.04, amd64/arm64) | 0 | no |
+| `vps/cutover.sh`, `vps/rollback.sh` | Move the hourly job Mac → VPS and back. Dry run by default; `--execute` switches launchd and systemd in a safe order | 0 | the VPS needs its own `cre login` (`vps/README.md` §4) |
+| `vps/test/run-container-tests.sh` | The VPS kit rehearsed in Ubuntu 24.04 containers (systemd, ssh, anvil fork, stubbed launchd); writes `vps/evidence/` | 0 | no |
 
 Keys are never printed:
 - **Attester (CRE secret `ISOTHERM_ATTESTER_KEY`).** Read from `~/.config/isotherm/attester.key`.
@@ -73,5 +81,7 @@ Keys are never printed:
   (fork only: a deliberately wrong report for the watcher test).
 - `settle/ops/challenge-watch.ts`: the challenge watcher.
 - `launchd/`: the two LaunchAgent templates.
+- `vps/`: the Linux VPS kit (systemd units, `settle-vps.sh` with the single-writer guard, the Mac-side cutover and
+  rollback, and the container rehearsal with its evidence). Runbook: `vps/README.md`.
 - `settle/fixtures/`: real METAR captures, listed in `MANIFEST.json`.
 - `evidence/`: the outputs referenced in `RESULT.md`.

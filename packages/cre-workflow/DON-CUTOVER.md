@@ -189,6 +189,19 @@ Run everything from `packages/cre-workflow` in the owner's own logged-in termina
 | C5b | owner | no `LadderResolved` by 19:40 (after the 18:00, 18:30, 19:00 and 19:30 runs) | `scripts/don-rollback.sh --execute`. The Mac's next :05 run settles through the mock. Before that, if the DON's execution logs (`cre execution logs <uuid>`) show a report tx (`tx <hash> -> not-accepted`), run `scripts/don-evidence.sh --tx <hash>`: when it names a workflow-owner mismatch and the report's workflow ID is our deployed one (`cre workflow get`), `setExpectedWorkflow(0x00…00, <that owner>)` fixes it without a rollback |
 | C6 | agent, then owner | after the first DON settlement | Merge section 8. Copy that day's `don-runs.jsonl` record into `evidence/`. Commit `deployments/testnet.json` (`activeForwarder`). Keep the Mac plist installed but unloaded through Nov 3. Rotate the attester after judging (a new key into the Vault DON, then `setAttester`) |
 
+### 6.1 If the hourly job runs on the VPS (`vps/README.md`)
+
+After `vps/cutover.sh`, settlement runs on a Linux VPS under `isotherm-settle.timer`, and the Mac job is unloaded and
+disabled.
+- **C4.** No `launchctl` step is needed. Leave the VPS timer on: the VPS runs the same `run-official.sh`, so it stands
+  down by itself once `Resolver.forwarder()` is not the mock.
+- **Gates.** Gate 6 passes because the Mac job is unloaded. Gate 7 passes because `cutover.sh` synced the Mac's runtime
+  copy.
+- **Rollback, R5.** `scripts/don-rollback.sh` does not reload the Mac job while the Mac's runtime copy holds
+  `var/writer.released`; it says so instead. The VPS's next :05 run settles through the mock.
+- **`deployments/testnet.json` on the VPS** must say `activeForwarder` = mock for the harness fallback. Do not push to
+  the VPS during the DON period, or run `vps/push.sh` again after the rollback.
+
 ## 7. Rollback, and why each step is there
 
 - **R1 `cre workflow pause`** stops DON executions. If CRE itself is the problem and the pause fails, the script

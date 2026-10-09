@@ -1,0 +1,27 @@
+# 2026-10-09T17:22:17Z vps/push.sh to a fresh stand-in VPS (no rsync there yet: the tar fallback; later pushes use rsync, see setup-arm64.txt)
+[2026-10-09T17:22:18Z] pushed; the job's code on the VPS is byte-identical to this checkout (commit 5e89e54 + uncommitted changes, pushed 2026-10-09T17:22:18Z)
+[2026-10-09T17:22:18Z] next, if the toolchain or settle/bun.lock is new on the VPS: ssh -t isotherm-test bash isotherm/packages/cre-workflow/vps/setup.sh
+## what arrived (directories to depth 4, size) and a search for files that must never be shipped
+commit 5e89e54 + uncommitted changes, pushed 2026-10-09T17:22:18Z
+.
+./deployments
+./packages
+./packages/abi
+./packages/cre-workflow
+./packages/cre-workflow/.tools
+./packages/cre-workflow/.tools/bin
+./packages/cre-workflow/.tools/dl
+./packages/cre-workflow/launchd
+./packages/cre-workflow/scripts
+./packages/cre-workflow/settle
+./packages/cre-workflow/settle/e2e
+./packages/cre-workflow/settle/fixtures
+./packages/cre-workflow/settle/node_modules
+./packages/cre-workflow/settle/ops
+./packages/cre-workflow/settle/test
+./packages/cre-workflow/var
+./packages/cre-workflow/vps
+./packages/cre-workflow/vps/systemd
+./packages/cre-workflow/vps/test
+796M
+forbidden files: 12

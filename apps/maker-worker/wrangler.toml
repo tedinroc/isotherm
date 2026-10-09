@@ -49,7 +49,14 @@ preview_id = "isotherm-maker-local-preview"
 # SHADOW until the cutover runbook (docs/OPERATIONS.md section 8). Live also needs the Durable Object flag
 # (scripts/control.mjs arm) and the key secrets; with either switch off, nothing is ever broadcast.
 MAKER_MODE = "live"
-RPC_URL = "https://rpc.ankr.com/monad_testnet"
+# RPCs tried in this order (src/rpc.ts): each one must answer chain id 10143; reads fall through on rate-limit / 5xx
+# errors (retried with backoff first), writes go to the first healthy one. The official RPC limits each client IP to
+# 15 requests/s and Workers share egress IPs, so it comes last. RPC_URL (one URL) still works as an alias.
+RPC_URLS = "https://rpc.ankr.com/monad_testnet,https://10143.rpc.thirdweb.com,https://testnet-rpc.monad.xyz"
+# Client-side throttle per endpoint (token bucket), retries per endpoint, cool-down of a failing endpoint.
+RPC_RPS = "8"
+RPC_RETRIES = "2"
+RPC_COOLDOWN_SEC = "30"
 STATIONS = "RCSS"
 ROLL_NOT_BEFORE_LOCAL = "12:00"
 ROLL_AUTO = "1"
@@ -75,4 +82,6 @@ AUTO_STALE_VOID = "1"
 # Per-title rate limit for the optional push channel (secret ALERT_WEBHOOK_URL).
 ALERT_PUSH_MIN_SEC = "3600"
 # Secrets (set with scripts/put-secrets.mjs, from stdin; never here): MAKER_KEY, OPERATOR_KEY, GUARDIAN_KEY,
-# SNAPSHOT_TOKEN, and optionally ALERT_WEBHOOK_URL (absent = alerts stay in the Durable Object and the KV outbox).
+# SNAPSHOT_TOKEN, and optionally ALERT_WEBHOOK_URL (absent = alerts stay in the Durable Object and the KV outbox),
+# ALERT_WEBHOOK_TOKEN (an ntfy access token, sent as a Bearer header) and TREASURY_KEY (the dedicated treasury key
+# that tops up the role keys in live mode, config/worker.json treasury; absent = balance checks and LOW alerts only).

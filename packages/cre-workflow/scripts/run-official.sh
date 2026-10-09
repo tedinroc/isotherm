@@ -26,6 +26,9 @@
 #
 # Safety: an anvil fork shares the live Resolver's EIP-712 domain, so reports signed there with the LIVE attester key
 # would be valid on live testnet too. This script refuses any non-live RPC while the key is the live attester.
+# Single writer: if $STATE/writer.released exists (this host handed settlement to another host: vps/cutover.sh,
+# vps/rollback.sh), a broadcasting run stops before anything is signed (exit 0, "SKIPPED"); --no-broadcast and
+# --preflight-only still run in full (nothing they sign is sent). Runs on macOS and Linux.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PKG=$PWD
@@ -57,7 +60,17 @@ mkdir -p "$STATE/logs"
 LOG="$STATE/logs/run-$(date -u +%Y%m%dT%H%M%SZ).log"
 say() { echo "[$(date -u +%FT%TZ)] $*" | tee -a "$LOG"; }
 DEP="$PKG/../../deployments/testnet.json"
+# Octal permission bits, GNU stat first: on Linux `stat -f` means "file system" and would succeed with other output.
+file_mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }
 jget() { node -e 'const d=require(process.argv[1]); console.log(process.argv[2].split(".").reduce((o,k)=>o[k],d))' "$1" "$2"; }
+
+# ---- single writer: a state directory that handed the settlement-writer role to another host (vps/cutover.sh on the
+# Mac, vps/rollback.sh on the VPS) never signs or sends again until the role is handed back. Dry runs and
+# --preflight-only still run in full: they send nothing, and the cutover's gates rely on a real preflight.
+if [ "$BROADCAST" = 1 ] && [ "$PREFLIGHT_ONLY" = 0 ] && [ -f "$STATE/writer.released" ]; then
+  say "SKIPPED: this host released the settlement writer role ($(tr -d '\n' <"$STATE/writer.released" | cut -c1-200)); nothing signed or sent. See packages/cre-workflow/vps/README.md"
+  exit 0
+fi
 
 # ---- 0. tools
 command -v cre >/dev/null && command -v bun >/dev/null || { say "missing tools: run ./setup.sh first"; exit 2; }
@@ -94,7 +107,7 @@ ATT_FILE=${ISOTHERM_ATTESTER_KEY_FILE:-$HOME/.config/isotherm/attester.key}
 TX_FILE=${ISOTHERM_TX_KEY_FILE:-$ATT_FILE}
 for f in "$ATT_FILE" "$TX_FILE"; do
   [ -r "$f" ] || { say "key file not readable: $f"; exit 2; }
-  [ "$(stat -f %Lp "$f")" = "600" ] || { say "key file must be chmod 600: $f"; exit 2; }
+  [ "$(file_mode "$f")" = "600" ] || { say "key file must be chmod 600: $f"; exit 2; }
 done
 addr_of() { (cd settle && KEYFILE="$1" bun -e 'import {privateKeyToAccount} from "viem/accounts"; const k=require("fs").readFileSync(process.env.KEYFILE,"utf8").trim(); console.log(privateKeyToAccount((k.startsWith("0x")?k:"0x"+k)).address)'); }
 ATT_ADDR=$(addr_of "$ATT_FILE")

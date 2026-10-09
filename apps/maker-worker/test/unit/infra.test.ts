@@ -10,13 +10,27 @@ import { parseKey } from "../../src/engine.ts";
 const A = "0x00000000000000000000000000000000000000a1" as const;
 
 describe("settings", () => {
-  it("defaults to SHADOW on the live testnet RPC and refuses any other RPC", () => {
+  it("defaults to SHADOW on the allowlisted live testnet RPCs and refuses any other RPC", () => {
     const s = settingsFrom({} as Env);
-    expect(s).toMatchObject({ envMode: "shadow", rpc: "https://testnet-rpc.monad.xyz", rpcIsLive: true, stations: ["RCSS"], rollNotBeforeLocal: "12:00", tickSec: 60 });
+    expect(s).toMatchObject({ envMode: "shadow", rpc: "https://rpc.ankr.com/monad_testnet", rpcIsLive: true, stations: ["RCSS"], rollNotBeforeLocal: "12:00", tickSec: 60 });
+    // RPC_URLS default: Ankr, thirdweb, then the official RPC (it limits each client IP; Workers share egress IPs)
+    expect(s.rpcs).toEqual(["https://rpc.ankr.com/monad_testnet", "https://10143.rpc.thirdweb.com", "https://testnet-rpc.monad.xyz"]);
+    expect([s.rpcRps, s.rpcRetries, s.rpcCooldownSec, s.rpcTimeoutSec]).toEqual([8, 2, 30, 20]);
     expect(settingsFrom({ MAKER_MODE: "LIVE" } as Env).envMode).toBe("live");
     expect(settingsFrom({ MAKER_MODE: "yes" } as Env).envMode).toBe("shadow");
     expect(() => settingsFrom({ RPC_URL: "https://rpc.monad.xyz" } as Env)).toThrow(/loopback/);
     expect(() => settingsFrom({ RPC_URL: "http://10.0.0.2:8545" } as Env)).toThrow(/loopback/);
+  });
+  it("RPC_URLS: a comma list of allowlisted RPCs; RPC_URL is the one-endpoint alias; never live and loopback mixed", () => {
+    expect(settingsFrom({ RPC_URL: "https://testnet-rpc.monad.xyz" } as Env).rpcs).toEqual(["https://testnet-rpc.monad.xyz"]);
+    const two = settingsFrom({ RPC_URLS: " https://10143.rpc.thirdweb.com , https://testnet-rpc.monad.xyz ", RPC_URL: "https://rpc.ankr.com/monad_testnet" } as Env);
+    expect([two.rpc, two.rpcs]).toEqual(["https://10143.rpc.thirdweb.com", ["https://10143.rpc.thirdweb.com", "https://testnet-rpc.monad.xyz"]]); // RPC_URLS wins
+    expect(() => settingsFrom({ RPC_URLS: "https://rpc.ankr.com/monad_testnet,https://evil.example/rpc" } as Env)).toThrow(/must be one of/);
+    expect(() => settingsFrom({ RPC_URLS: "http://127.0.0.1:8545,https://rpc.ankr.com/monad_testnet" } as Env)).toThrow(/mixes loopback/);
+    expect(() => settingsFrom({ RPC_URLS: "https://rpc.ankr.com/monad_testnet,https://rpc.ankr.com/monad_testnet" } as Env)).toThrow(/twice/);
+    const fork = settingsFrom({ RPC_URLS: "http://127.0.0.1:19803,http://127.0.0.1:19800" } as Env);
+    expect([fork.rpcIsLoopback, fork.rpcIsLive]).toEqual([true, false]);
+    expect(() => settingsFrom({ RPC_RPS: "0" } as Env)).toThrow(/out of range/);
   });
   it("settlement guardrails: overdue after 3 h, repeated hourly, automatic stale void on, push limited to 1 per title per hour", () => {
     expect(settingsFrom({} as Env)).toMatchObject({ settleOverdueSec: 10_800, settleOverdueRepeatSec: 3600, autoStaleVoid: true, alertPushMinSec: 3600 });
@@ -38,10 +52,14 @@ describe("worker config", () => {
     const sh = workerConfig(settingsFrom({} as Env), "shadow");
     expect([sh.dryRun, sh.allowLive]).toEqual([true, false]);
     expect(sh.budget.rollCapMon).toEqual({ maker: 0.8, operator: 0.5, marketCreator: 0.8 });
-    // cutover day: the Mac's quote spend of that day (<= its cap 4.5 + 0.2 reserve) is re-booked onto this meter
-    expect(sh.budget.dailyCapMon.maker).toBe(6.9);
-    // the Worker's own requote threshold (the Mac keeps 2); the guard-wide hysteresis comes from the shared defaults
-    expect(sh.policy.requoteTicks).toBe(3);
+    // the quoting budget with tiers (the cutover-day 6.9 cap is gone): soft at 60 %, x2 spreads above it
+    expect(sh.budget.dailyCapMon.maker).toBe(1.2);
+    expect([sh.budget.softRatio, sh.budget.softWidenMult]).toEqual([0.6, 2]);
+    expect(sh.budget.reserveMon.maker).toBe(0.5);
+    // the lazy re-quote policy is the shared default (both runtimes); requoteTicks only matters with lazy off
+    expect(sh.policy).toMatchObject({ lazy: true, requoteFairMove: 0.04, staleRefreshHours: 2, staleRefreshMinMove: 0.02, oneSided: true, requoteTicks: 3 });
+    // the roll: at most 4 strikes nearest the Polymarket median, none outside [0.05, 0.95]
+    expect(sh.roll.strikePolicy).toMatchObject({ mode: "nearest", count: 4, minP: 0.05, maxP: 0.95 });
     expect([sh.fair.guardWarn, sh.fair.guardWarnExit]).toEqual([0.15, 0.13]);
     expect([sh.gas.makerMult, sh.gas.opMult]).toEqual([1.08, 1.1]);
     expect(sh.quote.halfSpreadTicks).toBe(3);

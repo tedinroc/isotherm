@@ -132,7 +132,7 @@ async function route(req: Request, env: Env, ctx: ExecutionContext): Promise<Res
 
   if (m === 'POST' && path === '/api/admin/tick') {
     await requireBearer(req, env.ADMIN_TOKEN);
-    return passthrough(await callDO(env, '/tick', {}));
+    return passthrough(await callDO(env, '/tick', { force: true })); // runs the scan even during an RPC backoff
   }
 
   throw new HttpError(404, 'not found');

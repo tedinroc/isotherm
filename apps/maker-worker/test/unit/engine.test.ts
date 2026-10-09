@@ -7,6 +7,9 @@ import { kuruBookAbi } from "../../../../packages/maker/src/abis.ts";
 import { stringify } from "../../src/store.ts";
 import { addDays, macSnapshot, MAKER, OPERATOR, PM, stubData, world } from "./helpers.ts";
 
+/** The pre-2026-10-09 re-quote rules (policy.lazy off): still the rollback lever, so their tests stay. */
+const LEGACY = '{"policy":{"lazy":false}}';
+
 const armed = async (w: ReturnType<typeof world>, seq = 1) => {
   w.kv.m.set("control", JSON.stringify({ seq, live: true, confirm: MAKER.address }));
 };
@@ -268,7 +271,7 @@ describe("shadow fidelity (fixes from the 2026-10-08 shadow-vs-Mac comparison)",
     expect(w.chain.sent).toEqual([]);
   });
 
-  it("mirrors the live maker's lastQuote, so it predicts the 'quote older than 6 h' re-quote", async () => {
+  it("mirrors the live maker's lastQuote, so it predicts the 'quote older than 6 h' re-quote (legacy rules)", async () => {
     const w = world();
     const quotedAt = w.chain.time - 6 * 3600 + 120; // the live maker quoted 5 h 58 min ago
     const snap = () => {
@@ -277,7 +280,7 @@ describe("shadow fidelity (fixes from the 2026-10-08 shadow-vs-Mac comparison)",
       return s;
     };
     w.api.snapshot = snap();
-    const e = w.engine();
+    const e = w.engine({ CONFIG_OVERRIDES: LEGACY });
     const r1 = await e.tick();
     expect(r1.ladders[0].strikes.map((k) => k.action)).toEqual(["none", "none", "none"]);
     expect(r1.ladders[0].strikes[0].mac).toMatchObject({ lastQuoteAt: quotedAt });
@@ -330,7 +333,7 @@ describe("shadow fidelity (fixes from the 2026-10-08 shadow-vs-Mac comparison)",
   });
 });
 
-describe("re-quote spend: guard-wide hysteresis (fair.guardWarnExit 0.13) and requoteTicks 3 (config/worker.json)", () => {
+describe("re-quote spend, legacy rules (policy.lazy off): guard-wide hysteresis (fair.guardWarnExit 0.13) and requoteTicks 3", () => {
   // Polymarket fair and v0 guard: equal on every strike except >=30, so only >=30 can get a guard flag
   const data = (f30: number, g30: number) => stubData({ ...PM, 30: f30 }, { max: null }, { ...PM, 30: g30 });
   const live = async (w: ReturnType<typeof world>) => {
@@ -343,7 +346,7 @@ describe("re-quote spend: guard-wide hysteresis (fair.guardWarnExit 0.13) and re
     await live(w);
     const tick = async (f30: number, g30: number) => {
       w.chain.time += 60;
-      return w.engine({ MAKER_MODE: "live" }, data(f30, g30)).tick();
+      return w.engine({ MAKER_MODE: "live", CONFIG_OVERRIDES: LEGACY }, data(f30, g30)).tick();
     };
     const s30 = () => w.engine().loadState("live").ladders[`RCSS:${w.date}`].series[30];
     const v30 = (r: Awaited<ReturnType<typeof tick>>) => r.ladders[0].strikes.find((k) => k.k === 30)!;
@@ -386,7 +389,7 @@ describe("re-quote spend: guard-wide hysteresis (fair.guardWarnExit 0.13) and re
     await live(w);
     const tick = async (g30: number) => {
       w.chain.time += 60;
-      return w.engine({ MAKER_MODE: "live", CONFIG_OVERRIDES: '{"fair":{"guardWarnExit":null}}' }, data(0.47, g30)).tick();
+      return w.engine({ MAKER_MODE: "live", CONFIG_OVERRIDES: '{"fair":{"guardWarnExit":null},"policy":{"lazy":false}}' }, data(0.47, g30)).tick();
     };
     const labels: string[] = [];
     for (const g of [0.63, 0.61, 0.63, 0.61]) labels.push(...(await tick(g)).txs.map((t) => t.label));
@@ -402,7 +405,7 @@ describe("re-quote spend: guard-wide hysteresis (fair.guardWarnExit 0.13) and re
     w.chain.place(m30.market, MAKER.address, 0.53, 100, false);
     await live(w);
     // |0.47 - 0.61| = 0.14: nothing says the resting quote is wide, so it is narrowed, exactly as before the change
-    const r = await w.engine({ MAKER_MODE: "live" }, data(0.47, 0.61)).tick();
+    const r = await w.engine({ MAKER_MODE: "live", CONFIG_OVERRIDES: LEGACY }, data(0.47, 0.61)).tick();
     expect(r.txs.map((t) => t.label)).toEqual(["requote >=30 100@0.44 / 100@0.5 cancel 2"]);
     expect(w.engine().loadState("live").ladders[`RCSS:${w.date}`].series[30].lastQuote).toMatchObject({ wide: false });
   });

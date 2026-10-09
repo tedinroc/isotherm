@@ -14,6 +14,8 @@ export interface QuoteInput {
   freeAusd: number; // AUSD that bids may lock (same idea)
   others: { bid: number | null; ask: number | null }; // everyone else's best quotes on this book
   cfg: QuoteCfg;
+  /** an extra spread multiplier with its reason (the quoting budget's soft tier: budget.softWidenMult) */
+  widen?: { mult: number; why: string } | null;
 }
 
 export type QuoteDecision =
@@ -33,6 +35,7 @@ export function makeQuote(q: QuoteInput): QuoteDecision {
   let widen = 1;
   if (q.flags.includes("guard-wide")) (widen *= c.guardWidenMult), reasons.push(`guard disagrees: x${c.guardWidenMult} spread`);
   if (q.source.startsWith("fallback")) (widen *= c.fallbackWidenMult), reasons.push(`fallback fair (${q.source}): x${c.fallbackWidenMult} spread`);
+  if (q.widen && q.widen.mult > 1) (widen *= q.widen.mult), reasons.push(`${q.widen.why}: x${q.widen.mult} spread`);
   const tickU = Math.round(c.tick * M);
   const kTickU = Math.round(c.kuruTick * M);
   const half = c.halfSpreadTicks * c.tick * widen;

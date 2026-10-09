@@ -1,0 +1,20 @@
+# Isotherm settlement job on the VPS (systemd USER unit; vps/setup.sh fills in the package path and installs it into
+# ~/.config/systemd/user/). Started hourly at :05 by isotherm-settle.timer. One run at a time: a oneshot service is
+# never started twice, and scripts/run-official.sh keeps its own lock (var/run.lock) and 30-min spacing guard.
+# The single-writer guard and the phone push live in vps/settle-vps.sh; the settlement path is scripts/settle-job.sh.
+[Unit]
+Description=Isotherm CRE settlement (official cre workflow simulate --broadcast; labelled harness fallback)
+Documentation=file://@PKG@/vps/README.md
+
+[Service]
+Type=oneshot
+WorkingDirectory=@PKG@
+Environment=ISOTHERM_STATE_DIR=@PKG@/var
+Environment=ISOTHERM_HOST_LABEL=vps
+Environment=ISOTHERM_JOB_LABEL=isotherm-settle.service
+Environment=ISOTHERM_WRITER_CLAIM_REQUIRED=1
+ExecStart=/bin/bash @PKG@/vps/settle-vps.sh
+# a run normally takes under a minute; the CLI's own calls are bounded, this is the outer bound
+TimeoutStartSec=20min
+UMask=0077
+Nice=5

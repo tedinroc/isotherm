@@ -1,11 +1,32 @@
 {
-  "_comment": "Overlay on packages/maker/config/default.json for the Cloudflare Worker. Operator and market-creator caps mirror the Mac's go-live config/local.json, but the roll has its own meter (rollCapMon) so quoting can never starve the next day's roll (the 2026-10-08 incident): roll 0.8. Measured roll costs at 102 gwei: maker ~0.48 + opening quotes ~0.3, operator createLadder 0.12 + 4-5 x setCanonical 0.014, market creator 4-5 x deployProxy 0.15. Quoting cap maker 6.9 = CUTOVER DAY ONLY (2026-10-09 Taipei): import-state re-books the Mac's quote+pull spend of that day onto this meter, and the Mac's own meter stops at its cap 4.5 + 0.2 pull reserve = 4.7 (it was at 1.56 by 02:21 Taipei, spending ~0.65 MON/h, so it reaches its cap before the 07:00 cutover window); 4.7 + the Worker's usual 2.2 for the rest of the day = 6.9. Lower it back to 2.2 from 2026-10-10 (docs/OPERATIONS.md 8.7). policy.requoteTicks 3 (Mac: 2): with the guard-wide hysteresis (default.json fair.guardWarnExit 0.13) it cut re-quotes from 44 to 17 in a replay of the Oct 9 ladder (docs/OPERATIONS.md 8.7). Vars in wrangler.toml (STATIONS, RPC_URL) and CONFIG_OVERRIDES override this file.",
+  "_comment": "Overlay on packages/maker/config/default.json for the Cloudflare Worker. MON is the bottleneck (testnet faucet; Monad bills the gas limit). QUOTING budget (dailyCapMon.maker 1.2 MON per Taipei day) with tiers: above softRatio 60 % (0.72 MON) the spreads widen x2 and only urgent re-quotes go out; at the cap no new quotes, an urgent strike is pulled. Pulls, the kill switch, the YES-margin withdraw and the stale void are on a separate reserve meter and are NEVER refused (reserveMon is only the alert line). The shared lazy re-quote policy (default.json policy.lazy: fair move 0.04, 2 h stale refresh with 0.02 move, one-sided refills) applies to both runtimes. Replay of the Oct 8, Oct 9 and Oct 10 ladders (evidence/lazy-replay-2026-10-09): the old settings re-quoted 88 times a day (~5.6 MON of quoting); the lazy rules alone 64 (~4.2, most re-quotes are urgent crossings); with the 1.2 MON tiers 16 (~1.2 + 0.24 pulls), about 2.8 MON/day all-in with a 4-strike roll (1.0 cap ~2.6, 1.5 cap ~3.0). The roll has its own meter (rollCapMon) so quoting can never starve the next day's roll (the 2026-10-08 incident) and rolls at most 4 strikes nearest the Polymarket median, skipping any whose implied P(>=k) is outside [0.05, 0.95]. treasury: the automatic top-up of the role keys from a dedicated treasury key (src/treasury.ts); addresses are public. Vars in wrangler.toml (STATIONS, RPC_URLS) and CONFIG_OVERRIDES override this file.",
   "stations": ["RCSS"],
   "budget": {
-    "dailyCapMon": { "maker": 6.9, "operator": 0.5, "marketCreator": 0.8 },
-    "reserveMon": { "maker": 0.2, "operator": 0.05, "marketCreator": 0.05 },
-    "rollCapMon": { "maker": 0.8, "operator": 0.5, "marketCreator": 0.8 }
+    "dailyCapMon": { "maker": 1.2, "operator": 0.5, "marketCreator": 0.8 },
+    "reserveMon": { "maker": 0.5, "operator": 0.1, "marketCreator": 0.05 },
+    "rollCapMon": { "maker": 0.8, "operator": 0.5, "marketCreator": 0.8 },
+    "softRatio": 0.6,
+    "softWidenMult": 2
   },
   "policy": { "requoteTicks": 3 },
-  "gas": { "makerMult": 1.08, "opMult": 1.1, "fixedGasPriceGwei": null }
+  "roll": {
+    "strikePolicy": { "mode": "nearest", "count": 4, "minCount": 1, "minP": 0.05, "maxP": 0.95 }
+  },
+  "gas": { "makerMult": 1.08, "opMult": 1.1, "fixedGasPriceGwei": null },
+  "treasury": {
+    "address": "0x655dE7F5E6EdB42f26C422ED056F94BA9964BEed",
+    "everySec": 600,
+    "floorMon": 2,
+    "lowAlertMon": 10,
+    "globalDailyCapMon": 6,
+    "minSendMon": 0.05,
+    "alertRepeatSec": 3600,
+    "roles": {
+      "maker": { "address": "0xd572638F07829D1c3636400FB73CF34Ca6c7448a", "minMon": 1.5, "targetMon": 4, "dailyCapMon": 4 },
+      "operator": { "address": "0x602dbf3937558B1d18d76315635fD5410089bd51", "minMon": 1.2, "targetMon": 2.5, "dailyCapMon": 1.5 },
+      "relayer": { "address": "0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f", "minMon": 3, "targetMon": 8, "dailyCapMon": 3 },
+      "attester": { "address": "0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9", "minMon": 0.3, "targetMon": 0.8, "dailyCapMon": 0.5 },
+      "guardian": { "address": "0x30C8E371719Ff00577284dd9c10587Fa89357d50", "minMon": 0.05, "targetMon": 0.15, "dailyCapMon": 0.2 }
+    }
+  }
 }

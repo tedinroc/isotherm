@@ -17,7 +17,7 @@ import { NonceTracker } from "../../src/nonces.ts";
 import { MemStore } from "../../src/store.ts";
 import { STALE_WINDOW_SEC, watchPass, type VoidTx, type WatchDeps } from "../../src/watcher.ts";
 import { D, FakeChain } from "./fake-chain.ts";
-import { fixtureSources, GUARDIAN, macSnapshot, MAKER, OPERATOR, world } from "./helpers.ts";
+import { fixtureSources, GUARDIAN, KEYS, macSnapshot, MAKER, OPERATOR, world } from "./helpers.ts";
 
 const LIVE_OPERATOR = deployments.roles.operator as Address;
 const b4 = (s: string) => stringToHex(s, { size: 4 });
@@ -271,7 +271,7 @@ describe("the engine wiring", () => {
     w.api.snapshot = macSnapshot(w, 3600); // the Mac stopped an hour ago
   };
 
-  it("LIVE: voids a stale vault ladder from the operator key, logs the tx and meters it on the operator", async () => {
+  it("LIVE: voids a stale vault ladder from the operator key, logs the tx and meters it on the operator's reserve meter", async () => {
     const { w } = past(); // the world's chain time is days after 2026-10-07 16:00Z (staleAt)
     armedLive(w);
     const e = w.engine({ MAKER_MODE: "live" });
@@ -283,7 +283,9 @@ describe("the engine wiring", () => {
     expect(r.alerts).toEqual([`SETTLEMENT OVERDUE ${KEY}`, `STALE VOIDED ${KEY}`]);
     expect((r.watcher as any).voids).toEqual([expect.objectContaining({ key: KEY, ok: true })]);
     expect(w.store.tail<any>("txs:live", 5)).toEqual([expect.objectContaining({ label: `voidIfStale ${KEY}`, kind: "void", role: "operator" })]);
-    expect(e.loadState("live").budget.spent.operator).toBeCloseTo(Math.ceil(52_000 * 1.1) * 102e-9, 9);
+    // metered on the operator's reserve meter (never refused, apart from the quoting / roll budgets)
+    expect(e.loadState("live").budget.spent["operator:reserve"]).toBeCloseTo(Math.ceil(52_000 * 1.1) * 102e-9, 9);
+    expect(e.loadState("live").budget.spent.operator).toBeUndefined();
     expect(w.kv.json("status").watcher.staleVoids[KEY]).toMatchObject({ outcome: "voided" });
     expect(w.kv.json("status").push).toEqual({ channel: "off (no ALERT_WEBHOOK_URL secret)" });
   });
@@ -335,6 +337,36 @@ describe("alert push (ALERT_WEBHOOK_URL)", () => {
     }
     expect(parseWebhook("http://127.0.0.1:19801/hook", true)).toMatchObject({ kind: "json" });
     expect(parseWebhook(undefined, false)).toBeNull();
+  });
+
+  it("an ntfy access token: the ntfy 'auth' query parameter is kept as is, or ALERT_WEBHOOK_TOKEN goes in a Bearer header; neither is ever shown", async () => {
+    // docs.ntfy.sh "Query param": auth = raw base64 (no '=' padding) of the Authorization header value "Bearer tk_..."
+    const token = "tk_AgQdq7mVBoFD37zQVN29RhuMzNIz2"; // the docs' example token, not a real one
+    const auth = Buffer.from(`Bearer ${token}`).toString("base64").replace(/=+$/, "");
+    expect(auth).not.toMatch(/[=+/]/); // URL-safe as is for this token (any '+' or '/' would need encoding)
+    const q = parseWebhook(`https://ntfy.sh/isotherm-alerts-example?auth=${auth}`, false) as Webhook;
+    expect(q).toMatchObject({ kind: "ntfy" });
+    expect(new URL(pushRequest(q, "T", "B").url).searchParams.get("auth")).toBe(auth);
+    // the header form
+    const h = parseWebhook("https://ntfy.sh/isotherm-alerts-example", false, ` ${token} `) as Webhook;
+    expect(pushRequest(h, "T", "B").init.headers).toMatchObject({ authorization: `Bearer ${token}`, Title: "T" });
+    const j = parseWebhook("https://hooks.example.org/x", false, token) as Webhook;
+    expect(pushRequest(j, "T", "B").init.headers).toMatchObject({ authorization: `Bearer ${token}` });
+    expect(pushRequest(parseWebhook("https://hooks.example.org/x", false) as Webhook, "T", "B").init.headers).not.toHaveProperty("authorization");
+    // refused without echoing the token
+    for (const [url, tok] of [["https://ntfy.sh/t", "has space"], ["https://api.telegram.org/bot1:a/sendMessage?chat_id=1", token]] as const) {
+      const e = parseWebhook(url, false, tok) as { error: string };
+      expect(e.error).toMatch(/^ALERT_WEBHOOK_TOKEN/);
+      expect(e.error).not.toContain(tok);
+    }
+    // the engine: status names the auth kind, never the URL or the token
+    const w = world();
+    const e = w.engine({}, undefined, { maker: KEYS.maker, operator: KEYS.operator, guardian: KEYS.guardian, alertWebhook: "https://ntfy.sh/isotherm-alerts-example", alertWebhookToken: token });
+    await e.tick();
+    const st = JSON.stringify(w.kv.json("status"));
+    expect(w.kv.json("status").push).toMatchObject({ channel: "ntfy", auth: "ALERT_WEBHOOK_TOKEN (bearer header)" });
+    expect(st).not.toContain(token);
+    expect(st).not.toContain("isotherm-alerts-example");
   });
 
   it("pushes each alert once per title per ALERT_PUSH_MIN_SEC; never breaks a tick on failure or timeout", async () => {

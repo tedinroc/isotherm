@@ -1,0 +1,41 @@
+# 2026-10-09T17:15:14Z vps/setup.sh --no-units on Ubuntu 24.04.5 LTS x86_64 (plain container, emulated on Apple silicon; /proc/cpuinfo avx2: none)
+[vps/setup] apt packages (sudo)
+[vps/setup] downloading foundry_v1.8.5_linux_amd64.tar.gz
+[vps/setup] cast Version: 1.8.5
+CRE CLI version v1.37.0
+
+⚠️  Update available! You’re running 1.37.0, but 1.38.0 is the latest.
+Run `cre update` or visit https://github.com/smartcontractkit/cre-cli/releases to upgrade.
+
+bun 1.4.2
+bun install v1.4.2 (744846f84)
+
++ @types/bun@1.2.21
++ typescript@5.9.3
++ @chainlink/cre-sdk@1.23.0
++ @noble/curves@1.9.7
++ viem@2.54.2
++ zod@3.25.76
+
+46 packages installed [6.89s]
+ok. Now run: export PATH="/home/isotherm/isotherm/packages/cre-workflow/.tools/bin:/home/isotherm/isotherm/packages/cre-workflow/.tools/node_modules/.bin:$PATH"
+[vps/setup] cre workflow build (compile check, no login)
+    Compiling workflow...
+  ✓ Workflow compiled successfully
+    Binary hash: 413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938
+  ✓ Build output written to /home/isotherm/isotherm/packages/cre-workflow/settle/binary.wasm
+  
+  
+[vps/setup] binary.wasm 413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938: byte-identical to the Mac build (2026-10-07 onward)
+
+[vps/setup] done. Next (vps/README.md):
+  - attester key: from the Mac, scp ~/.config/isotherm/attester.key <vps>:.config/isotherm/ ; then here: chmod 600 ~/.config/isotherm/attester.key
+  - CRE login through the SSH tunnel: ssh -t -L 53682:127.0.0.1:53682 <vps> bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh login
+  - check: bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh preflight ; then ... dry-run ; then ... status
+  - cutover from the Mac: packages/cre-workflow/vps/cutover.sh <vps>   (dry run first, then --execute)
+
+real	2m53.142s
+user	1m24.059s
+sys	0m10.091s
+exit 0
+installed: bun bunx cast cre ; downloads kept: bun-linux-x64-baseline.zip checksums.txt cre_linux_amd64.tar.gz 

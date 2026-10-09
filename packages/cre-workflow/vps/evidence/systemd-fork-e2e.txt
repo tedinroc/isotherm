@@ -1,0 +1,122 @@
+# 2026-10-09T17:09:58Z e2e-systemd-fork on Ubuntu 24.04.5 LTS aarch64, systemd 255, user isotherm (uid 1001), linger yes
+# anvil fork of live testnet via the Ankr RPC: chain 10143, block 69595194; alert stub on 127.0.0.1:19351
+# fork only: Resolver.attester -> 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720 (anvil #9), tx sender 0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf (fresh random key, 1 MON); chain time 2026-10-09T18:06:19.000Z = 02:0x Taipei, Oct 10
+# live ladder RCSS 2026-10-09 before: resultOf = (0, 0, 0, 0, 0x0000000000000000000000000000000000000000000000000000000000000000)
+# unit under test: /home/isotherm/.config/systemd/user/isotherm-settle.service + drop-in /home/isotherm/.config/systemd/user/isotherm-settle.service.d/fork-test.conf
+
+## S0. no claim: the unit refuses, nothing is signed
+    | [2026-10-09T17:10:12Z] [vps] REFUSED (no-claim): this host does not hold the settlement writer claim yet (/home/isotherm/fork-test/state/writer.claim); vps/cutover.sh hands it over from the Mac
+    unit: start rc=0, Result=success, ExecMainStatus=0
+  PASS  refused no-claim, sender nonce unchanged (0)
+
+## S1. claim (as vps/cutover.sh does over ssh); the previous writer ran 10 min ago
+{"creVersion":"CRE CLI version v1.37.0","bun":"1.4.2","cast":"cast Version: 1.8.5","timer":"disabled/inactive","linger":"yes","creLogin":"no","keyMode":"600","preflight":{"rc":0,"last":"[2026-10-09T17
+    | [2026-10-09T17:10:18Z] [vps] REFUSED (peer-recent): the previous writer (mac) last ran at 2026-10-09T17:00:13.000Z, 10 min ago (< 50 min); this host signs from 2026-10-09T17:50:13.000Z on
+    unit: start rc=0, Result=success, ExecMainStatus=0
+  PASS  refused peer-recent (< 50 min), nonce unchanged
+
+## S2. the previous writer ran 55 min ago: the job settles through the HARNESS fallback (no CRE login here)
+    | [2026-10-09T17:10:19Z] [settle-job] path=harness (cre whoami failed (not logged in to CRE)); rpc=http://127.0.0.1:19350; state=/home/isotherm/fork-test/state; dry=0
+    | [2026-10-09T17:10:21Z] attester 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720 == Resolver.attester(); tx sender 0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf has 1.000000000000000000 MON; vault ladders 3
+    | [path] HARNESS FALLBACK: the workflow handler under Bun in the CRE SDK test harness (NOT the CRE engine); reports go through 0xB9F79d863261869B234c481D1f9A7af84AeAd192 with the v1 EIP-712 attestation
+    | [sent] RCSS 20261009 tmaxC=28 isVoid=false tx 0x3b8a2c3a76676f24c3957325bc5f32b8ceb339fab94e2dcc79c064f630d0a700 status=success gasUsed=149863/200000 2793 ms
+    | 0x3b8a2c3a76676f24c3957325bc5f32b8ceb339fab94e2dcc79c064f630d0a700 block 69595276 status=success gasUsed=149863 ReportProcessed.result=true LadderResolved: RCSS 20261009 status=Settled tmaxC=28 OK
+    | [2026-10-09T17:10:29Z] [settle-job] exit 0
+    | [evidence] path=harness-fallback exit=0 outcomes=RCSS/20261009:settled=28(resolved) -> /home/isotherm/fork-test/state/evidence/settle-runs.jsonl
+    | [2026-10-09T17:10:29Z] [vps] tripwire: nonce 0 -> 1, own txs 1: single writer
+    | [2026-10-09T17:10:29Z] [vps] ALERT: ISOTHERM VPS: report sent RCSS 20261009 | settled tmaxC=28 confirmed=resolved tx 0x3b8a2c3a76676f24c3957325bc5f32b8ceb339fab94e2dcc79c064f630d0a700 (path harness-fallback)
+    | [2026-10-09T17:10:29Z] [vps] push: sent (HTTP 200)
+    | [2026-10-09T17:10:29Z] [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed (not logged in to CRE). Log in again on the VPS (vps/README.md section 4).
+    | [2026-10-09T17:10:29Z] [vps] push: sent (HTTP 200)
+    unit: start rc=0, Result=success, ExecMainStatus=0
+    resultOf(RCSS,20261009) = (1, 28, 1791569193 [1.791e9], 1791570093 [1.791e9], 0x51d4ad4123b5d8b94ef55178b7704ad01fb69343254465aca195c7465438dc3e)
+    evidence: {"job":"isotherm-settle.service","host":"vps","path":"harness-fallback","pathReason":"cre whoami failed (not logged in to CRE)","network":"anvil fork (http://127.0.0.1:19350)","testDataRelabel":"[TEST] ISOTHERM_TEST_RELABEL active (fork only): RCSS:2026-10-09 <- live data of 2026-10-08","exitCode":0,"reportsSent":[{"station":"RCSS","date":20261009,"action":"settled","tmaxC":28,"txHash":"0x3b8a2c3a76676f24c3957325bc5f32b8ceb339fab94e2dcc79c064f630d0a700","confirmed":"resolved","sourcesHash":"0x51d4ad4123b5d8b94ef55178b7704ad01fb69343254465aca195c7465438dc3e"}]}
+  PASS  evidence: host vps, job isotherm-settle.service, path harness-fallback, 1 report confirmed
+  PASS  RCSS 2026-10-09 Settled on the fork (status 1)
+  PASS  tripwire recorded '0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf 1' (own tx counted)
+  PASS  pushes received: ISOTHERM VPS: report sent RCSS 20261009 | ISOTHERM VPS: harness fallback ran (official CRE path unavailable)
+
+## S3. started again at once: the 30-min spacing guard (run-official.sh) skips; 0 txs
+    | [2026-10-09T17:10:31Z] [settle-job] path=harness (cre whoami failed (not logged in to CRE)); rpc=http://127.0.0.1:19350; state=/home/isotherm/fork-test/state; dry=0
+    | [2026-10-09T17:10:32Z] attester 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720 == Resolver.attester(); tx sender 0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf has 0.999799647451600000 MON; vault ladders 3
+    | [2026-10-09T17:10:33Z] last run 12 s ago (< 1800 s spacing); skipping
+    | [2026-10-09T17:10:33Z] [settle-job] exit 0
+    | [evidence] path=harness-fallback exit=0 outcomes=- -> /home/isotherm/fork-test/state/evidence/settle-runs.jsonl
+    | [2026-10-09T17:10:33Z] [vps] tripwire: nonce 1 -> 1, own txs 0: single writer
+    | [2026-10-09T17:10:33Z] [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed (not logged in to CRE). Log in again on the VPS (vps/README.md section 4).
+    | [2026-10-09T17:10:33Z] [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    unit: start rc=0, Result=success, ExecMainStatus=0
+  PASS  skipped by the spacing guard, nonce unchanged
+
+## S4. another host sends from the same key between runs: WRITER CONFLICT before anything is signed
+    (test) a 0-value tx from 0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf, as a second writer would
+Job for isotherm-settle.service failed because the control process exited with error code.
+See "systemctl --user status isotherm-settle.service" and "journalctl --user -xeu isotherm-settle.service" for details.
+    | [2026-10-09T17:10:34Z] [vps] REFUSED (conflict): tx sender 0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf: on-chain nonce 2, but this host recorded 1 after its last run at 2026-10-09T17:10:33.000Z: another host sent 1 tx(s) from this key since
+    | [2026-10-09T17:10:35Z] [vps] ALERT: ISOTHERM VPS: WRITER CONFLICT, settlement stopped on the VPS | tx sender 0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf: on-chain nonce 2, but this host recorded 1 after its last run at 2026-10-09T17:10:33.000Z: another host sent 1 tx(s) from this key since. Another host is settling with the same key (the Mac job back on, or a second VPS). This VPS no longer signs. Find and stop the extra writer, then on the VPS: bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh clear-conflict
+    | [2026-10-09T17:10:35Z] [vps] push: sent (HTTP 200)
+    unit: start rc=1, Result=exit-code, ExecMainStatus=1
+  PASS  var/writer-conflict written, unit failed (visible in systemctl --user --failed)
+  PASS  high-priority push: high ISOTHERM VPS: WRITER CONFLICT, settlement stopped on the VPS
+
+## S5. the conflict is sticky: the next runs are refused too; one reminder push, then deduplicated (6 h)
+Job for isotherm-settle.service failed because the control process exited with error code.
+See "systemctl --user status isotherm-settle.service" and "journalctl --user -xeu isotherm-settle.service" for details.
+    | [2026-10-09T17:10:35Z] [vps] REFUSED (conflict-standing): writer conflict still standing: {"at":"2026-10-09T17:10:34Z","sender":"0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf","detail":"tx sender 0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf: on-chain nonce 2, but this host recorded 1 after its last run at 2026-10-09T17:10:33.000Z: another host sent 1 tx(s) from this key since"}
+    | [2026-10-09T17:10:35Z] [vps] ALERT: ISOTHERM VPS: settlement still stopped (writer conflict) | Cleared only by hand once a single host settles: bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh clear-conflict
+    | [2026-10-09T17:10:35Z] [vps] push: sent (HTTP 200)
+    unit: start rc=1, Result=exit-code, ExecMainStatus=1
+Job for isotherm-settle.service failed because the control process exited with error code.
+See "systemctl --user status isotherm-settle.service" and "journalctl --user -xeu isotherm-settle.service" for details.
+    | [2026-10-09T17:10:35Z] [vps] REFUSED (conflict-standing): writer conflict still standing: {"at":"2026-10-09T17:10:34Z","sender":"0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf","detail":"tx sender 0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf: on-chain nonce 2, but this host recorded 1 after its last run at 2026-10-09T17:10:33.000Z: another host sent 1 tx(s) from this key since"}
+    | [2026-10-09T17:10:35Z] [vps] ALERT: ISOTHERM VPS: settlement still stopped (writer conflict) | Cleared only by hand once a single host settles: bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh clear-conflict
+    | [2026-10-09T17:10:35Z] [vps] push: 'ISOTHERM VPS: settlement still stopped (writer conflict)' already pushed 0 min ago; not repeated
+    unit: start rc=1, Result=exit-code, ExecMainStatus=1
+  PASS  two runs refused conflict-standing, no tx, one reminder push
+
+## S6. clear-conflict (the owner, after making sure one host settles)
+    standing conflict: {"at":"2026-10-09T17:10:34Z","sender":"0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf","detail":"tx sender 0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf: on-chain nonce 2, but this host recorded 1 after its last run at 2026-10-09T17:10:33.000Z: another host sent 1 tx(s) from this key since"}
+    tx sender 0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf, on-chain nonce now 2
+    cleared; the next :05 run settles again
+  PASS  cleared and re-baselined at the current nonce
+
+## S7. another host sends DURING a run: detected after the run
+    (test: the spacing guard is bypassed by deleting var/last-run. On the fork the 'finalized' read lags, so this run
+    re-sends the ladder settled in S2; the write-once Resolver rejects it (exit 4). The tripwire counts that own tx.)
+    (test) a 0-value tx from 0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf while the job runs
+    | [evidence] path=harness-fallback exit=4 outcomes=RCSS/20261009:settled=28(resolved) -> /home/isotherm/fork-test/state/evidence/settle-runs.jsonl
+    | [2026-10-09T17:10:42Z] [vps] REFUSED (conflict): during this run the nonce of 0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf went 2 -> 4, but this run sent 1 tx(s): another host sent from this key at the same time
+    | [2026-10-09T17:10:43Z] [vps] ALERT: ISOTHERM VPS: WRITER CONFLICT, settlement stopped on the VPS | during this run the nonce of 0xeec6Aec31a7a790D9c71ab7450206AA59AdabFDf went 2 -> 4, but this run sent 1 tx(s): another host sent from this key at the same time. Another host is settling with the same key (the Mac job back on, or a second VPS). This VPS no longer signs. Find and stop the extra writer, then on the VPS: bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh clear-conflict
+    | [2026-10-09T17:10:43Z] [vps] push: sent (HTTP 200)
+    | [2026-10-09T17:10:43Z] [vps] ALERT: ISOTHERM VPS: report sent RCSS 20261009 | settled tmaxC=28 confirmed=resolved tx 0x4117a337b4779ff155e950bcfed294194f674131966dfcf22c43db23ec8ec23a (path harness-fallback)
+    | [2026-10-09T17:10:43Z] [vps] push: sent (HTTP 200)
+    | [2026-10-09T17:10:43Z] [vps] ALERT: ISOTHERM VPS: settle job exit 4 | a report was sent but NOT accepted on chain; path harness-fallback. HARNESS (fallback, not the CRE engine): settle/e2e/harness-run.ts | a report was sent but NOT accepted on chain (see /home/isotherm/fork-test/state/logs/run-20261009T171036Z.log). Logs: journalctl --user -u isotherm-settle
+    | [2026-10-09T17:10:43Z] [vps] push: sent (HTTP 200)
+    | [2026-10-09T17:10:43Z] [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed (not logged in to CRE). Log in again on the VPS (vps/README.md section 4).
+    | [2026-10-09T17:10:43Z] [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+  PASS  conflict detected during the run
+
+## S8. release (as vps/rollback.sh does): a broadcasting run refuses; a dry run still works
+    release -> {"from":"vps","lastRunEpoch":1791565838,"finishedAt":"2026-10-09T17:10:42.766Z","path":"harness-fallback","exitCode":4,"timer":"disabled/inactive","released":true}
+    | [2026-10-09T17:10:44Z] SKIPPED: this host released the settlement writer role ({"at":"2026-10-09T17:10:44Z","to":"mac","by":"vps/rollback.sh"}); nothing signed or sent. See packages/cre-workflow/vps/README.md
+  PASS  run-official.sh refuses to sign (exit 0)
+    | [2026-10-09T17:10:44Z] [vps] REFUSED (no-claim): this host released the settlement writer role ({"at":"2026-10-09T17:10:44Z","to":"mac","by":"vps/rollback.sh"}); nothing signed
+    unit: start rc=0, Result=success, ExecMainStatus=0
+  PASS  the unit refuses (no claim)
+    | [2026-10-09T17:10:46Z] preflight OK
+  PASS  --preflight-only still runs in full on a released host (the cutover gate needs it)
+    dry run, without the test relabel (it reads the real 2026-10-09 archives); nothing is sent:
+    | [2026-10-09T17:10:46Z] [settle-job] path=harness (cre whoami failed (not logged in to CRE)); rpc=http://127.0.0.1:19350; state=/home/isotherm/fork-test/state/dry; dry=1
+    | [path] HARNESS FALLBACK: the workflow handler under Bun in the CRE SDK test harness (NOT the CRE engine); reports go through 0xB9F79d863261869B234c481D1f9A7af84AeAd192 with the v1 EIP-712 attestation
+    | [not sent] RCSS 20261009 tmaxC=29 isVoid=false validUntil=1791570708 (HARNESS_BROADCAST!=1)
+    | [2026-10-09T17:10:58Z] [settle-job] exit 0
+    | [evidence] path=harness-fallback exit=0 outcomes=RCSS/20261009:settled=29(not-accepted) -> /home/isotherm/fork-test/state/dry/evidence/settle-runs.jsonl
+  PASS  dry run (no broadcast) still runs, in var/dry
+
+## S9. the timer starts the service (temporary every-minute drop-in), then the hourly :05 schedule
+  PASS  the timer started isotherm-settle.service at Fri 2026-10-09 17:11:30 UTC (refused: no claim, as expected)
+    NEXT                         LEFT LAST                        PASSED UNIT                  ACTIVATES
+    Fri 2026-10-09 18:05:00 UTC 53min Fri 2026-10-09 17:11:30 UTC 3s ago isotherm-settle.timer isotherm-settle.service
+  PASS  schedule back to *-*-* *:05:00 UTC, Persistent=yes
+
+# 2026-10-09T17:11:34Z done: 18 passed, 0 failed (anvil and the stub stop on exit; drop-ins removed; timer disabled)

@@ -2,13 +2,14 @@
 // runs against an in-memory store and a fake viem client whose every call yields to the event loop, the way RPC
 // I/O does inside the Durable Object (a DO serves concurrent requests on one thread, interleaving at awaits).
 import { describe, expect, it } from 'vitest';
-import { encodeAbiParameters, getAddress, keccak256, stringToHex, toHex, type Address, type Hex } from 'viem';
+import { encodeAbiParameters, getAddress, keccak256, parseTransaction, stringToHex, toFunctionSelector, toHex, type Address, type Hex } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { RECEIVE_TYPES, SELECTORS } from '../../src/abi';
 import { DEPLOYMENTS } from '../../src/deployments';
 import { configFrom, type Env } from '../../src/env';
 import { MemStore } from '../../src/limits';
 import { authorizationNonce, createRelayer } from '../../src/relayer';
+import { createSender } from '../../src/sender';
 import { normalizeSnapshot } from '../../src/snapshot';
 import { ipBucket } from '../../src/util';
 import { existsSync, readFileSync } from 'node:fs';
@@ -16,12 +17,26 @@ import { join } from 'node:path';
 
 const io = () => new Promise((r) => setTimeout(r, 2));
 
+/** Function name of a signed relayer tx (the fake RPC decodes what the relayer actually signed). */
+const NAMES: Record<string, string> = {
+  [SELECTORS.mintSetWithAuthorization]: 'mintSetWithAuthorization',
+  [SELECTORS.mintSetWithPermit]: 'mintSetWithPermit',
+  [toFunctionSelector('function transfer(address,uint256)')]: 'transfer',
+  [toFunctionSelector('function requestFunds(address)')]: 'requestFunds',
+};
+const nameOf = (raw: Hex) => {
+  const tx = parseTransaction(raw);
+  return !tx.data || tx.data === '0x' ? 'value' : NAMES[tx.data.slice(0, 10)] ?? tx.data.slice(0, 10);
+};
+
 interface FakeOpts {
   relayerMon?: bigint;
   receiptStatus?: 'success' | 'reverted';
   receiptThrows?: boolean;
   vaultHasAuthorization?: boolean;
   ausdOf?: (a: string) => bigint;
+  /** What eth_sendRawTransaction does: accept (default), time out without the tx landing, or say "nonce too low". */
+  broadcast?: 'ok' | 'timeout-lost' | 'nonce-low';
 }
 
 function fakeChain(opts: FakeOpts = {}) {
@@ -61,6 +76,22 @@ function fakeChain(opts: FakeOpts = {}) {
     getBalance: async ({ address }: { address: string }) => (await io(), address === account.address ? (opts.relayerMon ?? 5n * 10n ** 18n) : 0n),
     estimateContractGas: async () => (await io(), 310_000n),
     getTransactionCount: async () => (await io(), nonce),
+    getChainId: async () => (await io(), 10143),
+    estimateFeesPerGas: async () => (await io(), { maxFeePerGas: 122_000_000_000n, maxPriorityFeePerGas: 2_000_000_000n }),
+    // the relayer signs locally (sender.ts) and broadcasts the raw bytes; the fake decodes them
+    sendRawTransaction: async ({ serializedTransaction }: { serializedTransaction: Hex }) => {
+      await io();
+      if (opts.broadcast === 'timeout-lost') throw Object.assign(new Error('The request took too long to respond.'), { name: 'TimeoutError' });
+      if (opts.broadcast === 'nonce-low') throw Object.assign(new Error('x'), { code: -32000, details: 'nonce too low' });
+      if (parseTransaction(serializedTransaction).nonce !== nonce) throw new Error(`nonce too low: expected ${nonce}`);
+      nonce += 1;
+      sent.push(nameOf(serializedTransaction));
+      return keccak256(serializedTransaction);
+    },
+    getTransaction: async () => {
+      await io();
+      throw new Error('TransactionNotFoundError');
+    },
     getBlockNumber: async () => (await io(), (rpc.blockNumber += 1), 100n),
     waitForTransactionReceipt: async ({ hash }: { hash: Hex }) => {
       await io();
@@ -68,22 +99,7 @@ function fakeChain(opts: FakeOpts = {}) {
       return { status: opts.receiptStatus ?? 'success', blockNumber: 100n, gasUsed: 309_470n, transactionHash: hash };
     },
   };
-  const wallet = {
-    account,
-    chain: { id: 10143 },
-    writeContract: async (req: { functionName: string }) => {
-      await io();
-      nonce += 1;
-      sent.push(req.functionName);
-      return keccak256(toHex(`tx${nonce}`));
-    },
-    sendTransaction: async () => {
-      await io();
-      nonce += 1;
-      sent.push('value');
-      return keccak256(toHex(`tx${nonce}`));
-    },
-  };
+  const wallet = { account, chain: { id: 10143 } };
   return { pub, wallet, sent, rpc };
 }
 
@@ -91,7 +107,9 @@ function relayerWith(opts: FakeOpts = {}, over: Partial<ReturnType<typeof config
   const chain = fakeChain(opts);
   const store = new MemStore();
   const cfg = { ...configFrom({} as Env), ...over };
-  const relayer = createRelayer({ cfg, dep: DEPLOYMENTS, pub: chain.pub as never, wallet: chain.wallet as never, store });
+  // the production sender, with short lookups by hash so a failed broadcast settles quickly in tests
+  const sender = createSender({ pub: chain.pub as never, wallet: chain.wallet as never, store, chainId: 10143, findPolls: 2, findDelayMs: 1 });
+  const relayer = createRelayer({ cfg, dep: DEPLOYMENTS, pub: chain.pub as never, wallet: chain.wallet as never, store, sender });
   return { ...chain, store, cfg, relayer };
 }
 
@@ -363,5 +381,47 @@ describe('per-network request window (Durable Object memory)', () => {
     if (!r.ok) expect(r.retryAfterSec).toBe(60);
     expect(w.hit('b', t + 10).ok).toBe(true);
     expect(w.hit('a', t + 60_001).ok).toBe(true);
+  });
+});
+
+describe('a broadcast whose outcome is unknown (every endpoint timed out) is never sent twice', () => {
+  const user = () => privateKeyToAccount(generatePrivateKey()).address;
+  it('drip: counted, answered 504 with the hash, and a retry for the address sends no MON again', async () => {
+    const fake = relayerWith({ broadcast: 'timeout-lost' }, { dripPerIpPerDay: 3, dripDailyCap: 5 });
+    const u = user();
+    const r = await settle(fake.relayer.drip(u, 'net'));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.status).toBe(504);
+    expect(await fake.store.get('drip:total')).toBe(1);
+    expect(await fake.store.get(`drip:addr:${u.toLowerCase()}`)).toMatchObject({ monTx: expect.stringMatching(/^0x[0-9a-f]{64}$/) });
+    const again = await settle(fake.relayer.drip(u, 'net'));
+    expect(again.ok).toBe(false);
+    if (!again.ok) expect(again.status).toBe(429); // cooldown: the possibly-sent MON is never sent a second time
+    expect(fake.sent).toEqual([]);
+  });
+
+  it('relayed mint: counted against the caps and answered 504 with the hash', async () => {
+    const fake = relayerWith({ broadcast: 'timeout-lost' }, { relayPerAddressPerDay: 1, relayPerIpPerDay: 5, relayDailyCap: 5 });
+    const key = generatePrivateKey();
+    const seriesId = keccak256(toHex('series'));
+    const r = await settle(fake.relayer.relayMint(await signedAuthorization(key, seriesId, 1_000_000n, keccak256(toHex('u1'))), 'net'));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.status).toBe(504);
+    expect(await fake.store.get('relay:total')).toBe(1);
+    const again = await settle(fake.relayer.relayMint(await signedAuthorization(key, seriesId, 1_000_000n, keccak256(toHex('u2'))), 'net'));
+    expect(again.ok).toBe(false);
+    if (!again.ok) expect(again.status).toBe(429);
+  });
+
+  it('a nonce the chain already used (and not ours): 503 "retry", nothing recorded', async () => {
+    const fake = relayerWith({ broadcast: 'nonce-low' });
+    const r = await settle(fake.relayer.relayMint(await signedAuthorization(generatePrivateKey(), keccak256(toHex('series')), 1_000_000n, keccak256(toHex('n1'))), 'net'));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.status).toBe(503);
+    expect(await fake.store.get('relay:total')).toBeUndefined();
+    const d = await settle(fake.relayer.drip(user(), 'net'));
+    expect(d.ok).toBe(false);
+    if (!d.ok) expect(d.status).toBe(503);
+    expect(await fake.store.get('drip:total')).toBeUndefined();
   });
 });

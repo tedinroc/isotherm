@@ -6,6 +6,9 @@ import { deepMerge, validateConfig, type MakerConfig } from "../../../packages/m
 import overlay from "../config/worker.json";
 import type { Settings } from "./env.ts";
 
+/** The live treasury address (config/worker.json treasury.address, as bundled): its key is refused on a fork. */
+export const BUNDLED_TREASURY = ((overlay as { treasury?: { address?: string } }).treasury?.address ?? null) as `0x${string}` | null;
+
 /** Monad bills the GAS LIMIT, so the limit multiplier over eth_estimateGas is kept tight. */
 export const GAS_MULT_RANGE: [number, number] = [1.05, 1.1];
 

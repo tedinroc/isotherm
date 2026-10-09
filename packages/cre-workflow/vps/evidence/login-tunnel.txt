@@ -1,0 +1,15 @@
+# 2026-10-09T17:13:38Z cre login through an ssh tunnel: the CLI on the stand-in VPS, the callback reached from this Mac (no real sign-in)
+from the Mac: GET http://localhost:53682/ -> HTTP 404 (the CLI's listener answers through the tunnel)
+from the Mac: GET http://localhost:53682/callback without code/state -> HTTP 400 (the CLI's callback handler rejects it; a real browser redirect lands here)
+--- the CLI's output on the VPS (terminal control codes stripped; one-time OAuth parameters redacted):
+CRE Login
+  Authenticate with your Chainlink account
+ Opening browser to:
+https://login.chain.link/authorize?audience=https%3A%2F%2Fapi.cre.chain.link%2F&client_id=<redacted>&code_challenge=<redacted>&code_challenge_method=S256&redirect_uri=http%3A%2F%2Flocalhost%3A53682%2Fcallback&response_type=code&scope=openid+profile+email+offline_access&state=<redacted>
+! Could not open browser automatically
+  Please open the URL above in your browser
+  Waiting for authentication... (Press Ctrl+C to cancel)
+--- on the VPS while cre login waits:
+LISTEN 0      4096       127.0.0.1:53682      0.0.0.0:*    users:(("cre",pid=42653,fd=7))
+{"level":"error","time":"2026-10-09T17:13:47Z","message":"invalid state in response"}
+Session terminated, killing shell...

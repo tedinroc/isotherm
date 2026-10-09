@@ -3,6 +3,9 @@
 // its next tick (seq = now in ms, so a newer document always wins); reads the outbox the Worker writes every tick.
 //
 //   node scripts/control.mjs status | summary | tick | alerts | result | cron
+//                                              (status: mode, ladders, meters with the quoting tier and the reserve meter,
+//                                              RPC endpoints, push channel, watcher, and the treasury section)
+//   node scripts/control.mjs treasury          the last treasury pass: balances vs min/target, today's top-ups and caps
 //   node scripts/control.mjs ticks [n]          the last n (<= 90) ticks, one line per strike: fair, guard, action,
 //                                              desired vs resting quote, and the live maker's published quote
 //   node scripts/control.mjs compare [maker.log] shadow vs the live Mac maker over those ticks (agreement %, and every
@@ -93,7 +96,7 @@ switch (cmd) {
     const n = Math.max(1, Math.min(90, Number(a1 ?? 15)));
     for (const t of (Array.isArray(lines) ? lines : []).slice(-n)) {
       console.log(`${t.at} ${t.mode} ${t.ms}ms block ${t.block}${t.errors.length ? ` ERRORS ${t.errors.join(' | ')}` : ''}${t.alerts.length ? ` ALERTS ${t.alerts.join(' | ')}` : ''}`);
-      for (const x of [...t.kill.map((k) => `kill ${k}`), ...t.rolls.map((r) => `roll ${r}`), ...t.intents.map((i) => `would send: ${i}`), ...t.txs.map((i) => `sent: ${i}`)]) console.log(`    ${x}`);
+      for (const x of [...t.kill.map((k) => `kill ${k}`), ...t.rolls.map((r) => `roll ${r}`), ...t.intents.map((i) => `would send: ${i}`), ...t.txs.map((i) => `sent: ${i}`), ...(t.treasury ?? []).map((i) => `treasury: ${i}`)]) console.log(`    ${x}`);
       for (const s of t.strikes)
         console.log(`    ${s.key} >=${s.k} fair ${s.fair ?? '-'} guard ${s.guard ?? '-'}${s.flags.length ? ` [${s.flags.join(',')}]` : ''} ${s.action ?? '-'} want ${s.desired} rest ${s.resting}${s.action && s.action !== 'none' ? ` (${s.reasons})` : ''}${s.mac ? ` | live maker: ${typeof s.mac === 'string' ? s.mac : `fair ${s.mac.fair} guard ${s.mac.guard} quote ${s.mac.quote} ${s.mac.mode ?? '-'}`}` : ''}`);
     }
@@ -113,6 +116,20 @@ switch (cmd) {
   case 'cron':
     console.log(JSON.stringify(get('cron:last'), null, 1));
     break;
+  case 'treasury': {
+    const st = get('status');
+    const t = st?.treasury ?? {};
+    const cfg = JSON.parse(readFileSync(join(here, 'config/worker.json'), 'utf8')).treasury ?? { roles: {} };
+    console.log(`treasury ${t.address ?? cfg.address}: ${t.mon ?? '?'} MON (floor ${cfg.floorMon}, alert below ${cfg.lowAlertMon}); key: ${t.key ?? '?'}; last pass ${t.at ?? 'none'} (${t.mode ?? '-'})`);
+    for (const [role, r] of Object.entries(cfg.roles)) {
+      const bal = t.balances?.[role];
+      const sent = t.today?.sent?.[role] ?? 0;
+      console.log(`  ${role.padEnd(9)} ${String(bal ?? '?').padStart(10)} MON  min ${r.minMon} target ${r.targetMon}  topped up today ${sent} of ${r.dailyCapMon}${bal !== undefined && bal < r.minMon ? '  BELOW MIN' : ''}`);
+    }
+    console.log(`  all roles today: ${t.today?.total ?? 0} of ${cfg.globalDailyCapMon} MON (${t.today?.day ?? '-'})`);
+    for (const a of t.actions ?? []) console.log(`  last pass: ${a.role} ${a.balanceMon} MON -> ${a.amountMon} MON: ${a.outcome}${a.hash ? ` ${a.hash}` : ''}`);
+    break;
+  }
   case 'result':
     console.log(JSON.stringify({ applied: get('control:result'), document: get('control') }, null, 1));
     break;

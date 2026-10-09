@@ -33,7 +33,13 @@ id = "<KV_NAMESPACE_ID>"
 preview_id = "isotherm-local-preview"
 
 [vars]
-RPC_URL = "https://testnet-rpc.monad.xyz"
+# Monad testnet RPC endpoints, tried in this order through a viem fallback transport (src/rpc.ts). The official
+# endpoint answers "requests limited to 15/sec" per client IP and Workers share egress IPs with other tenants, so it
+# comes last. Every endpoint's eth_chainId must be 10143 before it is used. Each endpoint gets a client-side throttle
+# of RPC_MAX_RPS requests/s; a rate-limited or failing endpoint cools down and the next one serves. Do not set
+# RPC_URL here: it is the single-endpoint override for anvil forks (wrangler dev, the fork test) and wins over this list.
+RPC_URLS = "https://rpc.ankr.com/monad_testnet,https://10143.rpc.thirdweb.com,https://testnet-rpc.monad.xyz"
+RPC_MAX_RPS = "8"
 CHAIN_ID = "10143"
 ALLOWED_ORIGINS = "https://isotherm.pages.dev,https://*.isotherm.pages.dev,http://localhost:*,http://127.0.0.1:*"
 DRIP_ENABLED = "1"

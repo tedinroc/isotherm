@@ -13,6 +13,9 @@
 #         watcher stays on the Cloudflare Worker; scripts/deploy-runtime.sh --load would also start the Mac watcher.
 #         Before the reload, the runtime copy's deployments/testnet.json gets activeForwarder = mock as well (the
 #         harness fallback delivers to activeForwarder).
+#         If this Mac handed settlement to the VPS (var/writer.released in the runtime copy, vps/cutover.sh), R5 does NOT
+#         reload the Mac job: the VPS job stands down only while the forwarder is not the mock, so its next :05 run
+#         settles by itself (vps/README.md, "With the Chainlink DON").
 # The Mac job's next :05 run then settles anything due through the MockKeystoneForwarder (same attester key).
 # No time-window gate: this is the emergency path. Owner calls work while the Resolver is paused.
 # Options: --confirm-owner 0x…, --rpc URL, --no-cre-pause (skip R1), --no-reload (skip R5)
@@ -65,7 +68,12 @@ say "  R1. cre workflow pause ./settle -T testnet-don --yes$([ "$CRE_PAUSE" = 0 
 if [ "$NEED_EXP" = 1 ]; then plan_line R2 'setExpectedWorkflow(bytes32,address)' "$ZERO32,$ZERO20"; else say "  R2. setExpectedWorkflow(0,0): already zero, skipped"; fi
 if [ "$NEED_FWD" = 1 ]; then plan_line R3 'setForwarder(address)' "$MOCK"; else say "  R3. setForwarder(mock): already the mock, skipped"; fi
 say "  R4. eth_call checks + deployments/testnet.json activeForwarder -> $MOCK"
-say "  R5. runtime copy activeForwarder -> mock, then launchctl bootstrap gui/\$(id -u) $PLIST   (only xyz.isotherm.cre-settle)$([ "$RELOAD" = 0 ] && echo '   [skipped: --no-reload]')"
+VPS_WRITER=0; [ -f "$RT_PKG/var/writer.released" ] && VPS_WRITER=1
+if [ "$VPS_WRITER" = 1 ]; then
+  say "  R5. the settlement writer is the VPS ($RT_PKG/var/writer.released): the Mac job is NOT reloaded; the VPS job resumes at its next :05 run"
+else
+  say "  R5. runtime copy activeForwarder -> mock, then launchctl bootstrap gui/\$(id -u) $PLIST   (only xyz.isotherm.cre-settle)$([ "$RELOAD" = 0 ] && echo '   [skipped: --no-reload]')"
+fi
 
 if [ "$MODE" = dry ]; then say "DRY RUN: nothing was sent and nothing was reloaded. Re-run with --execute as the owner."; exit 0; fi
 
@@ -87,7 +95,10 @@ DEP_OUT=$DEP
 if [ "$IS_FORK" = 1 ]; then DEP_OUT="$PKG/var/don/rehearsal-deployments.json"; [ -f "$DEP_OUT" ] || cp "$DEP" "$DEP_OUT"; fi
 ops set-active-forwarder --file "$DEP_OUT" --forwarder "$MOCK" 2>&1 | tee -a "$LOG" >/dev/null
 # R5
-if [ "$RELOAD" = 1 ]; then
+if [ "$RELOAD" = 1 ] && [ "$VPS_WRITER" = 1 ]; then
+  say "R5: not reloading the Mac job: this Mac released the settlement writer role to the VPS ($(tr -d '\n' <"$RT_PKG/var/writer.released" | cut -c1-160))."
+  say "R5: the VPS job's next :05 run settles through the mock. Its deployments/testnet.json must say activeForwarder = mock for the harness fallback: if it was pushed during the DON period, run vps/push.sh <vps> again. Check: ssh <vps> bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh status"
+elif [ "$RELOAD" = 1 ]; then
   if [ -n "$FACTS" ]; then say "R5 (rehearsal): would run: launchctl bootstrap gui/\$(id -u) $PLIST"
   else
     if [ ! -f "$PLIST" ]; then
@@ -105,4 +116,4 @@ if [ "$RELOAD" = 1 ]; then
     say "R5 done: xyz.isotherm.cre-settle loaded; next run at :05 ($(launchctl print "gui/$(id -u)/xyz.isotherm.cre-settle" 2>/dev/null | grep -E $'^\tstate =' | tr -d '\t'))"
   fi
 fi
-say "DONE: settlement is back on the Mac path (MockKeystoneForwarder + attestation). activeForwarder updated in $DEP_OUT. log: $LOG"
+say "DONE: settlement is back on the $([ "$VPS_WRITER" = 1 ] && echo "VPS's" || echo Mac) path (MockKeystoneForwarder + attestation). activeForwarder updated in $DEP_OUT. log: $LOG"

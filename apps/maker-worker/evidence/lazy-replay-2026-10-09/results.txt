@@ -1,0 +1,105 @@
+inputs: Oct 8 ladder 2026-10-07 05:56Z..2026-10-08 09:18Z [28,29,30,31]; Oct 9 ladder 2026-10-08 13:47Z..2026-10-09 09:18Z [28,29,30,31,32]; Oct 10 ladder 2026-10-09 04:01Z..2026-10-09 15:51Z [28,29,30,31]
+costs MON: {"requote":0.0576,"oneSide":0.037,"place1":0.0317,"pull":0.0278,"quote":0.0594}
+window                                       | scenario                                              | requotes | one-side | pulls | urgent | quotes (opening) | quoting MON | pull MON |            max |mid-fair| | p95 |mid-fair| | min edge
+Taipei Oct 8 (Oct 7 16:00 - Oct 8 16:00 UTC) | ACTUAL on chain (fills 5)                             |       28 |        0 |     6 |        |                7 |             |          |                           |                |         
+Taipei Oct 8 (Oct 7 16:00 - Oct 8 16:00 UTC) | live until now: requoteTicks 3 + hysteresis, no tiers |       80 |        0 |     9 |     32 |           10 (4) |        4.96 |     0.25 | 0.025 (10-08 01:39Z >=30) |          0.020 |    0.011
+Taipei Oct 8 (Oct 7 16:00 - Oct 8 16:00 UTC) | lazy 0.03 / 2 h / 0.02                                |       72 |        0 |     9 |     36 |           10 (4) |        4.50 |     0.25 | 0.034 (10-08 04:35Z >=30) |          0.019 |    0.001
+Taipei Oct 8 (Oct 7 16:00 - Oct 8 16:00 UTC) | lazy 0.04 / 2 h / 0.02                                |       59 |        0 |     9 |     44 |           10 (4) |        3.75 |     0.25 | 0.040 (10-08 04:42Z >=29) |          0.026 |    0.000
+Taipei Oct 8 (Oct 7 16:00 - Oct 8 16:00 UTC) | lazy 0.05 / 2 h / 0.02                                |       55 |        0 |     9 |     44 |           10 (4) |        3.52 |     0.25 | 0.053 (10-08 04:51Z >=29) |          0.026 |    0.000
+Taipei Oct 8 (Oct 7 16:00 - Oct 8 16:00 UTC) | lazy 0.04 / 4 h / 0.02                                |       57 |        0 |     9 |     43 |           10 (4) |        3.64 |     0.25 | 0.040 (10-08 04:42Z >=29) |          0.029 |    0.001
+Taipei Oct 8 (Oct 7 16:00 - Oct 8 16:00 UTC) | lazy 0.04, two-sided only                             |       59 |        0 |     9 |     44 |           10 (4) |        3.75 |     0.25 | 0.040 (10-08 04:42Z >=29) |          0.026 |    0.000
+Taipei Oct 8 (Oct 7 16:00 - Oct 8 16:00 UTC) | lazy 0.04 + tiers 1.5 MON, soft 60 % x2               |       21 |        0 |     9 |     15 |            9 (4) |        1.51 |     0.25 | 0.082 (10-08 04:11Z >=29) |          0.026 |    0.000
+Taipei Oct 8 (Oct 7 16:00 - Oct 8 16:00 UTC) | lazy 0.04 + tiers 1.2 MON, soft 60 % x2               |       17 |        0 |     8 |     11 |            8 (4) |        1.22 |     0.22 | 0.064 (10-08 02:27Z >=30) |          0.026 |    0.000
+Taipei Oct 8 (Oct 7 16:00 - Oct 8 16:00 UTC) | lazy 0.04 + tiers 1.0 MON, soft 60 % x2               |       14 |        0 |     8 |      9 |            8 (4) |        1.04 |     0.22 | 0.065 (10-08 02:48Z >=30) |          0.026 |    0.000
+Taipei Oct 8 (Oct 7 16:00 - Oct 8 16:00 UTC) | live settings + tiers 1.5 MON (tiers alone)           |       21 |        0 |     9 |     10 |            9 (4) |        1.51 |     0.25 | 0.082 (10-08 04:11Z >=29) |          0.023 |    0.004
+Taipei Oct 8 (Oct 7 16:00 - Oct 8 16:00 UTC) | sensitivity: lazy 0.05, half-spread 4 ticks, no tiers |       47 |        0 |     9 |     29 |           10 (4) |        3.06 |     0.25 | 0.053 (10-08 04:51Z >=29) |          0.032 |    0.000
+Taipei Oct 9 (Oct 8 16:00 - Oct 9 16:00 UTC) | ACTUAL on chain (fills 6)                             |      111 |        0 |    12 |        |                9 |             |          |                           |                |         
+Taipei Oct 9 (Oct 8 16:00 - Oct 9 16:00 UTC) | live until now: requoteTicks 3 + hysteresis, no tiers |      125 |        0 |    18 |     42 |           18 (4) |        8.03 |     0.50 | 0.025 (10-09 03:05Z >=31) |          0.021 |    0.010
+Taipei Oct 9 (Oct 8 16:00 - Oct 9 16:00 UTC) | lazy 0.03 / 2 h / 0.02                                |      107 |        0 |    18 |     48 |           18 (4) |        6.99 |     0.50 | 0.032 (10-09 07:14Z >=30) |          0.023 |    0.003
+Taipei Oct 9 (Oct 8 16:00 - Oct 9 16:00 UTC) | lazy 0.04 / 2 h / 0.02                                |       88 |        0 |    18 |     52 |           18 (4) |        5.90 |     0.50 | 0.041 (10-08 17:02Z >=31) |          0.028 |    0.000
+Taipei Oct 9 (Oct 8 16:00 - Oct 9 16:00 UTC) | lazy 0.05 / 2 h / 0.02                                |       81 |        0 |    18 |     55 |           18 (4) |        5.50 |     0.50 | 0.052 (10-08 18:11Z >=30) |          0.037 |    0.000
+Taipei Oct 9 (Oct 8 16:00 - Oct 9 16:00 UTC) | lazy 0.04 / 4 h / 0.02                                |       84 |        0 |    18 |     53 |           18 (4) |        5.67 |     0.50 | 0.041 (10-08 20:54Z >=31) |          0.031 |    0.000
+Taipei Oct 9 (Oct 8 16:00 - Oct 9 16:00 UTC) | lazy 0.04, two-sided only                             |       88 |        0 |    18 |     52 |           18 (4) |        5.90 |     0.50 | 0.041 (10-08 17:02Z >=31) |          0.028 |    0.000
+Taipei Oct 9 (Oct 8 16:00 - Oct 9 16:00 UTC) | lazy 0.04 + tiers 1.5 MON, soft 60 % x2               |       18 |        0 |    13 |      6 |           12 (4) |        1.51 |     0.36 | 0.124 (10-09 03:12Z >=31) |          0.050 |    0.001
+Taipei Oct 9 (Oct 8 16:00 - Oct 9 16:00 UTC) | lazy 0.04 + tiers 1.2 MON, soft 60 % x2               |       14 |        0 |    12 |      5 |           11 (4) |        1.22 |     0.33 | 0.123 (10-09 02:10Z >=30) |          0.050 |    0.002
+Taipei Oct 9 (Oct 8 16:00 - Oct 9 16:00 UTC) | lazy 0.04 + tiers 1.0 MON, soft 60 % x2               |       13 |        0 |    10 |      5 |            9 (4) |        1.05 |     0.28 | 0.124 (10-09 03:43Z >=31) |          0.059 |    0.001
+Taipei Oct 9 (Oct 8 16:00 - Oct 9 16:00 UTC) | live settings + tiers 1.5 MON (tiers alone)           |       18 |        0 |    13 |      5 |           12 (4) |        1.51 |     0.36 | 0.125 (10-09 02:29Z >=30) |          0.050 |    0.000
+Taipei Oct 9 (Oct 8 16:00 - Oct 9 16:00 UTC) | sensitivity: lazy 0.05, half-spread 4 ticks, no tiers |       70 |        0 |    18 |     39 |           18 (4) |        4.86 |     0.50 | 0.052 (10-08 18:11Z >=30) |          0.039 |    0.002
+Oct 8 ladder (27.4 h)                        | ACTUAL on chain (fills 2)                             |       29 |        0 |     7 |        |                7 |             |          |                           |                |         
+Oct 8 ladder (27.4 h)                        | live until now: requoteTicks 3 + hysteresis, no tiers |       84 |        0 |    10 |     34 |           10 (4) |        5.19 |     0.28 | 0.025 (10-07 06:09Z >=29) |          0.020 |    0.010
+Oct 8 ladder (27.4 h)                        | lazy 0.03 / 2 h / 0.02                                |       80 |        0 |    10 |     38 |           10 (4) |        4.96 |     0.28 | 0.034 (10-08 04:35Z >=30) |          0.024 |    0.001
+Oct 8 ladder (27.4 h)                        | lazy 0.04 / 2 h / 0.02                                |       65 |        0 |    10 |     47 |           10 (4) |        4.10 |     0.28 | 0.040 (10-08 04:42Z >=29) |          0.029 |    0.000
+Oct 8 ladder (27.4 h)                        | lazy 0.05 / 2 h / 0.02                                |       61 |        0 |    10 |     47 |           10 (4) |        3.87 |     0.28 | 0.053 (10-08 04:51Z >=29) |          0.029 |    0.000
+Oct 8 ladder (27.4 h)                        | lazy 0.04 / 4 h / 0.02                                |       61 |        0 |    10 |     46 |           10 (4) |        3.87 |     0.28 | 0.040 (10-08 04:42Z >=29) |          0.029 |    0.001
+Oct 8 ladder (27.4 h)                        | lazy 0.04, two-sided only                             |       65 |        0 |    10 |     47 |           10 (4) |        4.10 |     0.28 | 0.040 (10-08 04:42Z >=29) |          0.029 |    0.000
+Oct 8 ladder (27.4 h)                        | lazy 0.04 + tiers 1.5 MON, soft 60 % x2               |       28 |        0 |     9 |     18 |            9 (4) |        1.91 |     0.25 | 0.082 (10-08 04:11Z >=29) |          0.029 |    0.000
+Oct 8 ladder (27.4 h)                        | lazy 0.04 + tiers 1.2 MON, soft 60 % x2               |       24 |        0 |     8 |     14 |            8 (4) |        1.62 |     0.22 | 0.064 (10-08 02:27Z >=30) |          0.029 |    0.000
+Oct 8 ladder (27.4 h)                        | lazy 0.04 + tiers 1.0 MON, soft 60 % x2               |       21 |        0 |     8 |     12 |            8 (4) |        1.45 |     0.22 | 0.065 (10-08 02:48Z >=30) |          0.029 |    0.000
+Oct 8 ladder (27.4 h)                        | live settings + tiers 1.5 MON (tiers alone)           |       29 |        0 |     9 |     12 |            9 (4) |        1.97 |     0.25 | 0.082 (10-08 04:11Z >=29) |          0.022 |    0.004
+Oct 8 ladder (27.4 h)                        | sensitivity: lazy 0.05, half-spread 4 ticks, no tiers |       51 |        0 |    10 |     30 |           10 (4) |        3.29 |     0.28 | 0.053 (10-08 04:51Z >=29) |          0.030 |    0.000
+Oct 9 ladder (19.5 h)                        | ACTUAL on chain (fills 11)                            |      122 |        0 |     9 |        |                9 |             |          |                           |                |         
+Oct 9 ladder (19.5 h)                        | live until now: requoteTicks 3 + hysteresis, no tiers |      118 |        0 |    18 |     41 |           18 (4) |        7.63 |     0.50 | 0.025 (10-09 03:05Z >=31) |          0.020 |    0.010
+Oct 9 ladder (19.5 h)                        | lazy 0.03 / 2 h / 0.02                                |       99 |        0 |    18 |     47 |           18 (4) |        6.53 |     0.50 | 0.032 (10-09 07:14Z >=30) |          0.023 |    0.003
+Oct 9 ladder (19.5 h)                        | lazy 0.04 / 2 h / 0.02                                |       80 |        0 |    18 |     51 |           18 (4) |        5.44 |     0.50 | 0.041 (10-08 17:02Z >=31) |          0.031 |    0.000
+Oct 9 ladder (19.5 h)                        | lazy 0.05 / 2 h / 0.02                                |       74 |        0 |    18 |     54 |           18 (4) |        5.09 |     0.50 | 0.052 (10-08 18:11Z >=30) |          0.038 |    0.000
+Oct 9 ladder (19.5 h)                        | lazy 0.04 / 4 h / 0.02                                |       78 |        0 |    18 |     52 |           18 (4) |        5.32 |     0.50 | 0.041 (10-08 20:54Z >=31) |          0.033 |    0.000
+Oct 9 ladder (19.5 h)                        | lazy 0.04, two-sided only                             |       80 |        0 |    18 |     51 |           18 (4) |        5.44 |     0.50 | 0.041 (10-08 17:02Z >=31) |          0.031 |    0.000
+Oct 9 ladder (19.5 h)                        | lazy 0.04 + tiers 1.5 MON, soft 60 % x2               |       18 |        0 |    12 |      6 |           12 (4) |        1.51 |     0.33 | 0.124 (10-09 03:12Z >=31) |          0.071 |    0.001
+Oct 9 ladder (19.5 h)                        | lazy 0.04 + tiers 1.2 MON, soft 60 % x2               |       14 |        0 |    11 |      5 |           11 (4) |        1.22 |     0.31 | 0.123 (10-09 02:10Z >=30) |          0.071 |    0.002
+Oct 9 ladder (19.5 h)                        | lazy 0.04 + tiers 1.0 MON, soft 60 % x2               |       13 |        0 |     9 |      5 |            9 (4) |        1.05 |     0.25 | 0.124 (10-09 03:43Z >=31) |          0.075 |    0.001
+Oct 9 ladder (19.5 h)                        | live settings + tiers 1.5 MON (tiers alone)           |       18 |        0 |    12 |      5 |           12 (4) |        1.51 |     0.33 | 0.125 (10-09 02:29Z >=30) |          0.048 |    0.000
+Oct 9 ladder (19.5 h)                        | sensitivity: lazy 0.05, half-spread 4 ticks, no tiers |       63 |        0 |    18 |     38 |           18 (4) |        4.46 |     0.50 | 0.052 (10-08 18:11Z >=30) |          0.039 |    0.002
+Oct 10 ladder (11.8 h)                       | ACTUAL on chain (fills 0)                             |        0 |        0 |     3 |        |                4 |             |          |                           |                |         
+Oct 10 ladder (11.8 h)                       | live until now: requoteTicks 3 + hysteresis, no tiers |       11 |        0 |     0 |      1 |            4 (4) |        0.63 |     0.00 | 0.025 (10-09 06:40Z >=30) |          0.022 |    0.010
+Oct 10 ladder (11.8 h)                       | lazy 0.03 / 2 h / 0.02                                |        9 |        0 |     0 |      1 |            4 (4) |        0.52 |     0.00 | 0.031 (10-09 07:43Z >=30) |          0.022 |    0.008
+Oct 10 ladder (11.8 h)                       | lazy 0.04 / 2 h / 0.02                                |        9 |        0 |     0 |      1 |            4 (4) |        0.52 |     0.00 | 0.031 (10-09 07:43Z >=30) |          0.023 |    0.008
+Oct 10 ladder (11.8 h)                       | lazy 0.05 / 2 h / 0.02                                |        8 |        0 |     0 |      1 |            4 (4) |        0.46 |     0.00 | 0.050 (10-09 04:21Z >=30) |          0.025 |    0.008
+Oct 10 ladder (11.8 h)                       | lazy 0.04 / 4 h / 0.02                                |        7 |        0 |     0 |      1 |            4 (4) |        0.40 |     0.00 | 0.034 (10-09 07:55Z >=29) |          0.026 |    0.001
+Oct 10 ladder (11.8 h)                       | lazy 0.04, two-sided only                             |        9 |        0 |     0 |      1 |            4 (4) |        0.52 |     0.00 | 0.031 (10-09 07:43Z >=30) |          0.023 |    0.008
+Oct 10 ladder (11.8 h)                       | lazy 0.04 + tiers 1.5 MON, soft 60 % x2               |        0 |        0 |     2 |      0 |            4 (4) |        0.00 |     0.06 | 0.053 (10-09 05:04Z >=30) |          0.050 |    0.012
+Oct 10 ladder (11.8 h)                       | lazy 0.04 + tiers 1.2 MON, soft 60 % x2               |        0 |        0 |     2 |      0 |            4 (4) |        0.00 |     0.06 | 0.053 (10-09 05:04Z >=30) |          0.050 |    0.012
+Oct 10 ladder (11.8 h)                       | lazy 0.04 + tiers 1.0 MON, soft 60 % x2               |        0 |        0 |     2 |      0 |            4 (4) |        0.00 |     0.06 | 0.053 (10-09 05:04Z >=30) |          0.050 |    0.012
+Oct 10 ladder (11.8 h)                       | live settings + tiers 1.5 MON (tiers alone)           |        0 |        0 |     2 |      0 |            4 (4) |        0.00 |     0.06 | 0.053 (10-09 05:04Z >=30) |          0.050 |    0.012
+Oct 10 ladder (11.8 h)                       | sensitivity: lazy 0.05, half-spread 4 ticks, no tiers |        8 |        0 |     0 |      1 |            4 (4) |        0.46 |     0.00 | 0.050 (10-09 04:21Z >=30) |          0.025 |    0.018
+
+per 24 h over the whole replay (57.9 h, all ladders); all-in adds a 4-strike roll 1.2568 and the kill switch 0.1 MON per day:
+  live until now: requoteTicks 3 + hysteresis, no tiers  all-in ~7.26 MON/day; re-quotes 88.3/day, one-side 0.0/day, pulls 11.6/day; quoting meter 5.58 + pulls 0.32 MON/day
+  lazy 0.03 / 2 h / 0.02                                 all-in ~6.66 MON/day; re-quotes 77.9/day, one-side 0.0/day, pulls 11.6/day; quoting meter 4.98 + pulls 0.32 MON/day
+  lazy 0.04 / 2 h / 0.02                                 all-in ~5.85 MON/day; re-quotes 63.8/day, one-side 0.0/day, pulls 11.6/day; quoting meter 4.17 + pulls 0.32 MON/day
+  lazy 0.05 / 2 h / 0.02                                 all-in ~5.59 MON/day; re-quotes 59.3/day, one-side 0.0/day, pulls 11.6/day; quoting meter 3.91 + pulls 0.32 MON/day
+  lazy 0.04 / 4 h / 0.02                                 all-in ~5.66 MON/day; re-quotes 60.5/day, one-side 0.0/day, pulls 11.6/day; quoting meter 3.98 + pulls 0.32 MON/day
+  lazy 0.04, two-sided only                              all-in ~5.85 MON/day; re-quotes 63.8/day, one-side 0.0/day, pulls 11.6/day; quoting meter 4.17 + pulls 0.32 MON/day
+  lazy 0.04 + tiers 1.5 MON, soft 60 % x2                all-in ~3.04 MON/day; re-quotes 19.1/day, one-side 0.0/day, pulls 9.5/day; quoting meter 1.42 + pulls 0.26 MON/day
+  lazy 0.04 + tiers 1.2 MON, soft 60 % x2                all-in ~2.78 MON/day; re-quotes 15.7/day, one-side 0.0/day, pulls 8.7/day; quoting meter 1.18 + pulls 0.24 MON/day
+  lazy 0.04 + tiers 1.0 MON, soft 60 % x2                all-in ~2.61 MON/day; re-quotes 14.1/day, one-side 0.0/day, pulls 7.9/day; quoting meter 1.03 + pulls 0.22 MON/day
+  live settings + tiers 1.5 MON (tiers alone)            all-in ~3.06 MON/day; re-quotes 19.5/day, one-side 0.0/day, pulls 9.5/day; quoting meter 1.44 + pulls 0.26 MON/day
+  sensitivity: lazy 0.05, half-spread 4 ticks, no tiers  all-in ~5.08 MON/day; re-quotes 50.6/day, one-side 0.0/day, pulls 11.6/day; quoting meter 3.40 + pulls 0.32 MON/day
+
+why the policy alone cannot reach the target: most re-quotes on these days are URGENT (the fair moved through a resting price, i.e. by about the half-spread 0.03-0.04 within a minute or two). live: 76 of 213 re-quotes urgent; lazy 0.04: 99 of 154 re-quotes urgent; lazy 0.04 + tiers 1.5: 24 of 46 re-quotes urgent.
+
+urgent re-quotes, lazy 0.04, Oct 9 ladder (first 25):
+  2026-10-08 18:18Z >=30 requote: resting bid 0.7 >= fair 0.6761; fair moved 0.7368 -> 0.6761 (>= 0.04); guard disagrees: widen the resting quote
+  2026-10-08 21:02Z >=29 requote: resting ask 0.95 <= fair 0.9517; quote older than 2 h and fair moved 0.9175 -> 0.9517
+  2026-10-09 02:33Z >=30 requote: resting bid 0.73 >= fair 0.7284
+  2026-10-09 02:36Z >=30 requote: resting ask 0.76 <= fair 0.7801; fair moved 0.7284 -> 0.7801 (>= 0.04)
+  2026-10-09 02:45Z >=30 requote: resting ask 0.82 <= fair 0.8313; fair moved 0.7801 -> 0.8313 (>= 0.04)
+  2026-10-09 03:03Z >=30 requote: resting bid 0.8 >= fair 0.7754; fair moved 0.8313 -> 0.7754 (>= 0.04)
+  2026-10-09 03:07Z >=30 requote: resting bid 0.74 >= fair 0.6868; fair moved 0.7754 -> 0.6868 (>= 0.04)
+  2026-10-09 03:07Z >=31 requote: resting bid 0.22 >= fair 0.2025; fair moved 0.2553 -> 0.2025 (>= 0.04)
+  2026-10-09 03:21Z >=30 requote: resting bid 0.65 >= fair 0.6485
+  2026-10-09 03:29Z >=30 requote: resting bid 0.61 >= fair 0.5685; fair moved 0.6485 -> 0.5685 (>= 0.04)
+  2026-10-09 03:33Z >=30 requote: resting ask 0.6 <= fair 0.6686; fair moved 0.5685 -> 0.6686 (>= 0.04)
+  2026-10-09 03:35Z >=30 requote: resting bid 0.63 >= fair 0.5916; fair moved 0.6686 -> 0.5916 (>= 0.04)
+  2026-10-09 03:38Z >=30 requote: resting bid 0.56 >= fair 0.5351; fair moved 0.5916 -> 0.5351 (>= 0.04)
+  2026-10-09 03:38Z >=31 requote: resting bid 0.2 >= fair 0.1529; fair moved 0.2396 -> 0.1529 (>= 0.04)
+  2026-10-09 03:53Z >=31 requote: resting bid 0.12 >= fair 0.1064; fair moved 0.1529 -> 0.1064 (>= 0.04)
+  2026-10-09 03:59Z >=30 requote: resting ask 0.57 <= fair 0.6202; fair moved 0.5351 -> 0.6202 (>= 0.04)
+  2026-10-09 03:59Z >=31 requote: resting ask 0.14 <= fair 0.1987; fair moved 0.1064 -> 0.1987 (>= 0.04)
+  2026-10-09 04:07Z >=30 requote: resting bid 0.56 >= fair 0.5487; fair moved 0.6275 -> 0.5487 (>= 0.04)
+  2026-10-09 04:07Z >=31 requote: resting bid 0.16 >= fair 0.1551; fair moved 0.1987 -> 0.1551 (>= 0.04)
+  2026-10-09 04:08Z >=30 requote: resting bid 0.51 >= fair 0.5055; fair moved 0.5487 -> 0.5055 (>= 0.04)
+  2026-10-09 04:10Z >=31 requote: resting bid 0.12 >= fair 0.1043; fair moved 0.1551 -> 0.1043 (>= 0.04)
+  2026-10-09 04:13Z >=30 requote: resting bid 0.47 >= fair 0.463; fair moved 0.5055 -> 0.463 (>= 0.04)
+  2026-10-09 04:25Z >=30 requote: resting bid 0.43 >= fair 0.4286
+  2026-10-09 04:28Z >=30 requote: resting ask 0.46 <= fair 0.5146; fair moved 0.4286 -> 0.5146 (>= 0.04)
+  2026-10-09 04:28Z >=31 requote: resting ask 0.14 <= fair 0.152; fair moved 0.1043 -> 0.152 (>= 0.04)

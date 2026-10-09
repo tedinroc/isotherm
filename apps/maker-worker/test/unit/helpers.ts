@@ -11,6 +11,9 @@ import { MakerEngine, type Keys, type KvLike } from "../../src/engine.ts";
 import { settingsFrom, type Env } from "../../src/env.ts";
 import { MemStore } from "../../src/store.ts";
 import { FakeChain } from "./fake-chain.ts";
+import workerJson from "../../config/worker.json";
+
+export const TREASURY_CFG = (workerJson as any).treasury as { address: Address; roles: Record<string, { address: Address; minMon: number; targetMon: number; dailyCapMon: number }> };
 
 // throwaway keys, unit tests only (never funded anywhere)
 export const KEYS = {
@@ -113,6 +116,8 @@ export function world(): World {
   const t0 = worldStart();
   const chain = new FakeChain(t0);
   for (const a of [MAKER, OPERATOR, GUARDIAN]) chain.mon.set(a.address.toLowerCase(), parseEther("10"));
+  // the treasury and the role addresses it watches (config/worker.json treasury): funded, so no LOW alerts by default
+  for (const a of [TREASURY_CFG.address, ...Object.values(TREASURY_CFG.roles).map((r) => r.address)]) chain.mon.set(a.toLowerCase(), parseEther("20"));
   const isoToday = localDateOf(t0 * 1000, 480);
   const date = Number(isoToday.replace(/-/g, ""));
   const closeTime = Date.parse(`${isoToday}T00:00:00Z`) / 1000 - 480 * 60 + (17 * 60 + 30) * 60; // 17:30 Taipei

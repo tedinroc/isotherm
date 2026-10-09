@@ -1,7 +1,9 @@
 // Relayer core: testnet drip (MON + AUSD) and gasless relayed mints. Transport-agnostic and unit-testable:
 // the Durable Object wires it to its storage, tests wire it to an anvil fork and an in-memory store.
 //
-// Every send goes through one queue, so a single relayer EOA never reuses a nonce. Monad specifics:
+// Every send goes through one queue, so a single relayer EOA never reuses a nonce; sender.ts picks the nonce, signs
+// once and broadcasts through the RPC pool (several endpoints), so a retried broadcast is never a second tx. Monad
+// specifics:
 //   - gas is billed on the LIMIT -> limit = estimate * GAS_MULTIPLIER_PCT / 100 (default 1.08)
 //   - reserve balance: an account under 10 MON may only send VALUE in an "emptying" tx (no other tx from it in the
 //     previous 3 blocks), so MON drips wait for 4 blocks after the relayer's last tx when it is under that line.
@@ -29,6 +31,7 @@ import { withMargin, type Pub, type Wallet } from './chain';
 import type { Deployments } from './deployments';
 import type { Config } from './env';
 import { checkDrip, checkRelay, recordDrip, recordRelay, usageToday, type DripRecord, type RelayLimits, type Store } from './limits';
+import { BroadcastError, createSender, type Sender } from './sender';
 import { HttpError, errorMessage } from './util';
 
 const RESERVE_LINE = parseEther('10');
@@ -58,8 +61,27 @@ export interface RelayMintWire {
   salt?: Hex;
 }
 
-export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; wallet: Wallet | null; store: Store }) {
+/** A failed broadcast as an HTTP answer. 'uncertain' is handled by each caller (it may have gone out). */
+function broadcastHttpError(e: unknown): unknown {
+  if (!(e instanceof BroadcastError)) return e;
+  if (e.kind === 'stale-nonce') return new HttpError(503, 'the relayer is busy; please retry in a few seconds');
+  if (e.kind === 'rejected') return new HttpError(502, e.message);
+  return new HttpError(504, 'sent but not confirmed yet; check your balance in a minute', e.hash ? { txHash: e.hash } : {});
+}
+
+export function createRelayer(opts: {
+  cfg: Config;
+  dep: Deployments;
+  pub: Pub;
+  wallet: Wallet | null;
+  store: Store;
+  /** Defaults to createSender over `pub` + `wallet`. */
+  sender?: Sender;
+  /** Per-endpoint RPC state for /api/health (endpoint labels only, never full URLs). */
+  rpcStatus?: () => unknown;
+}) {
   const { cfg, dep, pub, wallet, store } = opts;
+  const sender: Sender | null = opts.sender ?? (wallet ? createSender({ pub, wallet, store, chainId: cfg.chainId }) : null);
   const enqueue = makeQueue();
   let lastSendBlock: bigint | null = null;
   const errorAbis: Abi[] = [vaultFragments as Abi, vaultV1Abi as Abi, faucetAbi as Abi, ...Object.values(ABI_BUNDLE)];
@@ -177,6 +199,8 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
         relayPerIpPerDay: cfg.relayPerIpPerDay,
         ...usage,
       },
+      // RPC endpoints in fallback order: state (ok / cooling / wrong-chain), last error label, request counters
+      rpc: opts.rpcStatus ? opts.rpcStatus() : null,
       deployments: dep.source,
       vault: dep.vault,
       zap: dep.zap,
@@ -209,7 +233,7 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
     const user = getAddress(addressRaw);
     if (BigInt(user) < 0x10000n) throw new HttpError(400, 'bad address (zero / precompile range)');
     if (!cfg.dripEnabled) throw new HttpError(503, 'drip is paused');
-    if (!wallet) throw new HttpError(503, 'relayer not configured');
+    if (!wallet || !sender) throw new HttpError(503, 'relayer not configured');
     const relayer = wallet.account.address;
     if (user === relayer) throw new HttpError(400, 'bad address');
 
@@ -255,10 +279,19 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
       // Nonces are counted locally inside this queued job. Monad's RPC does not include a just-submitted tx in
       // eth_getTransactionCount('pending') (checked live 2026-10-07: still n right after sending nonce n), so
       // re-reading it for the AUSD leg reused the MON tx's nonce and the AUSD transfer was rejected
-      // ("Missing or invalid parameters"). Read once, then increment.
-      let nonce = await pub.getTransactionCount({ address: relayer, blockTag: 'pending' });
+      // ("Missing or invalid parameters"). Read once (max of the RPC count and our mined floor), then increment.
+      let nonce = await sender.nextNonce();
       if (monToSend > 0n) {
-        monTx = await wallet.sendTransaction({ to: user, value: monToSend, gas: 21_000n, nonce, account: wallet.account, chain: wallet.chain });
+        try {
+          monTx = await sender.send({ to: user, value: monToSend, gas: 21_000n, nonce });
+        } catch (e) {
+          if (e instanceof BroadcastError && e.kind === 'uncertain' && e.hash) {
+            // It may have gone out: count the drip and never send this MON again (a retry sends the AUSD leg only).
+            await recordDrip(store, user, ip, { at: Date.now(), monTx: e.hash, ausdPending: wantAusd }, true);
+            throw new HttpError(504, 'test funds sent but not confirmed yet; check your balance in a minute', { txHashes: [e.hash] });
+          }
+          throw broadcastHttpError(e);
+        }
         hashes.push(monTx);
         nonce += 1;
       }
@@ -268,15 +301,16 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
           if (relAusd >= cfg.dripAusd) {
             const req = { address: dep.ausd, abi: ausdAbi, functionName: 'transfer', args: [user, cfg.dripAusd] } as const;
             const est = await pub.estimateContractGas({ ...req, account: wallet.account });
-            ausdTx = await wallet.writeContract({ ...req, gas: withMargin(est, cfg.gasMultiplierPct), nonce, account: wallet.account, chain: wallet.chain });
+            ausdTx = await sender.send({ to: req.address, data: encodeFunctionData(req), gas: withMargin(est, cfg.gasMultiplierPct), nonce });
             ausdSource = 'relayer-float';
           } else {
             const req = { address: dep.ausdFaucet, abi: faucetAbi, functionName: 'requestFunds', args: [user] } as const;
             try {
               const est = await pub.estimateContractGas({ ...req, account: wallet.account });
-              ausdTx = await wallet.writeContract({ ...req, gas: withMargin(est, cfg.gasMultiplierPct), nonce, account: wallet.account, chain: wallet.chain });
+              ausdTx = await sender.send({ to: req.address, data: encodeFunctionData(req), gas: withMargin(est, cfg.gasMultiplierPct), nonce });
               ausdSource = 'agora-faucet';
             } catch (e) {
+              if (e instanceof BroadcastError) throw e;
               const why = explain(e);
               if (!/MaxFrequencyExceeded/.test(why)) throw new HttpError(502, `AUSD faucet failed: ${why}`);
               ausdPending = true;
@@ -286,8 +320,10 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
         } catch (e) {
           // If MON already went out, never lose that fact: record the drip as AUSD-pending so a retry sends only the
           // AUSD leg (checkDrip -> retryOfPending -> monToSend = 0). Otherwise a failed AUSD leg left no record and
-          // every retry sent MON again.
-          if (!monTx) throw e;
+          // every retry sent MON again. An AUSD broadcast that may have gone out is recorded the same way: a retry
+          // re-reads the user's AUSD balance and sends nothing if it landed.
+          const uncertain = e instanceof BroadcastError && e.kind === 'uncertain';
+          if (!monTx && !uncertain) throw broadcastHttpError(e);
           ausdPending = true;
           retryAfterSec = 30;
         }
@@ -302,7 +338,7 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
       if (monTx || ausdTx || ausdPending) await recordDrip(store, user, ip, rec, countIt);
       let receipts: Awaited<ReturnType<typeof pub.waitForTransactionReceipt>>[];
       try {
-        receipts = await Promise.all(hashes.map((hash) => pub.waitForTransactionReceipt({ hash, pollingInterval: 300, timeout: 45_000 })));
+        receipts = await Promise.all(hashes.map((hash) => sender.wait(hash)));
       } catch {
         // Unconfirmed: a retry re-reads the user's balances and sends only what is still missing (AUSD leg only).
         if (wantAusd) await recordDrip(store, user, ip, { ...rec, ausdPending: true }, false);
@@ -333,7 +369,7 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
 
   /** Cron: keep an AUSD float so drips do not hit the faucet's global cooldown. At most one faucet call. */
   async function refill() {
-    if (!wallet) return { ok: false, reason: 'no relayer key' };
+    if (!wallet || !sender) return { ok: false, reason: 'no relayer key' };
     return enqueue(async () => {
       const relayer = wallet.account.address;
       const [mon, bal] = await Promise.all([
@@ -349,9 +385,15 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
       } catch (e) {
         return { ok: false, skipped: explain(e), float: formatUnits(bal, 6) };
       }
-      const nonce = await pub.getTransactionCount({ address: relayer, blockTag: 'pending' });
-      const hash = await wallet.writeContract({ ...req, gas: withMargin(est, cfg.gasMultiplierPct), nonce, account: wallet.account, chain: wallet.chain });
-      const r = await pub.waitForTransactionReceipt({ hash, pollingInterval: 300, timeout: 45_000 });
+      const nonce = await sender.nextNonce();
+      let hash: Hex;
+      try {
+        hash = await sender.send({ to: req.address, data: encodeFunctionData(req), gas: withMargin(est, cfg.gasMultiplierPct), nonce });
+      } catch (e) {
+        if (!(e instanceof BroadcastError)) throw e;
+        return { ok: false, skipped: `${e.kind}: ${e.message}`, txHash: e.kind === 'uncertain' ? e.hash : null, float: formatUnits(bal, 6) };
+      }
+      const r = await sender.wait(hash);
       await noteSendBlock(r.blockNumber);
       return { ok: r.status === 'success', txHash: hash, float: formatUnits(bal + 10_000_000_000n, 6) };
     });
@@ -373,7 +415,7 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
   /** `ip` is the salted client-network tag (IPv4, or IPv6 /64) computed by the Worker; never a raw IP. */
   async function relayMint(w: RelayMintWire, ip?: string) {
     if (!cfg.relayEnabled) throw new HttpError(503, 'relayed mint is paused');
-    if (!wallet) throw new HttpError(503, 'relayer not configured');
+    if (!wallet || !sender) throw new HttpError(503, 'relayer not configured');
     if (!w || typeof w !== 'object') throw new HttpError(400, 'bad body');
     if (Number(w.chainId) !== cfg.chainId) throw new HttpError(400, `wrong chain ${w.chainId}`);
     if (!isHex(w.seriesId) || w.seriesId.length !== 66) throw new HttpError(400, 'bad seriesId');
@@ -482,10 +524,24 @@ export function createRelayer(opts: { cfg: Config; dep: Deployments; pub: Pub; w
         throw new HttpError(400, `mint would fail: ${explain(e)}`);
       }
       const gas = withMargin(est, cfg.gasMultiplierPct);
-      const nonce = await pub.getTransactionCount({ address: relayer, blockTag: 'pending' });
-      const hash = await wallet.writeContract({ ...call, gas, nonce, account: wallet.account, chain: wallet.chain } as never);
+      const nonce = await sender.nextNonce();
+      let hash: Hex;
+      try {
+        hash = await sender.send({ to: call.address, data: encodeFunctionData({ abi: call.abi, functionName: call.functionName, args: call.args } as never), gas, nonce });
+      } catch (e) {
+        if (e instanceof BroadcastError && e.kind === 'uncertain' && e.hash) {
+          await recordRelay(store, holder, ip); // it may have gone out: it uses up quota like any broadcast
+          throw new HttpError(504, 'relayed mint sent but not confirmed yet; check your balance in a minute', { txHash: e.hash });
+        }
+        throw broadcastHttpError(e);
+      }
       await recordRelay(store, holder, ip); // counted on broadcast: a revert costs the relayer the full gas limit too
-      const r = await pub.waitForTransactionReceipt({ hash, pollingInterval: 300, timeout: 45_000 });
+      let r: Awaited<ReturnType<typeof sender.wait>>;
+      try {
+        r = await sender.wait(hash);
+      } catch {
+        throw new HttpError(504, 'relayed mint sent but not confirmed yet; check your balance in a minute', { txHash: hash });
+      }
       await noteSendBlock(r.blockNumber);
       if (r.status !== 'success') throw new HttpError(502, `relayed mint reverted: ${hash}`);
       return {

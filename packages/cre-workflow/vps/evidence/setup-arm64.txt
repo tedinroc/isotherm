@@ -1,0 +1,45 @@
+# 2026-10-09T16:51:11Z vps/setup.sh --with-anvil on the stand-in VPS (Ubuntu 24.04 arm64, systemd)
+[vps/setup] apt packages (sudo)
+[vps/setup] downloading foundry_v1.8.5_linux_arm64.tar.gz
+[vps/setup] cast Version: 1.8.5
+CRE CLI version v1.37.0
+
+⚠️  Update available! You’re running 1.37.0, but 1.38.0 is the latest.
+Run `cre update` or visit https://github.com/smartcontractkit/cre-cli/releases to upgrade.
+
+bun 1.4.2
+bun install v1.4.2 (744846f84)
+
++ @types/bun@1.2.21
++ typescript@5.9.3
++ @chainlink/cre-sdk@1.23.0
++ @noble/curves@1.9.7
++ viem@2.54.2
++ zod@3.25.76
+
+46 packages installed [3.48s]
+ok. Now run: export PATH="/home/isotherm/isotherm/packages/cre-workflow/.tools/bin:/home/isotherm/isotherm/packages/cre-workflow/.tools/node_modules/.bin:$PATH"
+[vps/setup] cre workflow build (compile check, no login)
+    Compiling workflow...
+  ✓ Workflow compiled successfully
+    Binary hash: 413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938
+  ✓ Build output written to /home/isotherm/isotherm/packages/cre-workflow/settle/binary.wasm
+  
+  
+[vps/setup] binary.wasm 413d4429ab2c3d619cf60e8098fab1ca242b1989082d9b7aeba1cfb1268e4938: byte-identical to the Mac build (2026-10-07 onward)
+[vps/setup] units installed in /home/isotherm/.config/systemd/user (timer NOT enabled; vps/cutover.sh enables it)
+[vps/setup] loginctl enable-linger (sudo): the user's systemd runs at boot, so the timer needs no SSH session
+
+[vps/setup] done. Next (vps/README.md):
+  - attester key: from the Mac, scp ~/.config/isotherm/attester.key <vps>:.config/isotherm/ ; then here: chmod 600 ~/.config/isotherm/attester.key
+  - CRE login through the SSH tunnel: ssh -t -L 53682:127.0.0.1:53682 <vps> bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh login
+  - check: bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh preflight ; then ... dry-run ; then ... status
+  - cutover from the Mac: packages/cre-workflow/vps/cutover.sh <vps>   (dry run first, then --execute)
+
+real	2m3.392s
+user	0m27.354s
+sys	0m4.995s
+exit 0
+## a second vps/push.sh now finds rsync on the VPS
+[2026-10-09T16:53:15Z] pushed; the job's code on the VPS is byte-identical to this checkout (commit 5e89e54 + uncommitted changes, pushed 2026-10-09T16:53:15Z)
+[2026-10-09T16:53:15Z] next, if the toolchain or settle/bun.lock is new on the VPS: ssh -t isotherm-test bash isotherm/packages/cre-workflow/vps/setup.sh

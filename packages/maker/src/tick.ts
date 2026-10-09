@@ -9,7 +9,7 @@ import type { Address, Hex } from "viem";
 import { computeFairs, type StrikeFair } from "../../forecast/src/fair.ts";
 import { erc20Abi, kuruBookAbi, marginAbi, vaultCommonAbi } from "./abis.ts";
 import { BudgetRefused, explainRevert, LiveRefused, nowSec, read, send, type Ctx } from "./chain.ts";
-import type { SpendKind } from "./budget.ts";
+import { budgetCfgOf, quotingTier, type BudgetTier, type SpendKind } from "./budget.ts";
 import type { LadderData, MarketData } from "./data-core.ts";
 import { createdOrders, fromSizeUnits, getBook, marginBalance, orderStatus, othersBest, scanOpenOrders, toPriceUnits, toSizeUnits, type Book } from "./kuru.ts";
 import { decide, type Action } from "./policy.ts";
@@ -27,6 +27,8 @@ export interface StrikeView {
   resting: { bid?: { id: number; price: number; remaining: number }; ask?: { id: number; price: number; remaining: number } };
   inventory: { walletYes: number; walletNo: number; marginYes: number; lockedYes: number; netYes: number } | null;
   book: Book | null;
+  /** the quoting budget tier this strike was decided under (budget.softRatio; absent = no tiers configured) */
+  tier?: BudgetTier;
 }
 export interface TickAction {
   strike: number;
@@ -221,9 +223,15 @@ export async function tickLadder(ctx: Ctx, lad: LadderState, data: MarketData, o
       const book = await getBook(ctx, s.market);
       view.book = book;
       const others = othersBest(book, { bid: view.resting.bid && { price: view.resting.bid.price, size: view.resting.bid.remaining }, ask: view.resting.ask && { price: view.resting.ask.price, size: view.resting.ask.remaining } });
-      const desired = makeQuote({ fair: f.fair, source: f.source, flags: f.flags, netYes: inv.netYes, freeYes: inv.marginYes + inv.lockedYes, freeAusd, others, cfg: ctx.cfg.quote });
+      // the quoting budget tier, re-read per strike (this tick's own spends move it)
+      const quoteKind = opts.quoteKind ?? "quote";
+      const ti = quotingTier(ctx.state.budget, "maker", quoteKind, budgetCfgOf(ctx.cfg), Date.now());
+      if (ti.soft !== null) view.tier = ti.tier;
+      const wm = ctx.cfg.budget.softWidenMult ?? 1;
+      const widen = ti.tier !== "normal" && wm > 1 ? { mult: wm, why: `quoting budget ${ti.tier === "hard" ? "spent" : `above ${Math.round((ctx.cfg.budget.softRatio ?? 0) * 100)} % of its cap`} (${ti.spent.toFixed(3)} of ${ti.cap} MON)` } : null;
+      const desired = makeQuote({ fair: f.fair, source: f.source, flags: f.flags, netYes: inv.netYes, freeYes: inv.marginYes + inv.lockedYes, freeAusd, others, cfg: ctx.cfg.quote, widen });
       view.desired = desired;
-      const action = decide({ now, stopAt: lad.stopAt, mode: s.mode, certain: f.certain === "yes", fair: f.fair, desired, resting: view.resting, lastQuote: s.lastQuote, cfg: { ...ctx.cfg.policy, tick: ctx.cfg.quote.tick } });
+      const action = decide({ now, stopAt: lad.stopAt, mode: s.mode, certain: f.certain === "yes", fair: f.fair, desired, resting: view.resting, lastQuote: s.lastQuote, wide: f.flags.includes("guard-wide"), tier: ti.tier, cfg: { ...ctx.cfg.policy, tick: ctx.cfg.quote.tick } });
       if (lad.paused || lad.status !== "active") {
         view.action = { kind: "none", urgent: false, reasons: [lad.paused ? "ladder paused (manual pull)" : `ladder ${lad.status}`] };
         continue;
@@ -246,30 +254,45 @@ export async function tickLadder(ctx: Ctx, lad: LadderState, data: MarketData, o
         }
         continue;
       }
-      // quote / requote: one batchUpdate (cancels first, then places; post-only)
+      // quote / requote: one batchUpdate (cancels first, then places; post-only). A one-sided re-quote (action.sides)
+      // cancels and places only the side that needs it; the other order stays on the book untouched.
       if (desired.pull) continue;
-      const bids = desired.bid !== null ? [{ p: desired.bid, s: desired.bidSize }] : [];
-      const asks = desired.ask !== null ? [{ p: desired.ask, s: desired.askSize }] : [];
+      const sides = action.sides ?? { bid: true, ask: true };
+      const oneSided = !!action.sides;
+      const bids = sides.bid && desired.bid !== null ? [{ p: desired.bid, s: desired.bidSize }] : [];
+      const asks = sides.ask && desired.ask !== null ? [{ p: desired.ask, s: desired.askSize }] : [];
+      const replaceIds = [sides.bid ? view.resting.bid?.id : undefined, sides.ask ? view.resting.ask?.id : undefined].filter((x): x is number => typeof x === "number");
+      const label = oneSided
+        ? `${action.kind} >=${f.k} ${sides.bid ? `bid ${desired.bidSize}@${desired.bid ?? "-"}` : `ask ${desired.askSize}@${desired.ask ?? "-"}`} only${replaceIds.length ? ` cancel ${replaceIds.length}` : ""}`
+        : `${action.kind} >=${f.k} ${desired.bidSize}@${desired.bid ?? "-"} / ${desired.askSize}@${desired.ask ?? "-"}${replaceIds.length ? ` cancel ${replaceIds.length}` : ""}`;
       try {
         const r = await send(
           ctx,
           "maker",
-          { to: s.market, abi: kuruBookAbi, functionName: "batchUpdate", args: [bids.map((x) => toPriceUnits(x.p)), bids.map((x) => toSizeUnits(x.s)), asks.map((x) => toPriceUnits(x.p)), asks.map((x) => toSizeUnits(x.s)), cancelIds, true] },
-          { label: `${action.kind} >=${f.k} ${desired.bidSize}@${desired.bid ?? "-"} / ${desired.askSize}@${desired.ask ?? "-"}${cancelIds.length ? ` cancel ${cancelIds.length}` : ""}`, kind: opts.quoteKind ?? "quote" },
+          { to: s.market, abi: kuruBookAbi, functionName: "batchUpdate", args: [bids.map((x) => toPriceUnits(x.p)), bids.map((x) => toSizeUnits(x.s)), asks.map((x) => toPriceUnits(x.p)), asks.map((x) => toSizeUnits(x.s)), replaceIds, true] },
+          { label, kind: quoteKind },
         );
         if (r.dryRun) continue;
         act.tx = r.hash;
         const created = createdOrders(r.receipt, s.market);
+        const kept = { ...s.orders };
         s.orders = {};
+        if (!sides.bid && kept.bid) s.orders.bid = kept.bid;
+        if (!sides.ask && kept.ask) s.orders.ask = kept.ask;
         for (const o of created) s.orders[o.isBuy ? "bid" : "ask"] = { id: o.id, price: o.price, size: o.size, placedAt: now };
-        s.lastQuote = { fair: f.fair!, bid: desired.bid, ask: desired.ask, bidSize: desired.bidSize, askSize: desired.askSize, at: now, tx: r.hash, wide: f.flags.includes("guard-wide") };
+        if (oneSided && s.lastQuote) {
+          // the quote's centre (fair, time, spread flag) is unchanged: only the replaced side moved
+          const lq = s.lastQuote;
+          s.lastQuote = { ...lq, ...(sides.bid ? { bid: desired.bid, bidSize: desired.bidSize } : {}), ...(sides.ask ? { ask: desired.ask, askSize: desired.askSize } : {}), tx: r.hash };
+        } else s.lastQuote = { fair: f.fair!, bid: desired.bid, ask: desired.ask, bidSize: desired.bidSize, askSize: desired.askSize, at: now, tx: r.hash, wide: f.flags.includes("guard-wide") };
         s.mode = "quoting";
         s.reason = action.reasons.join("; ");
         ctx.save();
         // the snapshot shows the book as it is AFTER this tick's action
+        const before = view.resting;
         view.resting = {};
-        if (s.orders.bid) view.resting.bid = { id: s.orders.bid.id, price: s.orders.bid.price, remaining: s.orders.bid.size };
-        if (s.orders.ask) view.resting.ask = { id: s.orders.ask.id, price: s.orders.ask.price, remaining: s.orders.ask.size };
+        if (s.orders.bid) view.resting.bid = !sides.bid && before.bid ? before.bid : { id: s.orders.bid.id, price: s.orders.bid.price, remaining: s.orders.bid.size };
+        if (s.orders.ask) view.resting.ask = !sides.ask && before.ask ? before.ask : { id: s.orders.ask.id, price: s.orders.ask.price, remaining: s.orders.ask.size };
         view.book = await getBook(ctx, s.market);
       } catch (e) {
         act.error = explainRevert(e);

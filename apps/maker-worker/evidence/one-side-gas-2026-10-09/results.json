@@ -1,0 +1,61 @@
+{
+ "block": 69578065,
+ "market": "0xC6806c67a2faCd6e7fd72e26DA9d037eb2E2a7D3",
+ "maker": "0xd572638F07829D1c3636400FB73CF34Ca6c7448a",
+ "bid": {
+  "id": 1,
+  "price": 9000,
+  "size": "100000000",
+  "isBuy": true
+ },
+ "ask": {
+  "id": 2,
+  "price": 9700,
+  "size": "100000000",
+  "isBuy": false
+ },
+ "rows": [
+  {
+   "what": "full re-quote: cancel 2 + place 2 (both sides shifted -0.03)",
+   "liveEstimate": 525456,
+   "forkEstimate": 522424,
+   "forkUsed": 514946,
+   "mon": 0.0576
+  },
+  {
+   "what": "one side: cancel 1 + place 1 (ask shifted -0.03)",
+   "liveEstimate": 347891,
+   "forkEstimate": 344868,
+   "forkUsed": 340156,
+   "mon": 0.038
+  },
+  {
+   "what": "one side: cancel 1 + place 1 (bid shifted -0.03)",
+   "liveEstimate": 322202,
+   "forkEstimate": 319178,
+   "forkUsed": 314868,
+   "mon": 0.0352
+  },
+  {
+   "what": "refill one side: place 1, no cancel (batchUpdate)",
+   "liveEstimate": 290485,
+   "forkEstimate": 287464,
+   "forkUsed": 283647,
+   "mon": 0.0317
+  },
+  {
+   "what": "refill one side: addSellOrder",
+   "liveEstimate": 287079,
+   "forkEstimate": 284081,
+   "forkUsed": 280294,
+   "mon": 0.0313
+  },
+  {
+   "what": "pull: cancel 2 (batchCancelOrdersNoRevert)",
+   "liveEstimate": 255119,
+   "forkEstimate": 252119,
+   "forkUsed": 248833,
+   "mon": 0.0278
+  }
+ ]
+}

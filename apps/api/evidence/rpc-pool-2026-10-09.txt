@@ -1,0 +1,130 @@
+# apps/api RPC pool (RPC_URLS fallback, throttle, cooldown, chain-id check, sign-once relayer, scan lag/backoff), 2026-10-09
+# Not deployed. Working tree on top of 5e89e54. Ports for the fork run overridden so parallel workstreams do not collide.
+
+## 1. typecheck + unit + fork (anvil fork of Monad testnet, throwaway keys; the Worker is given three RPC endpoints:
+##    a plain anvil on chain 31337, a loopback port with nothing listening, then the fork)
+
+== npm run typecheck
+> isotherm-api@1.0.0 typecheck
+> npm run prepare-data && tsc --noEmit
+> isotherm-api@1.0.0 prepare-data
+> node scripts/copy-deployments.mjs && node scripts/build-info.mjs
+[copy-deployments] deployments: deployments/testnet.json; ABIs: CollateralVault, ForecastCommit, IERC3009, IIsothermResolver, IKuruOrderBookTaker, IKuruRouterView, IsothermZap, OutcomeToken, Resolver
+[build-info] 1.0.0 build 5e89e54-dirty.b794c3461dae (19 files)
+tsc exit 0
+== npm test
+> isotherm-api@1.0.0 test
+> npm run prepare-data && vitest run test/unit
+> isotherm-api@1.0.0 prepare-data
+> node scripts/copy-deployments.mjs && node scripts/build-info.mjs
+[copy-deployments] deployments: deployments/testnet.json; ABIs: CollateralVault, ForecastCommit, IERC3009, IIsothermResolver, IKuruOrderBookTaker, IKuruRouterView, IsothermZap, OutcomeToken, Resolver
+[build-info] 1.0.0 build 5e89e54-dirty.b794c3461dae (19 files)
+ RUN  v3.2.7 <repo>/apps/api
+ ✓ test/unit/rpc.test.ts (27 tests) 919ms
+   ✓ RPC pool: fallback, cooldown, chain id, retries > a burst: requests queued in the throttle skip an endpoint that started cooling, and concurrent 429s are one strike  854ms
+ ✓ test/unit/relay-abuse.test.ts (19 tests) 397ms
+ ✓ test/unit/size-caps.test.ts (8 tests) 58ms
+ ✓ test/unit/api-units.test.ts (33 tests) 12ms
+ Test Files  4 passed (4)
+      Tests  87 passed (87)
+   Start at  08:59:16
+   Duration  2.05s (transform 85ms, setup 0ms, collect 314ms, tests 1.39s, environment 0ms, prepare 79ms)
+unit exit 0
+== npm run test:fork (ports overridden: anvil 19310, wrong-chain anvil 19311, wrangler dev 8792)
+> isotherm-api@1.0.0 test:fork
+> npm run prepare-data && vitest run test/integration
+> isotherm-api@1.0.0 prepare-data
+> node scripts/copy-deployments.mjs && node scripts/build-info.mjs
+[copy-deployments] deployments: deployments/testnet.json; ABIs: CollateralVault, ForecastCommit, IERC3009, IIsothermResolver, IKuruOrderBookTaker, IKuruRouterView, IsothermZap, OutcomeToken, Resolver
+[build-info] 1.0.0 build 5e89e54-dirty.b794c3461dae (19 files)
+ RUN  v3.2.7 <repo>/apps/api
+stdout | test/integration/api.fork.test.ts > isotherm-api on a Monad testnet fork > relays a signed EIP-3009 mint for a user with no MON; refuses permit mode, dust, tampering and over-limit requests
+[fork] relayed mintSetWithAuthorization: estimate 309470, gas limit 334228, gas used 309470
+ ✓ test/integration/api.fork.test.ts (6 tests) 56289ms
+   ✓ isotherm-api on a Monad testnet fork > serves health with the relayer and v1 relay modes; CORS only for allowed origins  1871ms
+   ✓ isotherm-api on a Monad testnet fork > admin endpoints need the bearer token; the cron tick refills the AUSD float from the faucet  3215ms
+   ✓ isotherm-api on a Monad testnet fork > drips MON + AUSD once per address, never to contracts, and enforces the per-IP limit  5422ms
+   ✓ isotherm-api on a Monad testnet fork > relays a signed EIP-3009 mint for a user with no MON; refuses permit mode, dust, tampering and over-limit requests  11195ms
+   ✓ isotherm-api on a Monad testnet fork > counts a non-maker Kuru fill and a CRE settlement in /api/stats and /api/settlements  28742ms
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  08:59:18
+   Duration  56.48s (transform 34ms, setup 0ms, collect 103ms, tests 56.29s, environment 0ms, prepare 20ms)
+fork exit 0
+
+## 2. per-test list (unit, verbose): test/unit/rpc.test.ts and test/unit/relay-abuse.test.ts
+
+ ✓ test/unit/rpc.test.ts > RPC endpoints: which, in what order > defaults to Ankr, thirdweb, official (official last: 15 req/s per client IP, shared Worker egress) 1ms
+ ✓ test/unit/rpc.test.ts > RPC endpoints: which, in what order > parses RPC_URLS in order, drops duplicates and invalid entries (reported by position only) 0ms
+ ✓ test/unit/rpc.test.ts > RPC endpoints: which, in what order > RPC_URL (one endpoint, for anvil forks) wins over RPC_URLS; nothing valid -> the defaults 0ms
+ ✓ test/unit/rpc.test.ts > RPC endpoints: which, in what order > labels only the known public endpoints and loopback by host; anything else by position (a key in a URL never leaks) 0ms
+ ✓ test/unit/rpc.test.ts > RPC endpoints: which, in what order > wrangler.toml: production uses the RPC_URLS list (no RPC_URL override), every entry valid, scan lag 5 blocks 1ms
+ ✓ test/unit/rpc.test.ts > RPC error classification > HTTP 429 / 403, JSON-RPC limit codes and "requests limited to 15/sec" are rate limits 9ms
+ ✓ test/unit/rpc.test.ts > RPC error classification > 5xx and network failures are transient; reverts, bad params and 413 (range too large) are deterministic 1ms
+ ✓ test/unit/rpc.test.ts > client-side throttle > lets `burst` requests through, then paces to `rps`; refuses a wait longer than the queue limit 0ms
+ ✓ test/unit/rpc.test.ts > client-side throttle > a full queue on one endpoint spills to the next instead of waiting 0ms
+ ✓ test/unit/rpc.test.ts > RPC pool: fallback, cooldown, chain id, retries > a rate-limited endpoint cools down and the next one serves; while cooling it is not contacted 1ms
+ ✓ test/unit/rpc.test.ts > RPC pool: fallback, cooldown, chain id, retries > a burst: requests queued in the throttle skip an endpoint that started cooling, and concurrent 429s are one strike 855ms
+ ✓ test/unit/rpc.test.ts > RPC pool: fallback, cooldown, chain id, retries > never uses an endpoint that serves another chain; eth_chainId is answered from the verified cache 2ms
+ ✓ test/unit/rpc.test.ts > RPC pool: fallback, cooldown, chain id, retries > a revert is thrown at once: no second endpoint, no cooldown, no retry 1ms
+ ✓ test/unit/rpc.test.ts > RPC pool: fallback, cooldown, chain id, retries > when every endpoint is rate-limited or down, retries with backoff (waiting for the first cooldown to end) 1ms
+ ✓ test/unit/rpc.test.ts > RPC pool: fallback, cooldown, chain id, retries > gives up after maxAttempts and surfaces the error 1ms
+ ✓ test/unit/rpc.test.ts > RPC pool: fallback, cooldown, chain id, retries > eth_getLogs goes only to an endpoint whose head covers toBlock (a lagging node returns truncated logs, no error) 1ms
+ ✓ test/unit/rpc.test.ts > RPC pool: fallback, cooldown, chain id, retries > a broadcast that fails on one endpoint is resent byte for byte to the next (same hash, same nonce) 1ms
+ ✓ test/unit/rpc.test.ts > relayer broadcast: one signature per nonce, the hash decides what happened > signs a 10143 EIP-1559 tx with the given nonce and returns its hash 21ms
+ ✓ test/unit/rpc.test.ts > relayer broadcast: one signature per nonce, the hash decides what happened > "already known" from the RPC, or the tx found by hash after a timeout, is a successful broadcast 3ms
+ ✓ test/unit/rpc.test.ts > relayer broadcast: one signature per nonce, the hash decides what happened > nonce too low and not found: stale-nonce (nothing of ours went out); a provider rejection: rejected after one lookup 4ms
+ ✓ test/unit/rpc.test.ts > relayer broadcast: one signature per nonce, the hash decides what happened > a timeout with the tx nowhere to be found is uncertain, and carries the hash so the caller never resends it 3ms
+ ✓ test/unit/rpc.test.ts > relayer broadcast: one signature per nonce, the hash decides what happened > next nonce = max(RPC count, floor of our own mined txs); only a receipt raises the floor 2ms
+ ✓ test/unit/rpc.test.ts > stats scan: 100-block pages, a lag behind the head, partial progress on a rate limit > reads at most 100 blocks per call and stops lagBlocks short of the head 0ms
+ ✓ test/unit/rpc.test.ts > stats scan: 100-block pages, a lag behind the head, partial progress on a rate limit > a rate-limited window stops the run, keeps the completed windows and resumes exactly there 0ms
+ ✓ test/unit/rpc.test.ts > stats scan: 100-block pages, a lag behind the head, partial progress on a rate limit > a rate limit inside a backfill job keeps that job's progress and every later job 0ms
+ ✓ test/unit/rpc.test.ts > stats scan: 100-block pages, a lag behind the head, partial progress on a rate limit > the Durable Object then skips cron ticks: about 2, 4, then at most 8 minutes 0ms
+ ✓ test/unit/rpc.test.ts > pool + sender together: a broadcast that times out on one endpoint and lands through another > one transaction on chain, and the floor follows its receipt 3ms
+ ✓ test/unit/relay-abuse.test.ts > relayed mint: caps hold under concurrent requests > N parallel requests for one holder relay at most the per-address cap (and never past the daily cap) 104ms
+ ✓ test/unit/relay-abuse.test.ts > health: a flood of /api/health calls does not become a flood of RPC calls > memoises relayer info for a few seconds and dedupes in-flight calls 8ms
+ ✓ test/unit/relay-abuse.test.ts > drip: per-network limit is keyed by IPv6 /64, not the full address > buckets IPv6 by /64 and leaves IPv4 alone 1ms
+ ✓ test/unit/relay-abuse.test.ts > snapshot: only https Polymarket links reach the web app > drops javascript: and foreign URLs (React 18 renders javascript: hrefs) 1ms
+ ✓ test/unit/relay-abuse.test.ts > relayed mint: per-network limit, minimum amount, permit disabled > 8 parallel requests from 8 holders on one network relay at most RELAY_PER_IP_PER_DAY 77ms
+ ✓ test/unit/relay-abuse.test.ts > relayed mint: per-network limit, minimum amount, permit disabled > refuses dust (below RELAY_MIN_AUSD, default 1 AUSD) before any RPC call 1ms
+ ✓ test/unit/relay-abuse.test.ts > relayed mint: per-network limit, minimum amount, permit disabled > offers authorization mode only for the v1 vault; permit requests are refused 8ms
+ ✓ test/unit/relay-abuse.test.ts > relayed mint: per-network limit, minimum amount, permit disabled > a relay that reverts on chain still uses up quota (Monad bills the gas limit) 29ms
+ ✓ test/unit/relay-abuse.test.ts > relayed mint: per-network limit, minimum amount, permit disabled > never relays into the reserve: needs RELAY_COST_MON + RELAYER_MIN_MON on hand 22ms
+ ✓ test/unit/relay-abuse.test.ts > drip: reserve floor and counting on broadcast > refuses a drip that would dip into the reserve (DRIP_MON + DRIP_GAS_MON + RELAYER_MIN_MON) 6ms
+ ✓ test/unit/relay-abuse.test.ts > drip: reserve floor and counting on broadcast > a drip whose receipt never arrives still counts, and a retry sends nothing twice 16ms
+ ✓ test/unit/relay-abuse.test.ts > snapshot: maker sizes pass through; "reason" is the current decision, not the last change > maps lastAction -> action/reason and the persisted reason -> lastChangeReason 0ms
+ ✓ test/unit/relay-abuse.test.ts > snapshot: maker sizes pass through; "reason" is the current decision, not the last change > no current decision -> reason null (never the stale one); no resting orders -> remaining 0; unknown -> null 0ms
+ ✓ test/unit/relay-abuse.test.ts > snapshot: maker sizes pass through; "reason" is the current decision, not the last change > the real maker example snapshot normalises with sizes 1ms
+ ✓ test/unit/relay-abuse.test.ts > health: ready flags respect the daily caps > dripReady / relayReady turn false once today's cap is used, even with MON on hand 14ms
+ ✓ test/unit/relay-abuse.test.ts > per-network request window (Durable Object memory) > allows N per minute per key, then 429 with a retry hint; other keys and the next window are unaffected 0ms
+ ✓ test/unit/relay-abuse.test.ts > a broadcast whose outcome is unknown (every endpoint timed out) is never sent twice > drip: counted, answered 504 with the hash, and a retry for the address sends no MON again 21ms
+ ✓ test/unit/relay-abuse.test.ts > a broadcast whose outcome is unknown (every endpoint timed out) is never sent twice > relayed mint: counted against the caps and answered 504 with the hash 33ms
+ ✓ test/unit/relay-abuse.test.ts > a broadcast whose outcome is unknown (every endpoint timed out) is never sent twice > a nonce the chain already used (and not ours): 503 "retry", nothing recorded 50ms
+
+## 3. read-only live smoke of the pool against the three public endpoints (no keys, no transactions)
+##    run 1 at 2026-10-09T15:56:08Z (before the queued-request fix: thirdweb answered HTTP 429 to a burst and
+##    requests already queued for it still went out), run 2 at 15:57:13Z (after the fix)
+
+### run 1
+eth_chainId 0x279f
+head 69580539
+eth_getLogs 100 blocks ending head-5 -> 0 logs
+relayer balance (public read) wei 10005221350000000000
+eth_call with empty data -> RPC Request failed. (a revert: thrown at once, no retry)
+burst of 40 eth_blockNumber: 40 ok, 0 failed, 4710 ms
+  {"endpoint":"rpc.ankr.com","state":"ok","ok":28,"rateLimited":0,"failed":0,"lastError":null}
+  {"endpoint":"10143.rpc.thirdweb.com","state":"cooling","ok":3,"rateLimited":14,"failed":0,"lastError":"rate-limited (HTTP 429)"}
+  {"endpoint":"testnet-rpc.monad.xyz","state":"ok","ok":15,"rateLimited":0,"failed":0,"lastError":null}
+total 7628 ms
+
+### run 2
+eth_chainId 0x279f
+head 69580754
+eth_getLogs 100 blocks ending head-5 -> 0 logs
+relayer balance (public read) wei 10005221350000000000
+eth_call with empty data -> RPC Request failed. (a revert: thrown at once, no retry)
+burst of 40 eth_blockNumber: 40 ok, 0 failed, 2735 ms
+  {"endpoint":"rpc.ankr.com","state":"ok","ok":28,"rateLimited":0,"failed":0,"lastError":null}
+  {"endpoint":"10143.rpc.thirdweb.com","state":"ok","ok":17,"rateLimited":0,"failed":0,"lastError":null}
+  {"endpoint":"testnet-rpc.monad.xyz","state":"unverified","ok":0,"rateLimited":0,"failed":0,"lastError":null}
+total 5521 ms

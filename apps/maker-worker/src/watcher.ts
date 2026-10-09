@@ -51,6 +51,10 @@ export const RESOLVER_WATCH_ABI = parseAbi([
 const [EV_RESOLVED, EV_CHALLENGED] = [RESOLVER_WATCH_ABI[0], RESOLVER_WATCH_ABI[1]];
 const STATUS = ["None", "Settled", "Void"] as const;
 export const LOG_PAGE = 100; // Monad: eth_getLogs over at most 100 blocks
+/** Log pages stop this many blocks behind the head: with several RPC endpoints (src/rpc.ts) the head can come from one
+ *  endpoint and the page from another, and an endpoint answers a page past its own head with a truncated result and
+ *  no error (seen on the public Monad testnet RPCs on 2026-10-09). The backstop scan re-reads results anyway. */
+export const LOG_LAG = 5;
 const MIN_EXTRA_WEI = 2_000_000_000_000_000n; // keep 0.002 MON above the billed gas
 /** Resolver v1 constants (src/Resolver.sol; deployments/testnet.json params): staleAt >= dayEnd + STALE_WINDOW always. */
 export const STALE_WINDOW_SEC = 172_800;
@@ -213,12 +217,13 @@ export async function watchPass(w: WatchDeps): Promise<WatchReport> {
   const rep: WatchReport = { from: 0, head, pages: 0, events: 0, ladders: null, checked: 0, verdicts: [], intents: [], challenges: [], guardian: guardianWhy, overdue: [], voids: [] };
 
   // 1. events since the last pass, in <= 100-block pages
-  const from = Math.max(state.lastBlock + 1, head - w.lookbackBlocks, 0);
+  const scanTo = Math.max(0, head - LOG_LAG);
+  const from = Math.max(state.lastBlock + 1, scanTo - w.lookbackBlocks, 0);
   rep.from = from;
   const keys = new Map<string, { b4: Hex; date: number; via: string }>();
   const challengedSeen = new Set<string>();
-  for (let f = from; f <= head; f += LOG_PAGE) {
-    const t = Math.min(f + LOG_PAGE - 1, head);
+  for (let f = from; f <= scanTo; f += LOG_PAGE) {
+    const t = Math.min(f + LOG_PAGE - 1, scanTo);
     rep.pages++;
     const logs = (await w.pub.getLogs({ address: w.resolver, events: [EV_RESOLVED, EV_CHALLENGED], fromBlock: BigInt(f), toBlock: BigInt(t) })) as any[];
     for (const l of logs) {
@@ -358,7 +363,7 @@ export async function watchPass(w: WatchDeps): Promise<WatchReport> {
     record({ ...base, verdict: "MISMATCH-NOT-CHALLENGED", final: false, detail: x.text, recomputed: { ...x.d, canonical: x.canonical }, action });
     w.alert(`MISMATCH ${k} NOT CHALLENGED automatically`, `Why: ${action}\nThe guardian must challenge before ${new Date(Number(r.finalAt) * 1000).toISOString()} (${Number(r.finalAt) - now}s left): Resolver.challenge(${c.b4}, ${c.date}, ${rh}) with gas limit ${gasLimit}.`);
   }
-  state.lastBlock = head;
+  state.lastBlock = Math.max(state.lastBlock, scanTo);
   // keep two weeks of verdicts (final ones older than that can never change again)
   for (const [k, v] of Object.entries(state.results)) if (v.final && now - v.resolvedAt > 14 * 86_400) delete state.results[k];
   // an overdue entry leaves when its ladder resolves; one still unresolved after 14 days (e.g. a long pause) is kept

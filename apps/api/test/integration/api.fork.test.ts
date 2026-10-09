@@ -3,7 +3,11 @@
 // Nothing touches the live chain: anvil impersonation stands in for the owner/maker, and the relayer is a throwaway
 // key generated here. Ports: anvil 19200, wrangler dev 8782, inspector 8783 by default; override with
 // ISO_ANVIL_PORT / ISO_API_PORT / ISO_INSPECTOR_PORT so parallel workstreams do not collide.
+// The Worker gets THREE RPC endpoints (RPC_URLS), as in production: first a plain anvil on another chain id (must be
+// refused by the chain-id check), then a port nobody listens on (network errors -> cooldown), then the fork. Every
+// call below therefore exercises the fallback transport, the chain-id check and the cooldown in workerd.
 import { spawn, type ChildProcess } from 'node:child_process';
+import { createServer } from 'node:net';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -34,6 +38,7 @@ import { decodeResult, decodeSeries } from '../../src/abi';
 import buildJson from '../../src/generated/build.json';
 
 const ANVIL_PORT = Number(process.env.ISO_ANVIL_PORT ?? 19200);
+const WRONG_CHAIN_PORT = Number(process.env.ISO_WRONG_CHAIN_PORT ?? ANVIL_PORT + 1);
 const API_PORT = Number(process.env.ISO_API_PORT ?? 8782);
 const INSPECTOR_PORT = Number(process.env.ISO_INSPECTOR_PORT ?? 8783);
 const RPC = `http://127.0.0.1:${ANVIL_PORT}`;
@@ -85,6 +90,19 @@ let date = 0;
 let seriesId: Hex;
 let series: ReturnType<typeof decodeSeries>;
 let market: Address;
+
+/** A loopback port with nothing listening on it (bound, then released). */
+async function deadPort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const srv = createServer();
+    srv.once('error', reject);
+    srv.listen(0, '127.0.0.1', () => {
+      const port = (srv.address() as { port: number }).port;
+      srv.close(() => resolve(port));
+    });
+  });
+}
+let DEAD_PORT = 0;
 
 async function waitFor(url: string, ms: number) {
   const t0 = Date.now();
@@ -160,6 +178,9 @@ beforeAll(async () => {
     stdio: 'ignore',
   });
   procs.push(anvil);
+  // the wrong-chain endpoint: a fresh anvil (chain id 31337), no fork
+  procs.push(spawn(ANVIL, ['--port', String(WRONG_CHAIN_PORT), '--chain-id', '31337', '--silent'], { stdio: 'ignore' }));
+  DEAD_PORT = await deadPort();
   await rpcUp();
   relayerKey = generatePrivateKey(); // throwaway, fork-only
   relayer = privateKeyToAccount(relayerKey);
@@ -168,7 +189,8 @@ beforeAll(async () => {
     'npx',
     [
       'wrangler', 'dev', '--port', String(API_PORT), '--inspector-port', String(INSPECTOR_PORT), '--ip', '127.0.0.1', '--persist-to', stateDir,
-      '--var', `RPC_URL:${RPC}`,
+      // production order: endpoints tried in turn; only the last one is a usable chain 10143
+      '--var', `RPC_URLS:http://127.0.0.1:${WRONG_CHAIN_PORT},http://127.0.0.1:${DEAD_PORT},${RPC}`,
       '--var', `RELAYER_KEY:${relayerKey}`,
       '--var', `SNAPSHOT_TOKEN:${SNAP}`,
       '--var', `ADMIN_TOKEN:${ADMIN}`,
@@ -202,6 +224,14 @@ describe('isotherm-api on a Monad testnet fork', () => {
     expect(h.relayModes).toEqual(['authorization']); // permit relays are off for the v1 vault (security review v1)
     expect(h.relayMinAusd).toBe('1');
     expect(h.limits).toMatchObject({ reserveMon: '0.1', relayPerIpPerDay: 3, relayPerAddressPerDay: 2, dripsToday: 0, relaysToday: 0 });
+    // the RPC pool: the wrong-chain endpoint is refused for good, the dead one failed and cools down, the fork serves
+    expect(h.rpc.source).toBe('RPC_URLS');
+    expect(h.rpc.endpoints.map((e: { endpoint: string }) => e.endpoint)).toEqual([`127.0.0.1:${WRONG_CHAIN_PORT}`, `127.0.0.1:${DEAD_PORT}`, `127.0.0.1:${ANVIL_PORT}`]);
+    expect(h.rpc.endpoints[0]).toMatchObject({ state: 'wrong-chain', lastError: 'chain id 31337, expected 10143' });
+    expect(h.rpc.endpoints[1].failed).toBeGreaterThanOrEqual(1);
+    expect(h.rpc.endpoints[1].lastError).toBe('network error');
+    expect(h.rpc.endpoints[2]).toMatchObject({ state: 'ok', rateLimited: 0, failed: 0 });
+    expect(h.head).not.toBeNull();
     // build id baked in by scripts/build-info.mjs; wrangler dev has no upload time, so deployedAt stays null
     expect(h.version).toMatchObject({ app: '1.0.0', build: buildJson.build, builtAt: buildJson.builtAt, deployedAt: null });
     expect((await (await api('/api')).json<any>()).version.build).toBe(buildJson.build);

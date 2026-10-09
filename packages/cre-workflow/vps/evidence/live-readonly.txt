@@ -1,0 +1,35 @@
+# 2026-10-09T17:13:27Z live read-only checks on Ubuntu 24.04.5 LTS aarch64; RPC https://testnet-rpc.monad.xyz
+
+## L1. scripts/dry-run.sh: the real handler against LIVE chain reads and LIVE METAR sources; no key, nothing signed or sent
+[USER LOG] nothing to settle (ladders=3, due=1, skipped=1)
+[result] {"triggerTime":"2026-10-09T17:13:27.000Z","scheduledTime":"2026-10-09T17:13:27.000Z","resolver":"0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B","outcomes":[],"skipped":[{"icao":"RCSS","date":20261009,"reason":"before-settle-window","retryAt":1791568800}],"budget":{"http":"0/15","evmReads":"3/15","reports":"0/5","ogimet":"0/1"},"ladders":{"count":3,"scanned":[0,3],"due":1}}
+[time] 4036 ms against https://testnet-rpc.monad.xyz
+(pass) dry run [4035.84ms]
+ 1 pass
+ 0 fail
+Ran 1 test across 1 file. [4.12s]
+
+## L2. the job's dry run (isotherm-vps.sh dry-run) with a THROWAWAY key: live reads, then the preflight refuses
+   throwaway address 0xF7e0cF3782e652Be140c04Dd11a2E52Dcf23298d
+[2026-10-09T17:13:32Z] [settle-job] path=harness (cre whoami failed (not logged in to CRE)); rpc=https://testnet-rpc.monad.xyz; state=/home/isotherm/live-test/state/dry; dry=1
+[2026-10-09T17:13:32Z] mode=harness rpc=https://testnet-rpc.monad.xyz cre-login=no broadcast=0
+[2026-10-09T17:13:36Z] attester key address 0xF7e0cF3782e652Be140c04Dd11a2E52Dcf23298d != Resolver.attester() 0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9
+[2026-10-09T17:13:36Z] [settle-job] exit 2
+[evidence] path=harness-fallback exit=2 outcomes=- -> /home/isotherm/live-test/state/dry/evidence/settle-runs.jsonl
+   evidence: {"job":"isotherm-vps.sh-dry-run","host":"vps","path":"harness-fallback","network":"LIVE Monad testnet 10143","dryRun":true,"exitCode":2,"exitMeaning":"preflight failed"}
+
+## L3. key-file mode on Linux: 600 passes (L2 reached the address check), 644 is refused
+[2026-10-09T17:13:37Z] key file must be chmod 600: /home/isotherm/live-test/keys/throwaway.key
+   before this change: run-official.sh compared $(stat -f %Lp key) with 600; on Linux that prints file-system info:
+   '  File: "/tmp/tmp.ieOrmKSAgy"' -> never 600, so every Linux preflight failed. Now: '600'
+
+## L4. isotherm-vps.sh status (no claim on this test VPS)
+package     /home/isotherm/isotherm/packages/cre-workflow (commit 5e89e54 + uncommitted changes, pushed 2026-10-09T17:09:50Z)
+state       /home/isotherm/live-test/state
+writer      not claimed (before the cutover: vps/cutover.sh on the Mac)
+timer       disabled/inactive
+cre login   no   (cre v1.37.0)
+tx sender   0xF7e0cF3782e652Be140c04Dd11a2E52Dcf23298d: 0.000000000000000000 MON (0.0204 per report)
+phone push  off
+
+# 2026-10-09T17:13:38Z done

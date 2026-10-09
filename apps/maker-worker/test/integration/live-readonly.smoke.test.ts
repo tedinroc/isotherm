@@ -32,7 +32,8 @@ describe.skipIf(!RUN_IT)("live read-only smoke (shadow, watch-only, no keys)", (
       port: Number(process.env.MW_SMOKE_PORT ?? 19803),
       durableObjects: { MAKER: { className: "MakerDO", useSQLite: true } },
       kvNamespaces: ["MAKER_KV"],
-      bindings: { MAKER_MODE: "shadow", RPC_URL: "https://testnet-rpc.monad.xyz", STATIONS: "RCSS", WATCH_EVERY_SEC: "0", MAKER_ADDRESS: PUBLIC_MAKER, OPERATOR_ADDRESS: PUBLIC_OPERATOR },
+      // the production RPC list (wrangler.toml RPC_URLS): every endpoint is chain-id checked, read through the fallback
+      bindings: { MAKER_MODE: "shadow", RPC_URLS: process.env.MW_SMOKE_RPC_URLS ?? "https://rpc.ankr.com/monad_testnet,https://10143.rpc.thirdweb.com,https://testnet-rpc.monad.xyz", STATIONS: "RCSS", WATCH_EVERY_SEC: "0", MAKER_ADDRESS: PUBLIC_MAKER, OPERATOR_ADDRESS: PUBLIC_OPERATOR },
       serviceBindings: {
         API: async (req: any) => {
           const u = new URL(req.url);
@@ -53,7 +54,11 @@ describe.skipIf(!RUN_IT)("live read-only smoke (shadow, watch-only, no keys)", (
       const r = await tick();
       const ms1 = Date.now() - t0;
       const r2 = await tick(); // warm: caches, v0 from the Durable Object
+      const status = (await (await stub.fetch("http://maker.internal/status")).json()) as any;
       const lines = [
+        `rpc: ${JSON.stringify(status.rpc)}`,
+        `treasury (watch-only, no key: balance checks and LOW alerts only): ${JSON.stringify(status.treasury)}`,
+        `budget tier: ${JSON.stringify(status.budget?.tier)}`,
         `live read-only smoke ${new Date().toISOString()}: block ${r.block}; tick 1 ${ms1} ms (cold), tick 2 ${r2.ms} ms`,
         `mode ${r.mode}; reasons ${JSON.stringify(r.reasons)}; errors ${JSON.stringify(r.errors)}`,
         `rolls ${JSON.stringify(r.rolls.map((x: any) => `${x.key}:${x.ok}`))}; intents ${r.intents.length + r2.intents.length}; txs ${r.txs.length + r2.txs.length}; snapshot POSTs ${posts}`,
@@ -73,6 +78,9 @@ describe.skipIf(!RUN_IT)("live read-only smoke (shadow, watch-only, no keys)", (
       expect(posts).toBe(0);
       expect(r2.ladders.length).toBeGreaterThan(0);
       expect(r2.ladders[0].strikes.some((s: any) => s.fair !== null)).toBe(true);
+      // every configured RPC answered chain 10143; the treasury pass ran without a key and sent nothing
+      expect(status.rpc.endpoints.every((e: any) => e.verified === "ok")).toBe(true);
+      expect(status.treasury).toMatchObject({ mode: "shadow", key: "no TREASURY_KEY secret" });
     } finally {
       await mf.dispose();
       rmSync(RUN, { recursive: true, force: true });

@@ -1,0 +1,15 @@
+# Hourly at minute 05 (UTC; the minute is the same in Taipei and Tokyo), like the Mac's xyz.isotherm.cre-settle.
+# Persistent=true: a run missed while the VPS was down happens right after boot; the settle job's 30-min spacing
+# guard and the handover guard in vps/settle-vps.sh still apply to it. Enabled only by vps/cutover.sh (`claim`).
+[Unit]
+Description=Isotherm CRE settlement, hourly at :05
+
+[Timer]
+OnCalendar=*-*-* *:05:00 UTC
+Persistent=true
+AccuracySec=1s
+RandomizedDelaySec=0
+Unit=isotherm-settle.service
+
+[Install]
+WantedBy=timers.target

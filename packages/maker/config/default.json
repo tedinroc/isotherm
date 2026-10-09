@@ -52,7 +52,12 @@
     "requoteTicks": 2,
     "staleHours": 6,
     "refillRatio": 0.5,
-    "preStopSec": 90
+    "preStopSec": 90,
+    "lazy": true,
+    "requoteFairMove": 0.04,
+    "staleRefreshHours": 2,
+    "staleRefreshMinMove": 0.02,
+    "oneSided": true
   },
   "fair": {
     "pmMaxAgeSec": 1200,

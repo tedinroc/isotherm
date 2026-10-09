@@ -1,5 +1,9 @@
 // Public stats from the chain itself: Kuru `Trade` logs on our strike books and `LadderResolved` logs from the
 // Resolver, scanned in ≤100-block windows (the public RPC's eth_getLogs limit) with a persisted cursor.
+// The scan stays `lagBlocks` behind the head (endpoints and load-balanced backends differ by a block or two, and a
+// node returns a truncated, error-free result for blocks it has not seen yet). If a window fails (rate limit, outage),
+// the run stops there and keeps every window it completed: the cursor moves to the first unscanned block, so nothing
+// is skipped or counted twice; the Durable Object then backs off for a few cron ticks (relayer-do.ts).
 // Trades are attributed to the transaction origin (a Zap trade's taker is the Zap; the person is tx.origin).
 //
 // The scan stores RAW per-origin data only (fills + volume for every tx.origin, whoever it is). Whether an origin is
@@ -10,6 +14,8 @@ import { decodeEventLog, decodeFunctionResult, encodeFunctionData, getAddress, p
 import { CANONICAL_MARKET_SET_EVENT, LADDER_RESOLVED_EVENT, TRADE_EVENT, bytes4ToString, decodeResult } from './abi';
 import type { Pub } from './chain';
 import type { Store } from './limits';
+import { classifyRpcError, type RpcFailure } from './rpc';
+import { errorMessage } from './util';
 
 export type TradeKind = 'external' | 'team' | 'maker';
 
@@ -351,7 +357,19 @@ export interface ScanOptions {
   startBlock: bigint | null;
   maxWindows: number;
   realStations: string[];
+  /** Scan only up to head - lagBlocks (default 0). */
+  lagBlocks?: bigint;
 }
+
+/** Why a scan run stopped before its window budget or the head: the failing RPC error, classified. */
+export interface ScanStop {
+  kind: RpcFailure;
+  error: string;
+  /** The window that failed (it is scanned again on the next run). */
+  at: string;
+}
+
+const stopOf = (e: unknown, at: string): ScanStop => ({ kind: classifyRpcError(e), error: errorMessage(e), at });
 
 export interface MigrationInfo {
   from: 'v1';
@@ -419,13 +437,15 @@ export const BACKFILL_LOOKBACK = 1500n;
 
 export async function scanOnce(o: ScanOptions) {
   const head = await o.pub.getBlockNumber({ cacheTime: 0 });
+  const top = head - (o.lagBlocks ?? 0n); // the last block this run may read
   const cursorRaw = await o.store.get<string>('scan:cursor');
-  let from = cursorRaw ? BigInt(cursorRaw) : o.startBlock ?? head - 600n;
+  let from = cursorRaw ? BigInt(cursorRaw) : o.startBlock ?? top - 600n;
   const markets = await getMarkets(o.store);
   const addresses = [...markets, o.resolver];
   const b = await loadBatch(o.store);
   let windows = 0;
   let logsSeen = 0;
+  let stopped: ScanStop | null = null;
   // backfill jobs for markets added after the cursor passed their first trades
   // Backfill gets at most half of this run's window budget so the live cursor never starves.
   const backfillBudget = Math.floor(o.maxWindows / 2);
@@ -436,38 +456,51 @@ export async function scanOnce(o: ScanOptions) {
     const jt = j.to ? BigInt(j.to) : from - 1n; // up to where the main cursor already is
     if (jf < 0n) jf = jt - BACKFILL_LOOKBACK; // unknown creation block: look back ~8 min of blocks
     if (o.startBlock !== null && jf < o.startBlock) jf = o.startBlock;
-    while (jf <= jt && windows < backfillBudget) {
-      const to = jf + 99n < jt ? jf + 99n : jt;
-      const logs = await fetchWindow(o.pub, [j.market], jf, to);
-      applyLogs(b, logs.filter((l) => getAddress(l.address) !== o.resolver), o.resolver);
-      logsSeen += logs.length;
-      jf = to + 1n;
-      windows++;
+    if (!stopped) {
+      try {
+        while (jf <= jt && windows < backfillBudget) {
+          const to = jf + 99n < jt ? jf + 99n : jt;
+          const logs = await fetchWindow(o.pub, [j.market], jf, to);
+          applyLogs(b, logs.filter((l) => getAddress(l.address) !== o.resolver), o.resolver);
+          logsSeen += logs.length;
+          jf = to + 1n;
+          windows++;
+        }
+      } catch (e) {
+        stopped = stopOf(e, `backfill ${j.market} from ${jf}`); // this job resumes at jf; later jobs are kept as they are
+      }
     }
     if (jf <= jt) remaining.push({ market: j.market, from: jf.toString(), to: jt.toString() });
   }
   if (o.zap && !addresses.includes(o.zap)) addresses.push(o.zap);
-  while (from <= head && windows < o.maxWindows) {
-    const to = from + 99n < head ? from + 99n : head;
-    const logs = await fetchWindow(o.pub, addresses, from, to);
-    const fresh = discoveredMarkets(logs, o.zap).filter((m) => !addresses.includes(m));
-    if (fresh.length) {
-      // a book registered in this window: watch it from now on and pick up its trades in this same window
-      await addMarkets(o.store, fresh.map((market) => ({ market, fromBlock: from })), false);
-      addresses.splice(addresses.length - 1, 0, ...fresh);
-      const extra = await fetchWindow(o.pub, fresh, from, to);
-      logs.push(...extra.filter((l) => getAddress(l.address) !== o.zap));
-      windows++;
+  if (!stopped) {
+    try {
+      while (from <= top && windows < o.maxWindows) {
+        const to = from + 99n < top ? from + 99n : top;
+        const logs = await fetchWindow(o.pub, addresses, from, to);
+        const fresh = discoveredMarkets(logs, o.zap).filter((m) => !addresses.includes(m));
+        if (fresh.length) {
+          // a book registered in this window: watch it from now on and pick up its trades in this same window
+          await addMarkets(o.store, fresh.map((market) => ({ market, fromBlock: from })), false);
+          addresses.splice(addresses.length - 1, 0, ...fresh);
+          const extra = await fetchWindow(o.pub, fresh, from, to);
+          logs.push(...extra.filter((l) => getAddress(l.address) !== o.zap));
+          windows++;
+        }
+        // applied only once every fetch of this window succeeded, then the cursor moves past it
+        applyLogs(b, logs.filter((l) => getAddress(l.address) !== o.zap), o.resolver);
+        logsSeen += logs.length;
+        from = to + 1n;
+        windows++;
+      }
+    } catch (e) {
+      stopped = stopOf(e, `blocks ${from}..${from + 99n < top ? from + 99n : top}`);
     }
-    applyLogs(b, logs.filter((l) => getAddress(l.address) !== o.zap), o.resolver);
-    logsSeen += logs.length;
-    from = to + 1n;
-    windows++;
   }
   await saveBatch(o.store, b);
   await o.store.put('scan:cursor', from.toString());
   await o.store.put('scan:backfill', remaining);
-  return { head, cursor: from, windows, logsSeen, backfillPending: remaining.length, batch: b };
+  return { head, top, cursor: from, windows, logsSeen, backfillPending: remaining.length, batch: b, stopped };
 }
 
 /** Scan an explicit historical range (admin backfill, e.g. the feasibility settlements). Does not move the cursor. */
@@ -528,7 +561,7 @@ export function publicStats(b: ScanBatch, realStations: string[], meta: PublishM
     relayedMints: meta.relayed,
     scannedToBlock: (meta.cursor - 1n).toString(),
     headBlock: meta.head.toString(),
-    lagBlocks: Number(meta.head - (meta.cursor - 1n)),
+    lagBlocks: Math.max(0, Number(meta.head - (meta.cursor - 1n))), // includes the deliberate scan lag
     recentTrades,
     classification: {
       appliedAt: 'publish' as const,

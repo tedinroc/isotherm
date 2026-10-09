@@ -8,11 +8,15 @@
 //      binding with the bearer token.
 //   3. Settlement watch: a WRONG attested result is recomputed from recorded METAR archives with the CRE rule and
 //      CHALLENGED by the guardian secret inside the 900 s window (Void); a correct one is a MATCH.
+//   3b. MON saving (2026-10-09): at the hard quoting cap an urgent strike is still PULLED (the reserve meter never
+//      refuses); the treasury tops up a low maker from a throwaway TREASURY_KEY (21,000-gas transfer); every read
+//      falls past a rate-limited RPC endpoint (HTTP 429, retried with backoff, then cooled down) to the fork.
 //   4. Settlement guardrails: chain warped past the ladder's day end + 3 h with no result -> "SETTLEMENT OVERDUE",
 //      pushed to a stand-in ALERT_WEBHOOK_URL, no tx; warped to Resolver.staleAt (day end + 48 h) -> the Worker sends
 //      voidIfStale from the operator secret, accepted on the fork (Void, sourcesHash 0), and the next pass is quiet.
 // Throwaway keys only (generated here, fork-only roles granted by impersonating the owner). Ports: anvil 19800,
-// stubs 19801, Miniflare 19802 (override with MW_ANVIL_PORT / MW_STUB_PORT / MW_MF_PORT, all within 19800-19849).
+// stubs 19801, Miniflare 19802, a rate-limited RPC stand-in 19804 (override with MW_ANVIL_PORT / MW_STUB_PORT /
+// MW_MF_PORT / MW_RL_PORT, all within 19800-19849).
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
@@ -47,7 +51,9 @@ const PKG = fileURLToPath(new URL("../..", import.meta.url));
 const ANVIL_PORT = Number(process.env.MW_ANVIL_PORT ?? 19800);
 const STUB_PORT = Number(process.env.MW_STUB_PORT ?? 19801);
 const MF_PORT = Number(process.env.MW_MF_PORT ?? 19802);
-for (const p of [ANVIL_PORT, STUB_PORT, MF_PORT]) if (p < 19800 || p > 19849) throw new Error(`port ${p} outside 19800-19849`);
+const RL_PORT = Number(process.env.MW_RL_PORT ?? 19804); // 19803 is the live smoke test's Miniflare
+for (const p of [ANVIL_PORT, STUB_PORT, MF_PORT, RL_PORT]) if (p < 19800 || p > 19849) throw new Error(`port ${p} outside 19800-19849`);
+const RL = `http://127.0.0.1:${RL_PORT}`;
 const RPC = `http://127.0.0.1:${ANVIL_PORT}`;
 const STUB = `http://127.0.0.1:${STUB_PORT}`;
 const ANVIL = `${process.env.HOME}/.foundry/bin/anvil`;
@@ -82,7 +88,7 @@ const faucetAbi = parseAbi(["function requestFunds(address)"]);
 const forwarderAbi = parseAbi(["function report(address receiver, bytes rawReport, bytes reportContext, bytes[] signatures)"]);
 
 // throwaway, fork-only keys (never printed, never funded anywhere real)
-const K = { maker: generatePrivateKey(), operator: generatePrivateKey(), guardian: generatePrivateKey(), taker: generatePrivateKey(), attester: generatePrivateKey() };
+const K = { maker: generatePrivateKey(), operator: generatePrivateKey(), guardian: generatePrivateKey(), taker: generatePrivateKey(), attester: generatePrivateKey(), treasury: generatePrivateKey(), relayer: generatePrivateKey() };
 const A = Object.fromEntries(Object.entries(K).map(([k, v]) => [k, privateKeyToAccount(v)])) as Record<keyof typeof K, ReturnType<typeof privateKeyToAccount>>;
 
 // ---------------------------------------------------------------- stand-ins: market data, METAR archives, API binding
@@ -113,6 +119,8 @@ function ladderData(icao: string, isoDate: string, nowMs: number) {
 }
 
 let stubServer: Server;
+let rlServer: Server;
+let rlHits = 0; // requests the rate-limited RPC stand-in refused
 const hooks: { title: string; body: string }[] = []; // what the Worker pushed to the stand-in ALERT_WEBHOOK_URL
 const api = { latest: { version: 1, empty: true, ladders: [] } as any, posts: [] as { auth: string | null; body: any }[], gets: 0 };
 
@@ -268,11 +276,26 @@ beforeAll(async () => {
     res.end();
   });
   await new Promise<void>((r) => stubServer.listen(STUB_PORT, "127.0.0.1", () => r()));
+  // a provider that is rate-limiting this IP: it answers eth_chainId (so it passes the chain-id check) and refuses
+  // everything else with the official RPC's real HTTP 429 body
+  rlServer = createServer((req, res) => {
+    let b = "";
+    req.on("data", (c) => (b += c));
+    req.on("end", () => {
+      const j = JSON.parse(b || "{}");
+      res.setHeader("content-type", "application/json");
+      if (j.method === "eth_chainId") return res.end(JSON.stringify({ jsonrpc: "2.0", id: j.id, result: "0x279f" }));
+      rlHits++;
+      res.statusCode = 429;
+      res.end(JSON.stringify({ code: -32007, message: "15/second request limit reached - reduce calls per second" }));
+    });
+  });
+  await new Promise<void>((r) => rlServer.listen(RL_PORT, "127.0.0.1", () => r()));
 
   // fork-only roles and money (owner impersonated; throwaway keys)
   owner = (await pub.readContract({ address: D.vault as Address, abi: ownable, functionName: "owner" })) as Address;
   const rOwner = (await pub.readContract({ address: D.resolver as Address, abi: ownable, functionName: "owner" })) as Address;
-  for (const a of [owner, rOwner, A.maker.address, A.operator.address, A.guardian.address, A.taker.address]) await testc.setBalance({ address: a, value: parseEther("100") });
+  for (const a of [owner, rOwner, A.maker.address, A.operator.address, A.guardian.address, A.taker.address, A.treasury.address]) await testc.setBalance({ address: a, value: parseEther("100") });
   await as(owner, D.vault as Address, vaultAbi, "setOperator", [A.operator.address, true]);
   await as(rOwner, D.resolver as Address, resolverAbi, "setGuardian", [A.guardian.address]);
   await as(rOwner, D.resolver as Address, resolverAbi, "setAttester", [A.attester.address]);
@@ -299,6 +322,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await mf?.dispose().catch(() => undefined);
   stubServer?.close();
+  rlServer?.close();
   for (const p of procs) p.kill("SIGTERM");
   await sleep(500);
   for (const p of procs) if (p.exitCode === null) p.kill("SIGKILL");
@@ -410,6 +434,64 @@ describe("isotherm-maker Worker on a Monad testnet fork", () => {
     say(`observed max 22 C: >=21, >=22 pulled (certain); actions ${JSON.stringify(acts)}`);
   });
 
+  it("LIVE MON saving: an urgent pull at the hard quoting cap, a treasury top-up from a throwaway key, reads past a rate-limited RPC", async () => {
+    const over = JSON.stringify({
+      budget: { dailyCapMon: { maker: 0.0001 } }, // the quoting meter is already past it: hard tier
+      treasury: { address: A.treasury.address, roles: { maker: { address: A.maker.address }, operator: { address: A.operator.address }, relayer: { address: A.relayer.address }, attester: { address: A.attester.address }, guardian: { address: A.guardian.address } } },
+    });
+    await mf.setOptions(mfOptions(vars({ MAKER_MODE: "live", TREASURY_KEY: K.treasury, CONFIG_OVERRIDES: over, RPC_URLS: `${RL},${RPC}`, RPC_RETRIES: "1", RPC_COOLDOWN_SEC: "600" })) as any);
+    rlHits = 0;
+    // 1. the hard cap: >=24's fair moves through its resting ask -> pulled (reserve meter), never re-quoted
+    const m24 = (await liveMarkets())[24];
+    const bk0 = await book(m24.market);
+    expect([bk0.bids.length, bk0.asks.length]).toEqual([1, 1]);
+    pmLadder = { ...pmLadder, 24: +(bk0.asks[0] + 0.03).toFixed(3) };
+    let r = await tick();
+    expect(r.mode).toBe("live");
+    expect(r.errors).toEqual([]);
+    const s24 = r.ladders[0].strikes.find((s: any) => s.k === 24);
+    expect(s24.action).toBe("pull");
+    expect(s24.reasons.at(-1)).toBe("quoting budget spent for today: pulled instead of re-quoted");
+    expect(r.txs.map((t: any) => [t.label.split(":")[0], t.status])).toEqual([["pull >=24", "success"]]);
+    const bk1 = await book(m24.market);
+    expect(bk1.bids.length + bk1.asks.length).toBe(0);
+    let st = await doGet("/status");
+    expect(st.budget.tier).toMatchObject({ tier: "hard", cap: 0.0001 });
+    expect(st.budget.tier.reserve).toBeGreaterThan(0);
+    say(`hard quoting cap (meter ${st.budget.tier.spent} > cap 0.0001): >=24 fair ${pmLadder[24]} through the ask ${bk0.asks[0]} -> PULLED (${r.txs[0].hash}), reserve meter ${st.budget.tier.reserve} MON; book empty`);
+    r = await tick();
+    expect(r.txs).toEqual([]);
+    expect(r.ladders[0].strikes.find((s: any) => s.k === 24)).toMatchObject({ action: "none", reasons: ["quoting budget spent for today: no new quotes"] });
+    // 2. RPC: the rate-limited endpoint is first in RPC_URLS; it was retried once with backoff, then cooled down
+    expect(rlHits).toBeGreaterThan(0);
+    expect(st.rpc.endpoints.map((e: any) => [e.host, e.verified])).toEqual([[`127.0.0.1:${RL_PORT}`, "ok"], [`127.0.0.1:${ANVIL_PORT}`, "ok"]]);
+    expect(st.rpc.endpoints[0].rateLimited).toBeGreaterThan(0);
+    expect(st.rpc.endpoints[0].coolingDown).toBe(true);
+    say(`RPC_URLS ${RL} (HTTP 429 on everything but eth_chainId), ${RPC}: both chain 10143; the first refused ${rlHits} request(s) (retried, then cooled down), every tick completed through the fork, 0 errors`);
+    // 3. treasury: the maker drops to 1 MON (min 1.5) -> topped up to its 4 MON target from the throwaway treasury key
+    await testc.setBalance({ address: A.maker.address, value: parseEther("1") });
+    await testc.setBalance({ address: A.relayer.address, value: parseEther("10") });
+    await testc.setBalance({ address: A.attester.address, value: parseEther("1") });
+    const tb0 = await pub.getBalance({ address: A.treasury.address });
+    r = await tick("&treasury=1");
+    expect(r.errors).toEqual([]);
+    expect(r.treasury.mode).toBe("live");
+    expect(r.treasury.actions.map((a: any) => [a.role, a.outcome])).toEqual([["maker", "sent"]]);
+    const top = r.txs.find((t: any) => t.role === "treasury");
+    expect(top).toMatchObject({ label: expect.stringMatching(/^topup maker /), status: "success" });
+    const [ttx, trc] = await Promise.all([pub.getTransaction({ hash: top.hash }), pub.getTransactionReceipt({ hash: top.hash })]);
+    expect([ttx.from.toLowerCase(), ttx.to?.toLowerCase(), ttx.gas, trc.gasUsed, trc.status]).toEqual([A.treasury.address.toLowerCase(), A.maker.address.toLowerCase(), 21_000n, 21_000n, "success"]);
+    const mb = Number(await pub.getBalance({ address: A.maker.address })) / 1e18;
+    expect(mb).toBeCloseTo(4, 5);
+    expect(r.alerts).toContain("TOPUP MAKER");
+    st = await doGet("/status");
+    expect(st.treasury).toMatchObject({ mode: "live", key: "ok", address: A.treasury.address, today: { sent: { maker: r.treasury.actions[0].amountMon } } });
+    say(`treasury (throwaway key, fork only): maker held ${r.treasury.actions[0].balanceMon} MON (min 1.5) -> ${r.treasury.actions[0].amountMon} MON sent ${top.hash} (gas limit ${ttx.gas}, used ${trc.gasUsed}); maker now ${mb.toFixed(6)} MON; treasury ${Number(tb0) / 1e18} -> ${Number(await pub.getBalance({ address: A.treasury.address })) / 1e18} MON; alert TOPUP MAKER`);
+    // within treasury.everySec (600 s) no second pass
+    r = await tick();
+    expect(r.treasury).toMatchObject({ skipped: expect.stringMatching(/^next pass in/) });
+  });
+
   it("LIVE kill switch at stop time empties every book and withdraws the YES margin; later ticks send nothing", async () => {
     await mf.setOptions(mfOptions(vars({ MAKER_MODE: "live", ROLL_AUTO: "0" })) as any); // no new ladders after the warp
     const r0 = await tick();
@@ -439,6 +521,7 @@ describe("isotherm-maker Worker on a Monad testnet fork", () => {
     expect(rjtt.d.status).toBe("SETTLED");
     await deliver(wrong.icao, wrong.date, truth.d.tmaxC! + 2);
     if ((await rr(right.icao, right.date)).status === 0) await deliver(right.icao, right.date, rjtt.d.tmaxC!);
+    await testc.mine({ blocks: 6 }); // the watcher's log pages stop LOG_LAG (5) blocks behind the head
     const r = await tick("&watch=1");
     const v = Object.fromEntries(r.watcher.verdicts.map((x: any) => [x.key, x.verdict]));
     expect(v[`${wrong.icao}:${wrong.date}`]).toBe("MISMATCH-CHALLENGED");
@@ -464,13 +547,17 @@ describe("isotherm-maker Worker on a Monad testnet fork", () => {
     expect(r.mode).toBe("live");
     expect(r.alerts).toContain(`SETTLEMENT OVERDUE ${key}`);
     expect(r.watcher.overdue).toEqual(expect.arrayContaining([expect.objectContaining({ key, staleAt: end + 172_800 })]));
-    expect(r.watcher.voids).toEqual([]);
-    expect(r.txs).toEqual([]);
-    expect(await nonceOf(A.operator.address)).toBe(n0);
+    // nothing for OUR ladder yet. (Another, real ladder that live has not settled when the fork was taken can be past
+    // its own staleAt at this warped time -- e.g. a run between 16:00 and the ~18:05 UTC settlement -- and is then
+    // voided on the fork: that is the guardrail working, so it is only counted, not forbidden.)
+    expect(r.watcher.voids.filter((v: any) => v.key === key)).toEqual([]);
+    const otherVoids = r.watcher.voids.filter((v: any) => v.key !== key && v.ok).length;
+    expect(r.txs.filter((t: any) => !/^voidIfStale /.test(t.label) || t.label === `voidIfStale ${key}`)).toEqual([]);
+    expect(await nonceOf(A.operator.address)).toBe(n0 + otherVoids);
     expect(r.push).toEqual(expect.arrayContaining([{ title: `SETTLEMENT OVERDUE ${key}`, result: "sent 200" }]));
     const pushed = hooks.find((h) => h.title === `SETTLEMENT OVERDUE ${key}`)!;
     expect(pushed.body).toMatch(/No result on the Resolver 3\.0 h after the local day end/);
-    say(`guardrails: chain at day end + 3h01 (${new Date((await chainNow()) * 1000).toISOString()}), no result for ${key} -> alerts ${JSON.stringify(r.alerts)}; pushed to the stand-in webhook: "${pushed.title}"; 0 txs`);
+    say(`guardrails: chain at day end + 3h01 (${new Date((await chainNow()) * 1000).toISOString()}), no result for ${key} -> alerts ${JSON.stringify(r.alerts)}; pushed to the stand-in webhook: "${pushed.title}"; no tx for ${key}${otherVoids ? ` (${otherVoids} stale void(s) of other unsettled live ladders on the fork)` : ""}`);
     // 2. Resolver.staleAt (day end + 48 h): voidIfStale from the operator secret, accepted
     const staleAt = Number(await pub.readContract({ address: D.resolver as Address, abi: resolverAbi, functionName: "staleAt", args: [b4, date] }));
     expect(staleAt).toBe(end + 172_800);
@@ -492,8 +579,10 @@ describe("isotherm-maker Worker on a Monad testnet fork", () => {
     expect(r.alerts).toContain(`STALE VOIDED ${key}`);
     expect(hooks.map((h) => h.title)).toContain(`STALE VOIDED ${key}`);
     say(`guardrails: chain at staleAt + 5 s -> voidIfStale ${key} from the operator secret ${tx.hash}: gas used ${rc.gasUsed}, limit ${sent.gas}; resultOf Void, sourcesHash 0, LadderResolved emitted; all voids this pass ${JSON.stringify(r.watcher.voids.map((v: any) => `${v.key}:${v.outcome}`))}`);
-    // 3. the next pass reads the Void as a stale void; nothing more is sent
+    // 3. the next pass reads the Void as a stale void; nothing more is sent (live, a minute is ~150 blocks; on the fork
+    //    mine past the watcher's LOG_LAG so the void's LadderResolved is inside the scanned pages)
     await warp(120);
+    await testc.mine({ blocks: 6 });
     r = await tick("&watch=1");
     expect(r.txs).toEqual([]);
     expect(r.watcher.verdicts).toEqual(expect.arrayContaining([expect.objectContaining({ key, verdict: "STALE-VOID" })]));

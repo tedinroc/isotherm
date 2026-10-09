@@ -37,6 +37,7 @@ Full seriesIds, every tx hash and the on-chain checks are in `docs/evidence/goli
 | relayer (API Worker secret `RELAYER_KEY`) | `0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f` | drips (0.15 MON + 1,000 AUSD each), relayed gasless mints, AUSD float refills | 0.75 | 4.60 |
 | guardian | `0x30C8E371719Ff00577284dd9c10587Fa89357d50` | emergency `pause()` / `challenge()` | 0.05 | 0.05 |
 | attester (CRE secret) | `0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9` | signs settlement reports, and as the CRE workflow's default transaction sender **pays about 0.0204 MON per report tx** (200,000 gas limit at 102 gwei; `packages/cre-workflow/RESULT.md` §2), so 0.40 MON covers about 19 reports | 0.10 | 0.40 |
+| treasury (maker Worker secret `TREASURY_KEY`, optional; added 2026-10-09) | `0x655dE7F5E6EdB42f26C422ED056F94BA9964BEed` | only plain MON transfers to the five role addresses above (section 4); no contract role; never the deployer key | – | – |
 
 `~/.config/isotherm/maker.env` (chmod 600) holds `ISOTHERM_ALLOW_LIVE=1`, `ISOTHERM_API_URL` (`https://isotherm.pages.dev`; it overrides `api.url` in `config/local.json`) and `ISOTHERM_SNAPSHOT_TOKEN`.
 The launchd jobs load it through `scripts/run.sh`.
@@ -111,7 +112,38 @@ curl -s https://isotherm.pages.dev/api/health   # snapshotReceivedAt, relayer MO
 
 ## 4. Funding routine (testnet MON is the bottleneck)
 
-A Taipei ladder day costs about:
+**Since 2026-10-09 the money flows deployer → treasury → roles.** A person claims faucet MON to the deployer and
+sends it to the treasury in one transfer; the Cloudflare maker tops up the role keys from the treasury every 10
+minutes (live mode, `TREASURY_KEY` set; section 8.9). The manual per-role routine below stays the fallback, and is
+the only path while `TREASURY_KEY` is not set.
+
+| Role (address in `apps/maker-worker/config/worker.json` `treasury.roles`) | Topped up below | to | at most per Taipei day |
+|---|---|---|---|
+| maker | 1.5 | 4 | 4 |
+| operator (also market creator) | 1.2 | 2.5 | 1.5 |
+| relayer | 3 | 8 | 3 |
+| attester | 0.3 | 0.8 | 0.5 |
+| guardian | 0.05 | 0.15 | 0.2 |
+
+All roles together at most 6 MON a day; the treasury keeps a floor of 2 MON. Alerts: every top-up (`TOPUP <ROLE>`),
+`TREASURY LOW` below 10 MON, `<ROLE> LOW` when a role is below its minimum and cannot be topped up (also without any
+`TREASURY_KEY`: the balance checks always run). Check with `node scripts/control.mjs treasury` from `apps/maker-worker`.
+
+1. Claim testnet MON to the deployer `0xb855…5c11` (the faucet needs a person in a browser).
+2. Send it on to the treasury, keeping a little on the deployer for owner calls:
+   ```bash
+   cd docs/evidence/golive && node fund.mjs treasury=20 --dry && node fund.mjs treasury=20
+   ```
+   (`fund.mjs` derives the address from the local `treasury.key`; one transfer, receipt checked.)
+3. Expect a `TOPUP <ROLE>` alert within 10 minutes for every role below its minimum.
+
+Budget at the 2026-10-09 settings (replay in section 8.9): about 2.8 MON a day for the maker and the operator
+together on a busy day (quoting capped at 1.2, a 4-strike roll 1.26, the kill switch 0.1, pulls 0.25), plus the
+relayer's drips and the attester's reports, about 3.3–3.6 MON a day in all. Holdings read at 2026-10-09 17:32 UTC:
+124.0 MON (deployer 97.6, treasury 10.0, the five role keys 16.4), against about 83–90 MON needed from Oct 10 to
+Nov 3 at that rate; the treasury floor and the caps keep a bug from draining it.
+
+**Manual routine (fallback).** A Taipei ladder day costs about:
 
 | Item | MON |
 |---|---|
@@ -135,14 +167,20 @@ The human faucet gives about 5 MON/day.
 - **API deploy** (wrangler 3.114 from `apps/api/node_modules`, on the Cloudflare account that owns the Pages project; set `XDG_CONFIG_HOME` to your wrangler config dir if you use several): `cd apps/api && npm run deploy`.
   - **How requests arrive.** The Worker has no public hostname (`workers_dev = false`, `preview_urls = false` in `apps/api/wrangler.toml`). The public API is `https://isotherm.pages.dev/api/*`: the Pages Function `apps/web/functions/api/[[path]].ts` forwards each request unchanged over the service binding `API` (`apps/web/wrangler.toml`), and `CF-Connecting-IP` passes through, so the per-network limits still see the client. The cron trigger needs no route. Deploying the Worker does not require a web redeploy, and the binding resolves only while the Worker and the Pages project are on the same account.
   - Secrets `RELAYER_KEY`, `SNAPSHOT_TOKEN` and `ADMIN_TOKEN` are already set (`npx wrangler secret list`).
-  - Knobs are in `apps/api/wrangler.toml [vars]`: `DRIP_MON`, `DRIP_DAILY_CAP`, `DRIP_ENABLED="0"` to pause drips, `RELAY_DAILY_CAP`, `RELAY_PER_IP_PER_DAY`, `RELAY_PER_ADDRESS_PER_DAY`, `RELAY_MIN_AUSD`, `RELAY_ALLOW_PERMIT`, `RELAYER_MIN_MON`, `AUSD_FLOAT_TARGET`, `TEAM_ADDRESSES`.
+  - Knobs are in `apps/api/wrangler.toml [vars]`: `DRIP_MON`, `DRIP_DAILY_CAP`, `DRIP_ENABLED="0"` to pause drips, `RELAY_DAILY_CAP`, `RELAY_PER_IP_PER_DAY`, `RELAY_PER_ADDRESS_PER_DAY`, `RELAY_MIN_AUSD`, `RELAY_ALLOW_PERMIT`, `RELAYER_MIN_MON`, `AUSD_FLOAT_TARGET`, `TEAM_ADDRESSES`, and for the chain access `RPC_URLS`, `RPC_MAX_RPS`, `STATS_SCAN_LAG_BLOCKS` (next bullet).
+  - **RPC endpoints (live since 2026-10-09 18:48 UTC).** The API Worker read and wrote through the official `https://testnet-rpc.monad.xyz` alone. That endpoint limits each client IP to 15 requests/s, and Workers share egress IPs, which is what broke the maker Worker's ticks from 14:00 to 15:27 UTC on 2026-10-09. The API now uses a viem fallback pool (`apps/api/src/rpc.ts`, details in `apps/api/README.md`, "RPC endpoints").
+    - **Order.** `RPC_URLS` in `wrangler.toml` lists Ankr (`https://rpc.ankr.com/monad_testnet`), then thirdweb (`https://10143.rpc.thirdweb.com`), then the official endpoint. Do not set `RPC_URL` there: it is the one-endpoint override for anvil forks and wins over the list.
+    - **Chain id.** Each endpoint must answer `eth_chainId` 10143 before its first use; one that does not is never used.
+    - **Throttle and cooldown.** Each endpoint gets `RPC_MAX_RPS` requests/s (8). A rate-limited endpoint cools down for 2 s or its `Retry-After`, and one that answers 5xx, times out or fails at the network level for 1 s; both double with each consecutive failure, at most 30 s, while the next endpoint serves. A request that every endpoint refused is retried, up to 4 attempts in all.
+    - **Relayer nonces.** Every relayer transaction is signed once, and a retried broadcast resends the same bytes, so it is never a second transaction. The next nonce is the larger of the RPC's count and the last nonce seen mined plus 1. If a drip's MON leg or a relayed mint has an unknown fate after its broadcast, it is counted and answered 504 with its hash. A retry never sends that MON again, and a relayed mint cannot land twice because its EIP-3009 authorization is single-use. A drip's AUSD leg in that state is marked pending instead; a retry re-reads the user's AUSD balance and sends it again only if that balance has not risen.
+    - **Stats scan.** Pages of at most 100 blocks, 5 blocks behind the head. `eth_getLogs` goes only to an endpoint whose head covers the page, because every endpoint tested returned a truncated result, without an error, past its own head. A page that fails stops the run with the cursor at that page. After a rate limit or an outage, the scan skips the cron for about 2, then 4, then at most 8 minutes; the cron's result is not logged, so watch `updatedAt` and `lagBlocks` in `/api/stats`.
   - **Size the caps to the relayer's MON** (v1 review N5): anyone can otherwise use up the day's drips and relays. `node apps/api/scripts/size-caps.mjs` computes the caps from the live balance, spread over several worst-case days (`--days N`, default 7) so one day can never spend the whole balance. The first values were sized from 0.599 MON (2 drips and 5 relayed mints per day). At 07:59 UTC on 2026-10-07 they were re-sized from 4.599 MON over 7 days (`apps/api/evidence/size-caps-2026-10-07-r2.txt`), and the Worker was redeployed at 08:02 UTC. `/api/health` `limits` at 08:40 UTC shows those values live:
     - drips: 2 per UTC day, 1 per network, 24 h per address;
     - relays: 9 per UTC day, 4 per network, 4 per address, 1–500 AUSD each;
     - reserve: 0.1 MON.
 
     At maximum use that covers UTC days Oct 7–13, so **top up and re-size before 2026-10-14**. Re-run it and redeploy after every top-up, with `--days` covering the time until the next top-up (judging runs Oct 14–27). Permit-mode relays stay off for the v1 vault (`RELAY_ALLOW_PERMIT = "0"`, N10).
-  - After a deploy, check `/api/health`: `relayModes` should be `["authorization"]`, and `monBalance` should cover the caps.
+  - After a deploy, check `/api/health`: `relayModes` should be `["authorization"]`, and `monBalance` should cover the caps. Since the RPC pool, also check `rpc`: `source` should be `"RPC_URLS"`, no endpoint should be `wrong-chain`, and at least the first should be `ok`. A `cooling` endpoint with a growing `rateLimited` count is the per-IP limit at work; the others keep serving. One-liner: `curl -s https://isotherm.pages.dev/api/health | python3 -c 'import json,sys; r=json.load(sys.stdin)["rpc"]; print(r["source"]); [print(e["endpoint"], e["state"], e["ok"], e["rateLimited"], e["failed"], e["lastError"]) for e in r["endpoints"]]'`.
   - Live logs: `npx wrangler tail isotherm-api` (requests that come in through the Pages Function show up here too).
 - **Go-live change to the API.** The drip's second tx (the AUSD leg) re-read `eth_getTransactionCount('pending')`. Monad's RPC does not count a just-submitted tx there, so the AUSD leg reused the MON tx's nonce and was rejected ("Missing or invalid parameters"). Because nothing was recorded, a retry could also send MON again.
   - The fix: nonces are counted locally, and if MON went out but AUSD failed, the drip is recorded as AUSD-pending so a retry sends only AUSD.
@@ -167,6 +205,10 @@ The Oct 8 ladder is settled by the CRE workflow in `packages/cre-workflow`, thro
   - **If the session lapses** (its expiry is undocumented), the job falls back to the **SDK-harness**: the same handler, rule and attestation run under Bun, not the CRE engine. The evidence record says which path ran; say "harness" wherever a harness run's evidence is used.
   - **Check before the first real attempt** (2026-10-08 18:05 UTC). Run `cre whoami` from `packages/cre-workflow` with `.tools/bin` on the PATH, or read `path` in `LATEST.json`. If it is not `official`, run `cre login` again.
 - **Where it runs:** from the runtime copy `~/isotherm-live/packages/cre-workflow`, because launchd cannot read `~/Documents` (exit 126, as the maker hit). Ship changes with `packages/cre-workflow/scripts/deploy-runtime.sh`; check with `bash ~/isotherm-live/packages/cre-workflow/scripts/install-launchd.sh --status` and `launchctl list | grep xyz.isotherm`.
+- **Moving it off the Mac (prepared 2026-10-09, not deployed).** A kit runs the same job on a small Linux VPS under a
+  systemd timer, with a single-writer claim so the Mac and the VPS never both settle: team summary and owner steps in
+  `docs/SETTLEMENT-VPS.md`, runbook in `packages/cre-workflow/vps/README.md`. Until its cutover, everything in this
+  section stays as written.
 - **Cost:** each report transaction bills about 0.0204 MON to the attester key (0.40 MON at 2026-10-07 07:55 UTC, about 19 reports).
 - **After it lands:** confirm `LadderResolved` or `Resolver.resultOf(0x52435353, 20261008)`, never the transaction status alone. `xyz.isotherm.challenge-watch` recomputes the result and challenges a reproduced mismatch within the 900 s window; a human check is still worth it (challenge first, then pause; section 3).
 - **Fallback:** if nothing settles, `voidIfStale` opens 48 h after the local day end and pays 0.5/0.5. The
@@ -215,7 +257,12 @@ judging (Oct 14 – Nov 3), so that judging does not depend on this Mac staying 
   Oct 9 spend 2.87 MON re-booked), armed, `033804cc` deployed with `MAKER_MODE = "live"`; live from 23:06 UTC, first tx a
   >=31 requote (success); the API snapshot source is `isotherm-maker-worker`.
 - **Settlement guardrails** (8.8): the `SETTLEMENT OVERDUE` alert, the automatic stale void at 48 h and an optional
-  phone push. They are in the code from 2026-10-09 and go live with the next `npm run deploy -- --live`.
+  phone push. Live since 2026-10-09 15:05 UTC (`ea82e973`); the push channel's state is in `control.mjs status` (`push`).
+- **RPC:** Ankr alone from 2026-10-09 15:27 UTC (the official RPC answered "requests limited to 15/sec" per client IP
+  and Workers share egress IPs; ticks failed 14:00–15:27 UTC); since 18:35 UTC `RPC_URLS` = Ankr, thirdweb, official with
+  fallback, throttle and retry (8.9).
+- **MON saving, RPC fallback and the treasury** (8.9): live since 2026-10-09 18:35 UTC (`647da628`); `TREASURY_KEY` set
+  at 18:41 UTC (treasury `0x655dE7F5E6EdB42f26C422ED056F94BA9964BEed`, 50 MON at the first pass, no top-up needed).
 
 ### 8.1 Who does what
 
@@ -240,15 +287,17 @@ Only the kill switch still runs live during the interlock, because cancels are i
 tick. The DO applies only the latest document, so `control.mjs` refuses a new one while the previous one is
 unapplied (`--force` replaces it). Always wait for `node scripts/control.mjs result` before the next command.
 
-**Budgets** (`apps/maker-worker/config/worker.json`):
-- Quoting: maker 2.2 MON/day, plus the 0.2 reserve for pulls. **6.9 on the cutover day** (section 8.7): the import
-  re-books the Mac's spend of that day onto this meter, so 2.2 would leave the Worker unable to re-quote or pull.
-- Roll, separately: maker 0.8, operator 0.5, market creator 0.8.
+**Budgets** (`apps/maker-worker/config/worker.json`; the settings of section 8.9, live since 2026-10-09 18:35 UTC):
+- Quoting: maker **1.2 MON/day** with tiers: above 60 % (0.72) spreads ×2 and only urgent re-quotes; at the cap no
+  new quotes and an urgent strike is pulled.
+- Roll, separately: maker 0.8, operator 0.5, market creator 0.8. At most 4 strikes, none outside [0.05, 0.95].
+- Reserve meter (pulls, the kill switch, the YES withdraw, orphan cancels, the stale void): **never refused**; maker
+  0.5 is only the alert line (`RESERVE METER OVER maker`).
 
-A spent quoting day therefore cannot block the next roll (the Oct 8 incident). The opening quotes of a new ladder
-count as roll. The funding routine of section 4 is unchanged (same keys). Measured on Oct 8: the Mac's maker spent
-1.94 MON on quotes and pulls (excluding the opening quotes) and 0.51 on the roll with its opening quotes, so the
-quoting cap was 88 % used. Raise `dailyCapMon.maker` if quoting days get busier.
+A spent quoting day therefore cannot block the next roll (the Oct 8 incident), and cannot block a pull either (it
+could until 2026-10-09). The opening quotes of a new ladder count as roll. Versions `033804cc` to `7845fd00` (up to
+2026-10-09 18:35 UTC) ran the earlier settings: quoting 6.9 (the cutover day's cap) with pulls on the same meter, and the
+legacy re-quote rules with `requoteTicks` 3.
 
 ### 8.2 Review the shadow first
 
@@ -374,12 +423,13 @@ Run everything from `apps/maker-worker` with `XDG_CONFIG_HOME` set as in 8.2.
 | Overdue ladders, stale voids, push channel | `node scripts/control.mjs status` (`watcher.overdue`, `watcher.staleVoids`, `push`); `alerts` for the texts |
 | Check the phone push | `node scripts/control.mjs test-alert`, then `result`; one `TEST ALERT <seq>` arrives (8.8) |
 | Reset the shadow's own state and summary | `node scripts/control.mjs reset-shadow` |
-| Tests | `npm test` (48 unit), `npm run test:fork` (anvil fork + the bundled Worker in Miniflare, live on the fork), `MW_REHEARSAL=1 npx vitest run test/integration/cutover-rehearsal.fork.test.ts` (this runbook on a fork with the Mac's real state), `MW_LIVE_SMOKE=1 npx vitest run test/integration/live-readonly.smoke.test.ts` (read-only, no keys) |
+| Treasury and role balances | `node scripts/control.mjs treasury` (balances vs min/target, today's top-ups and caps); `status` has `treasury`, `budget.tier`, `rpc.endpoints` |
+| Tests | `npm test` (73 unit), `npm run test:fork` (anvil fork + the bundled Worker in Miniflare, live on the fork), `MW_REHEARSAL=1 npx vitest run test/integration/cutover-rehearsal.fork.test.ts` (this runbook on a fork with the Mac's real state), `MW_LIVE_SMOKE=1 npx vitest run test/integration/live-readonly.smoke.test.ts` (read-only, no keys) |
 
 **Known limits.**
-- **Settlement still depends on the Mac.** If the Mac sleeps or loses its network, the Worker raises
-  `SETTLEMENT OVERDUE` after 3 h and voids the ladder itself at 48 h (0.5/0.5, section 8.8). Only the CRE
-  settlement pays out at the real temperature.
+- **Settlement still depends on the Mac** (until the prepared VPS cutover, `docs/SETTLEMENT-VPS.md`). If the Mac
+  sleeps or loses its network, the Worker raises `SETTLEMENT OVERDUE` after 3 h and voids the ladder itself at 48 h
+  (0.5/0.5, section 8.8). Only the CRE settlement pays out at the real temperature.
 - **The Worker is a single region-pinned Durable Object.** One alarm per minute and 4 KV writes per minute. A warm
   tick takes 3–15 s of sequential public-RPC reads; the first tick of a fresh isolate takes about 45 s, because it
   downloads the v0 guard's Open-Meteo history and caches it in the DO.
@@ -476,7 +526,7 @@ quoting, so a busy quoting day can again block the next roll (Oct 8); the Worker
 - **MON runway.** The maker held 4.10 MON at 17:19 UTC and spent 2.45 on Oct 8 (all three keys: 3.4 MON/day);
   the testnet faucet needs a person in a browser, so fund before judging starts.
 
-### 8.7 Re-quote spend fix (prepared 2026-10-09, deploy after the cutover)
+### 8.7 Re-quote spend fix (live with the cutover, 2026-10-08 23:06 UTC; superseded by 8.9)
 
 On Monad each re-quote bills its gas limit, about 0.056 MON. On Oct 9 (Taipei) the Mac spent about 0.65 MON/h,
 mostly re-quotes that flip back and forth on ≥30 and ≥31. There are two causes:
@@ -551,7 +601,8 @@ node scripts/control.mjs ticks 5              # live ticks, "sent:" only when a 
                                               # 0.13 and 0.15 with a wide quote shows guard-wide-held, not a re-quote
 ```
 Then, after Taipei midnight Oct 10: set `budget.dailyCapMon.maker` back to 2.2 in `config/worker.json`, along with
-its assertion in `test/unit/infra.test.ts`. Run `npm test`, then `npm run deploy -- --live`.
+its assertion in `test/unit/infra.test.ts`. Run `npm test`, then `npm run deploy -- --live`. *(Superseded by 8.9: the
+6.9 cap and its assertion are removed; the quoting budget is 1.2 with tiers.)*
 
 **Rollback.**
 - Revert `config/worker.json` (and, for the hysteresis, `guardWarnExit` in `default.json`) and deploy with `--live`.
@@ -559,7 +610,7 @@ its assertion in `test/unit/infra.test.ts`. Run `npm test`, then `npm run deploy
   `[vars]` and deploy.
 - Old states keep working in both directions: `wide` is optional.
 
-### 8.8 Settlement guardrails and the alert push (prepared 2026-10-09)
+### 8.8 Settlement guardrails and the alert push (live since 2026-10-09 15:05 UTC)
 
 Settlement still runs through the official CRE CLI on the Mac (section 6). The Worker cannot settle, but it now
 makes a missed settlement visible and bounds its cost. It adds no key: `voidIfStale` is permissionless, and the
@@ -623,3 +674,118 @@ and a due void becomes a `STALE VOID DUE` alert to act on by hand.
 - keep the Mac that runs `xyz.isotherm.cre-settle` awake on AC power and online;
 - keep the attester funded (about 0.0204 MON per report, section 2);
 - keep `cre whoami` valid (section 6).
+
+### 8.9 MON saving, RPC fallback and the treasury (live since 2026-10-09 18:35 UTC)
+
+**Why.** Measured MON per Taipei day: Oct 8 3.41 (quotes 2.45, roll about 1.0), Oct 9 8.28 (quotes 7.03, roll 1.25;
+the day's high sat at a strike and the Polymarket fair swung through the quotes for hours). The holdings (about
+94 MON) must last until Nov 3. On Oct 9 the official RPC also refused the Worker ("requests limited to 15/sec" per
+client IP; Workers share egress IPs; ticks failed 14:00–15:27 UTC), and ntfy.sh answered its alert pushes with HTTP 429
+for the same reason.
+
+**What changed** (details: `apps/maker-worker/README.md`, "MON budget", "RPC", "Treasury top-up").
+- *Lazy re-quoting, shared core (both runtimes; `packages/maker/config/default.json` `policy`).* A strike is
+  re-quoted only when the fair is at or through a resting price (urgent), a side filled or needs a refill, the fair
+  moved ≥ 0.04 since the quote, or the quote is older than 2 h and the fair moved ≥ 0.02; entering the guard's wide
+  spread also re-quotes, with the guard-wide hysteresis unchanged. A fill is refilled on its side only.
+  `policy.lazy: false` restores the old rules.
+- *Quoting budget with tiers (Worker, `config/worker.json`).* 1.2 MON per Taipei day; above 60 % spreads ×2 and urgent
+  re-quotes only; at the cap no new quotes, an urgent strike is pulled. The 6.9 cutover-day cap is gone.
+- *Reserve meter (shared core).* Pulls, the kill switch, the YES-margin withdraw, orphan cancels and the stale void
+  are metered apart and are never refused (until now a spent quoting day refused pulls past cap + reserve).
+- *Roll (Worker).* At most 4 strikes, nearest the Polymarket median, none with an implied P(≥k) outside [0.05, 0.95].
+- *One-side Kuru update (measured on an anvil fork, cross-checked with read-only live gas estimates;
+  `apps/maker-worker/evidence/one-side-gas-2026-10-09/`).* Kuru has no in-place modify, but `batchUpdate` with one
+  side costs less than cancel 2 + place 2: full re-quote 522,424 gas (0.0576 MON billed at 102 gwei, limit × 1.08);
+  cancel 1 + place 1 344,868 / 319,178 (66 % / 61 %); place 1 without cancel 287,464 (55 %); cancel 2 252,119 (48 %).
+  Used for refills only: an urgent crossing moves the fair by about the half-spread, so the other side is that far
+  off too and both are re-centred.
+- *RPC (`RPC_URLS`, default Ankr, thirdweb, official).* Per-endpoint chain-id check (10143), a token bucket of 8
+  requests/s per endpoint, retries with backoff on rate-limit / 5xx errors, an ordered fallback without ranking, and
+  writes that move to the next endpoint only past a rate-limit refusal. `RPC_URL` still works as a one-URL alias
+  when `RPC_URLS` is not set.
+- *Treasury top-up (new, optional `TREASURY_KEY`).* Section 4.
+- *ntfy access token (optional `ALERT_WEBHOOK_TOKEN`).* Below.
+
+**Replay** (`apps/maker-worker/evidence/lazy-replay-2026-10-09/`; `node prepare.ts` fetches public data: the Polymarket
+minute history of the three events, the IEM METARs and the maker's own order events on the 13 Kuru books;
+`node replay.ts` runs the repo's `computeFairs`, `makeQuote`, `decide` and `quotingTier` once a minute; output in
+`results.txt`). Calibration: for the Oct 9 ladder the replay of the settings live until now gives 118 full re-quotes;
+the chain shows 122. Not modelled: fills (13 maker fills on these books in three days), other participants' quotes.
+
+| Window | Policy | full re-quotes | pulls | quoting MON | pull MON | worst \|resting mid − fair\| |
+|---|---|---|---|---|---|---|
+| Taipei Oct 8 | on chain (the Mac; it hit its 1.2 cap at 02:20 UTC and pulled instead) | 28 | 6 | | | |
+| | settings live until now (requoteTicks 3 + hysteresis) | 80 | 9 | 4.96 | 0.25 | 0.025 |
+| | lazy 0.04 / 2 h / 0.02 | 59 | 9 | 3.75 | 0.25 | 0.040 |
+| | **lazy + tiers, 1.2 MON** | **17** | **8** | **1.22** | **0.22** | 0.064 |
+| Taipei Oct 9 | on chain (the Mac, then the Worker from 23:06 UTC) | 111 | 12 | | | |
+| | settings live until now | 125 | 18 | 8.03 | 0.50 | 0.025 |
+| | lazy 0.04 / 2 h / 0.02 | 88 | 18 | 5.90 | 0.50 | 0.041 |
+| | **lazy + tiers, 1.2 MON** | **14** | **12** | **1.22** | **0.33** | 0.123 |
+| Oct 10 ladder, 04:01–15:51 UTC Oct 9 | on chain (the maker ran out of quoting budget and MON) | 0 | 3 | | | |
+| | settings live until now | 11 | 0 | 0.63 | 0 | 0.025 |
+| | lazy 0.04 / 2 h / 0.02 | 9 | 0 | 0.52 | 0 | 0.031 |
+| | **lazy + tiers, 1.2 MON** (the day's budget already spent by the Oct 9 ladder) | **0** | **2** | **0** | **0.06** | 0.053 |
+
+Per 24 h over all three ladders (57.9 h): settings live until now 88 re-quotes, about 7.3 MON/day all-in; lazy rules
+alone 64, about 5.9; lazy + tiers at 1.0 / 1.2 / 1.5 MON: 14 / 16 / 19 re-quotes, about 2.6 / 2.8 / 3.0 MON/day all-in
+(with a 4-strike roll of 1.26 and the kill switch 0.1). Most re-quotes on these days were urgent (the fair crossed a
+resting price within a minute or two), so the rules alone cannot reach 2–2.5 MON/day; the budget does, with wider and
+fewer quotes once 60 % of it is spent. Tuning: `requoteFairMove` 0.04 kept (0.05 saves 6 % more but lets the mid sit
+0.053 from the fair; 0.03 saves little), `staleRefreshHours` 2 kept (4 h saves 5 %), quoting cap 1.2 (the stated
+1.5 projects about 3.0 MON/day; 1.0 about 2.6). The cap is one number: `budget.dailyCapMon.maker` in
+`config/worker.json` or `CONFIG_OVERRIDES`. Known effect: once a day's budget is spent, the next day's freshly rolled
+ladder keeps only its opening quotes (on the roll meter) until Taipei midnight, and a strike that gets crossed is
+pulled, not re-quoted.
+
+**Verified** (2026-10-09). `npm test` 73 unit tests (lazy policy, tiers, the reserve meter, one-sided refills,
+treasury gates and caps, RPC fallback / throttle / retry, the ntfy token), `npm run typecheck`, `packages/maker`
+`npm test` 36 (core purity included), `packages/forecast` `npm test` 28. The anvil fork test runs the bundled Worker in
+workerd with throwaway keys: at the hard quoting cap an urgent strike is pulled (sent, reserve meter), the treasury
+tops up a maker at 1 MON to 4 MON with a 21,000-gas transfer from a throwaway treasury key, and every tick completes
+with a rate-limited stand-in RPC (HTTP 429) first in `RPC_URLS` (`apps/maker-worker/evidence/fork-2026-10-09T17-28-38/`,
+the run on the final, integrated working tree).
+A read-only run of the same bundle against live testnet with the production `RPC_URLS`, watch-only and without keys
+(`apps/maker-worker/evidence/live-readonly-2026-10-09T17-34-24/`): all three endpoints answered chain 10143, 0 errors,
+0 txs; its decisions match the live maker's quotes; the treasury pass read the five role balances.
+
+**Deploy** (the Worker is live). From `apps/maker-worker`, with `XDG_CONFIG_HOME` set as in 8.2:
+```bash
+npm ci && npm test && npm run typecheck             # 73 unit tests
+npm run test:fork                                   # optional: anvil fork + Miniflare, throwaway keys
+node scripts/put-secrets.mjs --dry --only TREASURY_KEY   # checks treasury.key: address 0x655d…BEed, not another role's key
+npm run deploy -- --live                            # the output must show MAKER_MODE "live", RPC_URLS (3 URLs), the cron,
+                                                    # no workers.dev URL; note the version id
+node scripts/put-secrets.mjs --only TREASURY_KEY --live  # optional: enables the top-ups (piped on stdin)
+node scripts/control.mjs status                     # "version.id" new; "mode" live; budget.tier; rpc.endpoints all "ok";
+                                                    # treasury.key "ok" (or "no TREASURY_KEY secret")
+node scripts/control.mjs ticks 5                    # live ticks; "sent:" only for urgent or 0.04 moves; "treasury:" lines
+node scripts/control.mjs treasury                   # after <= 10 min: balances vs min/target, any top-up
+```
+Then fund the treasury from the deployer (section 4) and watch for `TOPUP <ROLE>` alerts.
+
+**ntfy over a shared IP (owner, optional).** A free ntfy.sh account's token does **not** lift the per-IP limit: the
+ntfy server keys a publisher by its account only when the account has a tier (a paid plan), and reserving a topic is
+a paid feature too. With a paid plan:
+1. Sign up at ntfy.sh, pick a paid plan, and reserve the topic on the account page of the ntfy web app (others may
+   then not publish to it).
+2. Create an access token on the same account page (or with `ntfy token add`). Store it without echoing it:
+   `umask 077; pbpaste > ~/.config/isotherm/alert-webhook.token`
+3. `node scripts/put-secrets.mjs --only ALERT_WEBHOOK_TOKEN --live` (sent as `Authorization: Bearer`; the URL stays
+   `https://ntfy.sh/<topic>`). Alternatively ntfy's `?auth=` query parameter (base64 of `Bearer tk_...` without the
+   trailing `=`) can be put into `alert-webhook.url`; the Worker keeps the URL as is.
+4. `node scripts/control.mjs test-alert && node scripts/control.mjs result`; `status.push.auth` says which form is used.
+Free alternative: a Telegram bot URL (section 8.8), which is not limited by the caller's IP. The settlement VPS kit's
+own push (`docs/SETTLEMENT-VPS.md`) speaks ntfy only and posts from the VPS's own IP, so a free ntfy topic works there;
+do not copy a Telegram `alert-webhook.url` to the VPS.
+
+**Rollback.**
+- Quoting only: `CONFIG_OVERRIDES = '{"policy":{"lazy":false},"budget":{"softRatio":null,"dailyCapMon":{"maker":2.2}}}'`
+  in `[vars]`, then `npm run deploy -- --live` (the reserve meter stays: pulls are never refused).
+- RPC: set `RPC_URLS` to one URL (or remove it and set `RPC_URL` to one URL). In this Worker `RPC_URLS` wins when
+  both are set; the API Worker is the other way round (`RPC_URL` wins there, section 5), and its throttle is
+  `RPC_MAX_RPS`, not `RPC_RPS`.
+- Treasury: `npx wrangler secret delete TREASURY_KEY --name isotherm-maker` (balance checks and LOW alerts remain).
+- Everything: redeploy the previous version (`npx wrangler rollback` or `git checkout` the previous `apps/maker-worker`
+  and `packages/*`, then `npm run deploy -- --live`). Old states load in both directions (new meter keys are ignored).

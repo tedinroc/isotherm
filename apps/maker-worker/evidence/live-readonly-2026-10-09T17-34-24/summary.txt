@@ -1,0 +1,14 @@
+rpc: {"kind":"monad-testnet public RPCs","endpoints":[{"host":"rpc.ankr.com","verified":"ok","coolingDown":false,"requests":199,"retries":0,"rateLimited":0,"errors":0,"lastError":null},{"host":"10143.rpc.thirdweb.com","verified":"ok","coolingDown":false,"requests":1,"retries":0,"rateLimited":0,"errors":0,"lastError":null},{"host":"testnet-rpc.monad.xyz","verified":"ok","coolingDown":false,"requests":1,"retries":0,"rateLimited":0,"errors":0,"lastError":null}],"rps":8}
+treasury (watch-only, no key: balance checks and LOW alerts only): {"at":"2026-10-09T17:35:47.405Z","mode":"shadow","address":"0x655dE7F5E6EdB42f26C422ED056F94BA9964BEed","mon":10,"key":"no TREASURY_KEY secret","balances":{"maker":3.84786,"operator":1.583117,"relayer":10.005221,"attester":0.8796,"guardian":0.05},"today":{"day":"2026-10-10","sent":{},"total":0,"globalCap":6},"actions":[],"alerts":[]}
+budget tier: {"tier":"normal","spent":0,"cap":1.2,"soft":0.72,"reserve":0,"reserveLine":0.5}
+live read-only smoke 2026-10-09T17:36:28.355Z: block 69600062; tick 1 82000 ms (cold), tick 2 39865 ms
+mode shadow; reasons ["env MAKER_MODE is shadow","Durable Object live flag is off","watch-only addresses (no key secrets): shadow only"]; errors []
+rolls ["RCSS:20261010:true"]; intents 1; txs 0; snapshot POSTs 0
+ladder RCSS:20261010 active
+  >=28 fair 0.9594 (polymarket) desired {"bid":0.92,"ask":0.99,"bidSize":100,"askSize":100} resting 0.91/0.98 -> none [quote still good] | live maker: fair 0.9598 quote 0.91/0.98
+  >=29 fair 0.7516 (polymarket) desired {"bid":0.72,"ask":0.79,"bidSize":100,"askSize":100} resting 0.71/0.78 -> none [quote still good] | live maker: fair 0.7442 quote 0.71/0.78
+  >=30 fair 0.3013 (polymarket; guard-wide) desired {"bid":0.24,"ask":0.37,"bidSize":100,"askSize":100} resting 0.24/0.37 -> none [quote still good] | live maker: fair 0.2984 quote 0.24/0.37
+  >=31 fair 0.0391 (polymarket; guard-wide) desired {"bid":0.01,"ask":0.1,"bidSize":100,"askSize":100} resting 0.01/0.11 -> none [quote still good] | live maker: fair 0.0387 quote 0.01/0.11
+intents: ["margin.deposit AUSD 125"]
+watcher: {"from":69596206,"head":69600211,"pages":41,"events":0,"verdicts":["RCSS:20261008:MATCH"],"overdue":[],"staleVoids":[]}
+alerts: []

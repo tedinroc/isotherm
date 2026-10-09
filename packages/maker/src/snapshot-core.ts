@@ -4,6 +4,7 @@
 // Cloudflare Worker POSTs it through its service binding to the API Worker.
 import { formatEther, stringToHex } from "viem";
 import { erc20Abi } from "./abis.ts";
+import { budgetCfgOf, quotingTier } from "./budget.ts";
 import { read, type Ctx } from "./chain.ts";
 import { marginBalance } from "./kuru.ts";
 import type { LadderTick } from "./tick.ts";
@@ -129,12 +130,15 @@ export async function buildSnapshot(ctx: Ctx, ticks: Map<string, LadderTick>, op
     deployment: { variant: ctx.dep.variant, vault: ctx.dep.vault, resolver: ctx.dep.resolver, zap: ctx.dep.zap, kuruRouter: ctx.dep.kuruRouter, source: ctx.dep.source },
     budget: {
       day: ctx.state.budget.day,
-      note: "testnet MON billed (gas limit x gas price) per role today; quotes stop at the cap, the close-time kill switch never does",
+      note: "testnet MON billed (gas limit x gas price) per role today; quotes stop at the cap; pulls, the kill switch, margin withdraws and stale voids are on a separate reserve meter and never refused",
       byRole: Object.fromEntries(
         (["maker", "operator", "marketCreator"] as const).map((r) => {
           const rollCap = ctx.cfg.budget.rollCapMon?.[r];
           const roll = typeof rollCap === "number" ? { roll: { spentMon: r4(ctx.state.budget.spent[`${r}:roll`] ?? 0), capMon: rollCap, txs: ctx.state.budget.txs[`${r}:roll`] ?? 0 } } : {};
-          return [r, { key: ctx.keyNames[r], address: ctx.addr[r], spentMon: r4(ctx.state.budget.spent[r] ?? 0), capMon: caps[r] ?? null, txs: ctx.state.budget.txs[r] ?? 0, ...roll }];
+          const reserve = { reserve: { spentMon: r4(ctx.state.budget.spent[`${r}:reserve`] ?? 0), lineMon: ctx.cfg.budget.reserveMon[r] ?? null, txs: ctx.state.budget.txs[`${r}:reserve`] ?? 0 } };
+          const t = quotingTier(ctx.state.budget, r, "quote", budgetCfgOf(ctx.cfg), Date.now());
+          const tier = t.soft !== null ? { tier: t.tier, softMon: t.soft } : {};
+          return [r, { key: ctx.keyNames[r], address: ctx.addr[r], spentMon: r4(ctx.state.budget.spent[r] ?? 0), capMon: caps[r] ?? null, txs: ctx.state.budget.txs[r] ?? 0, ...tier, ...roll, ...reserve }];
         }),
       ),
     },

@@ -15,8 +15,8 @@ import { closeFromStats, type CloseTimeStats } from "../../../packages/forecast/
 import closeTimeJson from "../../../packages/forecast/results/close_time.json";
 import { addDays, isoToYmd, localDateOf, STATIONS } from "../../../packages/forecast/src/stations.ts";
 import { vaultCommonAbi } from "../../../packages/maker/src/abis.ts";
-import { budgetCfgOf, recordSpend } from "../../../packages/maker/src/budget.ts";
-import { explainRevert, LiveRefused, makeClients, nowSec, read, type Ctx, type Logger, type TxIntent, type TxRecord } from "../../../packages/maker/src/chain.ts";
+import { budgetCfgOf, budgetDay, isReserveKind, quotingTier, recordSpend } from "../../../packages/maker/src/budget.ts";
+import { explainRevert, LiveRefused, nowSec, read, type Ctx, type Logger, type TxIntent, type TxRecord } from "../../../packages/maker/src/chain.ts";
 import type { MakerConfig } from "../../../packages/maker/src/config-core.ts";
 import type { MarketData } from "../../../packages/maker/src/data-core.ts";
 import { parseDeployment, probeZapRegistry, type Deployment } from "../../../packages/maker/src/deployment-core.ts";
@@ -27,13 +27,15 @@ import { killLadder, runWatchdog, tickLadder, type LadderTick } from "../../../p
 import deploymentsJson from "../../../deployments/testnet.json";
 import { parseWebhook, pushAlerts, pushLog, type PushOutcome, type Webhook } from "./alert-push.ts";
 import type { ApiClient } from "./api.ts";
-import { workerConfig } from "./config.ts";
+import { BUNDLED_TREASURY, workerConfig } from "./config.ts";
 import { SNAPSHOT_SOURCE, type Settings } from "./env.ts";
 import { makeGetter, makeSourceGet, type SourceGet } from "./fetcher.ts";
 import { workerMarketData } from "./market-data.ts";
 import { NonceTracker } from "./nonces.ts";
 import { reconcileLadder, type ReconcileResult } from "./reconcile.ts";
+import { makeRpc, type Rpc } from "./rpc.ts";
 import { stringify, type Store } from "./store.ts";
+import { parseTreasuryCfg, treasuryPass, type TreasuryReport } from "./treasury.ts";
 import { watchPass, type WatchReport } from "./watcher.ts";
 
 export type Mode = "shadow" | "live";
@@ -73,6 +75,10 @@ export interface Keys {
   snapshotToken?: string;
   /** Optional ALERT_WEBHOOK_URL secret: alerts are also pushed there (src/alert-push.ts). */
   alertWebhook?: string;
+  /** Optional ALERT_WEBHOOK_TOKEN secret: `Authorization: Bearer` on every push (ntfy account token). */
+  alertWebhookToken?: string;
+  /** Optional TREASURY_KEY secret: the dedicated treasury key that tops up the role keys (src/treasury.ts). */
+  treasury?: string;
   /** Public addresses for a key-less, watch-only shadow (MAKER_ADDRESS / OPERATOR_ADDRESS vars). */
   makerAddress?: string;
   operatorAddress?: string;
@@ -95,6 +101,8 @@ export interface EngineDeps {
   /** for the alert push (tests inject a stub); default globalThis.fetch */
   fetch?: typeof fetch;
   pushTimeoutMs?: number;
+  /** RPC transport options (tests inject a fake fetch); default from the settings */
+  rpcFetch?: typeof fetch;
 }
 
 export interface TickReport {
@@ -117,6 +125,8 @@ export interface TickReport {
   intents: (Omit<TxIntent, "data" | "estimate" | "gasLimit" | "value"> & { gasLimit: string; data: string; repeat?: boolean })[];
   txs: { label: string; role: string; hash: Hex; mon: number; status: string }[];
   watcher: (Omit<WatchReport, "verdicts"> & { verdicts: { key: string; verdict: string; detail: string }[] }) | { skipped: string } | null;
+  /** the treasury top-up pass (every treasury.everySec) */
+  treasury?: TreasuryReport | { skipped: string } | null;
   snapshot: { posted: boolean; status?: number; detail: string } | null;
   budget: Record<string, number>;
   alerts: string[];
@@ -161,6 +171,8 @@ export interface TickLine {
   alerts: string[];
   kill: string[];
   rolls: string[];
+  /** treasury top-ups this tick (sent or, in shadow / without a key, intended), "" when no pass ran */
+  treasury?: string[];
   strikes: {
     key: string;
     k: number;
@@ -197,6 +209,7 @@ export interface ShadowSummary {
   recentDiffs: { at: string; key: string; k: number; shadowFair: number | null; macFair: number | null; shadowAction: string | null; desired: string; macResting: string }[];
 }
 
+const TRANSFER_GAS_STR = "21000";
 const CLOSE_TIMES = (closeTimeJson as unknown as { stations: Record<string, CloseTimeStats> }).stations;
 const STATE_KEEP_CLOSED_SEC = 14 * 86_400;
 
@@ -235,6 +248,10 @@ export class MakerEngine {
   private hook: Webhook | null = null;
   private hookError: string | null = null;
   private pushQueue: { title: string; body: string }[] = [];
+  private rpc: Rpc | null;
+  private rpcProbe: string[] = [];
+  treasuryKey: PrivateKeyAccount | null = null;
+  private treasuryKeyError: string | null = null;
   maker: PrivateKeyAccount | null;
   operator: PrivateKeyAccount | null;
   watchOnly = false;
@@ -247,9 +264,10 @@ export class MakerEngine {
     this.now = d.now ?? (() => Date.now());
     this.sleep = d.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
     this.dep = parseDeployment(deploymentsJson, "deployments/testnet.json (bundled)");
-    const c = makeClients(this.s.rpc);
-    this.pub = d.pub ?? c.pub;
-    this.chain = c.chain;
+    const rpc = makeRpc(this.s.rpcs, { rps: this.s.rpcRps, retries: this.s.rpcRetries, cooldownMs: this.s.rpcCooldownSec * 1000, timeoutMs: this.s.rpcTimeoutSec * 1000, fetchFn: d.rpcFetch, sleep: d.sleep });
+    this.rpc = d.pub ? null : rpc; // tests inject a fake public client
+    this.pub = d.pub ?? rpc.pub;
+    this.chain = rpc.chain;
     const cfg = workerConfig(this.s, "shadow");
     this.data = d.data ?? workerMarketData({ get: makeGetter({ store: d.store }), store: d.store, closeTimes: CLOSE_TIMES, loop: cfg.loop, testUrl: this.s.testMarketDataUrl });
     this.sources = d.sources ?? makeSourceGet({ proxy: this.s.testSourceProxy });
@@ -263,7 +281,13 @@ export class MakerEngine {
       this.operator = watchOnlyAccount(d.keys.operatorAddress, "OPERATOR_ADDRESS");
     }
     this.guardian = parseKey(d.keys.guardian, "GUARDIAN_KEY");
-    const h = parseWebhook(d.keys.alertWebhook, this.s.rpcIsLoopback);
+    // optional: a malformed TREASURY_KEY disables the top-ups (reported), it never stops the maker
+    try {
+      this.treasuryKey = parseKey(d.keys.treasury, "TREASURY_KEY");
+    } catch (e) {
+      this.treasuryKeyError = `${String((e as Error).message)}: ignored, no top-ups`;
+    }
+    const h = parseWebhook(d.keys.alertWebhook, this.s.rpcIsLoopback, d.keys.alertWebhookToken);
     if (h && "error" in h) this.hookError = h.error; // the message never contains the URL
     else this.hook = h;
   }
@@ -427,6 +451,8 @@ export class MakerEngine {
   // ------------------------------------------------------------------ context
   private async probe(): Promise<void> {
     if (this.probed) return;
+    // every RPC endpoint must answer chain 10143 before it is used (src/rpc.ts); one that answers another chain is excluded
+    if (this.rpc) this.rpcProbe = await this.rpc.verifyAll();
     const cid = await this.pub.getChainId();
     if (cid !== 10143) throw new Error(`refusing: RPC is chain ${cid}, not Monad testnet 10143 (mainnet is never touched)`);
     try {
@@ -448,7 +474,7 @@ export class MakerEngine {
       dep: this.dep,
       pub: this.pub,
       chain: this.chain,
-      rpc: this.s.rpc,
+      rpc: this.s.rpcs.join(","),
       isAnvil: this.isAnvil,
       clientVersion: this.clientVersion,
       accounts,
@@ -461,6 +487,8 @@ export class MakerEngine {
       recordTx: (line: TxRecord) => {
         this.store.append(`txs:${mode}`, line, 3000);
         report.txs.push({ label: line.label, role: line.role, hash: line.hash, mon: line.mon, status: line.status });
+        // pulls / the kill switch / withdraws are never refused; past the reserve line they are flagged: say so once a day
+        if (line.overBudget && isReserveKind(line.kind)) this.reserveOver.push(`${line.role}`);
       },
       onDryRun: (i: TxIntent) => {
         // The shadow meters what it WOULD have spent, so its budget refusals match what live would do. A would-be tx
@@ -473,7 +501,8 @@ export class MakerEngine {
         report.intents.push({ t: i.t, role: i.role, from: i.from, to: i.to, label: i.label, kind: i.kind, functionName: i.functionName, costMon: +i.costMon.toFixed(6), budget: i.budget, gasLimit: i.gasLimit.toString(), data: i.data.length > 74 ? i.data.slice(0, 74) + "…" : i.data, ...(repeat ? { repeat: true } : {}) });
       },
       nonces: mode === "live" ? this.nonces : undefined,
-      wallet: this.deps.wallet ?? ((account: PrivateKeyAccount) => createWalletClient({ chain: this.chain, transport: http(this.s.rpc, { retryCount: 1, timeout: 45_000 }), account })),
+      // writes start at the first healthy endpoint, throttled; they move on only past a rate-limit refusal (src/rpc.ts)
+      wallet: this.deps.wallet ?? ((account: PrivateKeyAccount) => createWalletClient({ chain: this.chain, transport: this.rpc ? this.rpc.writeTransport() : http(this.s.rpc, { retryCount: 1, timeout: 45_000 }), account })),
       guard: (role, label) => {
         if (mode !== "live" || !this.liveNow) throw new LiveRefused(`shadow: refusing to broadcast ${role} "${label}"`);
       },
@@ -481,11 +510,14 @@ export class MakerEngine {
   }
 
   // ------------------------------------------------------------------ the tick
-  async tick(opts: { forceWatch?: boolean } = {}): Promise<TickReport> {
+  private reserveOver: string[] = [];
+
+  async tick(opts: { forceWatch?: boolean; forceTreasury?: boolean } = {}): Promise<TickReport> {
     const t0 = this.now();
     const cs0 = this.control();
     const report: TickReport = { at: new Date(t0).toISOString(), ms: 0, mode: "shadow", envMode: this.s.envMode, liveFlag: cs0.live, reasons: [], block: null, chainTime: null, control: null, interlock: null, kill: [], rolls: [], reconcile: [], ladders: [], intents: [], txs: [], watcher: null, snapshot: null, budget: {}, alerts: [], push: [], errors: [], log: [] };
     this.pushQueue = [];
+    this.reserveOver = [];
     const push = (level: "info" | "warn" | "error", msg: string) => {
       report.log.push(`${level === "info" ? "" : level.toUpperCase() + " "}${msg}`.slice(0, 400));
       if (report.log.length > 400) report.log.splice(0, report.log.length - 400);
@@ -510,6 +542,8 @@ export class MakerEngine {
       report.reasons = md.reasons;
       report.liveFlag = this.control().live;
       await this.probe();
+      for (const l of this.rpcProbe.filter((x) => x.startsWith("EXCLUDED"))) alert("RPC ENDPOINT EXCLUDED", `${l}. It answered another chain than Monad testnet 10143 and is never used; check RPC_URLS.`);
+      this.rpcProbe = this.rpcProbe.filter((x) => !x.startsWith("EXCLUDED"));
       const apiSnap = await this.deps.api.getSnapshot();
       let killOnlyLive = false;
       if (mode === "live") {
@@ -592,6 +626,17 @@ export class MakerEngine {
 
       // 5. settlement watcher (every WATCH_EVERY_SEC; not in a tick that already broadcast a roll)
       report.watcher = await this.watch(ctx, mode, report, alert, logger, !!opts.forceWatch);
+
+      // 5b. treasury top-ups of the role keys (every treasury.everySec; live mode sends, shadow records intents)
+      report.treasury = await this.treasury(ctx, mode, report, alert, logger, !!opts.forceTreasury);
+
+      // a reserve-meter tx past its alert line (pulls, kill switch, withdraws, voids are never refused): once a day per role
+      for (const role of new Set(this.reserveOver)) {
+        const k = `alert:reserveOver:${role}:${budgetDay(this.now(), cfg.budget.dayUtcOffsetMin)}`;
+        if (this.store.get(k)) continue;
+        this.store.put(k, true);
+        alert(`RESERVE METER OVER ${role}`, `The ${role} reserve meter (pulls, kill switch, margin withdraws, stale voids; never refused) passed its line of ${cfg.budget.reserveMon[role as keyof typeof cfg.budget.reserveMon] ?? 0} MON today: ${(state.budget.spent[`${role}:reserve`] ?? 0).toFixed(4)} MON. Quotes may be crossing often (see ticks).`);
+      }
 
       // 6. snapshot: published only in live mode (a shadow snapshot would replace the live maker's)
       if (mode === "live") {
@@ -698,7 +743,7 @@ export class MakerEngine {
   }
 
   private async recoverInflight(ctx: Ctx, logger: Logger) {
-    for (const a of [ctx.addr.maker, ctx.addr.operator, this.guardian?.address].filter((x): x is Address => !!x)) {
+    for (const a of [ctx.addr.maker, ctx.addr.operator, this.guardian?.address, this.treasuryKey?.address].filter((x): x is Address => !!x)) {
       for (const p of this.nonces.stale(a, 5_000)) {
         try {
           const r = await ctx.pub.getTransactionReceipt({ hash: p.hash });
@@ -746,7 +791,7 @@ export class MakerEngine {
           // same log and operator meter as the shared send() path (Monad bills the gas limit)
           this.store.append(`txs:${mode}`, { t: new Date(this.now()).toISOString(), role: t.role, from: t.from, label: t.label, kind: "void", hash: t.hash, nonce: t.nonce, block: t.block, gasUsed: t.gasUsed, gasLimit: t.gasLimit, mon: +t.mon.toFixed(6), status: t.status }, 3000);
           report.txs.push({ label: t.label, role: t.role, hash: t.hash, mon: +t.mon.toFixed(6), status: t.status });
-          recordSpend(ctx.state.budget, "operator", t.mon, Date.now(), budgetCfgOf(ctx.cfg));
+          recordSpend(ctx.state.budget, "operator", t.mon, Date.now(), budgetCfgOf(ctx.cfg), "void");
         },
         alert,
         log: (m) => logger.info(`watch: ${m}`),
@@ -759,6 +804,47 @@ export class MakerEngine {
       report.errors.push(`watcher: ${explainRevert(e)}`);
       return { skipped: `error: ${explainRevert(e)}` };
     }
+  }
+
+  /** The treasury top-up pass (src/treasury.ts), every treasury.everySec. Runs with or without TREASURY_KEY: the
+   *  balance checks and the LOW alerts work without it; only live mode with a valid key sends. */
+  private async treasury(ctx: Ctx, mode: Mode, report: TickReport, alert: (t: string, b: string) => void, logger: Logger, force: boolean): Promise<TickReport["treasury"]> {
+    let cfg;
+    try {
+      cfg = parseTreasuryCfg((ctx.cfg as unknown as { treasury?: unknown }).treasury);
+    } catch (e) {
+      report.errors.push(`treasury config: ${String((e as Error).message).slice(0, 200)}`);
+      return { skipped: `config invalid: ${String((e as Error).message).slice(0, 200)}` };
+    }
+    if (!cfg) return { skipped: "no treasury config" };
+    const lastAt = this.store.get<number>("treasury:lastAt") ?? 0;
+    if (!force && this.now() - lastAt < cfg.everySec * 1000) return { skipped: `next pass in ${Math.round((cfg.everySec * 1000 - (this.now() - lastAt)) / 1000)}s` };
+    this.store.put("treasury:lastAt", this.now());
+    const forbidden = [this.dep.roles.owner, this.maker?.address, this.operator?.address, this.guardian?.address].filter((x): x is Address => !!x && /^0x[0-9a-fA-F]{40}$/.test(x));
+    const r = await treasuryPass({
+      pub: ctx.pub,
+      store: this.store,
+      cfg,
+      live: mode === "live" && this.liveNow,
+      key: this.treasuryKey,
+      liveRpc: this.s.rpcIsLive,
+      liveTreasury: BUNDLED_TREASURY,
+      forbidden,
+      wallet: ctx.wallet!,
+      chain: this.chain,
+      nonces: this.nonces,
+      dayUtcOffsetMin: ctx.cfg.budget.dayUtcOffsetMin,
+      onTx: (t) => {
+        this.store.append(`txs:${mode}`, { t: new Date(this.now()).toISOString(), role: "treasury", from: t.from, to: t.to, label: t.label, kind: "topup", hash: t.hash, nonce: t.nonce, block: t.block, gasUsed: TRANSFER_GAS_STR, gasLimit: t.gasLimit, mon: +t.gasMon.toFixed(6), valueMon: t.valueMon, status: t.status }, 3000);
+        report.txs.push({ label: t.label, role: "treasury", hash: t.hash, mon: +t.gasMon.toFixed(6), status: t.status });
+      },
+      alert,
+      log: (m) => logger.info(m),
+      sleep: this.sleep,
+      now: this.now,
+    });
+    if (this.treasuryKeyError) (r.treasury.key = this.treasuryKeyError), this.store.put("treasury:last", r);
+    return r;
   }
 
   /**
@@ -891,13 +977,25 @@ export class MakerEngine {
       reasons: report?.reasons ?? [],
       control: { seq: cs.seq, armedAt: cs.armedAt ?? null, disarmedAt: cs.disarmedAt ?? null, last: cs.history.at(-1) ?? null },
       keys: { maker: this.maker?.address ?? null, operator: this.operator?.address ?? null, guardian: this.guardian?.address ?? null, snapshotToken: !!this.deps.keys.snapshotToken, watchOnly: this.watchOnly },
-      rpc: this.s.rpcIsLive ? "monad-testnet public RPC" : "loopback fork",
+      rpc: { kind: this.s.rpcIsLive ? "monad-testnet public RPCs" : "loopback fork", endpoints: this.rpc ? this.rpc.status().map((e) => ({ host: e.host, verified: e.verified, coolingDown: e.coolingDownUntil !== null && e.coolingDownUntil > this.now(), requests: e.requests, retries: e.retries, rateLimited: e.rateLimited, errors: e.errors, lastError: e.lastError })) : this.s.rpcs.map((u) => ({ host: hostOf(u) })), rps: this.s.rpcRps },
       stations: this.s.stations,
       lastTick: report ? { at: report.at, ms: report.ms, mode: report.mode, block: report.block, errors: report.errors.length, alerts: report.alerts, intents: report.intents.length, txs: report.txs.length } : null,
-      budget: st.budget,
+      budget: { ...st.budget, tier: (() => {
+        try {
+          const c = workerConfig(this.s, mode);
+          const ti = quotingTier(structuredClone(st.budget), "maker", "quote", budgetCfgOf(c), this.now());
+          return { tier: ti.tier, spent: +ti.spent.toFixed(4), cap: ti.cap, soft: ti.soft, reserve: +(st.budget.spent["maker:reserve"] ?? 0).toFixed(4), reserveLine: c.budget.reserveMon.maker };
+        } catch {
+          return null;
+        }
+      })() },
+      treasury: (() => {
+        const t = this.store.get<TreasuryReport>("treasury:last");
+        return t ? { at: t.at, mode: t.mode, address: t.treasury.address, mon: t.treasury.mon, key: t.treasury.key, balances: t.balances, today: t.meter, actions: t.actions, alerts: t.alerts } : { key: this.treasuryKey ? "set (no pass yet)" : "no TREASURY_KEY secret (balance checks and LOW alerts only)" };
+      })(),
       ladders: Object.values(st.ladders).map((l) => ({ key: l.key, status: l.status, paused: !!l.paused, stopAt: new Date(l.stopAt * 1000).toISOString(), strikes: l.strikes.map((k) => `${k}:${l.series[k]?.mode ?? "-"}${l.series[k]?.orders.bid ? ` b${l.series[k].orders.bid!.price}` : ""}${l.series[k]?.orders.ask ? ` a${l.series[k].orders.ask!.price}` : ""}`) })),
       alerts: this.store.tail<{ at: string; title: string }>("alerts", 5).map((a) => `${a.at} ${a.title}`),
-      push: this.hook ? { channel: this.hook.kind, last: pushLog(this.store, 5) } : { channel: this.hookError ? `invalid ALERT_WEBHOOK_URL, ignored (${this.hookError})` : "off (no ALERT_WEBHOOK_URL secret)" },
+      push: this.hook ? { channel: this.hook.kind, auth: this.hook.token ? "ALERT_WEBHOOK_TOKEN (bearer header)" : this.hook.kind === "ntfy" && /[?&]auth=/.test(this.hook.url) ? "auth query parameter" : "none", last: pushLog(this.store, 5) } : { channel: this.hookError ? `invalid ALERT_WEBHOOK_URL, ignored (${this.hookError})` : "off (no ALERT_WEBHOOK_URL secret)" },
       watcher: (() => {
         const w = this.store.get<{ lastBlock: number; results: Record<string, { verdict: string }>; overdue?: Record<string, { dayEnd: number; firstAt: number; alerts: number }>; voids?: Record<string, { at: number; outcome: string; hash?: string }> }>("watch:state");
         return w
@@ -957,6 +1055,13 @@ export class MakerEngine {
 }
 
 const fmt = (b: number | null | undefined, a: number | null | undefined) => `${b ?? "-"}/${a ?? "-"}`;
+const hostOf = (u: string) => {
+  try {
+    return new URL(u).host;
+  } catch {
+    return u;
+  }
+};
 
 /** The compact per-tick line (decisions per strike, what was or would have been sent) for the operator's history. */
 export function tickLine(r: TickReport): TickLine {
@@ -971,6 +1076,7 @@ export function tickLine(r: TickReport): TickLine {
     alerts: r.alerts,
     kill: r.kill.map((k) => `${k.key} ${k.mode} cancelled ${k.cancelled} left ${k.leftOpen}`),
     rolls: r.rolls.map((x) => `${x.key} ok=${x.ok} ${x.steps.find((s) => s.step === "plan")?.detail.slice(0, 80) ?? ""}`),
+    ...(r.treasury && "actions" in r.treasury ? { treasury: r.treasury.actions.map((a) => `${a.role} ${a.balanceMon} MON -> ${a.amountMon} ${a.outcome}${a.hash ? ` ${a.hash}` : ""}`) } : {}),
     strikes: r.ladders.flatMap((l) =>
       l.strikes.map((s) => ({
         key: l.key,

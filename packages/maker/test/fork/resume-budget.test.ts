@@ -77,7 +77,9 @@ test("crash after broadcasting deployProxy -> resume recovers the market, no dup
   assert.ok(lad.strikes.every((k) => lad.series[k].canonical === true));
   say(`resume: >=30 market ${lad.series[30].market} recovered from the pending tx; ${deploys.length} deployProxy txs in total for 4 strikes; all canonical`);
 
-  // ---- budget: cap the maker at what it spent -> a 2-tick move is refused (not urgent)
+  // ---- budget: cap the maker at what it spent -> a 2-tick move is refused (not urgent). The legacy re-quote rules
+  //      (policy.lazy off) make a 0.025 move a re-quote reason; the lazy default would not re-quote it at all.
+  ctx.cfg.policy.lazy = false;
   const spent = ctx.state.budget.spent.maker ?? 0;
   ctx.cfg.budget.dailyCapMon.maker = spent + 1e-9;
   ctx.cfg.budget.reserveMon.maker = 10;
@@ -88,7 +90,7 @@ test("crash after broadcasting deployProxy -> resume recovers the market, no dup
   assert.match(a30.error ?? "", /cap/);
   assert.ok(lad.series[30].orders.ask, "quotes left in place when a non-urgent re-quote is refused");
   say(`budget: non-urgent re-quote of >=30 refused (${a30.error}); quotes stay`);
-  // fair jumps above our resting ask: urgent -> pull paid from the reserve
+  // fair jumps above our resting ask: urgent -> pull, metered on the reserve meter (never refused)
   override[30] = (lad.series[30].orders.ask?.price ?? 0.5) + 0.05;
   r = await tickAll(ctx, stub, { post: false });
   a30 = [...r.ticks.values()][0].actions.find((a) => a.strike === 30)!;

@@ -11,6 +11,13 @@
 //   - a 5 s timeout per post, all posts of a tick in parallel, so a dead endpoint costs a tick at most 5 s;
 //   - a failure is logged (`alerts:push`, without the URL) and never breaks the tick;
 //   - the URL itself is never logged, echoed or put in the KV outbox.
+// Shared egress IPs: ntfy.sh limits anonymous publishers per IP, and Workers share IPs (ntfy.sh answered the Worker
+// with HTTP 429 on 2026-10-09). An account's access token can be given in two ways, both secret:
+//   - in the URL, ntfy's own query parameter: https://ntfy.sh/<topic>?auth=<base64 of "Bearer tk_...", no "=" padding>
+//     (docs.ntfy.sh/publish "Query param"); the URL is kept as is;
+//   - or as the optional ALERT_WEBHOOK_TOKEN secret, sent as `Authorization: Bearer <token>` (ntfy and JSON hooks).
+//   ntfy.sh keys a publisher by its account (instead of its IP) only when the account has a tier (a paid plan; topic
+//   reservation is a paid feature too): a free account's token alone does not lift the per-IP limit.
 import type { Store } from "./store.ts";
 
 export const PUSH_TIMEOUT_MS = 5_000;
@@ -28,13 +35,26 @@ export interface Webhook {
   url: string;
   kind: HookKind;
   chatId?: string;
+  /** ALERT_WEBHOOK_TOKEN: `Authorization: Bearer <token>` (ntfy / JSON). Never logged. */
+  token?: string;
 }
 
 /**
  * Validate ALERT_WEBHOOK_URL. Returns null when unset, `{ error }` when unusable (the message never contains the
  * URL), else the hook. https only; plain http only to a loopback host, and only when the RPC is a loopback fork.
  */
-export function parseWebhook(raw: string | undefined, allowLoopbackHttp: boolean): Webhook | { error: string } | null {
+export function parseWebhook(raw: string | undefined, allowLoopbackHttp: boolean, rawToken?: string): Webhook | { error: string } | null {
+  const h = parseUrl(raw, allowLoopbackHttp);
+  if (!h || "error" in h) return h;
+  if (rawToken === undefined || !rawToken.trim()) return h;
+  const token = rawToken.trim();
+  // a header value: printable ASCII, no spaces; the message never contains the token
+  if (token.length > 512 || !/^[\x21-\x7e]+$/.test(token)) return { error: "ALERT_WEBHOOK_TOKEN is not a single printable token" };
+  if (h.kind === "telegram") return { error: "ALERT_WEBHOOK_TOKEN is for ntfy / JSON webhooks; a Telegram URL carries its bot token already" };
+  return { ...h, token };
+}
+
+function parseUrl(raw: string | undefined, allowLoopbackHttp: boolean): Webhook | { error: string } | null {
   if (!raw || !raw.trim()) return null;
   const s = raw.trim();
   if (s.length > 2048 || /\s/.test(s)) return { error: "ALERT_WEBHOOK_URL is not a single URL" };
@@ -67,11 +87,12 @@ const headerSafe = (s: string) => s.replace(/[^\x20-\x7e]/g, "?").slice(0, TITLE
 export function pushRequest(hook: Webhook, title: string, body: string): { url: string; init: RequestInit } {
   const t = title.slice(0, TITLE_MAX);
   const b = body.slice(0, BODY_MAX);
+  const auth: Record<string, string> = hook.token ? { authorization: `Bearer ${hook.token}` } : {};
   if (hook.kind === "ntfy")
-    return { url: hook.url, init: { method: "POST", headers: { "content-type": "text/plain; charset=utf-8", Title: headerSafe(t), Tags: "warning" }, body: b } };
+    return { url: hook.url, init: { method: "POST", headers: { "content-type": "text/plain; charset=utf-8", Title: headerSafe(t), Tags: "warning", ...auth }, body: b } };
   if (hook.kind === "telegram")
     return { url: hook.url, init: { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: hook.chatId, text: `${t}\n\n${b}`, disable_web_page_preview: true }) } };
-  return { url: hook.url, init: { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: t, body: b, text: `${t}\n${b}` }) } };
+  return { url: hook.url, init: { method: "POST", headers: { "content-type": "application/json", ...auth }, body: JSON.stringify({ title: t, body: b, text: `${t}\n${b}` }) } };
 }
 
 export interface PushOutcome {

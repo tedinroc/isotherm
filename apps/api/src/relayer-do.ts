@@ -1,5 +1,7 @@
 // One Durable Object instance ("main") owns the relayer key's nonce, the drip/relay ledger and the log-scan
 // cursor. That gives strongly consistent rate limits and a single sender, which a plain Worker + KV cannot.
+// It also owns the only RPC pool (src/rpc.ts): every chain read and write of the API goes through this instance, so
+// one client-side throttle and one set of endpoint cooldowns cover all of them.
 import { DEPLOYMENTS } from './deployments';
 import { configFrom, type Config, type Env } from './env';
 import { makeClients, type Pub } from './chain';
@@ -7,12 +9,19 @@ import { createRelayer, type Relayer, type RelayMintWire } from './relayer';
 import { addMarkets, loadBatch, makeClassifier, publicStats, refreshSettlements, scanOnce, scanRange, type MigrationInfo, type ScanOptions } from './scan';
 import { WindowLimiter, type Store } from './limits';
 import { HttpError, errorMessage, json } from './util';
+import { classifyRpcError, type Rpc } from './rpc';
 import { getAddress, isAddress, type Address } from 'viem';
+
+/** After a scan run stopped on an RPC rate limit / outage, skip whole cron ticks: about 2, 4, then 8 minutes. */
+const SCAN_BACKOFF_KEY = 'scan:backoff';
+const SCAN_BACKOFF_MAX_LEVEL = 3;
+export const scanBackoffMs = (level: number) => 60_000 * 2 ** Math.min(level, SCAN_BACKOFF_MAX_LEVEL) - 5_000;
 
 export class RelayerDO {
   private cfg: Config;
   private pub: Pub;
   private relayer: Relayer;
+  private rpc: Rpc;
   private store: Store;
   private scanning: Promise<unknown> | null = null;
   private posts: WindowLimiter;
@@ -22,10 +31,19 @@ export class RelayerDO {
     private env: Env,
   ) {
     this.cfg = configFrom(env);
-    const { pub, wallet } = makeClients(this.cfg, env.RELAYER_KEY);
+    const { pub, wallet, rpc } = makeClients(this.cfg, env.RELAYER_KEY);
     this.pub = pub;
+    this.rpc = rpc;
     this.store = state.storage as unknown as Store;
-    this.relayer = createRelayer({ cfg: this.cfg, dep: DEPLOYMENTS, pub, wallet, store: this.store });
+    const ignored = this.cfg.rpcIgnored;
+    this.relayer = createRelayer({
+      cfg: this.cfg,
+      dep: DEPLOYMENTS,
+      pub,
+      wallet,
+      store: this.store,
+      rpcStatus: () => ({ source: this.cfg.rpcSource, endpoints: this.rpc.status(), ...(ignored.length ? { ignored } : {}) }),
+    });
     this.posts = new WindowLimiter(this.cfg.postLimitPerMin, 60_000);
   }
 
@@ -45,6 +63,7 @@ export class RelayerDO {
       startBlock: this.cfg.statsStartBlock,
       maxWindows,
       realStations: this.cfg.realStations,
+      lagBlocks: this.cfg.statsScanLagBlocks,
     };
   }
 
@@ -70,7 +89,7 @@ export class RelayerDO {
           return json({ ok: true, added: fresh.length });
         }
         case '/tick':
-          return json(await this.tick());
+          return json(await this.tick(body.force === true));
         case '/rescan': {
           const from = BigInt(String(body.fromBlock ?? '0'));
           const to = BigInt(String(body.toBlock ?? '0'));
@@ -90,8 +109,9 @@ export class RelayerDO {
     }
   }
 
-  /** Cron body: keep the AUSD float topped up, advance the log scan, publish stats to KV. */
-  async tick() {
+  /** Cron body: keep the AUSD float topped up, advance the log scan, publish stats to KV. `force` (the admin tick)
+   *  scans even during an RPC backoff. */
+  async tick(force = false) {
     const out: Record<string, unknown> = {};
     try {
       out.refill = await this.relayer.refill();
@@ -100,12 +120,27 @@ export class RelayerDO {
     }
     if (!this.scanning) {
       this.scanning = (async () => {
+        let backoff: { until: number; level: number } | undefined;
         try {
+          backoff = await this.store.get<{ until: number; level: number }>(SCAN_BACKOFF_KEY);
+          if (backoff && Date.now() < backoff.until && !force) {
+            out.scan = { skipped: 'rpc backoff', until: new Date(backoff.until).toISOString(), level: backoff.level };
+            return;
+          }
           const r = await scanOnce(this.scanOpts());
-          out.scan = { head: r.head, cursor: r.cursor, windows: r.windows, logs: r.logsSeen, backfillPending: r.backfillPending };
+          out.scan = {
+            head: r.head,
+            cursor: r.cursor,
+            windows: r.windows,
+            logs: r.logsSeen,
+            backfillPending: r.backfillPending,
+            ...(r.stopped ? { stopped: r.stopped } : {}),
+          };
           await this.publish(r.head, r.cursor);
+          await this.noteScan(r.stopped?.kind ?? null, backoff);
         } catch (e) {
           out.scan = { ok: false, error: errorMessage(e) };
+          await this.noteScan(classifyRpcError(e), backoff).catch(() => undefined);
         } finally {
           this.scanning = null;
         }
@@ -115,6 +150,16 @@ export class RelayerDO {
       out.scan = 'already running';
     }
     return out;
+  }
+
+  /** A run that stopped on a rate limit / outage / every endpoint skipped backs the scan off; a clean run resets it. */
+  private async noteScan(stop: string | null, backoff: { until: number; level: number } | undefined) {
+    if (stop === 'rate-limited' || stop === 'transient' || stop === 'skip') {
+      const level = Math.min((backoff?.level ?? 0) + 1, SCAN_BACKOFF_MAX_LEVEL);
+      await this.store.put(SCAN_BACKOFF_KEY, { until: Date.now() + scanBackoffMs(level), level });
+    } else if (stop === null && backoff) {
+      await this.store.delete(SCAN_BACKOFF_KEY);
+    }
   }
 
   private async publish(head?: bigint, cursor?: bigint) {

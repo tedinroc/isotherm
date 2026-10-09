@@ -1,0 +1,8 @@
+anvil fork of https://rpc.ankr.com/monad_testnet at block 69578065; market 0xC6806c67a2faCd6e7fd72e26DA9d037eb2E2a7D3; maker bid #1 @0.9 x100, ask #2 @0.97 x100
+variant | live estimate | fork estimate | fork gas used | billed MON (limit x1.08 @102 gwei) | vs full
+full re-quote: cancel 2 + place 2 (both sides shifted -0.03) | 525456 | 522424 | 514946 | 0.0576 | 100 %
+one side: cancel 1 + place 1 (ask shifted -0.03) | 347891 | 344868 | 340156 | 0.038 | 66 %
+one side: cancel 1 + place 1 (bid shifted -0.03) | 322202 | 319178 | 314868 | 0.0352 | 61 %
+refill one side: place 1, no cancel (batchUpdate) | 290485 | 287464 | 283647 | 0.0317 | 55 %
+refill one side: addSellOrder | 287079 | 284081 | 280294 | 0.0313 | 54 %
+pull: cancel 2 (batchCancelOrdersNoRevert) | 255119 | 252119 | 248833 | 0.0278 | 48 %
