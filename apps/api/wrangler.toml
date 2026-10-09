@@ -51,12 +51,12 @@ GAS_MULTIPLIER_PCT = "108"
 POST_LIMIT_PER_MIN = "30"
 # ---- MON budget (testnet MON is scarce). Sized by `node scripts/size-caps.mjs` (default --days 7) from the relayer's
 # LIVE balance, spread over a HORIZON of 7 UTC days so one worst-case day can never take the whole balance:
-#   2026-10-07T07:59Z: balance 4.599171502 MON, gas 102 gwei, reserve 0.1 -> spendable 4.499 MON; / 7 days -> 0.6427 MON/day
-#   dripCost = 0.15 + 99,752 gas x 102 gwei = 0.1602; relayCost = 335,000 gas x 102 gwei = 0.0342 (fork-measured
-#   limit for a first-time holder: 334,228). DRIP_DAILY_CAP = floor(0.6427 x 0.65 / 0.1602) = 2;
-#   RELAY_DAILY_CAP = floor((0.6427 - 2 x 0.1602) / 0.0342) = 9; worst-case UTC day = 0.628 MON <= 0.6427 per day,
-#   so 7 consecutive worst-case days (4.395 MON) fit in the 4.499 spendable: UTC days Oct 7-13 are covered even at
-#   maximum use; top up and re-size before 2026-10-14.
+#   2026-10-09T02:42Z (relayer topped up for judging): balance 10.194 MON, gas 102 gwei, reserve 0.1 -> spendable
+#   10.094 MON; horizon 10 days -> 1.0094 MON/day. dripCost = 0.15 + 99,752 gas x 102 gwei = 0.1602; relayCost =
+#   335,000 gas x 102 gwei = 0.0342 (fork-measured limit for a first-time holder: 334,228).
+#   DRIP_DAILY_CAP = floor(1.0094 x 0.65 / 0.1602) = 4; RELAY_DAILY_CAP = floor((1.0094 - 4 x 0.1602) / 0.0342) = 10;
+#   worst-case UTC day = 0.982 MON <= 1.0094 per day, so 10 consecutive worst-case days (9.824 MON) fit in the 10.094
+#   spendable: UTC days Oct 9-18 are covered even at maximum use; top up and re-size before 2026-10-19.
 #   Per network (IPv4 / IPv6 /64): at most half a day's drips and relays.
 # Drips and relays never spend below RELAYER_MIN_MON (the reserve; only the AUSD-float cron refill may use it).
 # After funding the relayer (or when the time to the next top-up changes), re-run the script with --days set to that
@@ -64,11 +64,11 @@ POST_LIMIT_PER_MIN = "30"
 RELAYER_MIN_MON = "0.1"
 DRIP_GAS_MON = "0.011"
 RELAY_COST_MON = "0.035"
-DRIP_DAILY_CAP = "2"
-DRIP_PER_IP_PER_DAY = "1"
-RELAY_DAILY_CAP = "9"
-RELAY_PER_IP_PER_DAY = "4"
-RELAY_PER_ADDRESS_PER_DAY = "4"
+DRIP_DAILY_CAP = "4"
+DRIP_PER_IP_PER_DAY = "2"
+RELAY_DAILY_CAP = "10"
+RELAY_PER_IP_PER_DAY = "5"
+RELAY_PER_ADDRESS_PER_DAY = "5"
 STATS_SCAN_MAX_WINDOWS = "20"
 REAL_STATIONS = "RCSS,RJTT,ZGSZ,RKSI,VHHH"
 # Wallets excluded from the public "non-maker" counts (deployments/testnet.json roles are added automatically).
@@ -77,5 +77,6 @@ MAKER_ADDRESSES = "0xd572638F07829D1c3636400FB73CF34Ca6c7448a"
 # 0xF4a3…2427 = the team's Dynamic embedded wallet (email login on the live site, 2026-10-07), our own as well.
 # 0xfec0…C7D5 = the demo-video dev wallet (screen recordings, 2026-10-08), our own as well.
 # 0xd3A6…4682 = the team's MetaMask Agent Wallet server wallet (signed-in mm plugin trade, 2026-10-08), our own as well.
+# 0x1232…2CbF = the team's Dynamic Sandbox test-account wallet (Dynamic sign-in screen recording, 2026-10-09), our own as well.
 # The stats classify at publish time from this list, so adding a wallet here also reclassifies its earlier fills.
-TEAM_ADDRESSES = "0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11,0x636D0598E416e5f66acD0F6Ac2Ae96306529b4d5,0x029049a9dA77231dd86A90E52Fd6Db542424e727,0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f,0xd42A0b394F09df88BB2120D0973569b845f2D79c,0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427,0xfec06f14559e1Caa7e7649993f9394BE3F30C7D5,0xd3A60CD946f58D6A43412dB20b30D834B72b4682"
+TEAM_ADDRESSES = "0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11,0x636D0598E416e5f66acD0F6Ac2Ae96306529b4d5,0x029049a9dA77231dd86A90E52Fd6Db542424e727,0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f,0xd42A0b394F09df88BB2120D0973569b845f2D79c,0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427,0xfec06f14559e1Caa7e7649993f9394BE3F30C7D5,0xd3A60CD946f58D6A43412dB20b30D834B72b4682,0x12320262325e2DF351a7Ed5445F9548640852CbF"
