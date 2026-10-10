@@ -15,7 +15,7 @@ instead of launchd.
 | Kept exactly as today | Added on the VPS (`vps/settle-vps.sh` around the job) |
 |---|---|
 | **Official path:** `cre workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 --broadcast`, with CLI v1.37.0 pinned by SHA-256 | A single-writer guard (section 8), so the Mac and the VPS never both settle |
-| **Labelled harness fallback** when `cre whoami` fails, and one harness run after a failed official run | An optional phone push through ntfy, sent from the VPS's own IP |
+| **Labelled harness fallback** when `cre whoami` fails, and one harness run after a failed official run. Since 2026-10-10 an official run that stops at the CLI's CRE credential check, before anything is compiled or sent, is first repeated once, 45 s later. | An optional phone push through ntfy, sent from the VPS's own IP |
 | `run-official.sh`: the preflight, `var/run.lock`, the 30-min spacing guard, receipt confirmation, and the stand-down once the Resolver points at the DON | |
 | One evidence record per run (`var/evidence/`), which now also names the host (`"host": "vps"`) | |
 

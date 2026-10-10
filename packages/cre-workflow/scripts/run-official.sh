@@ -23,6 +23,8 @@
 #        HARNESS_EXTRA / HARNESS_AT / ISOTHERM_TEST_RELABEL (harness fork tests only)
 # Exit:  0 ok / nothing to do / skipped, 2 preflight failed, 3 not logged in to CRE (official mode),
 #        4 a report was sent but not accepted on chain.
+# Retry: official mode only. A simulate run that fails at the CLI's CRE credential check, before anything is compiled
+#        or sent, runs once more after 45 s (step 5). Every other failure exits at once, as before.
 #
 # Safety: an anvil fork shares the live Resolver's EIP-712 domain, so reports signed there with the LIVE attester key
 # would be valid on live testnet too. This script refuses any non-live RPC while the key is the live attester.
@@ -49,7 +51,7 @@ while [ $# -gt 0 ]; do
     --force) FORCE=1 ;;
     --preflight-only) PREFLIGHT_ONLY=1 ;;
     --trigger-index) TRIGGER=$2; shift ;;
-    -h|--help) sed -n '2,30p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,33p' "$0"; exit 0 ;;
     *) echo "unknown arg $1" >&2; exit 2 ;;
   esac
   shift
@@ -149,13 +151,45 @@ if [ "$FORCE" != 1 ] && [ $((NOW - LAST)) -lt 1800 ]; then say "last run $((NOW 
 echo "$NOW" > "$STATE/last-run"
 
 # ---- 5. run
-set +e
-if [ "$MODE" = official ]; then
-  say "OFFICIAL: cre workflow simulate ./settle -T testnet --non-interactive --trigger-index $TRIGGER $([ $BROADCAST = 1 ] && echo --broadcast)"
+# OFFICIAL, one retry. Now and then the CLI's credential check cannot reach the CRE API ("Credential validation failed
+# ... context deadline exceeded"); a minute later it answers again. The CLI stops there, before it compiles the workflow,
+# so nothing was signed or sent, and such a run (only such a run) is repeated once with the identical command, 45 s
+# later. A broadcast needs the compiled workflow, and these conditions check that the first run never got that far.
+# All of these must hold: the first run exited non-zero; its own output (the bytes it added to $LOG) shows
+# "Credential validation failed" and no sign of a compile, a simulation or a transaction; and the tx sender's on-chain
+# nonce is the same before the first run and after the wait (an RPC error counts as "changed"). Anything else exits as
+# before. The retry runs under the same lock; last-run is stamped again first, so the 30-min spacing guard counts from
+# the run that can sign.
+official_simulate() { # keys reach the CLI through its environment only, never argv
   CRE_ETH_PRIVATE_KEY="$(tr -d '[:space:]' <"$TX_FILE")" \
   ISOTHERM_ATTESTER_KEY_ALL="$(tr -d '[:space:]' <"$ATT_FILE")" \
     cre workflow simulate ./settle -T testnet --non-interactive --trigger-index "$TRIGGER" $([ $BROADCAST = 1 ] && echo --broadcast) 2>&1 | tee -a "$LOG"
-  RC=${PIPESTATUS[0]}
+  return "${PIPESTATUS[0]}"
+}
+log_bytes() { wc -c <"$LOG" | tr -d ' '; }
+credential_check_only() { # <offset>: what the run wrote to $LOG after that byte offset
+  local out
+  out=$(tail -c +"$(($1 + 1))" "$LOG")
+  grep -qF 'Credential validation failed' <<<"$out" || return 1
+  # a count of exactly 0, not a negated grep: a grep or here-string error then means "no retry", never "no marker"
+  [ "$(grep -cE 'Workflow compiled|Simulation Result|\[SIMULATION\]|\[USER LOG\]|tx 0x[0-9a-fA-F]{64}' <<<"$out")" = 0 ]
+}
+tx_nonce() { perl -e 'alarm shift; exec @ARGV' 20 cast nonce "$TX_ADDR" --rpc-url "$RPC" 2>/dev/null | grep -E '^[0-9]+$' || true; }
+set +e
+if [ "$MODE" = official ]; then
+  say "OFFICIAL: cre workflow simulate ./settle -T testnet --non-interactive --trigger-index $TRIGGER $([ $BROADCAST = 1 ] && echo --broadcast)"
+  NONCE0=$(tx_nonce)
+  OFFSET=$(log_bytes)
+  official_simulate
+  RC=$?
+  if [ "$RC" != 0 ] && [ -n "$NONCE0" ] && credential_check_only "$OFFSET"; then
+    sleep 45
+    if [ "$(tx_nonce)" = "$NONCE0" ] && date +%s > "$STATE/last-run"; then
+      say "OFFICIAL retry: simulate exited $RC at the CLI's CRE credential check, before anything was compiled, simulated or sent (tx sender nonce still $NONCE0 after 45 s); running the identical command once more"
+      official_simulate
+      RC=$?
+    fi
+  fi
 else
   say "HARNESS (fallback, not the CRE engine): settle/e2e/harness-run.ts"
   (cd settle && ISOTHERM_RPC="$RPC" ISOTHERM_ATTESTER_KEY_FILE="$ATT_FILE" ISOTHERM_TX_KEY_FILE="$TX_FILE" HARNESS_BROADCAST="$BROADCAST" \
