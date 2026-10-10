@@ -1,8 +1,9 @@
 # Settlement on a small Linux VPS: kit and runbook
 
-**Status (2026-10-09).** Prepared and rehearsed in Ubuntu 24.04 containers on the team's Mac. **Nothing is deployed**: no
-VPS has been bought, no key has been copied, and the Mac job `xyz.isotherm.cre-settle` still settles. Renting the VPS is
-the owner's purchase (section 2). The owner's steps are in sections 3 to 7.
+**Status (2026-10-10).** Live: the VPS has settled since the cutover at 2026-10-10 08:18 UTC (Ubuntu 26.04 LTS; the
+kit was rehearsed on 24.04 and builds the byte-identical WASM `413d4429…` on 26.04). The Mac job is disabled and released.
+One CRE session per account: signing in on the VPS ended the Mac's session, so a rollback needs a fresh `cre login` on the
+Mac. The provider blocks NTP, so the VPS syncs time with `htpdate` over HTTPS. Rollback: section 7.
 
 **Why.** Since the cutover on 2026-10-08, the market maker, the daily roll, the kill switch and the challenge watcher run on
 the Cloudflare Worker (`docs/OPERATIONS.md` §8). The hourly CRE settlement job is the last thing that needs the Mac to

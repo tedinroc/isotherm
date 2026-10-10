@@ -205,10 +205,17 @@ The Oct 8 ladder is settled by the CRE workflow in `packages/cre-workflow`, thro
   - **If the session lapses** (its expiry is undocumented), the job falls back to the **SDK-harness**: the same handler, rule and attestation run under Bun, not the CRE engine. The evidence record says which path ran; say "harness" wherever a harness run's evidence is used.
   - **Check before the first real attempt** (2026-10-08 18:05 UTC). Run `cre whoami` from `packages/cre-workflow` with `.tools/bin` on the PATH, or read `path` in `LATEST.json`. If it is not `official`, run `cre login` again.
 - **Where it runs:** from the runtime copy `~/isotherm-live/packages/cre-workflow`, because launchd cannot read `~/Documents` (exit 126, as the maker hit). Ship changes with `packages/cre-workflow/scripts/deploy-runtime.sh`; check with `bash ~/isotherm-live/packages/cre-workflow/scripts/install-launchd.sh --status` and `launchctl list | grep xyz.isotherm`.
-- **Moving it off the Mac (prepared 2026-10-09, not deployed).** A kit runs the same job on a small Linux VPS under a
-  systemd timer, with a single-writer claim so the Mac and the VPS never both settle: team summary and owner steps in
-  `docs/SETTLEMENT-VPS.md`, runbook in `packages/cre-workflow/vps/README.md`. Until its cutover, everything in this
-  section stays as written.
+- **On a VPS since 2026-10-10 08:18 UTC.** The same job runs on a small Linux VPS (Ubuntu 26.04, user `isotherm`, systemd
+  user timer `isotherm-settle.timer` at :05, linger on) and holds the single-writer claim; the Mac job is booted out and
+  disabled and its runtime copy carries `var/writer.released`. Team summary in `docs/SETTLEMENT-VPS.md`, runbook (status,
+  logs, rollback) in `packages/cre-workflow/vps/README.md`. The VPS's WASM build is byte-identical to the Mac's
+  (`413d4429…`). Notes from the cutover:
+  - **One CRE session per account.** Signing in on the VPS ended the Mac's session (its 08:05 UTC run fell back to the
+    harness with "not logged in"). Do not run `cre login` on the Mac while the VPS settles; a rollback to the Mac needs a
+    fresh `cre login` there.
+  - **Time sync.** The provider blocks outbound NTP (UDP 123), so the VPS keeps its clock with `htpdate` over HTTPS
+    (Google, Cloudflare, Apple, Microsoft); chrony is disabled. Offset at setup: 0.06 s.
+  - **Phone push** from the VPS goes to the ntfy topic from its own IP (no shared-IP limit).
 - **Cost:** each report transaction bills about 0.0204 MON to the attester key (0.40 MON at 2026-10-07 07:55 UTC, about 19 reports).
 - **After it lands:** confirm `LadderResolved` or `Resolver.resultOf(0x52435353, 20261008)`, never the transaction status alone. `xyz.isotherm.challenge-watch` recomputes the result and challenges a reproduced mismatch within the 900 s window; a human check is still worth it (challenge first, then pause; section 3).
 - **Fallback:** if nothing settles, `voidIfStale` opens 48 h after the local day end and pays 0.5/0.5. The
@@ -271,7 +278,7 @@ judging (Oct 14 – Nov 3), so that judging does not depend on this Mac staying 
 | quoting loop, kill switch (`xyz.isotherm.maker`, `xyz.isotherm.watchdog`) | Mac (live); Worker in shadow | Worker (kill switch at stop − 90 s, plus a verify pass every 5 min like `watchdog --verify`) |
 | daily roll (`xyz.isotherm.roll`) | Mac (live; the hourly job acts at the first run after 12:00, about 12:45 Taipei); Worker in shadow | Worker (from 12:00 station time; retries every 5 min until the ladder is active) |
 | challenge watcher (`xyz.isotherm.challenge-watch`) | Mac (live); Worker recomputes and alerts | Worker (guardian key) |
-| CRE settlement (`xyz.isotherm.cre-settle`) | Mac | **stays on the Mac** (the official CRE CLI cannot run in a Worker; the attester key is not in Cloudflare). The Worker alerts when a result is overdue and stale-voids at 48 h (8.8) |
+| CRE settlement (`xyz.isotherm.cre-settle`) | Mac until 2026-10-10 08:18 UTC | **VPS since then** (vps kit; the Mac job is disabled and released) (the official CRE CLI cannot run in a Worker; the attester key is not in Cloudflare). The Worker alerts when a result is overdue and stale-voids at 48 h (8.8) |
 
 **Live needs two switches. Both have been on since the cutover (2026-10-08 23:06 UTC):**
 1. `MAKER_MODE = "live"` in `apps/maker-worker/wrangler.toml`. `scripts/deploy.mjs` refuses it without `--live`,

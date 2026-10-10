@@ -1,7 +1,9 @@
 # Moving the settlement job off the Mac (VPS kit)
 
-**Status (2026-10-09).** A ready-to-use kit is prepared and rehearsed in Ubuntu 24.04 containers. **Nothing is deployed**,
-and the Mac still settles. The full runbook is in `packages/cre-workflow/vps/README.md`.
+**Status (2026-10-10).** Live: the VPS has settled since the cutover at 2026-10-10 08:18 UTC (Ubuntu 26.04 LTS; the
+kit was rehearsed on 24.04 and builds the byte-identical WASM `413d4429…` on 26.04). The Mac job is disabled and released.
+One CRE session per account: signing in on the VPS ended the Mac's session, so a rollback needs a fresh `cre login` on the
+Mac. The provider blocks NTP, so the VPS syncs time with `htpdate` over HTTPS. Rollback: section 7.
 
 ## Why
 
