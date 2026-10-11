@@ -18,7 +18,10 @@
 #                A report that failed without a logged hash may have used a nonce: it is allowed, and the next run
 #                re-baselines.
 #   5. alerts    optional ntfy push (~/.config/isotherm/alert-webhook.url): failures, a writer conflict, the harness
-#                fallback, a low attester balance, and every report sent.
+#                fallback, a low attester balance, and every report sent. 5b: a lapsed CRE login (two runs in a row
+#                took the harness because `cre whoami` failed; one miss is often a CRE API timeout) pushes "CRE LOGIN
+#                NEEDED" with the one-line fix (3 h dedupe), and the first run with the login after that push pushes
+#                "CRE LOGIN RESTORED" once (lib.sh cre_login_watch). Read-only on the evidence; the exit code is kept.
 #
 # Env (set by the unit): ISOTHERM_STATE_DIR, ISOTHERM_HOST_LABEL=vps, ISOTHERM_JOB_LABEL=isotherm-settle.service,
 #   ISOTHERM_WRITER_CLAIM_REQUIRED (default 1). Optional: ISOTHERM_CRE_API_KEY_FILE (default
@@ -126,6 +129,8 @@ if [ "$FRESH" = 1 ]; then
     if (bal && Number(bal[2]) < 0.1) tab("default", 86400, "ISOTHERM VPS: attester low on MON", `${bal[1]} holds ${Number(bal[2]).toFixed(4)} MON, about ${Math.floor(Number(bal[2]) / 0.0204)} reports at 0.0204 MON. Fund it (docs/OPERATIONS.md section 4).`);
     console.log(out.join("\n"));
   ' "$LATEST" 2>/dev/null | while IFS=$'\t' read -r P D T B; do [ -n "$T" ] && push_alert "$T" "$B" "$P" "$D"; done
+  # ---- 5b. CRE login lapsed / restored (in addition to the alerts above, which are unchanged)
+  cre_login_watch "$LATEST"
 elif [ "$RC" != 0 ]; then
   push_alert "ISOTHERM VPS: settle job exit $RC" "no evidence record was written for this run; see $OUT and journalctl --user -u isotherm-settle" high 10800
 fi

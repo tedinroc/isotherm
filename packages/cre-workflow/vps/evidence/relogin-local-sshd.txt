@@ -1,0 +1,92 @@
+# 2026-10-11T04:47:46Z relogin-local-sshd: bash 3.2.57(1)-release on Darwin arm64; real ssh (OpenSSH_10.3p1) to a throwaway sshd on 127.0.0.1; fake cre; no VPS, no network
+
+## S1. the sign-in completes: the stub browser calls back through the tunnel
+    | OK       ssh
+    | OK       perl
+    | OK       mktemp
+    | OK       browser: the sign-in URL opens with `open` (default browser)
+    | OK       port 57749 free on this machine
+    | OK       ssh config: 'isotherm-e2e' is an alias
+    | connecting to isotherm-e2e: tunnel localhost:57749 -> the VPS's 127.0.0.1:53682, then isotherm-vps.sh login there
+    |   vps | CRE Login
+    |   vps |   Authenticate with your Chainlink account
+    |   vps |  Opening browser to:
+    |   vps | <sign-in URL>
+    |   vps | ! Could not open browser automatically
+    |   vps |   Please open the URL above in your browser
+    |   vps |   Waiting for authentication... (Press Ctrl+C to cancel)
+    | sign-in page opened in your default browser
+    | sign in there (password + authenticator code); waiting for the browser's callback through the tunnel (up to 1 min)
+    |   vps | ✓ Login successful as <e-mail>; access_token=<masked>
+    |   vps | cre whoami: yes
+    | SIGNED IN: the VPS answered 'cre whoami: yes'. Its next :05 run takes the official path and pushes CRE LOGIN RESTORED.
+    exit 0
+    callback: HTTP 200 'ok'; remote terminal size: 0 1000; left: ssh processes 0, port 53682 free, port 57749 free, temp files 0
+  PASS  exit 0, 'cre whoami: yes', the callback crossed the tunnel (HTTP 200)
+  PASS  the remote side had a terminal, 1000 columns wide (ssh -tt, stty cols)
+  PASS  nothing secret and no tool error in the output
+  PASS  no ssh process, listening port or temp file left
+
+## S2. nobody signs in: --timeout 8
+    | OK       ssh
+    | OK       perl
+    | OK       mktemp
+    | OK       browser: the sign-in URL opens with `open` (default browser)
+    | OK       port 57749 free on this machine
+    | OK       ssh config: 'isotherm-e2e' is an alias
+    | connecting to isotherm-e2e: tunnel localhost:57749 -> the VPS's 127.0.0.1:53682, then isotherm-vps.sh login there
+    |   vps | CRE Login
+    |   vps |   Authenticate with your Chainlink account
+    |   vps |  Opening browser to:
+    |   vps | <sign-in URL>
+    |   vps | ! Could not open browser automatically
+    |   vps |   Please open the URL above in your browser
+    |   vps |   Waiting for authentication... (Press Ctrl+C to cancel)
+    | sign-in page opened in your default browser
+    | sign in there (password + authenticator code); waiting for the browser's callback through the tunnel (up to 1 min)
+    | TIMED OUT after 8 s waiting for the browser sign-in; stopping ssh (the cre login waiting on the VPS ends with it).
+    | If you did finish signing in, check: ssh isotherm-e2e bash <scratch>/fakevps/packages/cre-workflow/vps/isotherm-vps.sh status   (cre login: yes)
+    | Try again: packages/cre-workflow/vps/relogin.sh isotherm-e2e [--timeout SEC]
+    exit 124
+    remote cre login ended by: SIGHUP, its process gone; left: ssh processes 0, port 53682 free, port 57749 free, temp files 0
+  PASS  exit 124, a clear message
+  PASS  the waiting remote cre login ended with the ssh process (SIGHUP)
+  PASS  no ssh process, listening port or temp file left
+
+## S3. ssh cannot log in (a key the sshd does not know)
+    | OK       ssh
+    | OK       perl
+    | OK       mktemp
+    | OK       browser: the sign-in URL opens with `open` (default browser)
+    | OK       port 57749 free on this machine
+    | OK       ssh config: 'isotherm-e2e-badkey' is an alias
+    | connecting to isotherm-e2e-badkey: tunnel localhost:57749 -> the VPS's 127.0.0.1:53682, then isotherm-vps.sh login there
+    | FAILED: ssh ended (exit 255) before the VPS answered 'cre whoami: yes': ssh could not connect or log in to 'isotherm-e2e-badkey' (it runs with BatchMode=yes: key login only). Last output:
+    |   vps | <user>@<address>: Permission denied (publickey).
+    exit 1
+  PASS  exit 1 with the reason, nothing left
+
+## S4. --dry-run with the real ssh -G
+    | OK       ssh
+    | OK       perl
+    | OK       mktemp
+    | OK       browser: the sign-in URL opens with `open` (default browser)
+    | OK       port 57749 free on this machine
+    | OK       ssh config: 'isotherm-e2e' is an alias
+    | DRY RUN: nothing started. Without --dry-run this runs, with its output in a private temp file:
+    |   ssh -tt -o BatchMode=yes -o ExitOnForwardFailure=yes -L 57749:127.0.0.1:53682 isotherm-e2e 'stty cols 1000 2>/dev/null; bash <scratch>/fakevps/packages/cre-workflow/vps/isotherm-vps.sh login'
+    | then opens the sign-in URL and waits up to 600 s for 'cre whoami: yes'
+    exit 0
+  PASS  exit 0, the alias read, nothing started
+
+## sshd's view (sessions)
+    Accepted publickey for <user> from 127.0.0.1 port <n> ssh2: ED25519 SHA256:<key>
+    Starting session: command on ttys000 for <user> from 127.0.0.1 port <n> id 0
+    Received disconnect from 127.0.0.1 port <n>:11: disconnected by user
+    Accepted publickey for <user> from 127.0.0.1 port <n> ssh2: ED25519 SHA256:<key>
+    Starting session: command on ttys000 for <user> from 127.0.0.1 port <n> id 0
+    Received disconnect from 127.0.0.1 port <n>:11: disconnected by user
+    Failed publickey for <user> from 127.0.0.1 port <n> ssh2: ED25519 SHA256:<key>
+    Connection closed by authenticating user <user> 127.0.0.1 port <n> [preauth]
+
+# 2026-10-11T04:48:06Z done: 9 passed, 0 failed

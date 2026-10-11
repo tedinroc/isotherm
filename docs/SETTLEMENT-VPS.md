@@ -18,7 +18,8 @@ awake. A Worker cannot run the official CRE CLI; a small Linux VPS can. Judging 
   - the labelled harness fallback;
   - the same lock and 30-minute spacing guard;
   - one evidence record per run, now with `"host"`;
-  - the same stand-down once settlement moves to the Chainlink DON.
+  - the same automatic stand-down if the Resolver is pointed at a Chainlink DON (that cutover is prepared and rehearsed,
+    `packages/cre-workflow/DON-CUTOVER.md`).
 - **Byte-identical code.** On Linux, `cre workflow build` produced the Mac's WASM hash `413d4429…` on both arm64 and
   amd64.
 - **Keys.** The attester key is copied to the VPS. The guardian key and the challenge watcher stay on the Worker, so
@@ -53,6 +54,8 @@ of the cutover and rollback scripts, including a second cutover after a rollback
 6. In a UTC window of :16–:49, outside 16:40–19:20 UTC, run `vps/cutover.sh isotherm-vps` (dry run), then add
    `--execute`.
 7. Watch the first VPS run and the night's 18:05 UTC report. To go back: `vps/rollback.sh isotherm-vps --execute`.
+
+If the CRE login on the VPS lapses, it keeps settling on the labelled harness and pushes `CRE LOGIN NEEDED`. The fix is one command on the Mac plus the browser sign-in: `packages/cre-workflow/vps/relogin.sh isotherm-vps` (runbook §4).
 
 **Not verified here** (it needs the owner's account): the CRE sign-in itself on a VPS and how long its session lasts.
 The tunnel and callback mechanics were verified.

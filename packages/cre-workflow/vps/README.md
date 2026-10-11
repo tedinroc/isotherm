@@ -34,6 +34,7 @@ Mac. The guard's nonce reads are free.
 | `settle-vps.sh` | VPS | systemd entry. Runs the single-writer guard and the alerts around the unchanged `scripts/settle-job.sh`. |
 | `isotherm-vps.sh` | VPS | Helper: `status`, `preflight`, `dry-run`, `login`, `test-alert`, `clear-conflict`, `logs`. `check`, `claim` and `release` are called by the Mac scripts over SSH. |
 | `lib.sh`, `lib-mac.sh` | both | Shared helpers. They never print a key or the alert URL. |
+| `relogin.sh` | Mac | After a `CRE LOGIN NEEDED` push: the tunnel, the VPS's `login` helper and the browser sign-in in one command (section 4). |
 | `push.sh` | Mac | Ships the job's code to `~/isotherm` on the VPS: `packages/cre-workflow` without `var/`, `.tools/`, `node_modules/`, keys or `.env`, plus `packages/abi` and `deployments/testnet.json`. Then it checks that the code on the VPS is byte-identical to the checkout. |
 | `cutover.sh` | Mac | Mac → VPS. A dry run by default; `--execute` does the switch (section 6). |
 | `rollback.sh` | Mac | VPS → Mac. A dry run by default; `--execute` does the switch back (section 7). |
@@ -137,8 +138,8 @@ While you do this, nothing else on the Mac may use port 53682 (for example, a `c
   `ssh -L`; the CLI rejected the deliberately empty request with "invalid state".
 - **UNVERIFIED:** the sign-in itself, which needs the owner's account and authenticator, and how long the session lasts.
   The sign-in asks for `offline_access`, which means a refresh token; its expiry is undocumented, as on the Mac.
-  `status`, the `harness fallback ran` push and the evidence record's `path` show when the session has lapsed. When it
-  has, run the command above again.
+  `status`, the `CRE LOGIN NEEDED` push and the evidence record's `path` show when the session has lapsed. When it
+  has, see "CRE login lapsed" below.
 
 **Do not copy `~/.cre` from the Mac.** The session carries a refresh token. Two machines refreshing one session could
 invalidate each other; the CLI has a "Refresh token revoked" error. The Mac keeps its own session for the rollback.
@@ -150,6 +151,38 @@ instead`. If the CRE web app gives your organization an API key:
 
 It was not tested whether `simulate --broadcast` accepts an API key the way it accepts a login session. If it does not,
 the official run fails, the next run uses the harness, and you get a push.
+
+### CRE login lapsed
+
+A CRE account has one active session, and its lifetime is undocumented. When the VPS's session lapses, settlement does
+not stop: the job takes the labelled harness fallback. You see it two ways:
+- **Push `CRE LOGIN NEEDED`** (high priority, repeated every 3 h while it lasts). It fires when two runs in a row took
+  the harness because `cre whoami` failed, or because `run-official.sh` found no login just before signing. One such
+  run alone pushes nothing: `cre whoami` asks the CRE API, which now and then times out. In the Mac's 74 runs, 3 single
+  misses had an official run an hour before and an hour after. A harness run after a failed official run is not a
+  miss, and a run whose `cre whoami` answered clears one. The `harness fallback ran` push is unchanged and still comes
+  on the first such run.
+- **`isotherm-vps.sh status`** shows `cre session LAPSED since …` after two misses in a row, `no login in the last
+  run …` after one, and otherwise `cre session valid for at least …` (the official runs since the last miss). It reads
+  the evidence records only, never `~/.cre`.
+
+The fix is one command on the Mac (`--dry-run` checks the prerequisites only):
+```bash
+packages/cre-workflow/vps/relogin.sh isotherm-vps
+```
+- It refuses if anything on the Mac listens on port 53682. It runs the tunnel and `isotherm-vps.sh login`, opens the
+  sign-in page in your default browser and waits for `cre whoami: yes` (exit 0; exit 124 after `--timeout`, default
+  600 s).
+- You still sign in by hand, with your password and authenticator code. The CLI has no non-interactive login, so this
+  step cannot be automatic (Option B is unverified).
+- It never prints a token, and every exit removes its temp file and stops the ssh process, which ends the waiting
+  `cre login` on the VPS.
+- The next :05 run takes the official path and pushes `CRE LOGIN RESTORED` once. Signing in on the VPS ends any other
+  session of the account, such as the Mac's.
+
+Tests, no container needed: `test/login-lapse-unit.sh` (66 checks with stubs, including single misses, a failed
+official run, lost state and Ctrl-C) and `test/relogin-local-sshd.sh` (9 checks with the real ssh client, a throwaway
+sshd on 127.0.0.1 and a fake `cre`). Their outputs are in `evidence/`.
 
 ## 5. Attester key, phone push, rehearsal (owner, no MON)
 
@@ -177,7 +210,8 @@ ssh isotherm-vps bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh test-al
 - The VPS posts from its own IP. The HTTP 429 that ntfy.sh returned to the Worker came from Cloudflare's shared egress
   IPs, so it does not apply here.
 - The job sends at most a few pushes an hour. A push with the same title is repeated only after its dedupe window:
-  3 h for a failure, 12 h for the harness fallback, 24 h for low MON, 6 h for a standing conflict.
+  3 h for a failure, 12 h for the harness fallback, 24 h for low MON, 6 h for a standing conflict, 3 h for
+  `CRE LOGIN NEEDED`.
 - The URL is read from the file and never reaches a command line or a log.
 
 **Rehearse on the VPS.**
@@ -312,7 +346,7 @@ The nonce read is free, global, and needs no new secret.
 | State at a glance | `bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh status` |
 | Recent runs | `bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh logs 100`, or `journalctl --user -u isotherm-settle` |
 | Next run | `systemctl --user list-timers isotherm-settle.timer` |
-| Log in to CRE again | the tunnel command in section 4 |
+| Log in to CRE again | `packages/cre-workflow/vps/relogin.sh isotherm-vps`, run on the Mac itself (section 4) |
 | After a writer conflict, once one host settles | `bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh clear-conflict` |
 | Ship a code change | `packages/cre-workflow/vps/push.sh isotherm-vps` from the Mac, between :10 and :02. Run `vps/setup.sh` again only if the toolchain or `settle/bun.lock` changed. |
 | Pause settlement (nothing settles meanwhile) | `systemctl --user stop isotherm-settle.timer`; resume with `start` |
@@ -321,6 +355,7 @@ The nonce read is free, global, and needs no new secret.
 - `report sent <ICAO> <date>`, every time;
 - `settle job exit N` (3 h);
 - `harness fallback ran` (12 h);
+- `CRE LOGIN NEEDED` from the second run in a row without the login (3 h), then `CRE LOGIN RESTORED` once (section 4);
 - `attester low on MON` below 0.1 MON (24 h);
 - `WRITER CONFLICT` (every time), then `still stopped` (6 h).
 

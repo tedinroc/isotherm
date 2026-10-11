@@ -2,7 +2,8 @@
 # VPS-side helper for the settlement job. Run on the VPS as the job's user:
 #   bash ~/isotherm/packages/cre-workflow/vps/isotherm-vps.sh <command>
 #
-#   status               writer role, timer, last runs, CRE login (yes/no only), attester balance. Read-only.
+#   status               writer role, timer, last runs, CRE login (yes/no only) and how long the session has been
+#                        valid (from the evidence records), attester balance. Read-only.
 #   check                the same facts as one JSON line (vps/cutover.sh reads it over SSH). Read-only.
 #   preflight            scripts/run-official.sh --harness --preflight-only: key file, attester == Resolver.attester(),
 #                        pause flag, sender balance. Chain reads only; nothing signed.
@@ -31,6 +32,33 @@ cre_login() { # yes / apikey / no; never prints the account details
   else echo no; fi
 }
 file_mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }
+# How long the current CRE session has been valid, from the evidence records (the official runs since the last miss,
+# lib.sh CRE_LAPSE_JS). A lower bound: the session was valid at each of those runs. Never reads ~/.cre.
+# LAPSED needs CRE_NEEDED_AFTER misses in a row, as the CRE LOGIN NEEDED push does; a single miss is shown as such.
+# shellcheck disable=SC2016  # JavaScript template literals, not shell expansions
+cre_session() {
+  local f="$STATE/evidence/settle-runs.jsonl"
+  [ -s "$f" ] || { echo "no settlement runs recorded yet"; return 0; }
+  tail -n 1000 "$f" | node -e "$CRE_LAPSE_JS"'
+    const runs = []; for (const l of require("fs").readFileSync(0, "utf8").split("\n")) { try { const r = JSON.parse(l); if (r && !r.dryRun) runs.push(r) } catch {} }
+    const t = (r) => Date.parse(r.startedAt || r.finishedAt) || 0, iso = (ms) => new Date(ms).toISOString().replace(/\.\d+Z$/, "Z");
+    const dur = (ms) => { const m = Math.max(0, Math.round(ms / 60000)); return m >= 1440 ? `${Math.floor(m / 1440)} d ${Math.floor((m % 1440) / 60)} h` : m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min` };
+    const fix = process.argv[1], after = Number(process.argv[2]) || 2;
+    let off = -1, lap = -1, ok = -1; runs.forEach((r, i) => { if (r.path === "official") off = i; if (lapsed(r)) lap = i; else if (loginOk(r)) ok = i });
+    const now = Date.now();
+    if (!runs.length) console.log("no settlement runs recorded yet");
+    else if (lap > ok) {
+      const miss = runs.filter((r, i) => i > ok && lapsed(r)), n = miss.length, first = t(miss[0]);
+      const last = ok >= 0 ? `the login last showed at ${iso(t(runs[ok]))}` : `no run with the login in the last ${runs.length} runs`;
+      if (n >= after) console.log(`LAPSED since ${iso(first)} (${dur(now - first)}, ${n} harness runs in a row); ${last}. Fix, on the Mac: ${fix}`);
+      else console.log(`no login in the last run (${iso(first)}, harness); a single miss is often a CRE API timeout, so CRE LOGIN NEEDED waits for the next run; ${last}`);
+    } else if (off > lap) {
+      const a = t(runs[runs.findIndex((r, i) => i > lap && r.path === "official")]), b = t(runs[off]);
+      console.log(`valid for at least ${dur(b - a)}: official runs from ${iso(a)} to ${iso(b)}, the last one ${dur(now - b)} ago; ${lap >= 0 ? `after the miss seen at ${iso(t(runs[lap]))}` : `no run without the login in the last ${runs.length} runs`}`);
+    } else if (ok >= 0) console.log(`cre whoami answered at ${iso(t(runs[ok]))}${lap >= 0 ? `, after the miss seen at ${iso(t(runs[lap]))}` : ""}; no official run since${lap >= 0 ? " that miss" : ` in the last ${runs.length} runs`} (the harness ran after a failed official run)`);
+    else console.log(`no official run in the last ${runs.length} runs (none showed a missing login)`);
+  ' "$RELOGIN_CMD" "$CRE_NEEDED_AFTER" 2>/dev/null || echo "? (evidence unreadable)"
+}
 last_run_epoch() { cat "$STATE/last-run" 2>/dev/null || echo 0; }
 timer_state() { # <enabled|disabled|not-installed>/<active|inactive>
   has_systemd_user || { echo "no-systemd-user-manager"; return; }
@@ -72,6 +100,7 @@ case "$CMD" in
     [ -f "$L" ] && echo "evidence    $(jfield "$L" finishedAt) path=$(jfield "$L" path) exit=$(jfield "$L" exitCode) ($(jfield "$L" exitMeaning)); reports sent: $(jfield "$L" reportsSent)"
     [ -f "$STATE/evidence/writer-guard.jsonl" ] && echo "guard       $(tail -n1 "$STATE/evidence/writer-guard.jsonl")"
     echo "cre login   $(cre_login)   (cre $(cre version 2>/dev/null | head -1 | grep -oE 'v[0-9.]+' || echo '?'))"
+    echo "cre session $(cre_session)"
     S=$(tx_sender || true)
     [ -n "$S" ] && echo "tx sender   $S: $(cast balance "$S" --ether --rpc-url "$RPC" 2>/dev/null || echo '?') MON (0.0204 per report)"
     [ -r "$ALERT_URL_FILE" ] && echo "phone push  on ($(basename "$ALERT_URL_FILE"), mode $(file_mode "$ALERT_URL_FILE"))" || echo "phone push  off"
@@ -93,6 +122,7 @@ CRE login on a headless VPS (the CLI waits for the browser on http://localhost:5
      automatically". Copy that URL into the Mac's browser and sign in (password + authenticator code). The browser is
      sent back to localhost:53682, which the tunnel carries to this VPS.
   3. The session is stored in ~/.cre/ on this VPS. The Mac keeps its own session for the rollback.
+  (On the Mac, packages/cre-workflow/vps/relogin.sh <vps> runs this with the tunnel and opens the URL for you.)
 MSG
     cre login; echo "cre whoami: $(cre_login)"
     ;;
@@ -157,6 +187,6 @@ MSG
     has_systemd_user && journalctl --user -u "$UNIT" -n "${1:-60}" --no-pager 2>/dev/null
     [ -f "$STATE/evidence/LATEST.json" ] && cat "$STATE/evidence/LATEST.json"
     ;;
-  -h|--help|help) sed -n '2,20p' "$0" ;;
+  -h|--help|help) sed -n '2,21p' "$0" ;;
   *) echo "unknown command $CMD (see --help)" >&2; exit 2 ;;
 esac
