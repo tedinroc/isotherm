@@ -1,6 +1,6 @@
 ---
 name: isotherm-weather-trading
-description: Read and trade Isotherm daily max-temperature strike ladders (Taipei, Tokyo; YES/NO tokens on Kuru v1 order books, Monad testnet 10143) and place or cancel limit orders on any Kuru v1 market, through the MetaMask Agent Wallet `mm` CLI with the mm-plugin-isotherm plugin. Use when the user asks about "Tmax >= k" temperature markets, Isotherm, Kuru order books on Monad testnet, or wants an agent to quote, compare with Polymarket, buy, sell or redeem weather strikes.
+description: Read and trade Isotherm daily max-temperature strike ladders (Taipei live, Tokyo supported; YES/NO tokens on Kuru v1 order books, Monad testnet 10143) and place or cancel limit orders on any Kuru v1 market, through the MetaMask Agent Wallet `mm` CLI with the mm-plugin-isotherm plugin. Use when the user asks about "Tmax >= k" temperature markets, Isotherm, Kuru order books on Monad testnet, or wants an agent to quote, compare with Polymarket, buy, sell or redeem weather strikes.
 ---
 
 # Isotherm weather ladders via `mm` (MetaMask Agent Wallet plugin)
@@ -21,7 +21,7 @@ Polymarket-implied probability. `weather edge` shows a price gap between two ven
 mm weather doctor --json        # chain config, RPC, deployment, wallet MON/AUSD, Guard allowlist targets
 ```
 - `checks[].ok == false` with a `fix` field: tell the user the fix. "mm customEvmChains[10143]" missing means
-  trades will fail; the fix is the bundled `scripts/setup-mm-monad.sh` (a human runs it once).
+  trades will fail; the fix is the bundled `SKIP_INSTALL=1 sh scripts/setup-mm-monad.sh` (a human runs it once).
 - "mm gateway ctx.publicClient(10143)" failing is expected and harmless (the plugin reads through its own RPC).
 - Read commands work without `mm login`. Trades need `mm login` + `mm init`, testnet MON for gas
   (https://faucet.monad.xyz, human step) and testnet AUSD (faucet contract in the doctor output).
@@ -95,7 +95,7 @@ mm kuru cancel <market> (--order <id,…> | --all) [--withdraw] --json
 | `ISOTHERM_SERIES_GATED` | compliance-gated series: minting (so buying NO) is allowlist-only | buy YES on the book instead |
 | `ISOTHERM_AWAITING_APPROVAL` | Guard Mode wants the user's approval (email/app) | ask the user to approve, then re-run; confirmed steps are not repeated |
 | `ISOTHERM_TX_DENIED` | MetaMask policy refused the transaction | user adds the doctor's allowlist targets |
-| `ISOTHERM_CHAIN_NOT_CONFIGURED` | executor cannot reach 10143 | user runs `scripts/setup-mm-monad.sh` |
+| `ISOTHERM_CHAIN_NOT_CONFIGURED` | executor cannot reach 10143 | user runs `SKIP_INSTALL=1 sh scripts/setup-mm-monad.sh` |
 | `ISOTHERM_NOT_SIGNED_IN` | no mm session | user runs `mm login` and `mm init` |
 
 ## Typical agent loop

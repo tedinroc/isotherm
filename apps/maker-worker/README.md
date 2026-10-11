@@ -1,7 +1,7 @@
 # apps/maker-worker — the Isotherm market maker on Cloudflare
 
-The same market maker that runs on the Mac under launchd (`packages/maker`), moved to a Cloudflare Worker so
-that judging does not depend on one laptop staying awake. It quotes the Kuru v1 YES/AUSD books, rolls the next
+The same market maker that first ran on the Mac under launchd (`packages/maker`, now the rollback path), moved to a
+Cloudflare Worker so that judging does not depend on one laptop staying awake. It quotes the Kuru v1 YES/AUSD books, rolls the next
 day's ladder, runs the close-time kill switch and watches settlements. It also guards settlement liveness: a
 ladder with no result 3 h after its day end raises `SETTLEMENT OVERDUE` (optionally pushed to a phone), and one
 still unresolved when the Resolver's 48 h stale window opens is voided by the Worker itself. Monad **testnet**
@@ -218,8 +218,8 @@ Funding flows deployer → treasury (by hand) → roles (here). Every 10 minutes
 
 ## Settlement guardrails
 
-Settlement itself is not run here: the CRE workflow settles through the official CRE CLI
-(`packages/cre-workflow`, docs/OPERATIONS.md §6) until the DON cutover. The Worker makes a missed settlement
+Settlement itself is not run here: the CRE workflow settles through the official CRE CLI on a small Linux server
+(`packages/cre-workflow`, docs/OPERATIONS.md §6). The Worker makes a missed settlement
 visible within hours and bounded at 48 h, with no new key: it reads the Resolver and, at most, pays gas for a
 permissionless call.
 
@@ -365,8 +365,8 @@ afterwards.
 
 ## Not done / limits
 
-- **CRE settlement stays on the Mac** (a kit to move it to a small Linux VPS is prepared, not deployed:
-  docs/SETTLEMENT-VPS.md). The official CRE CLI cannot run in a Worker. The attester key is not in Cloudflare. The guardrails above bound what a Mac outage can cost. A missed settlement is alerted after 3 h,
+- **CRE settlement runs outside the Worker**, on a small Linux server since 2026-10-10 08:18 UTC
+  (docs/SETTLEMENT-VPS.md). The official CRE CLI cannot run in a Worker. The attester key is not in Cloudflare. The guardrails above bound what an outage of that server can cost. A missed settlement is alerted after 3 h,
   and at 48 h the ladder is voided at 0.5/0.5 instead of waiting for a third party. They cannot settle a ladder at
   its real temperature.
 - **No automatic redeem** after settlement (same as the Mac).

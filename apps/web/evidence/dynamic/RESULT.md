@@ -123,7 +123,7 @@ The app adds 10143 and 143 itself through `overrides.evmNetworks` with `mergeNet
    ```
 
    Open `http://127.0.0.1:5201` at 375 px.
-2. **(person)** Sign in → **Sign in with email** → `isotherm-qa+dynamic_test@example.com` → enter the static Sandbox code that Dynamic shows or documents. The embedded wallet is created. Copy its address from Portfolio.
+2. **(person)** Sign in → **Sign in with email** → a team test inbox → enter the static Sandbox code that Dynamic shows or documents. The embedded wallet is created. Copy its address from Portfolio.
 3. Fund it:
 
    ```sh

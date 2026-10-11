@@ -1,11 +1,12 @@
 #!/bin/sh
 # One-time setup so mm-plugin-isotherm can trade on Monad testnet (10143) from a real mm 7.x host.
 #
-#   sh setup-mm-monad.sh                         install the published plugin + add chain 10143
-#   ISOTHERM_TGZ=./mm-plugin-isotherm-0.1.0.tgz sh setup-mm-monad.sh   install a local tarball instead
+#   ISOTHERM_TGZ=./mm-plugin-isotherm-0.1.0.tgz sh setup-mm-monad.sh   install the tarball built by `npm pack` + add chain 10143
+#   SKIP_INSTALL=1 sh setup-mm-monad.sh          only add chain 10143
 #
 # Env:
-#   ISOTHERM_TGZ   plugin source: registry tarball URL (default), a local .tgz path, or a plugin directory
+#   ISOTHERM_TGZ   plugin source: a local .tgz path, a tarball URL, or a plugin directory (required unless SKIP_INSTALL=1;
+#                  the package is not on the npm registry, so build the tarball with `npm ci && npm pack`)
 #   MONAD_RPC      RPC the executor uses for nonce/gas/fees on 10143 (default https://testnet-rpc.monad.xyz)
 #   MM             mm command (default: mm)
 #   SKIP_INSTALL=1 only (re)write the chain entry
@@ -15,10 +16,15 @@
 set -eu
 MM="${MM:-mm}"
 VER="${ISOTHERM_VERSION:-0.1.0}"
-SRC="${ISOTHERM_TGZ:-https://registry.npmjs.org/mm-plugin-isotherm/-/mm-plugin-isotherm-$VER.tgz}"
+SRC="${ISOTHERM_TGZ:-}"
 RPC="${MONAD_RPC:-https://testnet-rpc.monad.xyz}"
 
 if [ "${SKIP_INSTALL:-0}" != "1" ]; then
+  if [ -z "$SRC" ]; then
+    echo "setup-mm-monad: set ISOTHERM_TGZ to the tarball from \`npm ci && npm pack\` (e.g. ISOTHERM_TGZ=./mm-plugin-isotherm-$VER.tgz)," >&2
+    echo "  or SKIP_INSTALL=1 to only add chain 10143. mm-plugin-isotherm is not on the npm registry." >&2
+    exit 2
+  fi
   # A bare local path is read by oclif's plugin installer as a GitHub "user/repo" ref -> needs a file: prefix.
   case "$SRC" in
     http://*|https://*|file:*) ;;

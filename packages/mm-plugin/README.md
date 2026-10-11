@@ -42,7 +42,7 @@ accept these flags:
 - `--approve exact|max`: default exact.
 - `--rpc`: the RPC used for reads.
 
-[SKILL.md](SKILL.md) teaches a Claude Code agent how to use all of this safely.
+[SKILL.md](SKILL.md) teaches a Claude Code agent how to use all of this safely (the same file is at the repository root in [`skills/isotherm-weather-trading/SKILL.md`](../../skills/isotherm-weather-trading/SKILL.md)).
 
 ## Safety built into the plugin
 
@@ -105,18 +105,20 @@ Before this change `quote` printed the v0-lite number next to every strike.
 plugin's *reads* fall back to the RPC in your `customEvmChains[10143]` entry, and then to the public Monad RPC.
 *Signing* needs that chain entry to exist.
 
-**The install bug.** On 7.0.0, `mm plugins install <npm-name>` prints "installed" and then silently uninstalls the
-plugin. Installing from the registry **tarball URL** works.
+**Install note.** On 7.0.0, `mm plugins install <npm-name>` prints "installed" and then silently uninstalls the
+plugin. Installing from a **tarball** works.
 
-`scripts/setup-mm-monad.sh` handles both problems:
+The plugin installs from this repository: `npm pack` builds the tarball, and `scripts/setup-mm-monad.sh` installs it and
+handles both problems (the package is not on the npm registry):
 
 ```sh
 npm i -g @metamask/agent-wallet@7.0.0
-curl -fsSL https://unpkg.com/mm-plugin-isotherm@0.1.0/scripts/setup-mm-monad.sh -o setup-mm-monad.sh
-sh setup-mm-monad.sh
+git clone https://github.com/tedinroc/isotherm && cd isotherm/packages/mm-plugin
+npm ci && npm pack                     # builds and writes mm-plugin-isotherm-0.1.0.tgz
+ISOTHERM_TGZ=./mm-plugin-isotherm-0.1.0.tgz sh scripts/setup-mm-monad.sh
 #  -> mm config set experimentalPlugins true
 #  -> mm config set experimentalAllowUnverifiedInstalls true
-#  -> mm plugins install https://registry.npmjs.org/mm-plugin-isotherm/-/mm-plugin-isotherm-0.1.0.tgz --accept-permissions
+#  -> mm plugins install file:<absolute path>/mm-plugin-isotherm-0.1.0.tgz --accept-permissions
 #  -> writes ~/.metamask/wallets.json#data.customEvmChains[10143] (rpcTarget = public Monad testnet RPC)
 mm weather doctor --json        # read-only; no sign-in needed
 mm weather markets --json
@@ -131,7 +133,7 @@ The script fixes two problems that the independent verifier found in the spike v
 - **Local tarball paths.** A local path such as `ISOTHERM_TGZ=./mm-plugin-isotherm-0.1.0.tgz` is now given the
   `file:` prefix automatically. Without it, oclif reads a bare path as a GitHub ref.
 
-The chain writer is inlined in the script, so the single downloaded file is enough. The optional
+The chain writer is inlined in the script, so the script also works as a single file. The optional
 `scripts/rpc-shim.mjs` also repairs `ctx.publicClient(10143)` for other commands.
 
 **Guard Mode allowlist.** If your server wallet uses a policy allowlist, `mm weather doctor` lists the contracts this
@@ -160,7 +162,7 @@ needs MFA approval.
   plugin no longer calls `buyNo` at all; if a redeployed Zap gains `minNoOut`, switching Buy NO back to one
   transaction is a deliberate code change, not automatic.
 
-## Evidence: every command in the real mm 7.0.0 host (local stand-in for MetaMask's backend, no signed-in session yet)
+## Evidence: every command in the real mm 7.0.0 host (local stand-in for MetaMask's backend; the signed-in run is in [`evidence/signed-in/`](evidence/signed-in/README.md))
 
 **How the harness works.** `harness/run-all.sh` runs:
 - the real `@metamask/agent-wallet@7.0.0` binary;
@@ -233,8 +235,9 @@ once approvals exist, 993,244 (0.1013 MON) with two fresh exact approvals.
 | Writes through the agent wallet | Every transaction goes through `ctx.walletExecutor`, with an `intent.summary` per step and `emitStepNotices` for multi-step flows. The stub log shows each request arriving signed (`signed:true`, `txKeys` incl. `gasLimit`). |
 | "New trading superpower" | A new asset class: weather strikes, with a book walk, a Polymarket-based fair value and cross-venue gap, an observed-max guard, canonical-book protection, a sandwich-proof Buy NO and settlement redemption. Plus generic Kuru v1 CLOB limit and cancel on Monad, which mm's built-in commands cannot do. |
 | Works in the real host | Real `mm` 7.0.0 binary, tarball install with consent, `--json` outputs in `evidence/`. |
+| Signed-in real flow | 2026-10-08: real MetaMask sign-in, server wallet in Guard Mode with an email approval per transaction, MetaMask's signing service broadcasting on 10143: AUSD approve `0x924dc91f…79c1`, then `Zap.buyYes` `0x82358f48…52ee` (2 AUSD → 6.054545 YES). [`evidence/signed-in/`](evidence/signed-in/README.md) |
 | Monad support despite the host gap | Read fallback, a self-contained setup script, `weather doctor`, and mapping of the gateway 400 error. |
-| Agent-ready | `SKILL.md`, `--json` everywhere, `--dry-run`, structured error codes with hints. |
+| Agent-ready | `SKILL.md` (also `skills/isotherm-weather-trading/SKILL.md` at the repository root), `--json` everywhere, `--dry-run`, structured error codes with hints. |
 
 ## Development
 
@@ -275,7 +278,8 @@ time. Users can always point at a newer file with `ISOTHERM_DEPLOYMENTS`.
 - **What the plugin talks to.** Polymarket's public gamma API, aviationweather.gov, Open-Meteo, and the Isotherm
   API's public `GET https://isotherm.pages.dev/api/snapshot` (display only; `ISOTHERM_API_URL` overrides it, `ISOTHERM_API_URL=off` disables
   it), all keyless. Plugins cannot call `mm predict`.
-- **Not exercised yet.** Real MetaMask sign-in, Mimir broadcasting a 10143 transaction, and Guard Mode email
-  approvals. All three need a human sign-in. See `RESULT.md`.
+- **Exercised live on 2026-10-08.** A real MetaMask sign-in, MetaMask's signing service broadcasting 10143
+  transactions, and Guard Mode email approvals: the AUSD approve `0x924dc91f…79c1` and `Zap.buyYes` `0x82358f48…52ee`
+  (2 AUSD → 6.054545 YES, RCSS 2026-10-09 ≥ 31 °C). See [`evidence/signed-in/`](evidence/signed-in/README.md).
 
 MIT licensed.

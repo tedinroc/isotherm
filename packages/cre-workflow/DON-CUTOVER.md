@@ -1,28 +1,27 @@
-# Settlement on a Chainlink DON: prepared, rehearsed, waiting for deploy access
+# Settlement on a Chainlink DON: prepared and rehearsed (not live)
 
-**Status (2026-10-09, 14:25 UTC).** Isotherm settles today through the official CRE CLI v1.37.0
-(`cre workflow simulate --broadcast`, one local node, MockKeystoneForwarder plus the v1 attestation;
-`docs/OPERATIONS.md` §6). Everything needed to run the same workflow on a Chainlink DON is built and was rehearsed
-end to end on an anvil fork of Monad testnet:
+**Status (2026-10-10).** Isotherm settles through the official CRE CLI v1.37.0
+(`cre workflow simulate --broadcast`, one local node, MockKeystoneForwarder plus the v1 attestation), hourly on a small
+Linux server since 2026-10-10 08:18 UTC (`docs/SETTLEMENT-VPS.md`, `docs/OPERATIONS.md` §6). Everything needed to run
+the same workflow on a Chainlink DON is built and was rehearsed end to end on an anvil fork of Monad testnet:
 
 - a `testnet-don` target on the private registry, with a gas limit measured against the production KeystoneForwarder;
 - a gated cutover script and a rollback script, both dry-run by default;
 - evidence records for DON settlements, read from the chain.
 
-The one remaining input is Chainlink's deploy-access approval (requested 2026-10-08; `cre whoami` still read
-"Deploy Access: Not enabled" at 2026-10-09 02:45 UTC). Once it arrives, the switch takes about three hours, most of it
-waiting for two shadow executions, plus about 30 minutes of the owner's time (section 6).
+Running it on a DON needs CRE deploy access for the project's account. With access, the switch would take about
+three hours, most of it waiting for two shadow executions, plus about 30 minutes of the owner's time (section 6).
 
 Nothing in this document has been deployed or sent to live testnet. No live document's claims change until the first
-DON settlement lands; the ready-to-merge text is in section 8.
+DON settlement lands (section 8).
 
 ## 1. What changes, and what stays the same
 
-| | Today (Mac, CRE CLI simulation) | On the DON (`testnet-don`) |
+| | Today (CRE CLI simulation) | On the DON (`testnet-don`) |
 |---|---|---|
 | Workflow code and WASM | `settle/` (binary `413d4429…`) | the same code and the same binary |
 | Config | `config.testnet.json` | `config.don.json`: identical except `gasLimit` 200,000 → **420,000** |
-| Who runs it | one local node on the Mac, hourly at :05 | the DON, on the workflow's own crons (02:00 Taipei, 02:00 Tokyo, hourly at :30) |
+| Who runs it | one local node on a small Linux server (on the Mac until 2026-10-10 08:18 UTC), hourly at :05 | the DON, on the workflow's own crons (02:00 Taipei, 02:00 Tokyo, hourly at :30) |
 | Forwarder | MockKeystoneForwarder `0xB9F7…d192` (permissionless) | KeystoneForwarder 1.0.0 `0xF834…4482` (f+1 DON signatures) |
 | Checks on every report | the EIP-712 attestation | DON signatures **and** workflow-owner pinning **and** the same attestation (v1 cannot switch it off) |
 | Who pays report gas | the attester key (about 0.0204 MON per report) | the DON transmitter |
@@ -54,7 +53,7 @@ from one snapshot with identical calldata (1,444 bytes).
   with less than 130,000 left for the receiver, and the 63/64 rule applies on top. Gas actually used is about 239,700.
 - **Sizing rule:** `max(350,000, ceil10k(1.5 × minimum))` = **420,000**. Monad bills the gas limit, so this costs the
   DON transmitter about 0.043 MON per report at 102 gwei. Our attester no longer pays for reports.
-- **The Mac path keeps 200,000.** It goes through the MockKeystoneForwarder, where a report used 139,000–156,000, and
+- **The simulation path keeps 200,000.** It goes through the MockKeystoneForwarder, where a report used 139,000–156,000, and
   there the attester pays the limit.
 - **Fork fidelity.** `eth_estimateGas` of the same three read-only calls on live testnet and on the fork differs by
   +302 to +352 gas (0.4 % on the forwarder-sized call). The 1.5× margin covers that many times over.
@@ -187,7 +186,7 @@ Run everything from `packages/cre-workflow` in the owner's own logged-in termina
 | C4 | owner | the same window, before 15:00 | `scripts/deploy-runtime.sh` (sync only, no `--load`: the installed job then carries the stand-down check, gate 7), then `launchctl bootout gui/$(id -u)/xyz.isotherm.cre-settle` (the plist stays installed, so launchd loads it again after a restart and it stands down by itself), then `scripts/don-cutover.sh --execute` and type the owner address. It sends the two owner calls (about 42k and 62k gas limit, about 0.011 MON) from `~/.config/isotherm/deployer.key` and verifies them |
 | C5 | owner or agent | from about 18:05 | `scripts/don-evidence.sh` (a `don` record), and `cast call 0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B 'resultOf(bytes4,uint32)((uint8,int16,uint64,uint64,bytes32))' 0x52435353 <date> --rpc-url https://testnet-rpc.monad.xyz`. The Worker watcher should show MATCH within 15 minutes, and no `SETTLEMENT OVERDUE` alert should appear at 19:00 |
 | C5b | owner | no `LadderResolved` by 19:40 (after the 18:00, 18:30, 19:00 and 19:30 runs) | `scripts/don-rollback.sh --execute`. The Mac's next :05 run settles through the mock. Before that, if the DON's execution logs (`cre execution logs <uuid>`) show a report tx (`tx <hash> -> not-accepted`), run `scripts/don-evidence.sh --tx <hash>`: when it names a workflow-owner mismatch and the report's workflow ID is our deployed one (`cre workflow get`), `setExpectedWorkflow(0x00…00, <that owner>)` fixes it without a rollback |
-| C6 | agent, then owner | after the first DON settlement | Merge section 8. Copy that day's `don-runs.jsonl` record into `evidence/`. Commit `deployments/testnet.json` (`activeForwarder`). Keep the Mac plist installed but unloaded through Nov 3. Rotate the attester after judging (a new key into the Vault DON, then `setAttester`) |
+| C6 | agent, then owner | after the first DON settlement | Merge the prepared live-document text (section 8). Copy that day's `don-runs.jsonl` record into `evidence/`. Commit `deployments/testnet.json` (`activeForwarder`). Keep the Mac plist installed but unloaded through Nov 3. Rotate the attester after judging (a new key into the Vault DON, then `setAttester`) |
 
 ### 6.1 If the hourly job runs on the VPS (`vps/README.md`)
 
@@ -218,147 +217,13 @@ disabled.
   same rule, so only one can land and it carries the same result.
 - Cost: about 0.0084 MON from the owner key (two calls).
 
-## 8. Ready-to-merge text (merge only after the first DON settlement)
+## 8. The live documents after a cutover
 
-Use real values for `<workflow ID>`, `<org owner>`, `<date>`, `<t>`, `<tx>`. These drafts assume the guardrail text
-added to `docs/OPERATIONS.md` §6/§8.8 in the same round stays as it is.
+No live document changes until a first DON settlement exists. The replacement text for `docs/OPERATIONS.md`,
+`ARCHITECTURE.md`, `packages/cre-workflow/README.md` and the web app's "How it works" screen is kept as a private draft
+outside this repository, so nothing here reads as a DON settlement before one has happened.
 
-### 8.1 `docs/OPERATIONS.md` §1, the last sentence of the "Market maker" row
-
-> Settlement runs on a Chainlink DON since `<date>` (section 6); the Mac job `xyz.isotherm.cre-settle` is installed but unloaded, as the rollback.
-
-### 8.2 `docs/OPERATIONS.md` §6
-
-Replace the heading, the opening paragraph and the bullets "When", "Which path" (with its sub-bullets "Login", "Since
-then", "First official run", "Before the login", "If the session lapses", "Check before the first real attempt"),
-"Where it runs" and "Cost" with:
-
-> ## 6. Settlement (Chainlink DON)
->
-> Since `<date>`, the settlement workflow in `packages/cre-workflow` runs **deployed on a Chainlink DON** (private
-> registry, workflow `isotherm-settle`, ID `<workflow ID>`, owner `<org owner>`). Reports reach the Resolver through the
-> production KeystoneForwarder `0xF8344CFd5c43616a4366C34E3EEE75af79a74482`, which checks f+1 DON signatures. The
-> Resolver pins the workflow owner and still requires the EIP-712 attestation. The first DON settlement:
-> RCSS `<date>` at `<t>` °C, tx `<tx>`.
-> - **When:** the DON fires at 02:00 Taipei and 02:00 Tokyo (RCSS 18:00 UTC, RJTT 17:00 UTC) and hourly at :30. Nothing
->   is attempted before day end + 2 h. Disagreeing or incomplete sources stay pending and are retried hourly; a void
->   comes only after 36 h (46 h backstop).
-> - **Status:** `cre workflow get ./settle -T testnet-don`, `cre execution list <workflow ID>`, and
->   `packages/cre-workflow/scripts/don-evidence.sh`, which appends a `don` record per settlement (DON signatures,
->   workflow owner, attestation signer).
-> - **Cost:** the DON transmitter pays the report gas (420,000 limit, measured: `packages/cre-workflow/DON-CUTOVER.md` §2).
->   The attester key only signs. Its value lives in the Vault DON as `ISOTHERM_ATTESTER_KEY`.
-> - **Rollback:** `packages/cre-workflow/scripts/don-rollback.sh --execute` (owner key): it pauses the DON workflow,
->   resets the workflow pin, points the Resolver back at the MockKeystoneForwarder, and reloads the Mac job, whose next
->   :05 run settles anything due through the official CLI as before (it needs a valid `cre login` there; otherwise the
->   labelled harness fallback runs). The Mac job stands down by itself while the DON is active (`run-official.sh`
->   checks `Resolver.forwarder()`).
-
-Keep "After it lands" (replace `xyz.isotherm.challenge-watch` with "the Worker's challenge watcher (section 8)") and
-"Fallback". In "Guardrails on Cloudflare", replace the sub-bullet "Settlement itself is unchanged …" with:
-
-> - **Settlement runs on the Chainlink DON** (above). The Worker never signs a settlement and holds no attester key; it
->   makes a missed settlement visible within hours and bounds it at 0.5/0.5.
-
-### 8.3 `docs/OPERATIONS.md` §8.1, the "CRE settlement" row, and §8.8
-
-> | CRE settlement (`xyz.isotherm.cre-settle`) | Mac | **Chainlink DON** (private registry, production KeystoneForwarder) since `<date>`; the Mac job is the rollback (installed, unloaded). The Worker alerts when a result is overdue and stale-voids at 48 h (8.8) |
-
-In §8.8, replace the first sentence with "Settlement runs on a Chainlink DON (section 6)." and the list "Still on the
-owner" with:
-
-> **Still on the owner:** keep the attester key unchanged in the Vault DON through judging; keep `deployer.key` at
-> hand for a rollback (section 6). The Mac no longer needs to stay awake for settlement.
-
-### 8.4 `ARCHITECTURE.md` §7.4, §7.5 and §8
-
-In §7.5, replace the paragraph "**During the hackathon** …" with:
-
-> **Since `<date>`** the workflow runs **deployed on a Chainlink DON** (private registry): the DON's nodes fetch the
-> sources independently, agree on each field by median, and the DON transmitter delivers the report through the
-> production KeystoneForwarder `0xF834…4482` with f+1 DON signatures. The Resolver points at that forwarder, pins the
-> workflow owner (`setExpectedWorkflow(0, <org owner>)`; the ID is left open so a config change needs no owner call), and
-> still requires the attestation, so a report must satisfy the DON and the attester. The gas limit for this path,
-> 420,000, was measured on a fork against the production forwarder bytecode (`packages/cre-workflow/DON-CUTOVER.md` §2).
-> Before the switch, a scheduled job on our machine ran the unmodified CRE CLI v1.37.0 (`cre workflow simulate
-> --broadcast`, one node, MockKeystoneForwarder), with a labelled SDK-harness fallback; it settled the first live
-> ladders and remains installed, unloaded, as the rollback (`scripts/don-rollback.sh`).
-
-In the §7.5 table, the two Mode cells become "Simulation (`cre workflow simulate --broadcast`), used until `<date>`
-and kept as the rollback" and "Production (deployed on a DON, since `<date>`)". In the sentence below the table,
-replace `setExpectedWorkflow(id, owner)` with `setExpectedWorkflow(0, owner)`.
-
-In §7.4, replace the gas bullet with:
-
-> - Gas: through the production KeystoneForwarder a report needs at least about 278,900 gas (the forwarder's routing
->   reserve sets the minimum; about 239,700 is used), so the DON target sends a 420,000 limit, paid by the DON
->   transmitter. The Mac (simulation) path sends 200,000, about 0.0204 MON per report from the attester key.
-
-In §8, the Attester row becomes "Sign settlements (its key lives in the Vault DON; the DON transmitter pays report
-gas)", and the sentence "The attester key is the trust anchor while CRE runs in simulation mode" becomes "Every report
-needs both the DON's signatures and the attester's signature".
-
-### 8.5 `packages/cre-workflow/README.md`
-
-- In the pipeline diagram, replace `-> runtime.report -> evm.writeReport (gas limit 200k) -> forwarder -> Resolver.onReport`
-  with `-> runtime.report -> evm.writeReport (420k on the DON, 200k in simulation) -> KeystoneForwarder -> Resolver.onReport`.
-- In the quick start, the test count becomes "93 tests (+11 fork tests)".
-- Replace the paragraph "**Installed on this Mac (2026-10-07):** …" with:
-
-> **Deployed on a Chainlink DON since `<date>`** (target `testnet-don`, private registry; workflow `<workflow ID>`).
-> The Mac jobs from 2026-10-07 stay installed as the rollback: `xyz.isotherm.cre-settle` is unloaded (and stands down
-> by itself while the Resolver points at the production forwarder), and the challenge watcher runs on the Cloudflare
-> Worker. Switch and rollback: `DON-CUTOVER.md`.
-
-- Add these rows to the script table:
-
-> | `scripts/don-cutover.sh` | Gated switch of the Resolver to the DON (dry run by default; `--execute` from the owner key) | about 0.011 (2 owner calls) | yes |
-> | `scripts/don-rollback.sh` | Back to the Mac path: pause the DON workflow, reset the pin, mock forwarder, reload the Mac job | about 0.0084 | for the pause |
-> | `scripts/don-evidence.sh` | `don` / `mac` / `stale-void` evidence record per settlement, read from the chain | 0 | optional |
-> | `scripts/don-gas-fork.sh`, `scripts/don-rehearse-fork.sh` | Gas measurement and the full switch rehearsal on an anvil fork | 0 | no |
-
-- In "Files", add: `settle/config.don.json` (the DON target's config), `settle/e2e/don-*.ts` (cutover helpers, the
-  fork DON stand-in, evidence) and `DON-CUTOVER.md`.
-
-### 8.6 The web app's "How it works" text (`apps/web/src/components/HowItWorks.tsx`, "Who settles")
-
-The settlement history already labels each report by the forwarder that delivered it: "Chainlink KeystoneForwarder
-(DON-signed)" or "Chainlink CRE simulation forwarder" (`History.tsx`, `lib/settlement.ts`, `i18n.ts`). No code change
-is needed. Only the two explanatory paragraphs change, in both languages:
-
-> EN 1: "A Chainlink CRE workflow, deployed on a Chainlink DON, reads two public archives (Iowa Environmental Mesonet
-> and aviationweather.gov, with Ogimet as fallback), applies the rule, and reports the result on-chain. Each node
-> fetches the archives independently; the report reaches the market through Chainlink's KeystoneForwarder with the
-> DON's signatures, and it must also carry our attestation signature."
->
-> EN 2: "Days settled before `<date>` ran through the official CRE simulator on our machine (or, when its login was
-> unavailable, a labelled SDK test-harness fallback); each settlement is labelled by the forwarder it used. Before v1,
-> two real days were settled on our earlier feasibility contracts: one by a simulator built from the MIT CRE CLI source
-> with only its login check removed, one by the SDK harness."
->
-> 中文 1：「Chainlink CRE 工作流程部署在 Chainlink DON 上，讀兩個公開資料來源（Iowa Environmental Mesonet、
-> aviationweather.gov；Ogimet 為備援），套用上面的規則，再把結果送上鏈。各節點獨立讀取資料來源；報告帶著 DON 簽章經
-> Chainlink 的 KeystoneForwarder 送進市場，而且必須同時附上我們的 attestation 簽章。」
->
-> 中文 2：「`<date>` 之前結算的日子是在我們自己的機器上用官方 CRE 模擬器執行的（登入失效時改用標明為備援的 SDK 測試
-> 工具）；每一筆結算都標明它經過哪一個 forwarder。v1 之前的兩個真實日子是在先前的可行性驗證合約上結算的：一次用從
-> MIT 授權 CRE CLI 原始碼編譯、只移除登入檢查的模擬器，一次用 SDK 測試工具。」
-
-### 8.7 Submission text
-
-One paragraph for the Chainlink answer's evidence section:
-
-> Isotherm's settlement workflow runs deployed on a Chainlink DON on Monad testnet (private registry). Each report
-> carries f+1 DON signatures checked by the production KeystoneForwarder, the Resolver pins our workflow owner, and an
-> EIP-712 attestation is still required, so a result needs both the DON and the attester. The first DON settlement:
-> Taipei `<date>` at `<t>` °C, tx `<tx>`. The gas limit for this path was measured against the production forwarder
-> bytecode on a fork, and the switch and its rollback were rehearsed end to end before going live.
-
-In the same answer: drop "(run in CRE simulation, so a single local node, not a DON)" from the HTTP step; turn the
-"Honest boundary" paragraph into one sentence on what ran before `<date>` (the official CLI simulation through the
-MockKeystoneForwarder, plus the attestation); and replace "pins the workflow ID and owner" with "pins the workflow owner".
-
-## 9. Open questions (asked of Chainlink in the expedite request)
+## 9. Open questions for Chainlink
 
 - **EVM reads.** Can a deployed DON do EVM reads (`callContract` at the finalized block) on monad-testnet, and which
   block does it treat as finalized there? This is strongly implied but unverified: reads and writes share one

@@ -29,7 +29,7 @@ export default class WeatherDoctor extends PluginCommand<Record<string, unknown>
       check: "mm customEvmChains[10143] (executor nonce/gas/fees)",
       ok: !!custom,
       detail: custom ? `rpcTarget ${custom}` : "missing: mm's hosted gateway answers HTTP 400 'Invalid chainId' for 10143, so signing fails",
-      ...(custom ? {} : { fix: "curl -fsSL https://unpkg.com/mm-plugin-isotherm/scripts/setup-mm-monad.sh | SKIP_INSTALL=1 sh   (or run scripts/add-monad-testnet-chain.mjs from this package)" }),
+      ...(custom ? {} : { fix: "SKIP_INSTALL=1 sh scripts/setup-mm-monad.sh   (from packages/mm-plugin in a clone of github.com/tedinroc/isotherm; or node scripts/add-monad-testnet-chain.mjs)" }),
     });
 
     let gw = "not tried";

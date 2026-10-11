@@ -217,7 +217,7 @@ export function mapExecutorError(e: unknown, label: string, done: string): Comma
     return new CommandError(
       "ISOTHERM_CHAIN_NOT_CONFIGURED",
       `mm could not reach Monad testnet (10143) for '${label}': ${msg}.${done}`,
-      "MetaMask's hosted RPC gateway rejects 10143. Add the chain once with the bundled script: `curl -fsSL https://unpkg.com/mm-plugin-isotherm/scripts/setup-mm-monad.sh | SKIP_INSTALL=1 sh` (writes customEvmChains[10143]); `mm weather doctor` checks it.",
+      "MetaMask's hosted RPC gateway rejects 10143. Add the chain once with the bundled script, from packages/mm-plugin in a clone of github.com/tedinroc/isotherm: `SKIP_INSTALL=1 sh scripts/setup-mm-monad.sh` (writes customEvmChains[10143]; `node scripts/add-monad-testnet-chain.mjs` does the same); `mm weather doctor` checks it.",
     );
   }
   if (/refresh token|mm login|AUTH|unauthor/i.test(msg)) {

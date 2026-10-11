@@ -1,6 +1,6 @@
 # Isotherm — live operations (Monad testnet 10143)
 
-Written 2026-10-07 14:15 Taipei (06:15 UTC), at go-live; balances and versions below are from then. Revised the same day after the v1 security review (attester gas, guardian runbook, owner key, API caps, settlement status). Balances and caps re-read at 2026-10-07 07:55 UTC (15:55 Taipei) are marked with that time. Revised again at 08:40 UTC (16:40 Taipei) for the CRE login, the re-sized API caps and the Dynamic build, and at 13:30 UTC (21:30 Taipei) for the Dynamic go-live (web app row and section 5), and at 16:30 UTC (00:30 Taipei, Oct 8) for the same-origin API at `https://isotherm.pages.dev/api/*` (sections 1, 2 and 5). Section 8 (the Cloudflare maker and its cutover runbook) was added on 2026-10-08 at 16:30 UTC and revised the same night after a tick-by-tick comparison of the shadow with the Mac maker (8.6), with a precise cutover runbook (8.3). Everything here is **testnet only**. AUSD is free
+Written 2026-10-07 14:15 Taipei (06:15 UTC), at go-live; balances and versions below are from then. Revised the same day after the v1 security review (attester gas, guardian runbook, owner key, API caps, settlement status). Balances and caps re-read at 2026-10-07 07:55 UTC (15:55 Taipei) are marked with that time. Revised again at 08:40 UTC (16:40 Taipei) for the CRE login, the re-sized API caps and the Dynamic build, and at 13:30 UTC (21:30 Taipei) for the Dynamic go-live (web app row and section 5), and at 16:30 UTC (00:30 Taipei, Oct 8) for the same-origin API at `https://isotherm.pages.dev/api/*` (sections 1, 2 and 5). Section 8 (the Cloudflare maker and its cutover runbook) was added on 2026-10-08 at 16:30 UTC and revised the same night after a tick-by-tick comparison of the shadow with the Mac maker (8.6), with a precise cutover runbook (8.3). On 2026-10-10 the settlement job moved to a small Linux server (section 6). Everything here is **testnet only**. AUSD is free
 faucet test money. Nothing here touches Monad mainnet.
 
 ## 1. What is live
@@ -10,7 +10,8 @@ faucet test money. Nothing here touches Monad mainnet.
 | Phone web app (PWA) | https://isotherm.pages.dev (Cloudflare Pages project `isotherm`). Dynamic is enabled since Pages deployment `<retired-deployment>` (2026-10-07 13:21 UTC). The deployed build (Pages deployment `6b18d972`, about 16:24 UTC, main chunk `assets/index-Cd8KBz0E.js`, same app plus the same-origin API) makes "Sign in with email" through Dynamic the default, keeps the labelled dev (burner) wallet as fallback, and shows the Open-Meteo CC BY credit. The first embedded-wallet login, relayed mint and Buy Yes (a team test wallet) are in section 5. |
 | API: drip, gasless-mint relayer, stats, snapshot | https://isotherm.pages.dev/api/* (Pages Function `apps/web/functions/api/[[path]].ts` → service binding `API` → Worker `isotherm-api`; the Worker has no public hostname of its own since 2026-10-07 16:05 UTC). Worker version `60f3a919` deployed 16:24 UTC; its source equals `0c112836` (13:27 UTC, stats classification), and the re-sized caps are live since `ea73ccfa` (08:02 UTC); the go-live version was `ed0ab137` |
 | Contracts (v1, Sourcify exact_match) | Resolver `0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B`, Vault/factory `0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39`, Zap `0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0`. Source of truth: `deployments/testnet.json` |
-| Market maker | **Live: the Cloudflare Worker `isotherm-maker`** (`apps/maker-worker`), cron every minute plus a Durable Object, since the cutover at 2026-10-08 23:00 UTC (07:00 Taipei, Oct 9); first live tx 23:06 UTC. Before that it ran 6.5 h in SHADOW mode and matched the Mac's decisions tick by tick (section 8.6). The Mac launchd jobs `xyz.isotherm.maker/roll/watchdog/challenge-watch` are booted out and disabled; rollback is section 8.4. Settlement (`xyz.isotherm.cre-settle`) still runs on the Mac. |
+| Market maker | **Live: the Cloudflare Worker `isotherm-maker`** (`apps/maker-worker`), cron every minute plus a Durable Object, since the cutover at 2026-10-08 23:00 UTC (07:00 Taipei, Oct 9); first live tx 23:06 UTC. Before that it ran 6.5 h in SHADOW mode and matched the Mac's decisions tick by tick (section 8.6). The Mac launchd jobs `xyz.isotherm.maker/roll/watchdog/challenge-watch` are booted out and disabled; rollback is section 8.4. |
+| Settlement | The official CRE CLI, hourly at :05, on a small Linux server (systemd timer `isotherm-settle.timer`) since 2026-10-10 08:18 UTC; the Mac job `xyz.isotherm.cre-settle` is booted out, disabled and released (section 6). Settled so far, all on the official path: RCSS 2026-10-08 at 28 °C, RCSS 2026-10-09 at 29 °C and RCSS 2026-10-10 at 30 °C (the server's first). |
 
 ### The first live ladder: Taipei (RCSS), Thursday 2026-10-08
 
@@ -43,6 +44,11 @@ Full seriesIds, every tx hash and the on-chain checks are in `docs/evidence/goli
 The launchd jobs load it through `scripts/run.sh`.
 
 ## 3. The maker processes (launchd)
+
+**Rollback path only.** Since the cutover (2026-10-08 23:00 UTC) the Cloudflare Worker runs the maker, the roll, the
+kill switch and the challenge watcher (section 8), and the launchd jobs below are booted out and disabled; since
+2026-10-10 08:18 UTC the settlement job runs on the server (section 6). This section documents the original setup,
+which the rollback (section 8.4) restores.
 
 **Why a runtime copy?** launchd-started `bash`/`node` cannot read anything under `~/Documents`. This is macOS
 privacy protection (TCC). The first attempt failed with exit 126, "Operation not permitted". So the maker runs from
@@ -100,7 +106,7 @@ curl -s https://isotherm.pages.dev/api/health   # snapshotReceivedAt, relayer MO
 
 ### Emergency (contracts)
 
-**Wrong result: challenge first, then pause.** `pause()` neither stops nor extends the 900 s challenge clock, and the vault does not follow the Resolver's pause, so a guardian who pauses instead of challenging lets a false *Settled* result pay out in full (`test/security/v1/RESULT.md`, N6). A reported *Void* is final at once and cannot be challenged (N2). `xyz.isotherm.challenge-watch` now watches the window every 120 s, but it runs on this Mac next to the attester key, so it catches a wrong report, not a compromise of this Mac. The Cloudflare maker (section 8) runs the same watcher away from the attester key, holding only the guardian key; it challenges only once it is live.
+**Wrong result: challenge first, then pause.** `pause()` neither stops nor extends the 900 s challenge clock, and the vault does not follow the Resolver's pause, so a guardian who pauses instead of challenging lets a false *Settled* result pay out in full (`test/security/v1/RESULT.md`, N6). A reported *Void* is final at once and cannot be challenged (N2). The Cloudflare maker (section 8) watches the window on every watcher pass. It runs away from the attester key and holds only the guardian key, so it catches a wrong report even when the settlement host itself is compromised. (Before the cutover, `xyz.isotherm.challenge-watch` did this every 120 s on the Mac, next to the attester key.)
 
 - **Key handling for these commands.** Do not pass a key as `--private-key "$(cat …)"`: the raw key then shows up in the process list (`ps`) while cast runs. Import the guardian key once into an encrypted Foundry keystore, `cast wallet import isotherm-guardian --interactive` (paste the key at the prompt and set a password), then use `--account isotherm-guardian`, which asks for that password. Without a keystore, `--interactive` prompts for the raw key instead.
 - **Guardian pause** (it held 0.05 MON at 2026-10-07 07:55 UTC; pause costs ≈30k gas). Pausing the Resolver blocks reports; pausing the vault blocks mints:
@@ -195,7 +201,7 @@ The human faucet gives about 5 MON/day.
 
 ## 6. Settlement (not run by the maker)
 
-The Oct 8 ladder is settled by the CRE workflow in `packages/cre-workflow`, through the MockKeystoneForwarder plus the attester signature. The CRE workstream installed the jobs on 2026-10-07 (`packages/cre-workflow/README.md`, `RESULT.md`).
+Every ladder is settled by the CRE workflow in `packages/cre-workflow`, through the MockKeystoneForwarder plus the attester signature. The CRE workstream installed the jobs on 2026-10-07 (`packages/cre-workflow/README.md`, `RESULT.md`); since 2026-10-10 08:18 UTC the job runs on the server (below). Results so far, all on the official path: RCSS 2026-10-08 at 28 °C (`0x65eee8ef…963d`, 18:05:39 UTC), RCSS 2026-10-09 at 29 °C (`0xdfd28ea5…3ecd`, 18:05:42 UTC) and RCSS 2026-10-10 at 30 °C (`0xacb724d3…bf9d`, 18:05:26 UTC, the first from the server).
 - **When:** `xyz.isotherm.cre-settle` runs hourly at :05; nothing is attempted before day end + 2 h, so the first real attempt for the Oct 8 ladder is **2026-10-08 18:05 UTC (02:05 Taipei, Oct 9)**. Disagreeing or incomplete sources stay pending and are retried hourly; a void comes only after 36 h (46 h backstop).
 - **Which path:** the official path (`cre workflow simulate --broadcast`) needs `cre login`.
   - **Login.** Done on 2026-10-07; the session file `~/.cre/cre.yaml` was written at about 07:59 UTC.
@@ -204,7 +210,7 @@ The Oct 8 ladder is settled by the CRE workflow in `packages/cre-workflow`, thro
   - **Before the login.** The 07:08 UTC run took the harness fallback and also had nothing due.
   - **If the session lapses** (its expiry is undocumented), the job falls back to the **SDK-harness**: the same handler, rule and attestation run under Bun, not the CRE engine. The evidence record says which path ran; say "harness" wherever a harness run's evidence is used.
   - **Check before the first real attempt** (2026-10-08 18:05 UTC). Run `cre whoami` from `packages/cre-workflow` with `.tools/bin` on the PATH, or read `path` in `LATEST.json`. If it is not `official`, run `cre login` again.
-- **Where it runs:** from the runtime copy `~/isotherm-live/packages/cre-workflow`, because launchd cannot read `~/Documents` (exit 126, as the maker hit). Ship changes with `packages/cre-workflow/scripts/deploy-runtime.sh`; check with `bash ~/isotherm-live/packages/cre-workflow/scripts/install-launchd.sh --status` and `launchctl list | grep xyz.isotherm`.
+- **Where it ran until 2026-10-10 08:18 UTC:** from the runtime copy `~/isotherm-live/packages/cre-workflow`, because launchd cannot read `~/Documents` (exit 126, as the maker hit). Ship changes with `packages/cre-workflow/scripts/deploy-runtime.sh`; check with `bash ~/isotherm-live/packages/cre-workflow/scripts/install-launchd.sh --status` and `launchctl list | grep xyz.isotherm`.
 - **On a VPS since 2026-10-10 08:18 UTC.** The same job runs on a small Linux VPS (Ubuntu 26.04, user `isotherm`, systemd
   user timer `isotherm-settle.timer` at :05, linger on) and holds the single-writer claim; the Mac job is booted out and
   disabled and its runtime copy carries `var/writer.released`. Team summary in `docs/SETTLEMENT-VPS.md`, runbook (status,
@@ -217,7 +223,7 @@ The Oct 8 ladder is settled by the CRE workflow in `packages/cre-workflow`, thro
     (Google, Cloudflare, Apple, Microsoft); chrony is disabled. Offset at setup: 0.06 s.
   - **Phone push** from the VPS goes to the ntfy topic from its own IP (no shared-IP limit).
 - **Cost:** each report transaction bills about 0.0204 MON to the attester key (0.40 MON at 2026-10-07 07:55 UTC, about 19 reports).
-- **After it lands:** confirm `LadderResolved` or `Resolver.resultOf(0x52435353, 20261008)`, never the transaction status alone. `xyz.isotherm.challenge-watch` recomputes the result and challenges a reproduced mismatch within the 900 s window; a human check is still worth it (challenge first, then pause; section 3).
+- **After it lands:** confirm `LadderResolved` or `Resolver.resultOf(0x52435353, 20261008)`, never the transaction status alone. The Worker's watcher (section 8) recomputes the result and challenges a reproduced mismatch within the 900 s window; a human check is still worth it (challenge first, then pause; section 3).
 - **Fallback:** if nothing settles, `voidIfStale` opens 48 h after the local day end and pays 0.5/0.5. The
   Cloudflare Worker sends it itself (next bullet), and anyone else can too.
 - **Guardrails on Cloudflare (no new key).** The maker Worker's settlement watcher (section 8.8) checks every vault
@@ -229,8 +235,8 @@ The Oct 8 ladder is settled by the CRE workflow in `packages/cre-workflow`, thro
   - **Automatic stale void.** Once `Resolver.staleAt` has passed (day end + 48 h) with still no result, and only
     while the Resolver is not paused, the Worker simulates `voidIfStale` and, in live mode, sends it from its
     operator key. It makes at most one attempt per ladder per hour, within 0.05 MON a day, with an alert either way.
-  - **Settlement itself is unchanged.** It still runs through the official CRE CLI (`xyz.isotherm.cre-settle`)
-    until the DON cutover. The Worker never signs a settlement and holds no attester key. It cannot settle a
+  - **Settlement itself is unchanged.** It runs through the official CRE CLI (the server's `isotherm-settle.timer`;
+    a DON cutover is prepared in `packages/cre-workflow/DON-CUTOVER.md`). The Worker never signs a settlement and holds no attester key. It cannot settle a
     ladder at its real temperature; it makes a failure visible within hours and bounds it at 0.5/0.5.
 
 ## 7. Known limits
@@ -243,8 +249,8 @@ The Oct 8 ladder is settled by the CRE workflow in `packages/cre-workflow`, thro
 ## 8. The Cloudflare maker (`isotherm-maker`) and the cutover runbook
 
 The maker loop, the daily roll, the close-time kill switch and the challenge watcher also run as a Cloudflare
-Worker, `apps/maker-worker`. Details are in `apps/maker-worker/README.md`. It is meant to replace the Mac jobs for
-judging (Oct 14 – Nov 3), so that judging does not depend on this Mac staying awake.
+Worker, `apps/maker-worker`. Details are in `apps/maker-worker/README.md`. It replaced the Mac jobs at the cutover
+(2026-10-08 23:06 UTC), so that judging (Oct 14 – Nov 3) does not depend on one machine staying awake.
 
 - **What it is.** A cron trigger every minute re-arms one Durable Object, `MakerDO`. The DO ticks on its own alarm,
   every 60 s from tick start to tick start, and exactly at a ladder's kill-switch time. It reuses the same
@@ -273,7 +279,7 @@ judging (Oct 14 – Nov 3), so that judging does not depend on this Mac staying 
 
 ### 8.1 Who does what
 
-| Job | Now | After the cutover |
+| Job | Before the cutover (until 2026-10-08 23:00 UTC) | Since the cutover |
 |---|---|---|
 | quoting loop, kill switch (`xyz.isotherm.maker`, `xyz.isotherm.watchdog`) | Mac (live); Worker in shadow | Worker (kill switch at stop − 90 s, plus a verify pass every 5 min like `watchdog --verify`) |
 | daily roll (`xyz.isotherm.roll`) | Mac (live; the hourly job acts at the first run after 12:00, about 12:45 Taipei); Worker in shadow | Worker (from 12:00 station time; retries every 5 min until the ladder is active) |
@@ -434,13 +440,13 @@ Run everything from `apps/maker-worker` with `XDG_CONFIG_HOME` set as in 8.2.
 | Tests | `npm test` (73 unit), `npm run test:fork` (anvil fork + the bundled Worker in Miniflare, live on the fork), `MW_REHEARSAL=1 npx vitest run test/integration/cutover-rehearsal.fork.test.ts` (this runbook on a fork with the Mac's real state), `MW_LIVE_SMOKE=1 npx vitest run test/integration/live-readonly.smoke.test.ts` (read-only, no keys) |
 
 **Known limits.**
-- **Settlement still depends on the Mac** (until the prepared VPS cutover, `docs/SETTLEMENT-VPS.md`). If the Mac
-  sleeps or loses its network, the Worker raises `SETTLEMENT OVERDUE` after 3 h and voids the ladder itself at 48 h
+- **Settlement runs on one small Linux server** (since 2026-10-10 08:18 UTC, `docs/SETTLEMENT-VPS.md`). If it
+  stops or loses its network, the Worker raises `SETTLEMENT OVERDUE` after 3 h and voids the ladder itself at 48 h
   (0.5/0.5, section 8.8). Only the CRE settlement pays out at the real temperature.
 - **The Worker is a single region-pinned Durable Object.** One alarm per minute and 4 KV writes per minute. A warm
   tick takes 3–15 s of sequential public-RPC reads; the first tick of a fresh isolate takes about 45 s, because it
   downloads the v0 guard's Open-Meteo history and caches it in the DO.
-- **Its watcher challenges only in live mode.** The Mac's `challenge-watch` covers settlements until the cutover.
+- **Its watcher challenges only in live mode**, which it has been in since the cutover.
 
 ### 8.6 Shadow vs Mac comparison (2026-10-08)
 
@@ -619,7 +625,7 @@ its assertion in `test/unit/infra.test.ts`. Run `npm test`, then `npm run deploy
 
 ### 8.8 Settlement guardrails and the alert push (live since 2026-10-09 15:05 UTC)
 
-Settlement still runs through the official CRE CLI on the Mac (section 6). The Worker cannot settle, but it now
+Settlement runs through the official CRE CLI on the settlement server (section 6). The Worker cannot settle, but it now
 makes a missed settlement visible and bounds its cost. It adds no key: `voidIfStale` is permissionless, and the
 operator key already in the Worker only pays the gas. Details are in `apps/maker-worker/README.md`, "Settlement
 guardrails".
@@ -678,7 +684,7 @@ appears in logs or KV. Remove it with `npx wrangler secret delete ALERT_WEBHOOK_
 and a due void becomes a `STALE VOID DUE` alert to act on by hand.
 
 **Still on the owner** (the Worker does not cover these):
-- keep the Mac that runs `xyz.isotherm.cre-settle` awake on AC power and online;
+- keep the settlement server online and its timer active (`packages/cre-workflow/vps/README.md`);
 - keep the attester funded (about 0.0204 MON per report, section 2);
 - keep `cre whoami` valid (section 6).
 

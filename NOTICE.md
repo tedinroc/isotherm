@@ -21,6 +21,9 @@ The Isotherm code is MIT-licensed (see `LICENSE`). Third-party components in thi
   contains GPL-2.0-or-later interface declarations and is distributed as a
   combined work under GPL-2.0-or-later terms. Its complete source is in this
   repository and on Sourcify.
+- src/interfaces/IReceiver.sol reproduces the IReceiver interface that
+  Chainlink publishes for CRE consumer contracts (MIT,
+  smartcontractkit/chainlink-evm).
 - Weather data and other third-party data in this repository keep their own
   terms; see DATA-NOTICE.md.
 See README.md, "Third-party code", for the full list.
