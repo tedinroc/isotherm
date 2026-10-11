@@ -23,8 +23,9 @@
 #        HARNESS_EXTRA / HARNESS_AT / ISOTHERM_TEST_RELABEL (harness fork tests only)
 # Exit:  0 ok / nothing to do / skipped, 2 preflight failed, 3 not logged in to CRE (official mode),
 #        4 a report was sent but not accepted on chain.
-# Retry: official mode only. A simulate run that fails at the CLI's CRE credential check, before anything is compiled
-#        or sent, runs once more after 45 s (step 5). Every other failure exits at once, as before.
+# Retry: official mode only. A failed `cre whoami` is checked once more after 30 s before exit 3 (step 1). A simulate
+#        run that fails at the CLI's CRE credential check, before anything is compiled or sent, runs once more after
+#        45 s (step 5). Every other failure exits at once, as before.
 #
 # Safety: an anvil fork shares the live Resolver's EIP-712 domain, so reports signed there with the LIVE attester key
 # would be valid on live testnet too. This script refuses any non-live RPC while the key is the live attester.
@@ -51,7 +52,7 @@ while [ $# -gt 0 ]; do
     --force) FORCE=1 ;;
     --preflight-only) PREFLIGHT_ONLY=1 ;;
     --trigger-index) TRIGGER=$2; shift ;;
-    -h|--help) sed -n '2,33p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,34p' "$0"; exit 0 ;;
     *) echo "unknown arg $1" >&2; exit 2 ;;
   esac
   shift
@@ -82,9 +83,20 @@ case "$(command -v cre)" in *nologin*) say "refusing a patched CLI"; exit 2 ;; e
 # ---- 1. mode + CRE login (the official simulator refuses to run without it)
 LOGGED_IN=0
 # `cre whoami` talks to the CRE API: bound it (perl alarm; macOS has no `timeout`) so a hung call cannot stall launchd.
-if [ -n "${CRE_API_KEY:-}" ] || perl -e 'alarm shift; exec @ARGV' 45 cre whoami </dev/null >/dev/null 2>&1; then LOGGED_IN=1; fi
+cre_whoami() { perl -e 'alarm shift; exec @ARGV' 45 cre whoami </dev/null >/dev/null 2>&1; }
+if [ -n "${CRE_API_KEY:-}" ] || cre_whoami; then LOGGED_IN=1; fi
 if [ "$MODE" = auto ]; then if [ "$LOGGED_IN" = 1 ]; then MODE=official; else MODE=harness; fi; fi
 if [ "$MODE" = official ] && [ "$RPC" != "$LIVE_RPC" ]; then say "official mode always uses the -T testnet target; ISOTHERM_RPC is for --harness"; exit 2; fi
+# One more check before exit 3. The CRE API behind `cre whoami` now and then times out: on 2026-10-11 01:05 UTC the
+# job's own check passed, this one failed, and the next hour was official again. So a run that would exit 3 below
+# (official mode, not --preflight-only, no CRE_API_KEY) waits 30 s and runs the identical check once more, and only a
+# second failure reports no login. This is before any key is read and before the lock and the last-run stamp (step 4):
+# the wait holds nothing, and an exit 3 still stamps nothing, so settle-job.sh's harness fallback can run right after.
+if [ "$MODE" = official ] && [ "$LOGGED_IN" = 0 ] && [ "$PREFLIGHT_ONLY" = 0 ]; then
+  say "CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before anything is locked, signed or sent"
+  sleep 30
+  if cre_whoami; then LOGGED_IN=1; fi
+fi
 if [ "$MODE" = official ] && [ "$LOGGED_IN" = 0 ] && [ "$PREFLIGHT_ONLY" = 0 ]; then
   cat <<'MSG' | tee -a "$LOG"
 NOT LOGGED IN TO CRE. `cre workflow simulate` (unlike `cre workflow build`) requires a Chainlink CRE account.
