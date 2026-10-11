@@ -57,12 +57,11 @@ GAS_MULTIPLIER_PCT = "108"
 POST_LIMIT_PER_MIN = "30"
 # ---- MON budget (testnet MON is scarce). Sized by `node scripts/size-caps.mjs` (default --days 7) from the relayer's
 # LIVE balance, spread over a HORIZON of 7 UTC days so one worst-case day can never take the whole balance:
-#   2026-10-09T02:42Z (relayer topped up for judging): balance 10.194 MON, gas 102 gwei, reserve 0.1 -> spendable
-#   10.094 MON; horizon 10 days -> 1.0094 MON/day. dripCost = 0.15 + 99,752 gas x 102 gwei = 0.1602; relayCost =
-#   335,000 gas x 102 gwei = 0.0342 (fork-measured limit for a first-time holder: 334,228).
-#   DRIP_DAILY_CAP = floor(1.0094 x 0.65 / 0.1602) = 4; RELAY_DAILY_CAP = floor((1.0094 - 4 x 0.1602) / 0.0342) = 10;
-#   worst-case UTC day = 0.982 MON <= 1.0094 per day, so 10 consecutive worst-case days (9.824 MON) fit in the 10.094
-#   spendable: UTC days Oct 9-18 are covered even at maximum use; top up and re-size before 2026-10-19.
+#   2026-10-11T03:51Z (relayer topped up to 39.79 MON for judging, horizon 17 days through 2026-10-27): spendable 39.687 MON
+#   -> 2.3346 MON/day. dripCost = 0.15 + 99,752 gas x 102 gwei = 0.1602; relayCost = 335,000 gas x 102 gwei = 0.0342.
+#   DRIP_DAILY_CAP = floor(2.3346 x 0.65 / 0.1602) = 9; RELAY_DAILY_CAP = floor((2.3346 - 9 x 0.1602) / 0.0342) = 26;
+#   worst-case UTC day = 2.330 MON <= 2.3346, so 17 consecutive worst-case days (39.61 MON) fit in the 39.687 spendable:
+#   UTC days Oct 11-27 are covered even at maximum use.
 #   Per network (IPv4 / IPv6 /64): at most half a day's drips and relays.
 # Drips and relays never spend below RELAYER_MIN_MON (the reserve; only the AUSD-float cron refill may use it).
 # After funding the relayer (or when the time to the next top-up changes), re-run the script with --days set to that
@@ -70,11 +69,11 @@ POST_LIMIT_PER_MIN = "30"
 RELAYER_MIN_MON = "0.1"
 DRIP_GAS_MON = "0.011"
 RELAY_COST_MON = "0.035"
-DRIP_DAILY_CAP = "4"
-DRIP_PER_IP_PER_DAY = "2"
-RELAY_DAILY_CAP = "10"
-RELAY_PER_IP_PER_DAY = "5"
-RELAY_PER_ADDRESS_PER_DAY = "5"
+DRIP_DAILY_CAP = "9"
+DRIP_PER_IP_PER_DAY = "4"
+RELAY_DAILY_CAP = "26"
+RELAY_PER_IP_PER_DAY = "13"
+RELAY_PER_ADDRESS_PER_DAY = "13"
 STATS_SCAN_MAX_WINDOWS = "20"
 REAL_STATIONS = "RCSS,RJTT,ZGSZ,RKSI,VHHH"
 # Wallets excluded from the public "non-maker" counts (deployments/testnet.json roles are added automatically).
