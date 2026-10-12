@@ -43,6 +43,11 @@
 #         whoami answers but run-official.sh's first check fails, then answers -> official, NOT a miss (it clears a
 #         previous single miss); both checks fail (twice in a row) -> exit 3, harness fallback, a miss each time, and
 #         CRE LOGIN NEEDED on the second
+#   D1 a report sent, its "tx 0x… ->" line dropped (the simulator stopped first; live 2026-10-11 18:05 UTC), its hash
+#      only in the result JSON -> step 6 still checks its receipt (bun e2e/confirm.ts, a shim here) with that hash;
+#      run-official.sh before scripts/sent-hashes.mjs (the newest committed one without it) checked nothing
+#   D2 the same report with its "tx 0x… ->" line -> one receipt check, for that hash once
+#   D3 a failed writeReport whose hash is in the result JSON -> no receipt check, as before
 #   B  every case without a retry gives a run log identical (timestamps and scratch paths aside) to run-official.sh as
 #      it was before the retry existed (the newest committed version without it), with the same exit code
 #   B2 the same against the newest committed run-official.sh without the login-check retry: identical logs (and stdout)
@@ -67,14 +72,20 @@ mkdir -p "$P/scripts" "$P/vps" "$BIN" "$SC/root/deployments" "$SC/home" "$SC/key
 ln -s "$TARGET" "$P/scripts/run-official.sh"          # the code under test
 ln -s "$REAL/scripts/settle-job.sh" "$P/scripts/settle-job.sh"
 ln -s "$REAL/vps/lib.sh" "$P/vps/lib.sh"                                    # cre_login_watch (J3/J4)
+ln -s "$REAL/scripts/sent-hashes.mjs" "$P/scripts/sent-hashes.mjs"          # step 6's hashes (D1-D3)
 ln -s "$REAL/settle" "$P/settle"                                            # viem (key -> address), evidence-record.ts
 ln -s "$REPO/deployments/testnet.json" "$SC/root/deployments/testnet.json"  # read only (addresses)
 ln -s "$NODE" "$BIN/node"
 # bun: the real one, except `bun test` (only the harness run uses it), which answers like a failed harness run whose
 # output names the CRE credential check (R10: harness mode never retries), or, when the case has a file harness-ok,
-# like a harness run that had nothing to settle (J4)
+# like a harness run that had nothing to settle (J4); and `bun e2e/confirm.ts` (step 6, the receipt check: D1-D3),
+# which records its argv and answers OK without any network
 cat >"$BIN/bun" <<EOF
 #!/bin/bash
+if [ "\${1:-}" = e2e/confirm.ts ]; then
+  echo "bun \$*" >>"\${SHIM_DIR:?}/confirms"; shift 3
+  for h in "\$@"; do echo "\$h block 1 status=success (shim receipt check)"; done; exit 0
+fi
 if [ "\${1:-}" = test ]; then
   echo "bun \$*" >>"\${SHIM_DIR:?}/bun-tests"
   if [ -f "\$SHIM_DIR/harness-ok" ]; then echo '[result] {"triggerTime":"2026-10-11T01:05:40.000Z","outcomes":[],"skipped":[],"ladders":{"count":1,"due":0}}'; exit 0; fi
@@ -96,6 +107,13 @@ for c in $(git -C "$REPO" log --format=%h -- packages/cre-workflow/scripts/run-o
   case "$(git -C "$REPO" show "$c:packages/cre-workflow/scripts/run-official.sh")" in *'CRE login check:'*) ;; *) BASE2_REF=$c; break ;; esac
 done
 [ -n "$BASE2_REF" ] && git -C "$REPO" show "$BASE2_REF:packages/cre-workflow/scripts/run-official.sh" >"$P/scripts/run-official.baseline2.sh"
+
+# ---- baseline 3: the newest committed run-official.sh without scripts/sent-hashes.mjs (D1)
+BASE3_REF=""
+for c in $(git -C "$REPO" log --format=%h -- packages/cre-workflow/scripts/run-official.sh 2>/dev/null); do
+  case "$(git -C "$REPO" show "$c:packages/cre-workflow/scripts/run-official.sh")" in *sent-hashes.mjs*) ;; *) BASE3_REF=$c; break ;; esac
+done
+[ -n "$BASE3_REF" ] && git -C "$REPO" show "$BASE3_REF:packages/cre-workflow/scripts/run-official.sh" >"$P/scripts/run-official.baseline3.sh"
 
 # ---- shims
 cat >"$BIN/cre" <<'EOF'
@@ -141,6 +159,19 @@ case "$(awk -F, -v n="$n" '{print $n}' "$D/plan")" in
   cred-userlog) cred; echo "2026-10-10T09:06:02Z [USER LOG] nothing to settle (ladders=1, due=0, skipped=0)"; exit 1 ;;
   cred-txupper) cred; echo "tx 0x$(printf 'AB%.0s' $(seq 1 32))"; exit 1 ;;
   cred-breakstamp) cred; rm -f "$ISOTHERM_STATE_DIR/last-run"; mkdir "$ISOTHERM_STATE_DIR/last-run"; exit 1 ;;
+  sent-noline|sent-line|wr-failed) compiled   # D1-D3: one report; the hash 0xcdcd…, or 0xefef… for the failed one
+      H=0x$(printf 'cd%.0s' $(seq 1 32)); R="primary sources agree"; C=resolved
+      echo "2026-10-11T18:05:23Z [SIMULATION] Simulator Initialized"
+      echo "2026-10-11T18:05:26Z [USER LOG] RCSS 2026-10-11: SETTLED (primary sources agree) | IEM 30C n=42 h=24 last=23:30 complete"
+      case "$(awk -F, -v n="$n" '{print $n}' "$D/plan")" in
+        sent-line) echo "2026-10-11T18:05:27Z [USER LOG] RCSS 2026-10-11: tx $H -> resolved" ;;
+        wr-failed) H=0x$(printf 'ef%.0s' $(seq 1 32)); R="writeReport status 2: execution reverted"; C=not-accepted
+                   echo "2026-10-11T18:05:27Z [USER LOG] RCSS 2026-10-11: writeReport 2 execution reverted" ;;
+      esac
+      echo; echo "✓ Workflow Simulation Result:"
+      echo "\"{\\\"triggerTime\\\":\\\"2026-10-11T18:05:23.000Z\\\",\\\"outcomes\\\":[{\\\"station\\\":\\\"RCSS\\\",\\\"date\\\":20261011,\\\"action\\\":\\\"settled\\\",\\\"reason\\\":\\\"$R\\\",\\\"tmaxC\\\":30,\\\"txHash\\\":\\\"$H\\\",\\\"confirmed\\\":\\\"$C\\\"}],\\\"skipped\\\":[]}\""
+      echo "time=2026-10-11T18:05:27.652Z level=INFO msg=\"context canceled\""
+      echo; exit 0 ;;
   ok) compiled
       echo "2026-10-10T09:06:01Z [SIMULATION] Simulator Initialized"
       echo "2026-10-10T09:06:02Z [USER LOG] nothing to settle (ladders=1, due=0, skipped=0)"
@@ -200,7 +231,7 @@ caseenv() { env -i HOME="$SC/home" PATH="/usr/bin:/bin:/usr/sbin:/sbin" TMPDIR="
 # NAME=VALUE, or empty) added to its environment; exit code in RC, log in RUNLOG
 RUNENV=""
 runoff() {
-  local s="run-official.sh"; case "$1" in baseline) s="run-official.baseline.sh" ;; baseline2) s="run-official.baseline2.sh" ;; esac; shift
+  local s="run-official.sh"; case "$1" in baseline) s="run-official.baseline.sh" ;; baseline2) s="run-official.baseline2.sh" ;; baseline3) s="run-official.baseline3.sh" ;; esac; shift
   caseenv ${RUNENV:+"$RUNENV"} "$TBASH" "$P/scripts/$s" "$@" >"$C/stdout" 2>&1; RC=$?
   RUNLOG=$(ls -t "$C/state/logs"/run-*.log 2>/dev/null | head -n1)
 }
@@ -220,7 +251,7 @@ BASELINE_CASES=""
 
 {
 echo "# $(date -u +%FT%TZ) run-official.sh one-retry check: $("$TBASH" -c 'echo bash $BASH_VERSION') on $(uname -s) $(uname -m); shims for cre, cast, sleep; no network, no real key, 0 MON"
-echo "# scratch package <scratch>/root/packages/cre-workflow (scripts/ symlinked to the code under test); tx sender $ADDR (fresh random key); baseline: run-official.sh at ${BASE_REF:-<none found>}; baseline 2 (no login-check retry): ${BASE2_REF:-<none found>}"
+echo "# scratch package <scratch>/root/packages/cre-workflow (scripts/ symlinked to the code under test); tx sender $ADDR (fresh random key); baseline: run-official.sh at ${BASE_REF:-<none found>}; baseline 2 (no login-check retry): ${BASE2_REF:-<none found>}; baseline 3 (no sent-hashes.mjs): ${BASE3_REF:-<none found>}"
 
 echo; echo "## R1. credential failure, then success: one retry after 45 s"
 setup_case r1 cred,ok "7 7"; runoff current --official
@@ -375,6 +406,28 @@ setup_case w8 cred,cred "7 7"; echo hang,ok >"$C/shim/whoami-plan"; T0=$(date +%
 ok "$([ "$RC" = 1 ] && [ "$(whoamis)" = 2 ] && [ "$(sleeps)" = "30 45" ] && [ "$(attempts)" = 2 ] && [ "$EL" -ge 45 ] && [ "$EL" -lt 60 ] && echo 1 || echo 0)" "exit $RC after $EL s (the 45 s alarm on the first check plus the shim's two 1 s waits), whoami $(whoamis), waits [$(sleeps)] and no more, simulate calls $(attempts)"
 ok "$([ "$(whoami_waits)" = "whoami#1 after 0 wait(s);whoami#2 after 1 wait(s)" ] && [ "$(count 'CRE login check:')" = 1 ] && [ "$(count 'cre-login=yes')" = 1 ] && [ "$(count 'OFFICIAL retry:')" = 1 ] && [ "$(count 'run exited 1')" = 1 ] && [ "$(count 'NOT LOGGED IN')" = 0 ] && [ ! -d "$C/state/run.lock" ] && echo 1 || echo 0)" "the timed-out check counts as a failure and is checked once more after the wait ($(whoami_waits)); one line per retry, 'run exited 1', lock released"
 
+HD=0x$(printf 'cd%.0s' $(seq 1 32)); HF=0x$(printf 'ef%.0s' $(seq 1 32))
+confirms() { cat "$C/shim/confirms" 2>/dev/null; }
+echo; echo "## D1. a report sent, its 'tx 0x… ->' line dropped: the receipt check still runs, with the hash from the result JSON"
+setup_case d1 sent-noline "7 7"; runoff current --official
+ok "$([ "$RC" = 0 ] && [ "$(confirms | wc -l | tr -d ' ')" = 1 ] && [ "$(confirms | grep -oE '0x[0-9a-f]{64}' | tr '\n' ' ')" = "$HD " ] && echo 1 || echo 0)" "exit $RC; receipt checks: $(confirms | wc -l | tr -d ' '), hashes [$(confirms | grep -oE '0x[0-9a-f]{64}' | cut -c1-10 | tr '\n' ' ')]"
+ok "$([ "$(count 'status=success (shim receipt check)')" = 1 ] && [ "$(count 'tx 0x')" = 0 ] && echo 1 || echo 0)" "the run log has the receipt line and no 'tx 0x… ->' line"
+OWN=$("$NODE" "$REAL/scripts/sent-hashes.mjs" "$C/stdout" | sort -u | wc -l | tr -d ' '); OLD=$(grep -oE 'tx 0x[0-9a-f]{64}( ->| status=)' "$C/stdout" | wc -l | tr -d ' ')
+ok "$([ "$OWN" = 1 ] && [ "$OLD" = 0 ] && echo 1 || echo 0)" "vps tripwire on this output: own txs $OWN (the grep alone: $OLD)"
+if [ -n "$BASE3_REF" ]; then
+  setup_case d1-base sent-noline "7 7"; runoff baseline3 --official
+  ok "$([ "$RC" = 0 ] && [ -z "$(confirms)" ] && echo 1 || echo 0)" "run-official.sh at $BASE3_REF on the same output: exit $RC, receipt checks $(confirms | wc -l | tr -d ' ') (the gap this closes)"
+else echo "  SKIP  no committed run-official.sh without sent-hashes.mjs to compare with"; fi
+
+echo; echo "## D2. the same report with its 'tx 0x… ->' line: one receipt check, for that hash once"
+setup_case d2 sent-line "7 7"; runoff current --official
+ok "$([ "$RC" = 0 ] && [ "$(confirms | wc -l | tr -d ' ')" = 1 ] && [ "$(confirms | grep -oE '0x[0-9a-f]{64}' | tr '\n' ' ')" = "$HD " ] && echo 1 || echo 0)" "exit $RC; receipt checks: $(confirms | wc -l | tr -d ' '), hashes [$(confirms | grep -oE '0x[0-9a-f]{64}' | cut -c1-10 | tr '\n' ' ')]"
+
+echo; echo "## D3. a failed writeReport whose hash is in the result JSON: no receipt check, as before"
+setup_case d3 wr-failed "7 7"; runoff current --official
+ok "$([ "$RC" = 0 ] && [ -z "$(confirms)" ] && [ "$(count 'writeReport 2 execution reverted')" = 1 ] && echo 1 || echo 0)" "exit $RC; receipt checks: $(confirms | wc -l | tr -d ' ')"
+ok "$([ "$("$NODE" "$REAL/scripts/sent-hashes.mjs" "$C/stdout" | wc -l | tr -d ' ')" = 0 ] && [ "$(grep -cE '\[USER LOG\] .*: writeReport |send-report failed' "$C/stdout")" = 1 ] && echo 1 || echo 0)" "vps tripwire on this output: own txs 0, failed reports 1 (counted once)"
+
 echo; echo "## J1. settle-job.sh (the hourly entry), credential failure then success"
 setup_case j1 cred,ok "7 7"
 caseenv "$TBASH" "$P/scripts/settle-job.sh" >"$C/stdout" 2>&1; RC=$?
@@ -384,7 +437,7 @@ ok "$([ "$RC" = 0 ] && [ ! -f "$C/state/official-failed" ] && echo 1 || echo 0)"
 ok "$([ "$(jq_ '[r.path, r.exitCode, r.exitMeaning]')" = '["official",0,"ok / nothing to do / skipped"]' ] && echo 1 || echo 0)" "evidence: $(jq_ '[r.path, r.exitCode, r.exitMeaning]')"
 ok "$([ "$(jq_ 'r.workflow && r.workflow.ladders')" = '{"count":1,"scanned":[0,1],"due":0}' ] && [ "$(jq_ 'r.reportsSent.length')" = 0 ] && echo 1 || echo 0)" "evidence: workflow summary parsed from the second run (ladders $(jq_ 'r.workflow && r.workflow.ladders')), reportsSent []"
 ok "$([ "$(jq_ 'r.runner.filter((l) => l.startsWith("OFFICIAL retry:")).length')" = 1 ] && [ "$(jq_ 'r.stoodDownForDon || r.stoodDownForWriter')" = false ] && echo 1 || echo 0)" "evidence: the retry line is in runner[]; no stand-down flag"
-OWN=$(grep -oE 'tx 0x[0-9a-f]{64}( ->| status=)' "$C/stdout" | wc -l | tr -d ' '); UNSURE=$(grep -cE '\[USER LOG\] .*: writeReport |send-report failed' "$C/stdout")
+OWN=$("$NODE" "$REAL/scripts/sent-hashes.mjs" "$C/stdout" | sort -u | wc -l | tr -d ' '); UNSURE=$(grep -cE '\[USER LOG\] .*: writeReport |send-report failed' "$C/stdout")
 WR=$(grep -cE '\[USER LOG\] .*(: writeReport |-> not-accepted)' "$JOB")
 ok "$([ "$OWN" = 0 ] && [ "$UNSURE" = 0 ] && [ "$WR" = 0 ] && echo 1 || echo 0)" "vps tripwire patterns on the job output: own txs $OWN, failed reports $UNSURE; settle-job's writeReport pattern: $WR"
 echo "  evidence runner[]:"; jq_ 'r.runner' | "$NODE" -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>JSON.parse(s).forEach(l=>console.log("    | "+l)))' | san
@@ -428,7 +481,7 @@ ok "$([ "$(needed "$C/watch-1")" = 0 ] && grep -q 'CRE login: none in this run (
 rm -f "$C/shim/whoami-n" "$C/state/last-run"   # an hour later: the spacing guard is past
 jobrun 2
 ok "$([ "$RC" = 0 ] && [ "$(whoamis)" = 4 ] && [ "$(needed "$C/watch-2")" = 1 ] && [ "$(lapse)" = 2 ] && grep -q 'CRE LOGIN NEEDED' "$C/state/alerts/ALERTS.log" && echo 1 || echo 0)" "cre_login_watch, hour 2: CRE LOGIN NEEDED (lapse state runs=$(lapse)), job exit $RC"
-OWN=$(cat "$C/stdout-1" "$C/stdout-2" | grep -oE 'tx 0x[0-9a-f]{64}( ->| status=)' | wc -l | tr -d ' '); UNSURE=$(cat "$C/stdout-1" "$C/stdout-2" | grep -cE '\[USER LOG\] .*: writeReport |send-report failed')
+OWN=$(for i in 1 2; do "$NODE" "$REAL/scripts/sent-hashes.mjs" "$C/stdout-$i"; done | sort -u | wc -l | tr -d ' '); UNSURE=$(cat "$C/stdout-1" "$C/stdout-2" | grep -cE '\[USER LOG\] .*: writeReport |send-report failed')
 ok "$([ "$OWN" = 0 ] && [ "$UNSURE" = 0 ] && echo 1 || echo 0)" "vps tripwire patterns on both jobs' output: own txs $OWN, failed reports $UNSURE"
 echo "  cre_login_watch, hours 1 and 2:"; cat "$C/watch-1" "$C/watch-2" | sed -E 's/^\[[^]]+\] //; s/^/    | /' | cut -c1-240 | san
 

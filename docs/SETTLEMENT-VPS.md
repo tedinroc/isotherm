@@ -38,7 +38,7 @@ awake. A Worker cannot run the official CRE CLI; a small Linux VPS can. Judging 
 
 The rollback always releases the VPS before it re-enables the Mac, and the handover names one VPS: a cutover to a
 second VPS, or a rollback that names another one, is refused. These rules were rehearsed end to end: 18 checks through
-the real systemd unit on an anvil fork, 7 checks of the tripwire against the official path's log lines, and 14 checks
+the real systemd unit on an anvil fork, 11 checks of the tripwire against the official path's log lines, and 14 checks
 of the cutover and rollback scripts, including a second cutover after a rollback.
 
 ## Owner steps, in order

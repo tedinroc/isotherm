@@ -91,7 +91,9 @@ bash "$PKG/scripts/settle-job.sh" 2>&1 | tee "$OUT"
 RC=${PIPESTATUS[0]}
 
 # ---- 4b. tripwire, after: every nonce used during the run must be one of this run's own transactions
-OWN=$(grep -oE 'tx 0x[0-9a-f]{64}( ->| status=)' "$OUT" | grep -oE '0x[0-9a-f]{64}' | grep -v '^0x0*$' | sort -u | wc -l | tr -d ' ')
+# Own txs from the log lines AND the result JSON: the simulator can drop the workflow's last log line, the "tx 0x… ->"
+# one (2026-10-11 18:05 UTC, a false writer conflict); scripts/sent-hashes.mjs reads both. Old grep if node fails.
+OWN=$({ node "$PKG/scripts/sent-hashes.mjs" "$OUT" 2>/dev/null || grep -oE 'tx 0x[0-9a-f]{64}( ->| status=)' "$OUT" | grep -oE '0x[0-9a-f]{64}'; } | grep -v '^0x0*$' | sort -u | wc -l | tr -d ' ')
 # A report whose delivery failed logs no hash (official path: "<ICAO> <date>: writeReport <status>"; harness: "send-report
 # failed"), but its transaction may have used a nonce (mined and reverted, or a receipt that never came). Such a run
 # allows one extra nonce per failed report, and records no baseline: the next run re-baselines.

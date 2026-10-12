@@ -212,7 +212,8 @@ set -e
 [ "$RC" = 0 ] || { say "run exited $RC"; exit "$RC"; }
 
 # ---- 6. confirm on chain (the forwarder never reverts: decode ReportProcessed(result) + LadderResolved)
-HASHES=$(grep -oE 'tx 0x[0-9a-f]{64} ->' "$LOG" | grep -oE '0x[0-9a-f]{64}' | grep -v '^0x0*$' | sort -u | tr '\n' ' ' || true)
+# Both the "tx 0x… ->" lines and the result JSON: the simulator can drop the workflow's last log line (scripts/sent-hashes.mjs).
+HASHES=$({ node "$PKG/scripts/sent-hashes.mjs" --confirm "$LOG" 2>/dev/null || grep -oE 'tx 0x[0-9a-f]{64} ->' "$LOG" | grep -oE '0x[0-9a-f]{64}'; } | grep -v '^0x0*$' | sort -u | tr '\n' ' ' || true)
 if [ "$BROADCAST" = 1 ] && [ -n "${HASHES// /}" ]; then
   (cd settle && bun e2e/confirm.ts --rpc "$RPC" $HASHES) 2>&1 | tee -a "$LOG" || { say "a report was sent but NOT accepted on chain (see $LOG)"; exit 4; }
 fi

@@ -318,7 +318,7 @@ is caught at once if it does.
 | 1. Claim | VPS | `settle-vps.sh` refuses without `var/writer.claim`. Only the cutover writes it, after the Mac job is verified unloaded and disabled. A timer enabled by mistake, or before the cutover, does nothing. | S0; C3, C4 |
 | 2. Released marker | both | `run-official.sh` stops before reading a key when its state directory holds `writer.released` (exit 0, `SKIPPED`; the evidence shows `stoodDownForWriter`). This is the Mac after a cutover, including manual runs from the repository, and the VPS after a rollback. | S8; C5 |
 | 3. Handover spacing | both | The VPS refuses while the previous writer ran less than **50 minutes** ago. That is longer than the 30-minute spacing guard and the 25-minute attestation lifetime, and shorter than the hourly cadence, so :05 → :05 works. It covers `Persistent=true` catch-up runs. The rollback hands the VPS's last run to the Mac's unchanged 30-minute guard. | S1, S2; C6, C8 |
-| 4. On-chain tripwire | VPS | One free `eth_getTransactionCount` of the sender before and after each run, compared with what this host recorded after its last run (or at the claim) and with the transactions this run logged. An extra nonce means another holder of the key sent a transaction. The VPS then writes `var/writer-conflict`, sends a high-priority push, and stops signing until `isotherm-vps.sh clear-conflict`. It yields: the other writer keeps settling. | S4–S7; T1–T5; C10 |
+| 4. On-chain tripwire | VPS | One free `eth_getTransactionCount` of the sender before and after each run, compared with what this host recorded after its last run (or at the claim) and with the transactions this run logged. An extra nonce means another holder of the key sent a transaction. The VPS then writes `var/writer-conflict`, sends a high-priority push, and stops signing until `isotherm-vps.sh clear-conflict`. It yields: the other writer keeps settling. | S4–S7; T1–T8; C10 |
 | 5. Ordering | Mac scripts | The rollback releases the VPS before it re-enables the Mac. The cutover's undo re-enables the Mac only after the VPS confirms it holds no claim. A cutover to a second VPS, or a rollback naming another VPS, is refused while the Mac's `writer.released` names the first one. | C3, C5b, C8, C9 |
 
 **Why not a lease.**
@@ -335,9 +335,17 @@ The nonce read is free, global, and needs no new secret.
   its transaction may have used a nonce (mined and reverted, or a receipt that never came). Such a run allows one extra
   nonce per failed report and records no baseline, so the next run re-baselines. The price: another host's transaction
   in that run, or before the next run, can go unnoticed once (`T2`, `T3` in `tripwire-unit.txt`).
-- If this host sends a transaction and logs neither its hash nor a failure, the guard sees a false conflict. This was
-  not observed. Settlement then pauses until `clear-conflict`, and the Worker's `SETTLEMENT OVERDUE` alert (day end +
-  3 h) is the backstop.
+- This run's own transactions come from two places in the job's log (`scripts/sent-hashes.mjs`): the `tx 0x… ->` /
+  `tx 0x… status=` lines, and the hash of each delivered report in the official path's result JSON. The second source
+  exists because of a live false conflict. On 2026-10-11 at 18:05 UTC the simulator stopped (`context canceled`) before
+  the workflow's last log line, `RCSS 2026-10-11: tx 0x0266fd… -> resolved`, reached its output. The report had landed
+  and was accepted (checked by hand afterwards: `ReportProcessed.result=true`, Settled at 30 °C, the same as
+  Polymarket). The guard counted 0 own transactions, raised `WRITER CONFLICT`, and refused every run until
+  `clear-conflict` at 13:57 UTC the next day. No settlement was due in that window, so none was missed. The same
+  dropped line had also skipped `run-official.sh`'s receipt check, which reads the same two sources now (T6–T8 in
+  `tripwire-unit.txt`; D1–D3 in `evidence/official-retry-check.txt`).
+- A transaction that neither source shows still gives a false conflict. Settlement then pauses until `clear-conflict`,
+  and the Worker's `SETTLEMENT OVERDUE` alert (day end + 3 h) is the backstop.
 
 ## 9. Operating it
 
@@ -374,7 +382,7 @@ live is sent. No real key, CRE session, launchd job or `~/isotherm-live` is used
 | `setup-arm64.txt`, `setup-amd64.txt` | `setup.sh` passes on both architectures. CLI v1.37.0, bun 1.4.2 (amd64: the baseline build was chosen automatically, as the emulated CPU reports no AVX2) and cast 1.8.5 are installed. **`cre workflow build` produces `413d4429…`, byte-identical to the Mac's WASM, on both.** The units are installed, linger is on, and a second push uses rsync. |
 | `lint.txt` | shellcheck is clean on every new script, apart from two intentional patterns in the test scripts, which are disabled with a comment. The changed shared scripts carry only the findings they had at HEAD. `systemd-analyze verify` passes; the schedule is :05 UTC. |
 | `systemd-fork-e2e.txt` | **18 checks** run through the installed systemd unit against an anvil fork of live testnet. The fork reads come from the Ankr RPC, the attester is set on the fork, and the tx key is a fresh random one. Covered: no claim; the 50-minute guard; a harness settlement of RCSS 2026-10-09 with evidence `host: vps` and pushes; the spacing guard; a conflict between runs and during a run, sticky and deduplicated; `clear-conflict`; `release`, after which a preflight still runs in full; a dry run; the timer starting the service. |
-| `tripwire-unit.txt` | **7 checks** of the tripwire against the log lines of the OFFICIAL path, which the fork run cannot reach without a CRE login: the real `settle-vps.sh` with a stub job that prints official-path lines and sends real transactions on a local anvil chain. Covered: a logged report; a failed `writeReport` whose transaction used a nonce (no conflict, the next run re-baselines); the same plus another host's transaction (conflict); an unlogged transaction (conflict); a claim after the other host sent in between (no conflict). |
+| `tripwire-unit.txt` | **11 checks** of the tripwire against the log lines of the OFFICIAL path, which the fork run cannot reach without a CRE login: the real `settle-vps.sh` with a stub job that prints official-path lines and sends real transactions on a local anvil chain. Covered: a logged report; a failed `writeReport` whose transaction used a nonce (no conflict, the next run re-baselines); the same plus another host's transaction (conflict); an unlogged transaction (conflict); a claim after the other host sent in between (no conflict); a report whose `tx 0x… ->` line was dropped, its hash only in the result JSON (no conflict), the same plus another host's transaction (conflict), and a failed `writeReport` whose hash is in the result JSON plus another host's transaction (conflict: the failed report counts once). |
 | `mac-cutover-rehearsal.txt` | **14 checks** of `cutover.sh` and `rollback.sh` from the Mac against the stand-in VPS. Covered: NOT READY versus READY; the E3 failure undone safely; the full cutover with a real preflight gate; a manual Mac run refused; a cutover to another VPS and a rollback naming another VPS refused (C5b); the VPS's 50-minute guard and then its settlement; the full rollback with `last-run` handed back; the unreachable-VPS refusals and the confirmed path; a second cutover after the rollback, whose first VPS run finds no conflict (C10). |
 | `live-readonly.txt` | Live reads only. The handler's dry run on live chain reads and METAR sources. The job's dry run with a throwaway key, which stops at "attester … != Resolver.attester()". The mode-check fix on Linux, with the old form's output shown. |
 | `login-tunnel.txt` | Section 4, Option A, up to the sign-in. |

@@ -9,6 +9,11 @@
 #   T3 as T2, plus a transaction from another host in the same run         -> WRITER CONFLICT
 #   T4 a transaction this run did not log at all                           -> WRITER CONFLICT
 #   T5 `claim` after the role was away (the other host sent in between)    -> re-baselined, the next run is no conflict
+#   T6 a report sent, its "tx 0x… ->" line dropped (the simulator stopped first; live 2026-10-11 18:05 UTC), its hash
+#      only in the result JSON                                              -> single writer, nonce recorded
+#   T7 as T6, plus a transaction from another host in the same run         -> WRITER CONFLICT
+#   T8 a failed writeReport whose hash IS in the result JSON, plus a transaction from another host in the same run
+#      (the failed report counts once, not twice)                          -> WRITER CONFLICT
 # Output: stdout (run-container-tests.sh saves it to vps/evidence/).
 set -uo pipefail
 REAL="$HOME/isotherm/packages/cre-workflow"
@@ -22,6 +27,7 @@ trap cleanup EXIT
 
 rm -rf "$T"; mkdir -p "$P/vps" "$P/scripts" "$T/keys" "$ST"
 for f in settle-vps.sh lib.sh isotherm-vps.sh; do ln -s "$REAL/vps/$f" "$P/vps/$f"; done   # the code under test
+ln -s "$REAL/scripts/sent-hashes.mjs" "$P/scripts/sent-hashes.mjs"                           # read by settle-vps.sh 4b
 ln -s "$REAL/settle" "$P/settle"; ln -s "$REAL/.tools" "$P/.tools"                           # bun + viem, cast
 cat >"$P/scripts/settle-job.sh" <<'EOF'
 #!/usr/bin/env bash
@@ -29,12 +35,20 @@ cat >"$P/scripts/settle-job.sh" <<'EOF'
 K=$(cat "$ISOTHERM_TX_KEY_FILE")
 tx() { cast send --private-key "$K" 0x000000000000000000000000000000000000dEaD --value 0 --rpc-url "$ISOTHERM_RPC" --json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).transactionHash))'; }
 at() { date -u +%FT%TZ; }
+# the official result JSON (a JSON string on the line after "Workflow Simulation Result:"); one outcome: <reason> <hash> <confirmed>
+result() { echo; echo "✓ Workflow Simulation Result:"
+  printf '{"triggerTime":"%s","outcomes":[{"station":"RCSS","date":20261009,"action":"settled","reason":"%s","tmaxC":30,"txHash":"%s","confirmed":"%s"}],"skipped":[]}' "$(at)" "$1" "$2" "$3" \
+    | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.stringify(s)))'; }
 case "$STUB" in
   logged)   H=$(tx); echo "$(at) [USER LOG] RCSS 2026-10-09: tx $H -> resolved" ;;
   failed)   tx >/dev/null; echo "$(at) [USER LOG] RCSS 2026-10-09: writeReport 1 execution reverted" ;;
   failed+peer) tx >/dev/null; tx >/dev/null; echo "$(at) [USER LOG] RCSS 2026-10-09: writeReport 1 execution reverted" ;;
   unlogged) tx >/dev/null; echo "$(at) [USER LOG] nothing to settle (ladders=3, due=0)" ;;
   none)     echo "$(at) [USER LOG] nothing to settle (ladders=3, due=0)" ;;
+  dropped)  H=$(tx); echo "$(at) [USER LOG] RCSS 2026-10-09: SETTLED (primary sources agree)"; result "primary sources agree" "$H" resolved ;;
+  dropped+peer) H=$(tx); tx >/dev/null; echo "$(at) [USER LOG] RCSS 2026-10-09: SETTLED (primary sources agree)"; result "primary sources agree" "$H" resolved ;;
+  failedhash+peer) H=$(tx); tx >/dev/null; echo "$(at) [USER LOG] RCSS 2026-10-09: writeReport 2 execution reverted"
+            result "writeReport status 2: execution reverted" "$H" not-accepted ;;
 esac
 exit 0
 EOF
@@ -85,6 +99,21 @@ node -e 'console.log(JSON.stringify({from:"mac",lastRunEpoch:Math.floor(Date.now
 echo "    claim -> writer-nonce: $(cat "$ST/writer-nonce" 2>/dev/null || echo none)"
 run none; RC=$?
 ok "$([ "$RC" = 0 ] && [ ! -f "$ST/writer-conflict" ] && [ "$(rec)" = "$A $(nonce)" ] && echo 1 || echo 0)" "no conflict after the claim; record '$A $(nonce)'"
+
+echo; echo "## T6. a report sent whose 'tx 0x… ->' line was dropped: its hash only in the result JSON"
+N=$(nonce); run dropped; RC=$?
+ok "$([ "$RC" = 0 ] && [ ! -f "$ST/writer-conflict" ] && [ "$(rec)" = "$A $((N + 1))" ] && echo 1 || echo 0)" "single writer, record '$A $((N + 1))'"
+ok "$([ "$(grep -cE 'tx 0x[0-9a-f]{64}( ->| status=)' "$T/out.log")" = 0 ] && echo 1 || echo 0)" "(the log has no tx line: the old grep alone counted 0 own txs here)"
+
+echo; echo "## T7. as T6, plus a transaction from another host during the same run"
+run dropped+peer; RC=$?
+ok "$([ "$RC" = 1 ] && [ -f "$ST/writer-conflict" ] && grep -q 'but this run sent 1 tx(s)' "$ST/writer-conflict" && echo 1 || echo 0)" "WRITER CONFLICT (exit 1): $(grep -oE 'went [0-9]+ -> [0-9]+, but this run sent [0-9]+ tx\(s\)' "$ST/writer-conflict" 2>/dev/null)"
+rm -f "$ST/writer-conflict"; echo "$A $(nonce) $(date +%s)" >"$ST/writer-nonce"
+
+echo; echo "## T8. a failed writeReport whose hash is in the result JSON, plus a transaction from another host"
+run failedhash+peer; RC=$?
+ok "$([ "$RC" = 1 ] && [ -f "$ST/writer-conflict" ] && grep -q 'but this run sent 0 tx(s) (and 1 failed report(s)' "$ST/writer-conflict" && echo 1 || echo 0)" "WRITER CONFLICT (exit 1): the failed report counted once"
+rm -f "$ST/writer-conflict"
 
 echo; echo "# $(date -u +%FT%TZ) done: $PASS passed, $FAIL failed"
 [ "$FAIL" = 0 ]

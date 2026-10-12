@@ -53,6 +53,7 @@ SEARCH="$REAL/.tools/bin:$REAL/.tools/node_modules/.bin:$PATH:/opt/homebrew/bin:
 BUN=$(PATH=$SEARCH; command -v bun) || { echo "bun not found" >&2; exit 2; }
 NODE=$(PATH=$SEARCH; command -v node) || { echo "node not found" >&2; exit 2; }
 TMPBASE=${TMPDIR:-/tmp}; SC=$(mktemp -d "${TMPBASE%/}/isotherm-login-lapse.XXXXXX"); SCP=$(cd "$SC" && pwd -P)
+# shellcheck disable=SC2317  # called by the EXIT trap
 cleanup() { [ -n "${LISTENER:-}" ] && kill "$LISTENER" 2>/dev/null; [ "${KEEP:-0}" = 1 ] || rm -rf "$SC"; }
 trap cleanup EXIT
 
@@ -329,10 +330,12 @@ ok "$(t secretfree R3)" "no token, e-mail, org id or URL parameter in the output
 ok "$(! grep -qE '(^|: )(head|sed|grep|perl|wc):|line [0-9]+:|integer expression' "$SC/relogin-R3.txt" && echo 1 || echo 0)" "no tool or shell error in the output (the first passes saw an empty file)"
 ARGV=$(tr '\n' ' ' <"$RD/ssh-argv")
 echo "    ssh argv: $ARGV"
+# shellcheck disable=SC2317  # called through t
 argv_ok() { case " $ARGV" in *" -tt "*"-o BatchMode=yes"*"-o ExitOnForwardFailure=yes"*"-L $FREEPORT:127.0.0.1:53682 isotherm-test stty cols 1000 2>/dev/null; bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh login ") return 0 ;; esac; return 1; }
 ok "$(t argv_ok)" "ssh -tt, BatchMode, ExitOnForwardFailure, -L <port>:127.0.0.1:53682, the alias, isotherm-vps.sh login"
 ok "$(t [ ! -f "$RD/ssh-stdin" ])" "ssh's stdin is not the terminal (nothing is typed on the VPS)"
 sleep 0.5; ok "$(t gone)" "ssh process gone, temp dir empty"
+# shellcheck disable=SC2143  # -z on the file list: a temp dir already removed (grep error) also counts as clean, as intended
 ok "$([ -z "$(grep -rlF TESTSTATE "$SC/home" "$RT" 2>/dev/null)" ] && echo 1 || echo 0)" "the sign-in URL is in no file under HOME or TMPDIR afterwards (it lived only in the private temp file)"
 
 echo; echo "## R4. --print-url: the URL printed instead of opened"

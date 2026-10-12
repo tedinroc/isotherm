@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2016  # single-quoted stub bodies are meant literally
+# shellcheck disable=SC2016,SC2030,SC2031  # single-quoted stub bodies are meant literally; PATH set inside $(…) for the node lookup stays local on purpose
 # TEST ONLY, on the Mac (or a Linux host where a user-level sshd can start): vps/relogin.sh end to end through the REAL
 # ssh client and a throwaway sshd on 127.0.0.1 (own host key, own authorized key, scratch config; no container, no
 # VPS, no network, no CRE account). The "VPS" is this machine: the REAL vps/isotherm-vps.sh `login` runs in a scratch
@@ -24,6 +24,7 @@ NODE=$(PATH=$SEARCH; command -v node) || { echo "node not found" >&2; exit 2; }
 SSHD=$(command -v sshd 2>/dev/null || echo /usr/sbin/sshd)
 TMPBASE=${TMPDIR:-/tmp}; SC=$(mktemp -d "${TMPBASE%/}/isotherm-relogin-sshd.XXXXXX"); SCP=$(cd "$SC" && pwd -P)
 ME=$(id -un)
+# shellcheck disable=SC2317  # called by the EXIT trap
 cleanup() {
   [ -f "$SC/sshd.pid" ] && kill "$(cat "$SC/sshd.pid")" 2>/dev/null
   [ -n "${SSHD_PID:-}" ] && kill "$SSHD_PID" 2>/dev/null

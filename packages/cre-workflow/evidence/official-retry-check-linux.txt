@@ -1,11 +1,11 @@
 # Linux run of scripts/official-retry-check.sh (the same test and run-official.sh as official-retry-check.txt):
 #   docker run --rm --network none, image node:22-bookworm (Debian 12: GNU bash 5.2.15, coreutils 9.1, grep 3.8,
-#   perl 5.36, node 22.23), the repository mounted read-only, the package's macOS .tools hidden by an empty tmpfs,
+#   perl 5.36, node 22.23.3), the repository mounted read-only, the package's macOS .tools hidden by an empty tmpfs,
 #   ISOTHERM_RETRY_CHECK_TARGET=scripts/run-official.sh (output to stdout, saved here). bun is not in that image: a
 #   stand-in runs `bun -e <script>` and `bun <file.ts>` with node 22 (viem is plain JS; evidence-record.ts runs through
 #   node's type stripping). cre, cast and sleep are the test's own shims, as on macOS.
-# 2026-10-11T05:38:44Z run-official.sh one-retry check: bash 5.2.15(1)-release on Linux aarch64; shims for cre, cast, sleep; no network, no real key, 0 MON
-# scratch package <scratch>/root/packages/cre-workflow (scripts/ symlinked to the code under test); tx sender 0x17e7Eeaad16D1bcB097815D5e89b1DcD1f541437 (fresh random key); baseline: run-official.sh at 87a86d8; baseline 2 (no login-check retry): 60bf43c
+# 2026-10-12T14:05:29Z run-official.sh one-retry check: bash 5.2.15(1)-release on Linux aarch64; shims for cre, cast, sleep; no network, no real key, 0 MON
+# scratch package <scratch>/root/packages/cre-workflow (scripts/ symlinked to the code under test); tx sender 0xfdFBcD229bf2b752dFAEFEaE97A0F019C39b807a (fresh random key); baseline: run-official.sh at 87a86d8; baseline 2 (no login-check retry): 60bf43c; baseline 3 (no sent-hashes.mjs): 93ed0d6
 
 ## R1. credential failure, then success: one retry after 45 s
   PASS  exit 0
@@ -14,20 +14,20 @@
   PASS  tx sender nonce read 2 times (before the first run, after the wait)
   PASS  identical command both times: argv=[workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 --broadcast]
   PASS  both runs got both keys through the environment, neither in argv
-  PASS  last-run stamped again before the retry (1791697124 -> 1791697125; the spacing guard counts from the run that can sign)
+  PASS  last-run stamped again before the retry (1791813929 -> 1791813930; the spacing guard counts from the run that can sign)
   PASS  log: one OFFICIAL line, one retry line, no 'run exited', 'done'
   PASS  order: failure, retry line, second run
   PASS  lock released
   PASS  the new line matches none of the patterns that run-official, settle-job, settle-vps and evidence-record parse
   the run log:
-    | [2026-10-11T05:38:44Z] mode=official rpc=https://testnet-rpc.monad.xyz cre-login=yes broadcast=1
-    | [2026-10-11T05:38:44Z] attester 0x17e7Eeaad16D1bcB097815D5e89b1DcD1f541437 == Resolver.attester(); tx sender 0x17e7Eeaad16D1bcB097815D5e89b1DcD1f541437 has 0.400000000000000000 MON; vault ladders 1
-    | [2026-10-11T05:38:44Z] OFFICIAL: cre workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 --broadcast
+    | [2026-10-12T14:05:29Z] mode=official rpc=https://testnet-rpc.monad.xyz cre-login=yes broadcast=1
+    | [2026-10-12T14:05:29Z] attester 0xfdFBcD229bf2b752dFAEFEaE97A0F019C39b807a == Resolver.attester(); tx sender 0xfdFBcD229bf2b752dFAEFEaE97A0F019C39b807a has 0.400000000000000000 MON; vault ladders 1
+    | [2026-10-12T14:05:29Z] OFFICIAL: cre workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 --broadcast
     | Initializing...
     | Loading settings...
     | ✗ Credential validation failed
     | ✗ authentication required: credential validation failed: authentication failed: unable to retrieve organization info. Your account may not be fully set up yet — please try again in a few minutes: Post "https://api.cre.chain.link/graphql": context deadline exceeded
-    | [2026-10-11T05:38:45Z] OFFICIAL retry: simulate exited 1 at the CLI's CRE credential check, before anything was compiled, simulated or sent (tx sender nonce still 7 after 45 s); running the identical command once more
+    | [2026-10-12T14:05:30Z] OFFICIAL retry: simulate exited 1 at the CLI's CRE credential check, before anything was compiled, simulated or sent (tx sender nonce still 7 after 45 s); running the identical command once more
     | Initializing...
     | Loading settings...
     | Checking RPC connectivity...
@@ -39,10 +39,10 @@
     | ✓ Workflow Simulation Result:
     | "{\"triggerTime\":\"2026-10-10T09:06:01.000Z\",\"outcomes\":[],\"skipped\":[],\"budget\":{\"http\":\"0/15\",\"evmReads\":\"2/15\",\"reports\":\"0/5\"},\"ladders\":{\"count\":1,\"scanned\":[0,1],\"due\":0}}"
     | 
-    | [2026-10-11T05:38:45Z] done; log: <scratch>/cases/r1/state/logs/run-20261011T053844Z.log
+    | [2026-10-12T14:05:30Z] done; log: <scratch>/cases/r1/state/logs/run-20261012T140529Z.log
   what the shim CLI received (key values never recorded):
-    | simulate#1 argv=[workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 --broadcast] env:CRE_ETH_PRIVATE_KEY=the-key-file env:ISOTHERM_ATTESTER_KEY_ALL=the-key-file key-in-argv=no last-run=1791697124
-    | simulate#2 argv=[workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 --broadcast] env:CRE_ETH_PRIVATE_KEY=the-key-file env:ISOTHERM_ATTESTER_KEY_ALL=the-key-file key-in-argv=no last-run=1791697125
+    | simulate#1 argv=[workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 --broadcast] env:CRE_ETH_PRIVATE_KEY=the-key-file env:ISOTHERM_ATTESTER_KEY_ALL=the-key-file key-in-argv=no last-run=1791813929
+    | simulate#2 argv=[workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 --broadcast] env:CRE_ETH_PRIVATE_KEY=the-key-file env:ISOTHERM_ATTESTER_KEY_ALL=the-key-file key-in-argv=no last-run=1791813930
 
 ## R2. another failure (the RPC connectivity check timed out): no retry
   PASS  no retry: exit 1, simulate calls 1, waits [], retry lines 0, lock released
@@ -50,12 +50,12 @@
 ## R3. credential failure twice: exactly one retry, then the exit code of the second run
   PASS  exit 1 after 2 simulate calls (the plan had a third, successful step), waits [45], retry lines 1, lock released
   the run log from the retry line on:
-    | [2026-10-11T05:38:46Z] OFFICIAL retry: simulate exited 1 at the CLI's CRE credential check, before anything was compiled, simulated or sent (tx sender nonce still 7 after 45 s); running the identical command once more
+    | [2026-10-12T14:05:32Z] OFFICIAL retry: simulate exited 1 at the CLI's CRE credential check, before anything was compiled, simulated or sent (tx sender nonce still 7 after 45 s); running the identical command once more
     | Initializing...
     | Loading settings...
     | ✗ Credential validation failed
     | ✗ authentication required: credential validation failed: authentication failed: unable to retrieve organization info. Your account may not be fully set up yet — please try again in a few minutes: Post "https://api.cre.chain.link/graphql": context deadline exceeded
-    | [2026-10-11T05:38:46Z] run exited 1
+    | [2026-10-12T14:05:32Z] run exited 1
 
 ## R4. credential failure after "Workflow compiled": no retry
   PASS  no retry: exit 1, simulate calls 1, waits [], retry lines 0, lock released
@@ -75,7 +75,7 @@
   PASS  exit 0, 2 calls, neither with --broadcast
 
 ## R9. the 30-min spacing guard and the lock
-  PASS  right after R1's retried run, same state: 'last run 6 s ago (< 1800 s spacing); skipping', simulate not called
+  PASS  right after R1's retried run, same state: 'last run 7 s ago (< 1800 s spacing); skipping', simulate not called
   PASS  while another run holds run.lock: skipped, simulate not called, the other run's lock left alone
 
 ## R10. harness mode: a failed harness run whose output names the credential check is never retried
@@ -111,10 +111,10 @@
   PASS  cre whoami's own output stays out of the run log and stdout, both checks
   PASS  the new line matches none of the patterns that run-official, settle-job, settle-vps, lib.sh and evidence-record parse
   the run log:
-    | [2026-10-11T05:39:16Z] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before anything is locked, signed or sent
-    | [2026-10-11T05:39:17Z] mode=official rpc=https://testnet-rpc.monad.xyz cre-login=yes broadcast=1
-    | [2026-10-11T05:39:17Z] attester 0x17e7Eeaad16D1bcB097815D5e89b1DcD1f541437 == Resolver.attester(); tx sender 0x17e7Eeaad16D1bcB097815D5e89b1DcD1f541437 has 0.400000000000000000 MON; vault ladders 1
-    | [2026-10-11T05:39:17Z] OFFICIAL: cre workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 --broadcast
+    | [2026-10-12T14:06:02Z] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before anything is locked, signed or sent
+    | [2026-10-12T14:06:03Z] mode=official rpc=https://testnet-rpc.monad.xyz cre-login=yes broadcast=1
+    | [2026-10-12T14:06:03Z] attester 0xfdFBcD229bf2b752dFAEFEaE97A0F019C39b807a == Resolver.attester(); tx sender 0xfdFBcD229bf2b752dFAEFEaE97A0F019C39b807a has 0.400000000000000000 MON; vault ladders 1
+    | [2026-10-12T14:06:03Z] OFFICIAL: cre workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 --broadcast
     | Initializing...
     | Loading settings...
     | Checking RPC connectivity...
@@ -126,14 +126,14 @@
     | ✓ Workflow Simulation Result:
     | "{\"triggerTime\":\"2026-10-10T09:06:01.000Z\",\"outcomes\":[],\"skipped\":[],\"budget\":{\"http\":\"0/15\",\"evmReads\":\"2/15\",\"reports\":\"0/5\"},\"ladders\":{\"count\":1,\"scanned\":[0,1],\"due\":0}}"
     | 
-    | [2026-10-11T05:39:17Z] done; log: <scratch>/cases/w1/state/logs/run-20261011T053916Z.log
+    | [2026-10-12T14:06:03Z] done; log: <scratch>/cases/w1/state/logs/run-20261012T140602Z.log
 
 ## W2. cre whoami fails twice: exit 3 exactly as before, after that one wait
   PASS  exit 3, cre whoami asked 2 times, waits [30], simulate calls 0
   PASS  one new line, then the NOT LOGGED IN steps; no last-run stamp, no lock, nothing read on chain
   PASS  cre whoami's own output stays out of the run log and stdout
   the run log:
-    | [2026-10-11T05:39:17Z] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before anything is locked, signed or sent
+    | [2026-10-12T14:06:03Z] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before anything is locked, signed or sent
     | NOT LOGGED IN TO CRE. `cre workflow simulate` (unlike `cre workflow build`) requires a Chainlink CRE account.
     | One-time human steps:
     |   1. Create an account: https://app.chain.link/cre/discover -> "Create an account"
@@ -168,8 +168,21 @@
 
 ## W8. the most one run waits: the first check hangs (a CRE API timeout), the second answers, then simulate stops at
    the credential check twice
-  PASS  exit 1 after 47 s (the 45 s alarm on the first check plus the shim's two 1 s waits), whoami 2, waits [30 45] and no more, simulate calls 2
+  PASS  exit 1 after 48 s (the 45 s alarm on the first check plus the shim's two 1 s waits), whoami 2, waits [30 45] and no more, simulate calls 2
   PASS  the timed-out check counts as a failure and is checked once more after the wait (whoami#1 after 0 wait(s);whoami#2 after 1 wait(s)); one line per retry, 'run exited 1', lock released
+
+## D1. a report sent, its 'tx 0x… ->' line dropped: the receipt check still runs, with the hash from the result JSON
+  PASS  exit 0; receipt checks: 1, hashes [0xcdcdcdcd ]
+  PASS  the run log has the receipt line and no 'tx 0x… ->' line
+  PASS  vps tripwire on this output: own txs 1 (the grep alone: 0)
+  PASS  run-official.sh at 93ed0d6 on the same output: exit 0, receipt checks 0 (the gap this closes)
+
+## D2. the same report with its 'tx 0x… ->' line: one receipt check, for that hash once
+  PASS  exit 0; receipt checks: 1, hashes [0xcdcdcdcd ]
+
+## D3. a failed writeReport whose hash is in the result JSON: no receipt check, as before
+  PASS  exit 0; receipt checks: 0
+  PASS  vps tripwire on this output: own txs 0, failed reports 1 (counted once)
 
 ## J1. settle-job.sh (the hourly entry), credential failure then success
   PASS  job exit 0; no official-failed marker, so the next run stays official
@@ -179,13 +192,13 @@
   PASS  vps tripwire patterns on the job output: own txs 0, failed reports 0; settle-job's writeReport pattern: 0
   evidence runner[]:
     | mode=official rpc=https://testnet-rpc.monad.xyz cre-login=yes broadcast=1
-    | attester 0x17e7Eeaad16D1bcB097815D5e89b1DcD1f541437 == Resolver.attester(); tx sender 0x17e7Eeaad16D1bcB097815D5e89b1DcD1f541437 has 0.400000000000000000 MON; vault ladders 1
+    | attester 0xfdFBcD229bf2b752dFAEFEaE97A0F019C39b807a == Resolver.attester(); tx sender 0xfdFBcD229bf2b752dFAEFEaE97A0F019C39b807a has 0.400000000000000000 MON; vault ladders 1
     | OFFICIAL: cre workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 --broadcast
     | OFFICIAL retry: simulate exited 1 at the CLI's CRE credential check, before anything was compiled, simulated or sent (tx sender nonce still 7 after 45 s); running the identical command once more
-    | done; log: <scratch>/cases/j1/state/logs/run-20261011T054054Z.log
+    | done; log: <scratch>/cases/j1/state/logs/run-20261012T140742Z.log
 
 ## J2. settle-job.sh, credential failure twice
-  PASS  job exit 1; official-failed 'rc=1 at 2026-10-11T05:40:57Z' (the next hourly run uses the harness, as before)
+  PASS  job exit 1; official-failed 'rc=1 at 2026-10-12T14:07:44Z' (the next hourly run uses the harness, as before)
   PASS  evidence: ["official",1,"run failed",null]; simulate calls 2
   PASS  the push's last two runner lines: ["OFFICIAL retry: simulate exited 1 at the CLI's CRE credentia...","run exited 1..."]
 
@@ -195,7 +208,7 @@
   PASS  evidence: ["official",true,0,"cre whoami succeeded"]; the new line in runner[]
   PASS  cre_login_watch: not a miss; it clears the previous single miss, no push (lapse state absent)
   cre_login_watch:
-    | [vps] CRE login: there again at 2026-10-11T05:40:57Z after a single miss at 2026-10-11T00:05:02Z; nothing was pushed
+    | [vps] CRE login: there again at 2026-10-12T14:07:44Z after a single miss at 2026-10-11T00:05:02Z; nothing was pushed
 
 ## J4. settle-job.sh: the job's cre whoami answers, both of run-official.sh's checks fail; two hours in a row
   PASS  job exit 0: whoami 4 (job, check, check again, the harness run's own), waits [30] (the harness run does not wait), simulate calls 0, harness runs 1
@@ -206,7 +219,7 @@
   PASS  vps tripwire patterns on both jobs' output: own txs 0, failed reports 0
   cre_login_watch, hours 1 and 2:
     | [vps] CRE login: none in this run (cre whoami succeeded; then run-official.sh reported no login (exit 3) before signing). One miss is often a CRE API timeout; CRE LOGIN NEEDED is pushed if the next run finds none either.
-    | [vps] ALERT: ISOTHERM VPS: CRE LOGIN NEEDED | The CRE login on the VPS has lapsed: 2 runs in a row without it, since 2026-10-11T05:40:58Z (this run: cre whoami succeeded; then run-official.sh reported no login (exit 3) before signing)
+    | [vps] ALERT: ISOTHERM VPS: CRE LOGIN NEEDED | The CRE login on the VPS has lapsed: 2 runs in a row without it, since 2026-10-12T14:07:46Z (this run: cre whoami succeeded; then run-official.sh reported no login (exit 3) before signing)
 
 ## B. without a retry the run log is as before: run-official.sh at 87a86d8 vs now, same case, same shims
   PASS  plan other, nonce reads [7]: log identical (8 lines), exit 1 / 1, simulate calls 1 / 1
@@ -230,4 +243,4 @@
   PASS  harness-if-no-login (--harness-if-no-login; whoami fail): log and stdout identical apart from 0 new line(s); exit 1 / 1; whoami 1 / 1; waits [] / []
   PASS  non-live-rpc (--official, ISOTHERM_RPC set; whoami fail): log and stdout identical apart from 0 new line(s); exit 2 / 2; whoami 1 / 1; waits [] / []
 
-# 2026-10-11T05:41:09Z done: 88 passed, 0 failed
+# 2026-10-12T14:07:57Z done: 95 passed, 0 failed
