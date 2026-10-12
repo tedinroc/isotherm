@@ -20,13 +20,13 @@ Monad Metropolis, Track 01 (Onchain Finance & Trading). Isotherm runs on Monad t
 | **Phone app (PWA)** | https://isotherm.pages.dev |
 | **API** (same origin) | [`/api/health`](https://isotherm.pages.dev/api/health), [`/api/snapshot`](https://isotherm.pages.dev/api/snapshot), [`/api/stats`](https://isotherm.pages.dev/api/stats), [`/api/settlements`](https://isotherm.pages.dev/api/settlements) |
 | **Contracts** (Sourcify `exact_match`) | [Resolver](https://testnet.monadvision.com/address/0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B) · [CollateralVault](https://testnet.monadvision.com/address/0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39) · [IsothermZap](https://testnet.monadvision.com/address/0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0) · [all addresses](#contracts-and-addresses) |
-| **Agent plugin** | [`packages/mm-plugin`](packages/mm-plugin/README.md): `mm weather …` for the MetaMask Agent Wallet |
-| **Demo video** (≤ 3 min) · **Pitch video** (≤ 2 min) | Coming soon |
+| **Agent plugin** | [`packages/mm-plugin`](packages/mm-plugin/README.md): `mm weather …` for the MetaMask Agent Wallet; agent skill in [`skills/isotherm-weather-trading/SKILL.md`](skills/isotherm-weather-trading/SKILL.md) |
+| **Videos** | [Technical demo](https://youtu.be/15AFL_xz_3U) (2:58) · [Pitch](https://youtu.be/_OI-bEk7hGI) (1:55) · [Dynamic sign-in flow](https://youtu.be/XU761rIkU-k) (1:12) |
 | **Design docs** | [ARCHITECTURE.md](ARCHITECTURE.md) · [docs/OPERATIONS.md](docs/OPERATIONS.md) · logo and cover in [`brand/`](brand/) |
 
 ## The problem and the product
 
-Polymarket already trades daily high-temperature markets that resolve on a public airport weather report. Each city-day is split into 9 to 11 mutually exclusive temperature buckets, traded on an off-chain-matched order book.
+Polymarket already trades daily high-temperature markets that resolve on a public airport weather report. Each city-day is split into 11 mutually exclusive temperature buckets (as of October 2026), traded on an off-chain-matched order book. Isotherm is built for the traders and bot builders already on those markets, and for agents through the MetaMask plugin.
 
 Isotherm rebuilds the same risk as a **strike ladder**: for one station and one local day, a set of cumulative "Tmax ≥ k °C" strikes, each with its own onchain Kuru order book on Monad. Each strike is a complete set, 1 YES + 1 NO backed by exactly 1 AUSD, minted as plain ERC-20s. YES trades on the strike's book; NO is one tap away. A market maker quotes every book around the **Polymarket-implied probability**, and after the local day ends a **Chainlink CRE workflow** reads the station's METAR reports from two independent archives and settles the whole ladder with one attested report. Winners redeem for 1 AUSD 15 minutes later.
 
@@ -71,7 +71,7 @@ flowchart LR
   RES -->|"Tmax or void"| VAULT
 ```
 
-1. **Open.** From noon the day before, the roll job picks 4–6 strikes around the Polymarket-implied median, creates the ladder (two token clones per strike, one transaction), opens one Kuru YES/AUSD book per strike and registers it as the strike's canonical market in the Zap.
+1. **Open.** From noon the day before, the roll job picks up to four strikes nearest the Polymarket-implied median (none with an implied probability outside 5–95 %; up to six before the 2026-10-09 release), creates the ladder (two token clones per strike, one transaction), opens one Kuru YES/AUSD book per strike and registers it as the strike's canonical market in the Zap.
 2. **Quote.** The maker mints inventory and quotes every book around the Polymarket-implied P(Tmax ≥ k), conditions on the day's observed METAR maximum, and pulls all quotes 10 minutes before close.
 3. **Trade.** Buy YES in one transaction through the Zap; buy NO as `mintSet` + `sellYes` with an exact price bound; sell, or merge a YES+NO pair back into 1 AUSD at any time.
 4. **Settle.** From 02:00 local the next day, the CRE workflow fetches every METAR and SPECI report for the local day. Two complete sources that agree produce an attested report. Disagreement or missing data stays pending with hourly retries, and voids at 0.5/0.5 only after 36 hours.
@@ -86,9 +86,16 @@ flowchart LR
 
 ## What's live
 
-- **Daily Taipei ladders.** The first opened on 2026-10-07 for Thu Oct 8 (≥ 28 / 29 / 30 / 31 °C): 27 transactions in 64 seconds created the ladder, four Kuru books, the maker's inventory and the opening quotes ([`createLadder`](https://testnet.monadvision.com/tx/0x84e4689412a3467bc71ec6cacb48a5b9fa7062c5e5273c1762619bff2a5e93c7), [`docs/evidence/golive/`](docs/evidence/golive/RESULT.md)). It settled automatically at 02:05 Taipei on Oct 9: high 28 °C, the same result as Polymarket's Taipei Oct 8 market ([settlement tx](https://testnet.monadvision.com/tx/0x65eee8ef9ac201c1c8155267b0e24cb1fef3c897327030705e2ebfe661d9963d)). The Oct 9 ladder has five strikes (≥ 28–32 °C).
-- **Market maker** ([`packages/maker`](packages/maker)). Quotes every strike around the Polymarket-implied probability, re-quotes when fair value moves, a side fills or a quote ages, and runs an independent kill switch. A Cloudflare Durable Object port ([`apps/maker-worker`](apps/maker-worker/README.md)) runs alongside in shadow mode.
-- **Settlement workflow** ([`packages/cre-workflow`](packages/cre-workflow/README.md)). TypeScript compiled to WASM, run hourly by a scheduled job with the official CRE CLI (`cre workflow simulate --broadcast`), delivering through Chainlink's MockKeystoneForwarder. Its settlement core (`settle-core.ts`) is byte-identical to the module validated in `spikes/weather` (enforced by a test), its METAR rule is the one replayed above, and it is tested on real archive captures.
+- **Daily Taipei ladders since 2026-10-07.** Every day at 12:00 Taipei the next day's ladder opens, with one Kuru book per strike. By 2026-10-10 that is Oct 8 (≥ 28–31 °C), Oct 9 (≥ 28–32), Oct 10 (≥ 28–31) and Oct 11 (≥ 29–31): 16 Kuru books; the live app and [`/api/snapshot`](https://isotherm.pages.dev/api/snapshot) show the current ladder. The first went live with 27 transactions in 64 seconds: the ladder, four Kuru books, the maker's inventory and the opening quotes ([`createLadder`](https://testnet.monadvision.com/tx/0x84e4689412a3467bc71ec6cacb48a5b9fa7062c5e5273c1762619bff2a5e93c7), [`docs/evidence/golive/`](docs/evidence/golive/RESULT.md)).
+- **Settled automatically, matching Polymarket.** Each ladder settles at 02:05 Taipei after its day ends, through the official CRE CLI, and every result Polymarket has resolved so far equals its high for the same Taipei day ([`/api/settlements`](https://isotherm.pages.dev/api/settlements)):
+
+  | Taipei day | High | Polymarket | Settlement tx |
+  |---|---|---|---|
+  | Thu 2026-10-08 | **28 °C** | 28 °C | [`0x65eee8ef…963d`](https://testnet.monadvision.com/tx/0x65eee8ef9ac201c1c8155267b0e24cb1fef3c897327030705e2ebfe661d9963d) |
+  | Fri 2026-10-09 | **29 °C** | 29 °C | [`0xdfd28ea5…3ecd`](https://testnet.monadvision.com/tx/0xdfd28ea5483c8e9d68e4951e29c4eb2d12f11807f81550fbe487b4bbc0013ecd) |
+  | Sat 2026-10-10 | **30 °C** | 30 °C | [`0xacb724d3…bf9d`](https://testnet.monadvision.com/tx/0xacb724d39bec18a024ef5420c071b7d656d32e01ed3981a72ab8d04321fdbf9d) |
+- **Market maker on Cloudflare** ([`apps/maker-worker`](apps/maker-worker/README.md), core in [`packages/maker`](packages/maker)). Live since 2026-10-08 23:06 UTC as a Cloudflare Worker with a Durable Object, after a 6.5-hour shadow run. It quotes every strike around the Polymarket-implied probability, re-quotes when fair value moves or a side fills, rolls the daily ladder, pulls every quote before close with its kill switch, watches each settlement, tops up the role keys from a treasury within caps, and reads Monad through a fallback across public testnet RPC endpoints.
+- **Settlement workflow** ([`packages/cre-workflow`](packages/cre-workflow/README.md)). TypeScript compiled to WASM, run hourly at :05 on a small Linux server with the official CRE CLI v1.37.0 (`cre workflow simulate --broadcast`), delivering through Chainlink's MockKeystoneForwarder with an EIP-712 attestation. Its settlement core (`settle-core.ts`) is byte-identical to the module validated in `spikes/weather` (enforced by a test), its METAR rule is the one replayed above, and it is tested on real archive captures. Moving it onto a Chainlink DON is prepared and rehearsed on a fork ([`DON-CUTOVER.md`](packages/cre-workflow/DON-CUTOVER.md)).
 - **Phone app** ([`apps/web`](apps/web/README.md)). Dynamic email sign-in with an embedded wallet, a test-funds drip, a gasless first deposit, Buy YES / Buy NO / Sell / Merge, a portfolio, redemption, and a Results screen that recovers each settlement's attestation signer in the browser. English and Traditional Chinese.
 - **Agent access** ([`packages/mm-plugin`](packages/mm-plugin/README.md)). `mm weather markets | quote | edge | positions | buy | sell | redeem`, plus generic Kuru limit orders. Every write goes through the MetaMask Agent Wallet's signing service and policy.
 - **API** ([`apps/api`](apps/api/README.md)). A Cloudflare Worker with a single-sender Durable Object relayer, served same-origin at `/api/*`.
@@ -97,16 +104,16 @@ flowchart LR
 
 | Sponsor | How Isotherm uses it | Onchain proof (Monad testnet) |
 |---|---|---|
-| **Kuru** | One Kuru v1 YES/AUSD order book per strike, created through the Kuru Router and validated by the Zap (base, quote, precision, fee cap) | Book for ≥ 28 °C created: [`0x654807ef…d480`](https://testnet.monadvision.com/tx/0x654807efc86d84d3a944796ac9c7c007849cc7cc0ac66a0904ab5aad52f2d480); opening maker quotes: [`0xb635cafc…c5da`](https://testnet.monadvision.com/tx/0xb635cafcca49fd7e8dc31bce2039f93d9d65de265a11e1c8940b17e3b52cc5da) |
-| **Chainlink CRE** | Cron-triggered TypeScript workflow; the `Resolver` is a CRE `IReceiver` and accepts EIP-712-attested reports through the CRE forwarder | First live ladder settled by the official CRE CLI v1.37.0 on Monad testnet: Taipei 2026-10-08, 28 °C, matching Polymarket; two of three METAR archives agreed ([`0x65eee8ef…963d`](https://testnet.monadvision.com/tx/0x65eee8ef9ac201c1c8155267b0e24cb1fef3c897327030705e2ebfe661d9963d), [evidence](packages/cre-workflow/evidence/live-settle-RCSS-20261008.json)). Earlier: RCSS 2026-10-05 at 29 °C on the feasibility contracts ([`0x482d7a1e…817c`](https://testnet.monadvision.com/tx/0x482d7a1e5e013a3338061bf8539233b8887ddf4333ba440b59b225134c8a817c)) and RCSS + RJTT 2026-10-06 on a fork ([`sim-fork.txt`](packages/cre-workflow/evidence/sim-fork.txt)) |
-| **Dynamic** | Email login with an embedded wallet, the default sign-in in the live app | Gasless deposit relayed for a Dynamic embedded wallet: [`0xca08d015…bf04`](https://testnet.monadvision.com/tx/0xca08d0150c228c16f9841b00244654ec39f96551c52a0e063584d2adabb6bf04); the same wallet's own Zap buy: [`0x361668d8…681c`](https://testnet.monadvision.com/tx/0x361668d832a2acd47180b8875c9ce44ce0ff6f7dec9a071755e7c8d9dcb4681c) |
-| **MetaMask Agent Wallet** | `mm-plugin-isotherm`, an oclif plugin for `mm` 7.x; writes go through `walletExecutor`, so MetaMask's signing service and Guard policy see each transaction | Signed-in MetaMask Agent Wallet trade, 2 AUSD → 6.054545 YES ≥ 31 °C: [`0x82358f48…52ee`](https://testnet.monadvision.com/tx/0x82358f4884e1a6fc74ad56aaff7191f8855d4fa41a5de2e3a29ec932eb8152ee) ([evidence](packages/mm-plugin/evidence/signed-in/)) |
+| **Kuru** | One Kuru v1 YES/AUSD order book per strike (16 by 2026-10-10), created through the Kuru Router's `deployProxy` and validated on chain by the Zap (base, quote, precision, fee cap) | Book for ≥ 28 °C created: [`0x654807ef…d480`](https://testnet.monadvision.com/tx/0x654807efc86d84d3a944796ac9c7c007849cc7cc0ac66a0904ab5aad52f2d480); opening maker quotes: [`0xb635cafc…c5da`](https://testnet.monadvision.com/tx/0xb635cafcca49fd7e8dc31bce2039f93d9d65de265a11e1c8940b17e3b52cc5da) |
+| **Chainlink CRE** | Cron-triggered TypeScript workflow, run hourly with the official CRE CLI (`cre workflow simulate --broadcast`); the `Resolver` is a CRE `IReceiver` and accepts EIP-712-attested reports through Chainlink's MockKeystoneForwarder | Live Taipei ladders settled by the official CRE CLI v1.37.0 on Monad testnet: 2026-10-08, 28 °C ([`0x65eee8ef…963d`](https://testnet.monadvision.com/tx/0x65eee8ef9ac201c1c8155267b0e24cb1fef3c897327030705e2ebfe661d9963d), [evidence](packages/cre-workflow/evidence/live-settle-RCSS-20261008.json)); 2026-10-09, 29 °C ([`0xdfd28ea5…3ecd`](https://testnet.monadvision.com/tx/0xdfd28ea5483c8e9d68e4951e29c4eb2d12f11807f81550fbe487b4bbc0013ecd)); 2026-10-10, 30 °C ([`0xacb724d3…bf9d`](https://testnet.monadvision.com/tx/0xacb724d39bec18a024ef5420c071b7d656d32e01ed3981a72ab8d04321fdbf9d)). All three results equal Polymarket's resolved highs. On 2026-10-07, before the first live settlement, the same CLI settled RCSS + RJTT 2026-10-06 against the v1 contracts on a fork ([`sim-fork.txt`](packages/cre-workflow/evidence/sim-fork.txt)) |
+| **Dynamic** | Email sign-in with an embedded wallet, the default sign-in in the live app; the embedded wallet signs EIP-3009 authorizations for gasless deposits and sends its own trades | Recorded flow, 2026-10-09: email sign-in, test-funds drip, gasless YES+NO pair from a signed authorization ([`0x23fa1a42…650f`](https://testnet.monadvision.com/tx/0x23fa1a42accfe95299234d1b106795dea5ea21a14e0d556915e788a2ff4f650f)), then the wallet's own Zap buy ([`0x120e87a2…09e6`](https://testnet.monadvision.com/tx/0x120e87a227e6a4c5fcdd9bf562b98ed789a59538e37f35372f154f2285cc09e6)) ([evidence](apps/web/evidence/dynamic/RESULT.md)). First proof, 2026-10-07: [`0xca08d015…bf04`](https://testnet.monadvision.com/tx/0xca08d0150c228c16f9841b00244654ec39f96551c52a0e063584d2adabb6bf04), [`0x361668d8…681c`](https://testnet.monadvision.com/tx/0x361668d832a2acd47180b8875c9ce44ce0ff6f7dec9a071755e7c8d9dcb4681c) |
+| **MetaMask Agent Wallet** | `mm-plugin-isotherm`, an oclif plugin for `mm` 7.x, installed from this repo ([setup](packages/mm-plugin/README.md#install-and-setup)); writes go through `walletExecutor`, so MetaMask's signing service and Guard policy see each transaction | Signed-in MetaMask Agent Wallet trade in Guard Mode, 2026-10-08: 2 AUSD → 6.054545 YES ≥ 31 °C: [`0x82358f48…52ee`](https://testnet.monadvision.com/tx/0x82358f4884e1a6fc74ad56aaff7191f8855d4fa41a5de2e3a29ec932eb8152ee) ([evidence](packages/mm-plugin/evidence/signed-in/)) |
 | **Agora AUSD** | The collateral: every YES+NO pair is backed by 1 AUSD. AUSD's EIP-3009 `receiveWithAuthorization` makes the first deposit gasless | [AUSD](https://testnet.monadvision.com/address/0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC); the gasless deposit above moved 5 AUSD on a signed authorization |
 
 ## Why Monad
 
-- **A real order book for every strike.** Kuru is a fully onchain CLOB, so each strike is a book that contracts and agents can read and trade. Opening one costs 1,467,042 gas (about 0.15 testnet MON); a ladder opens 4–6 of them every day, which only makes sense where blockspace is cheap ([gas table](ARCHITECTURE.md#11-gas-and-testnet-mon-budget)).
-- **Fast enough for a phone.** Blocks averaged 0.305 s over 1,000 blocks ([verification](spikes/verify/RESULT.md)); send-to-receipt had a median of 1,403 ms over the public RPC across a 56-transaction live run ([log](spikes/e2e/logs/live-2026-10-06T15-04-29/console.txt)); the go-live buy in a phone-size browser filled in 1.5 s ([go-live](docs/evidence/golive/RESULT.md)).
+- **A real order book for every strike.** Kuru is a fully onchain CLOB, so each strike is a book that contracts and agents can read and trade. Opening one costs 1,467,042 gas (about 0.15 testnet MON); a ladder opens up to four of them every day, which only makes sense where blockspace is cheap ([gas table](ARCHITECTURE.md#11-gas-and-testnet-mon-budget)).
+- **Fast enough for a phone.** Blocks average 0.302 s on both Monad mainnet and testnet (1,000-block windows, Oct 11; 0.305 s in the Oct 6 [verification](spikes/verify/RESULT.md)), and blocks are final two slots (about 0.6 s) after they land; send-to-receipt had a median of 1,403 ms over the public RPC across a 56-transaction live run ([log](spikes/e2e/logs/live-2026-10-06T15-04-29/console.txt)); the go-live buy in a phone-size browser filled in 1.5 s ([go-live](docs/evidence/golive/RESULT.md)).
 - **Cheap re-quotes.** A live re-quote of one strike (cancel 2 + place 2) billed 0.055–0.058 MON, so the maker can follow the market through the day.
 - **Fast payout.** Redemption opens 15 minutes after the CRE report, instead of an optimistic-oracle proposal and dispute period.
 
@@ -128,6 +135,8 @@ Kuru books of the RCSS 2026-10-08 ladder: ≥ 28 [`0x171b…DBd7`](https://testn
 
 ## Repository layout
 
+**Stack:** Solidity 0.8.37 and Foundry · TypeScript on Node 22 and Bun · a Vite + React + viem PWA · Cloudflare Pages, Workers and Durable Objects · Chainlink CRE (TypeScript compiled to WASM) · Kuru v1 order books · Dynamic SDK · MetaMask Agent Wallet plugin (oclif) · Monad testnet (chain 10143). Architecture: [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ```
 src/ test/ script/      Solidity contracts, Foundry tests (unit, fuzz, invariant, fork, security), deploy and e2e scripts
 deployments/            testnet.json: every address, role and parameter
@@ -135,16 +144,17 @@ packages/forecast/      METAR sources, the settlement rule, Polymarket-implied f
 packages/maker/         Market maker and daily ladder roll
 packages/cre-workflow/  Chainlink CRE settlement workflow (TypeScript → WASM)
 packages/mm-plugin/     MetaMask Agent Wallet plugin
+skills/                 Agent skill for the plugin (isotherm-weather-trading/SKILL.md, same file as packages/mm-plugin/SKILL.md)
 packages/abi/           ABIs exported from forge
 apps/web/               Phone PWA (Vite + React + viem, Dynamic)
 apps/api/               Cloudflare Worker: drip, gasless relayer, snapshot, stats
-apps/maker-worker/      The market maker as a Cloudflare Worker + Durable Object
+apps/maker-worker/      The live market maker: Cloudflare Worker + Durable Object
 docs/  brand/  spikes/  Runbook and evidence, logo and cover, feasibility spikes from 2026-10-06
 ```
 
 ## Quick start
 
-Requirements: Node 22.18+ (it runs the `.ts` sources directly) and Foundry. The CRE workflow also needs `bun` and the CRE CLI v1.37.0, which `packages/cre-workflow/setup.sh` installs at pinned versions (the CLI download is checksum-verified); the script targets macOS arm64, and on other platforms the CLI is installed by hand. Keys live outside the repo (`~/.config/isotherm/`, one file per role); never commit them.
+Requirements: Node 22.18+ (it runs the `.ts` sources directly) and Foundry. The CRE workflow also needs `bun` and the CRE CLI v1.37.0, which `packages/cre-workflow/setup.sh` installs at pinned versions (the CLI download is checksum-verified); the script has pinned builds for macOS and Linux (arm64 and amd64). Keys live outside the repo (`~/.config/isotherm/`, one file per role); never commit them.
 
 ```bash
 forge build && forge test                                                       # offline suite (fork tests skip)
@@ -163,9 +173,9 @@ Deployment (`script/deploy-testnet.sh`, testnet only), the live maker, the API a
 
 ## Disclosures
 
-**Built with AI coding tools: Claude Code (Anthropic).** Ted Chen chose the idea, directed the work and made the product decisions; Claude Code wrote most of the code, tests, scripts, documentation and the logo under that direction. Commits made with Claude Code carry a `Co-Authored-By: Claude` trailer.
+**Built with AI coding tools: Claude Code (Anthropic).** Ted Chen chose the idea, directed the work and made the product decisions; Claude Code wrote most of the code, tests, scripts, documentation and the logo under that direction. Every commit made with Claude Code carries a `Co-Authored-By: Claude` trailer. The narration in the videos is a synthetic voice generated with VoxCPM2 (OpenBMB, Apache-2.0); no real person's voice was recorded or cloned.
 
-**Originality.** All code was written during the Metropolis build window (Sep 1 – Oct 13, 2026); the first commit is dated 2026-10-06. No pre-existing code from other projects is included. The only code we did not write is the third-party software below. The logo and video cover in `brand/` are original artwork made for this project.
+**Originality and pre-existing code.** Isotherm's own code was all written during the Metropolis build window (Sep 1 – Oct 13, 2026); the first commit is dated 2026-10-06 and the commit history covers the build. **No pre-existing code** from earlier projects is included. The only code we did not write is the third-party software below. Isotherm builds on existing products and protocols, used as integrations: Monad testnet, Kuru v1 order books, Chainlink CRE, Dynamic, the MetaMask Agent Wallet and Agora AUSD (testnet), plus public Polymarket and weather data (below). The logo and video cover in `brand/` are original artwork made for this project.
 
 ### Third-party code
 
@@ -177,7 +187,7 @@ Summary in [NOTICE.md](NOTICE.md); each component keeps its own license.
 | forge-std 1.17.0 | MIT or Apache-2.0 | Tests and scripts |
 | Kuru v1 interfaces (Kuru-Labs/Kuru-contracts-dex-public, commit `2060bb2`) | GPL-2.0-or-later | `src/interfaces/IKuru.sol`, `spikes/kuru/src/interfaces/IKuru.sol` and `spikes/e2e/src/IsothermZap.sol` are derived from Kuru's public interfaces and carry GPL-2.0-or-later headers. `src/IsothermZap.sol` (MIT) imports that interface, so the compiled IsothermZap is distributed under GPL-2.0-or-later terms; text in [`LICENSES/GPL-2.0-or-later.txt`](LICENSES/GPL-2.0-or-later.txt). |
 | Chainlink CRE TypeScript SDK 1.23.0 | BUSL-1.1 | npm dependency of the workflow |
-| Chainlink CRE CLI v1.37.0; KeystoneForwarder and IReceiver | MIT | Build and run the workflow; called onchain |
+| Chainlink CRE CLI v1.37.0; KeystoneForwarder, MockKeystoneForwarder and the `IReceiver` interface | MIT | Build and run the workflow; the forwarders are called onchain; `src/interfaces/IReceiver.sol` reproduces Chainlink's published `IReceiver` interface |
 | Dynamic SDK (`@dynamic-labs/*` 5.9.4, `@dynamic-labs-sdk/*` 1.38.0) | MIT (`@dynamic-labs-sdk/*`: Dynamic's terms) | Login and embedded wallet |
 | MetaMask Agent Wallet `@metamask/agent-wallet` 7.x | MetaMask source-available license | Peer dependency of the plugin, not redistributed |
 | viem, @noble/curves, oclif, React, Vite, zod | MIT | Libraries |
