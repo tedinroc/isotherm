@@ -21,7 +21,7 @@ Monad Metropolis, Track 01 (Onchain Finance & Trading). Isotherm runs on Monad t
 | **API** (same origin) | [`/api/health`](https://isotherm.pages.dev/api/health), [`/api/snapshot`](https://isotherm.pages.dev/api/snapshot), [`/api/stats`](https://isotherm.pages.dev/api/stats), [`/api/settlements`](https://isotherm.pages.dev/api/settlements) |
 | **Contracts** (Sourcify `exact_match`) | [Resolver](https://testnet.monadvision.com/address/0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B) · [CollateralVault](https://testnet.monadvision.com/address/0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39) · [IsothermZap](https://testnet.monadvision.com/address/0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0) · [all addresses](#contracts-and-addresses) |
 | **Agent plugin** | [`packages/mm-plugin`](packages/mm-plugin/README.md): `mm weather …` for the MetaMask Agent Wallet; agent skill in [`skills/isotherm-weather-trading/SKILL.md`](skills/isotherm-weather-trading/SKILL.md) |
-| **Videos** | [Technical demo](https://youtu.be/15AFL_xz_3U) (2:58) · [Pitch](https://youtu.be/_OI-bEk7hGI) (1:55) · [Dynamic sign-in flow](https://youtu.be/XU761rIkU-k) (1:12) |
+| **Videos** | [Technical demo](https://youtu.be/15AFL_xz_3U) (2:58) · [Pitch](https://youtu.be/_OI-bEk7hGI) (1:55) · [Dynamic sign-in flow](https://youtu.be/XU761rIkU-k) (1:12) · [Chainlink CRE live run](https://youtu.be/GjaAFeqG0oA) (1:41) · [MetaMask Agent Wallet flow](https://youtu.be/kaOWRwc2IA0) (3:07) |
 | **Design docs** | [ARCHITECTURE.md](ARCHITECTURE.md) · [docs/OPERATIONS.md](docs/OPERATIONS.md) · logo and cover in [`brand/`](brand/) |
 
 ## The problem and the product
