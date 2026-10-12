@@ -162,7 +162,7 @@ needs MFA approval.
   plugin no longer calls `buyNo` at all; if a redeployed Zap gains `minNoOut`, switching Buy NO back to one
   transaction is a deliberate code change, not automatic.
 
-## Evidence: every command in the real mm 7.0.0 host (local stand-in for MetaMask's backend; the signed-in run is in [`evidence/signed-in/`](evidence/signed-in/README.md))
+## Evidence: every command in the real mm 7.0.0 host (local stand-in for MetaMask's backend; the signed-in runs are in [`evidence/signed-in/`](evidence/signed-in/README.md) and [`evidence/signed-in-2026-10-12/`](evidence/signed-in-2026-10-12/README.md))
 
 **How the harness works.** `harness/run-all.sh` runs:
 - the real `@metamask/agent-wallet@7.0.0` binary;
@@ -235,7 +235,7 @@ once approvals exist, 993,244 (0.1013 MON) with two fresh exact approvals.
 | Writes through the agent wallet | Every transaction goes through `ctx.walletExecutor`, with an `intent.summary` per step and `emitStepNotices` for multi-step flows. The stub log shows each request arriving signed (`signed:true`, `txKeys` incl. `gasLimit`). |
 | "New trading superpower" | A new asset class: weather strikes, with a book walk, a Polymarket-based fair value and cross-venue gap, an observed-max guard, canonical-book protection, a sandwich-proof Buy NO and settlement redemption. Plus generic Kuru v1 CLOB limit and cancel on Monad, which mm's built-in commands cannot do. |
 | Works in the real host | Real `mm` 7.0.0 binary, tarball install with consent, `--json` outputs in `evidence/`. |
-| Signed-in real flow | 2026-10-08: real MetaMask sign-in, server wallet in Guard Mode with an email approval per transaction, MetaMask's signing service broadcasting on 10143: AUSD approve `0x924dc91f…79c1`, then `Zap.buyYes` `0x82358f48…52ee` (2 AUSD → 6.054545 YES). [`evidence/signed-in/`](evidence/signed-in/README.md) |
+| Signed-in real flow | 2026-10-08: real MetaMask sign-in, server wallet in Guard Mode with an email approval per transaction, MetaMask's signing service broadcasting on 10143: AUSD approve `0x924dc91f…79c1`, then `Zap.buyYes` `0x82358f48…52ee` (2 AUSD → 6.054545 YES). [`evidence/signed-in/`](evidence/signed-in/README.md) On 2026-10-12 a full signed-in session on the Taipei Oct 13 ladder: quote and edge, `weather buy` (2 AUSD → 5.123076 YES, ≥ 33 °C), `kuru limit` post-only (5 @ 0.27, order 9), `kuru book`, `kuru cancel --all --withdraw`: seven transactions, each approved by email ([`evidence/signed-in-2026-10-12/`](evidence/signed-in-2026-10-12/README.md)). |
 | Monad support despite the host gap | Read fallback, a self-contained setup script, `weather doctor`, and mapping of the gateway 400 error. |
 | Agent-ready | `SKILL.md` (also `skills/isotherm-weather-trading/SKILL.md` at the repository root), `--json` everywhere, `--dry-run`, structured error codes with hints. |
 

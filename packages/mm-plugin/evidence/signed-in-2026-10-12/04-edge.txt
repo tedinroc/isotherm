@@ -1,0 +1,6 @@
+# 2026-10-12T18:35:08Z to 18:35:08Z (first and last output line), exit 0
+$ mm weather edge taipei | jq -c '.data.rows[] | {strike, bestBid, bestAsk, reference, suggestion}'
+{"strike":"Tmax>=32C","bestBid":0.71,"bestAsk":0.78,"reference":0.7589,"suggestion":null}
+{"strike":"Tmax>=34C","bestBid":0.02,"bestAsk":0.09,"reference":0.066,"suggestion":null}
+{"strike":"Tmax>=31C","bestBid":0.89,"bestAsk":0.98,"reference":0.9487,"suggestion":null}
+{"strike":"Tmax>=33C","bestBid":0.32,"bestAsk":0.39,"reference":0.3555,"suggestion":null}

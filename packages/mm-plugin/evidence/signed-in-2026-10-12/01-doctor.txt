@@ -1,0 +1,15 @@
+# 2026-10-12T18:34:45Z to 18:34:45Z (first and last output line), exit 0
+$ mm weather doctor | jq -r '.data.checks[] | "\(if .ok then "ok" else "--" end)  \(.check)"'
+ok  mm customEvmChains[10143] (executor nonce/gas/fees)
+--  mm gateway ctx.publicClient(10143)
+ok  read RPC
+ok  contract CollateralVault
+ok  contract Resolver
+ok  contract IsothermZap
+ok  contract AUSD
+ok  contract KuruRouter
+ok  contract Multicall3
+ok  canonical market registry
+ok  maker snapshot API (optional, display only)
+ok  wallet MON for gas
+ok  wallet AUSD

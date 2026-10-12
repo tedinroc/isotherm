@@ -1,0 +1,6 @@
+# 2026-10-12T18:35:00Z to 18:35:00Z (first and last output line), exit 0
+$ mm weather quote taipei | jq -r '.data.rows[] | [.strike, .book.bestBid, .book.bestAsk, .fairValue, .market] | @tsv'
+Tmax>=31C	0.89	0.98	0.9487	0xbd164353dD41F1aB66f81a677E2B0c6d70bDea53
+Tmax>=32C	0.71	0.78	0.7589	0x8cc65C92a3BF2f462231AF598b44E3288e6dEe94
+Tmax>=33C	0.32	0.39	0.3555	0xa6886df9EbBB0602531DeA4B1F2A9E35F354424A
+Tmax>=34C	0.02	0.09	0.066	0xC3e9930a86FeAF6d87bC88C7ECB7fcFBd5e57BdE

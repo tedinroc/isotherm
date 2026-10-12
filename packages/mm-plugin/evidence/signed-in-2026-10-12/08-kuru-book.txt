@@ -1,0 +1,3 @@
+# 2026-10-12T18:50:43Z to 18:50:43Z (first and last output line), exit 0
+$ mm kuru book 0xa6886df9EbBB0602531DeA4B1F2A9E35F354424A | jq -c '.data | {pair, bestBid: .book.bestBid, bestAsk: .book.bestAsk, openOrders: .mine.openOrders, margin: .mine.marginAccount}'
+{"pair":"RCSS-20261013-GE33-Y/AUSD","bestBid":0.32,"bestAsk":0.39,"openOrders":[{"id":"9","side":"buy","price":"0.2700","size":"5.000000"}],"margin":{"RCSS-20261013-GE33-Y":"0.000000","AUSD":"0.000000"}}

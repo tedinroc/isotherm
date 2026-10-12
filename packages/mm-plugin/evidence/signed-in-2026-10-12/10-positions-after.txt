@@ -1,0 +1,4 @@
+# 2026-10-12T18:54:04Z to 18:54:04Z (first and last output line), exit 0
+$ mm weather positions | jq -c '.data.balances, (.data.positions[] | select(.date == "2026-10-13") | {strike, yes, no, mark})'
+{"AUSD":"9996.000000","MON":"0.065326673911843481","ausdAllowanceToZap":"0.000000"}
+{"strike":"Tmax>=33C","yes":"5.123076","no":"0.000000","mark":{"bestBid":0.32,"bestAsk":0.39,"markAusd":"1.639384"}}
