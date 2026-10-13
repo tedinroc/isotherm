@@ -126,3 +126,32 @@ describe("store", () => {
     expect(stringify({ a: 10n })).toBe('{"a":"10"}');
   });
 });
+
+describe("wrangler.toml CONFIG_OVERRIDES (judging override)", () => {
+  it("parses, merges over worker.json and keeps every other role and address", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { parseTreasuryCfg } = await import("../../src/treasury.ts");
+    const toml = readFileSync(new URL("../../wrangler.toml", import.meta.url), "utf8");
+    const m = toml.match(/^CONFIG_OVERRIDES = '([^'\n]*)'$/m);
+    expect(m, "CONFIG_OVERRIDES must be a one-line TOML literal string").not.toBeNull();
+    const cfg = workerConfig(settingsFrom({ CONFIG_OVERRIDES: m![1] } as Env), "live");
+    const b = budgetCfgOf(cfg);
+    expect(b.dailyCapMon).toEqual({ maker: 4, operator: 0.5, marketCreator: 0.8 });
+    expect(b.softRatio).toBe(0.75);
+    expect(b.rollCapMon).toEqual({ maker: 0.8, operator: 0.5, marketCreator: 0.8 });
+    expect(b.reserveMon).toEqual({ maker: 0.8, operator: 0.1, marketCreator: 0.05 });
+    const t = parseTreasuryCfg((cfg as any).treasury)!;
+    expect(t.address).toBe("0x655dE7F5E6EdB42f26C422ED056F94BA9964BEed");
+    expect([t.floorMon, t.lowAlertMon, t.globalDailyCapMon]).toEqual([2, 20, 12]);
+    expect(t.roles.maker).toEqual({ address: "0xd572638F07829D1c3636400FB73CF34Ca6c7448a", minMon: 2, targetMon: 5, dailyCapMon: 6 });
+    expect(t.roles.operator).toEqual({ address: "0x602dbf3937558B1d18d76315635fD5410089bd51", minMon: 1.2, targetMon: 2.5, dailyCapMon: 1.5 });
+    expect(t.roles.relayer).toEqual({ address: "0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f", minMon: 3, targetMon: 8, dailyCapMon: 3 });
+    expect(t.roles.attester).toEqual({ address: "0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9", minMon: 0.3, targetMon: 0.8, dailyCapMon: 0.5 });
+    expect(t.roles.guardian).toEqual({ address: "0x30C8E371719Ff00577284dd9c10587Fa89357d50", minMon: 0.05, targetMon: 0.15, dailyCapMon: 0.2 });
+    // the global cap covers every role's cap, so one role's top-ups can never use up another's
+    const sum = Object.values(t.roles).reduce((a, r) => a + r.dailyCapMon, 0);
+    expect(t.globalDailyCapMon).toBeGreaterThanOrEqual(sum);
+    // the maker's top-up cap covers a full day of its own meters (quoting + roll), plus room for the reserve meter
+    expect(t.roles.maker.dailyCapMon).toBeGreaterThanOrEqual(b.dailyCapMon.maker + (b.rollCapMon as Record<string, number>).maker);
+  });
+});

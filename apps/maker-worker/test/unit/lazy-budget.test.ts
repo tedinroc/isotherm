@@ -2,7 +2,7 @@
 // (packages/maker policy.ts), one-sided refills, the quoting budget tiers (budget.ts quotingTier: soft = x2 spreads and
 // urgent re-quotes only, hard = no new quotes and urgent strikes pulled) and the reserve meter that never refuses a pull.
 import { encodeFunctionData } from "viem";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { kuruBookAbi } from "../../../../packages/maker/src/abis.ts";
 import { budgetDay } from "../../../../packages/maker/src/budget.ts";
 import { macSnapshot, MAKER, PM, stubData, world } from "./helpers.ts";
@@ -18,8 +18,11 @@ const tick = async (w: W, pm: Record<number, number>, over?: string) => {
   return w.engine({ MAKER_MODE: "live", ...(over ? { CONFIG_OVERRIDES: over } : {}) }, stubData({ ...PM, ...pm })).tick();
 };
 const strike = (r: Awaited<ReturnType<typeof tick>>, k: number) => r.ladders[0].strikes.find((s) => s.k === k)!;
-/** set today's live meters (the budget day is the wall clock's Taipei day, as in the shared send()) */
+/** set today's live meters (the budget day is the wall clock's Taipei day, as in the shared send()). The fake chain
+ *  starts at the next 03:00Z (helpers.ts worldStart), which from 03:00 to 16:00 UTC is the next Taipei day, while the
+ *  status line's tier reads the engine clock: so the wall clock is set just behind the chain first, on its Taipei day. */
 const setMeters = (w: W, spent: Record<string, number>) => {
+  vi.setSystemTime((w.chain.time - 60) * 1000);
   const e = w.engine();
   const st = e.loadState("live");
   st.budget = { day: budgetDay(Date.now(), 480), spent, txs: {} };
@@ -32,6 +35,8 @@ const fill = (w: W, k: number, side: "bid" | "ask") => {
   w.chain.apply(MAKER.address, s.market, encodeFunctionData({ abi: kuruBookAbi, functionName: "batchCancelOrdersNoRevert", args: [[id]] }));
   return id;
 };
+
+afterEach(() => { vi.useRealTimers(); });
 
 describe("lazy re-quoting (live)", () => {
   it("a 0.03 fair move inside the resting spread is not re-quoted (the old rules did); a crossing is, at once", async () => {
