@@ -28,6 +28,8 @@ and 6. API: `GET /api/health` → `dripMon` 0.25 and `limits`. Rollback of the m
 1b000ee9-62c4-4c78-a7b5-1d5f6095ddd9 --name isotherm-maker`. **Revert after 2026-10-31:** delete the `CONFIG_OVERRIDES`
 line and `npm run deploy -- --live`; set `DRIP_MON` back to 0.15, re-run `size-caps.mjs` and `npm run deploy` in `apps/api`.
 
+**Phone alerts during judging:** the settlement VPS runs a read-only stack watchdog every 10 min (MAKER STALLED, BOOKS EMPTY, LADDER NOT OPENED, NO ACTIVE LADDER, DRIP/RELAY DOWN, the drip or relay cap used before 08:00 UTC, TREASURY/RELAYER/MAKER/OPERATOR LOW, SETTLEMENT OVERDUE, and a 09:00 Taipei digest; no digest = the watchdog is down), because the maker Worker's own pushes do not arrive. Install and remove it with `packages/cre-workflow/vps/install-watch.sh` (`--uninstall` after 2026-10-31); before pausing the maker on purpose, snooze its maker checks (sections 8.4, 8.5); details in `packages/cre-workflow/vps/README.md` section 13.
+
 ## 1. What is live
 
 | Thing | Where |
@@ -429,6 +431,12 @@ Run everything from `apps/maker-worker` with `XDG_CONFIG_HOME` set as in 8.2.
 
 ### 8.4 Rollback to the Mac
 
+0. **During judging (to 2026-10-31), snooze the VPS watchdog's maker checks first**, or the pull and the disarm
+   raise `BOOKS EMPTY` and `MAKER STALLED` every 3 h. Hours, at most 72; `--snooze 0` ends it; the other checks keep
+   running (`packages/cre-workflow/vps/README.md` section 13):
+   ```bash
+   ssh isotherm-vps bash isotherm/packages/cre-workflow/vps/stack-watch.sh --snooze 12
+   ```
 1. **Pull the Worker's quotes.** `node scripts/control.mjs pull all`, then `result` until it shows the pull, then
    `ticks 2` shows `sent: maker KILL >=k cancel x2` per quoted strike. Ladders stay paused in the Worker.
 2. **Disarm.** `node scripts/control.mjs disarm`, then `result` until "disarmed". The next tick is shadow.
@@ -454,7 +462,7 @@ Run everything from `apps/maker-worker` with `XDG_CONFIG_HOME` set as in 8.2.
 | Goal | Command (from `apps/maker-worker`) |
 |---|---|
 | History, one line per strike | `node scripts/control.mjs ticks 30` |
-| Pull all quotes now and pause | `node scripts/control.mjs pull all`; undo with `resume RCSS:20261010` |
+| Pull all quotes now and pause | `node scripts/control.mjs pull all`; undo with `resume RCSS:20261010`. During judging, first snooze the VPS watchdog's maker checks (from any directory): `ssh isotherm-vps bash isotherm/packages/cre-workflow/vps/stack-watch.sh --snooze 6`; `--snooze 0` after `resume` |
 | Roll a date by hand (idempotent) | `node scripts/control.mjs roll RCSS 2026-10-10` |
 | Change caps or settings | edit `config/worker.json` or the `[vars]` in `wrangler.toml`, then `npm run deploy` (`-- --live` once live) |
 | Rotate a secret | `node scripts/put-secrets.mjs --only MAKER_KEY --live` (`--live` is required since the cutover) |

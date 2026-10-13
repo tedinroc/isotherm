@@ -1,0 +1,17 @@
+# 2026-10-13T14:44:42Z stack-watch.sh --dry-run on the Mac against the LIVE public API (4 GETs) and live Monad testnet (cast 1.8.5 reads: Ankr, then the official RPC); scratch state dir. Isolation: ISOTHERM_ALERT_URL_FILE=/nonexistent, so lib.sh cannot read any alert URL; --dry-run alone already guarantees nothing is sent (it never calls push_alert)
+$ ISOTHERM_ALERT_URL_FILE=/nonexistent ISOTHERM_CAST=~/.foundry/bin/cast ISOTHERM_WATCH_DIR=<scratch> bash packages/cre-workflow/vps/stack-watch.sh --dry-run
+[2026-10-13T14:44:42Z] [watch] DRY RUN: nothing is pushed and no state is saved (--dry-run hands nothing to push_alert); no alert URL file
+[2026-10-13T14:45:02Z] [watch] read: snapshot 1 min old, 1 active ladder(s) (next RCSS 2026-10-15 at 2026-10-14T04:00Z (not planned yet)); relayer 102.42 MON, float 51000, drips 0/17, relays 0/28; treasury 158.62, maker 4.83, operator 2.24 MON; settlements 5
+WOULD PUSH [priority default, repeat not limited] ISOTHERM WATCH: daily digest 2026-10-13
+    First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
+    Yesterday (UTC 10-12): no counter samples. Totals: 9 drips, 8 relayed mints.
+    Relayer 102.42 MON = 19.0 worst-case days at the current caps (17 drips x 0.260 + 28 relays x 0.03417 = 5.38 MON/day; 18.4 days left to 10-31); AUSD float 51000.
+    Treasury 158.62, maker 4.83, operator 2.24 MON. Maker quoting spend vs its 4 MON cap is not public (control.mjs status).
+    Ladders: 1 active (RCSS 2026-10-14 to 09:30Z); next RCSS 2026-10-15 opens 2026-10-14T04:00Z (not planned yet).
+    Settlements: 5 settled, 0 void; latest RCSS 2026-10-12 30C.
+    Trading: 4 non-maker wallets, 10 non-maker fills in all.
+    Open alerts: none.
+    Watch: 1 run(s) since the last digest, 0 could not read the API.
+[2026-10-13T14:45:02Z] [watch] dry run done: 1 push(es) would be sent; nothing pushed, no state saved
+exit 0
+afterwards: no state file (a dry run saves none); alerts/: 0 files

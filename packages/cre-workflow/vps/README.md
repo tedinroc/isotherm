@@ -34,6 +34,8 @@ Mac. The guard's nonce reads are free.
 | `settle-vps.sh` | VPS | systemd entry. Runs the single-writer guard and the alerts around the unchanged `scripts/settle-job.sh`. |
 | `isotherm-vps.sh` | VPS | Helper: `status`, `preflight`, `dry-run`, `login`, `test-alert`, `clear-conflict`, `logs`. `check`, `claim` and `release` are called by the Mac scripts over SSH. |
 | `lib.sh`, `lib-mac.sh` | both | Shared helpers. They never print a key or the alert URL. |
+| `stack-watch.sh`, `stack-watch.mjs` | VPS | The read-only stack watchdog for the judging period, every 10 min (section 13). |
+| `install-watch.sh`, `systemd/isotherm-watch.{service,timer}.in` | VPS | Installs or removes the watchdog's two units; touches nothing of the settlement job (section 13). |
 | `relogin.sh` | Mac | After a `CRE LOGIN NEEDED` push: the tunnel, the VPS's `login` helper and the browser sign-in in one command (section 4). |
 | `push.sh` | Mac | Ships the job's code to `~/isotherm` on the VPS: `packages/cre-workflow` without `var/`, `.tools/`, `node_modules/`, keys or `.env`, plus `packages/abi` and `deployments/testnet.json`. Then it checks that the code on the VPS is byte-identical to the checkout. |
 | `cutover.sh` | Mac | Mac → VPS. A dry run by default; `--execute` does the switch (section 6). |
@@ -367,7 +369,8 @@ The nonce read is free, global, and needs no new secret.
 - `attester low on MON` below 0.1 MON (24 h);
 - `WRITER CONFLICT` (every time), then `still stopped` (6 h).
 
-Every alert is also kept in `var/alerts/ALERTS.log`.
+Every alert is also kept in `var/alerts/ALERTS.log`. The stack watchdog (section 13) sends its own `ISOTHERM WATCH:`
+pushes and keeps them in `var/watch/alerts/ALERTS.log`.
 
 ## 10. Tests run on 2026-10-09 (`evidence/`)
 
@@ -443,3 +446,112 @@ those accounts only to sign or to send reports to the forwarder, which never cal
   the RPC is a separate change to the official path.
 - **The attester key on a VPS.** The hardening in section 3 is recommended. The guardian's challenge watcher on the
   Worker is the backstop for a wrong report.
+
+## 13. Stack watchdog (judging period, until 2026-10-31)
+
+**Why.** The maker Worker's own alert pushes do not arrive: ntfy answers 401/429 to Cloudflare's shared egress IPs
+(`docs/OPERATIONS.md` 8.9). This VPS pushes from its own IP. So during judging the VPS also watches the rest of the
+stack and pushes to the phone when the maker stalls, the books go empty, the next ladder does not open, the drip or the
+relayer fails, a bot uses up the day's drips, a balance runs low, or a settlement is overdue.
+
+**What a run does** (`stack-watch.sh`, every 10 min at :00/:10/…/:50 UTC, never at :05):
+- 4 GETs of the public API: `/api/health`, `/api/snapshot`, `/api/settlements`, `/api/stats`;
+- 3 `cast balance` reads (treasury, maker, operator; Ankr first, then the official RPC), and `Resolver.resultOf` only
+  for a ladder that reached the chain, is past day end + 5 h and is not listed in `/api/settlements` yet;
+- then the checks below, the pushes through `lib.sh` `push_alert` (the same `alert-webhook.url` as the settlement
+  job, never printed), and its state in `var/watch/`.
+
+It is **read-only**. It sends no transaction, never POSTs to the API, holds no key, and never touches the settlement
+job's `var/` files, the CRE login or `isotherm-settle.timer`. It runs niced (15), with idle I/O, a 300 MB memory cap and
+a 60 s budget for chain reads. A run takes a few seconds (about 20 s live from the Mac); the worst case is about 110 s,
+well before :03. A start at :03–:09 (a `Persistent` catch-up after a reboot) is skipped.
+
+| Push (`ISOTHERM WATCH: …`) | Fires when | Priority, repeat | Why this line |
+|---|---|---|---|
+| `MAKER STALLED` | the snapshot (`receivedAt`) is > 15 min old on a second run, or already ≥ 25 min old; or `/api/snapshot` is empty | high, 3 h | the Worker posts one every minute; one 16-minute gap that heals by itself is no night-time push, ticks that fail on and off are (once) |
+| `BOOKS EMPTY` | a strike of an active ladder with fair 0.10–0.90 has no bid or no ask (or that side is fully filled) for > 60 min; not from 15 min before a ladder's close, nothing at all 09:15–09:35 UTC. Once raised, any empty at-the-money strike keeps it open | default, 3 h | outside 0.10–0.90 the maker pulls on purpose; a fill is refilled in a tick or two, so an hour is the quoting cap or a stuck maker |
+| `LADDER NOT OPENED <ICAO>` | from 13:00 local (05:00 UTC for Taipei) tomorrow's ladder is not `active` (before 13:00: today's): `planned`, `rolling`, or not in the snapshot at all | high, 3 h | the maker rolls it at 12:00 local and retries a refused roll every 5 min; a normal roll takes minutes. The body names the state and `control.mjs roll` |
+| `NO ACTIVE LADDER` | no `active` ladder for > 20 min over 3 runs, outside a close window | high, 3 h | when rolls work, tomorrow's ladder is active before today's closes, so this means nothing can be traded |
+| `API UNHEALTHY`, `DRIP DOWN`, `RELAY DOWN` | `/api/health` `ok` false or no relayer; `dripReady` / `relayReady` false, for > 20 min over 3 runs. Not when the day's cap is used, nor when drips or relays are disabled on purpose | high, 3 h | 20 min ignores one RPC hiccup of the API; a good reading in between does not restart the clock |
+| `RELAYER LOW` | relayer < 15 MON | high, 6 h | ~2.8 worst-case days at the current caps (17 × 0.260 + 28 × 0.034 = 5.38 MON/day); the body gives the runway to 10-31 |
+| `AUSD FLOAT LOW` | float < 5 drips (5,000 AUSD) for > 20 min over 3 runs | default, 3 h | the API's minute cron refills it to 50,000; drips fall back to the public faucet meanwhile |
+| `DRIP CAP USED EARLY`, `RELAY CAP USED EARLY` | `dripsToday` ≥ 17 or `relaysToday` ≥ 28 before 08:00 UTC; once per UTC day. After 08:00: `… CAP REACHED` at **low** priority (no sound) | high, once a day | likely a bot (judges took 9 drips in 6 days); the body says what to set back: `docs/OPERATIONS.md` section 0. Later in the day it is heavy use, and 15:00–24:00 UTC is the Taipei night |
+| `TREASURY LOW` | treasury < 20 MON | high, 6 h | the judging line of the Worker's own `TREASURY LOW` |
+| `MAKER LOW`, `OPERATOR LOW` | maker < 1.0 or operator < 0.9 MON for > 20 min over 3 runs | high, 6 h | the treasury tops them up below 2 and 1.2 every 10 min, so two passes without it means top-ups fail. Operator 0.9, not 0.6: the 04:00 UTC roll needs ~0.85 and is refused below it |
+| `SETTLEMENT OVERDUE <ICAO> <date>` | no result on the Resolver by day end + 5 h (21:00 UTC for Taipei), for a ladder that reached the chain (a series or a market) | high, 3 h | the VPS settles at 18:05 and retries hourly: three attempts failed. A roll that never sent a transaction has nothing to settle (`LADDER NOT OPENED` covers it) |
+| `WATCH CANNOT REACH THE API` | the 3rd run in a row that cannot read `/api/health` or `/api/snapshot` | high, 3 h | one or two failed runs are network weather |
+| `daily digest <date>` | the first run at or after 01:00 UTC (09:00 Taipei) | default, daily | yesterday's drips and relays, the relayer's runway, the treasury, maker and operator, the ladders (active, next roll), settlements, judge trading, open alerts. **No digest by 09:10 Taipei = the watchdog is down** |
+| `CLEARED <alert>` | a pushed alert has been gone for 30 min (a `SETTLEMENT OVERDUE`: at once, a result is final) | low, once | it also resets that alert's repeat window |
+
+**Hysteresis.** A problem ends only after 30 min without it (four runs). Until then it keeps its start time, its run
+count and its repeat window. So a problem that comes and goes (a maker whose ticks fail on and off, as on 2026-10-09
+14:00–15:27 UTC) is one push per repeat window, not a high push and a `CLEARED` per recurrence. A pending problem keeps
+counting toward its threshold through a good reading.
+
+**Delivery.** The one-off pushes (the digest, `CAP USED EARLY` / `CAP REACHED`, `CLEARED`, the end-date reminder) are
+re-sent on the next runs until `push_alert`'s delivery stamp for that title changes (it is written only on a 2xx
+answer): at most 2 re-sends per run, for at most 24 h. A single 429 from ntfy therefore delays them by 10 min instead of
+losing them. The other alerts already retry, because their repeat window starts only on a delivered push.
+
+A balance read that fails, or an unreadable API, never raises or clears anything; the alert's state is kept. The
+maker's quoting spend against its 4 MON cap is not public (the API strips the snapshot's budget), so the digest leaves
+it out: `node scripts/control.mjs status` in `apps/maker-worker` shows it. Details and every threshold's reasoning are
+in the comments of `stack-watch.mjs`.
+
+**Install** (from the repository root on the Mac, between :10 and :02):
+```bash
+packages/cre-workflow/vps/push.sh isotherm-vps                                          # ships vps/ (code only)
+ssh isotherm-vps bash isotherm/packages/cre-workflow/vps/stack-watch.sh --dry-run       # what it would push now
+ssh isotherm-vps bash isotherm/packages/cre-workflow/vps/install-watch.sh               # both units; timer on
+ssh isotherm-vps systemctl --user start isotherm-watch.service                          # optional: the first digest now
+ssh isotherm-vps bash isotherm/packages/cre-workflow/vps/install-watch.sh --status      # timer, next run, last run
+```
+The first run pushes the first digest ("the watchdog is running"), which also proves the push path. `install-watch.sh`
+is idempotent and touches only `isotherm-watch.service` and `isotherm-watch.timer`.
+
+**Operate.**
+- State: `ssh isotherm-vps bash isotherm/packages/cre-workflow/vps/install-watch.sh --status` (timer, next run, snooze,
+  journal). It prints the journal with `-o cat`, so the VPS's hostname never reaches the Mac's terminal.
+- Logs: `journalctl --user -u isotherm-watch -n 50 -o cat` (the lines carry their own UTC time; the default format
+  would add the hostname).
+- Every alert is also in `var/watch/alerts/ALERTS.log`.
+- A dry run at any time: `stack-watch.sh --dry-run` pushes nothing and saves no state.
+- **Deliberate maker pause** (`control.mjs pull` or `disarm`, the rollback in `docs/OPERATIONS.md` 8.4): snooze the
+  maker checks (`MAKER STALLED`, `BOOKS EMPTY`, `LADDER NOT OPENED`, `NO ACTIVE LADDER`) for 1–72 h; the other checks
+  keep running, and the digest shows the snooze. End it early with `--snooze 0`.
+  ```bash
+  ssh isotherm-vps bash isotherm/packages/cre-workflow/vps/stack-watch.sh --snooze 6
+  ssh isotherm-vps bash isotherm/packages/cre-workflow/vps/stack-watch.sh --snooze 0
+  ```
+
+**Remove it after 2026-10-31** (with the rest of the judging override, `docs/OPERATIONS.md` section 0):
+```bash
+ssh isotherm-vps bash isotherm/packages/cre-workflow/vps/install-watch.sh --uninstall           # keeps var/watch/
+ssh isotherm-vps bash isotherm/packages/cre-workflow/vps/install-watch.sh --uninstall --purge   # also deletes it
+```
+From 2026-11-01 the watchdog stops checking (its thresholds are the judging ones) and pushes one low-priority
+reminder a day to uninstall it.
+
+**Tests** (local only, `evidence/`):
+- `stack-watch-unit.txt` (macOS `/bin/bash` 3.2) and `stack-watch-unit-bash5.txt` (GNU bash 5.2, Linux container,
+  no network): **98 checks** of every alert, positive and negative, with fixtures and stubs. They cover the close
+  window, before the roll, a stuck or missing roll, the 3-run threshold, dedupe and the 30-min clear, problems that
+  come and go (a maker failing on and off, API reads failing 3 runs out of 4, a drip outage with a good reading every
+  20 min), a 429 from ntfy, the snooze, the digest once a day, `--dry-run` pushing and saving nothing, the :03–:09
+  skip, the lock, malformed API data and a failing evaluator. They also check that no push went anywhere but
+  `https://ntfy.invalid` and that no GET or `cast` call was made.
+- `watch-systemd-e2e.txt`: **19 checks** of the units and `install-watch.sh` under a real systemd user manager in the
+  Ubuntu 24.04 test container, with no network. Covered: root refused; render, verify and enable; idempotent; the
+  schedule never at :03–:09; one run through systemd with Nice, idle I/O, CPUWeight and MemoryMax applied;
+  `--status` without the hostname, and with a snooze set and ended; uninstall and purge; the settlement units untouched.
+- `stack-watch-live-dryrun.txt`: one `--dry-run` against the live API and live testnet reads (2026-10-13 14:44 UTC),
+  with `ISOTHERM_ALERT_URL_FILE=/nonexistent` as well: all healthy; only the first digest would be pushed.
+
+**Limits.**
+- It samples every 10 min, so "60 min" means 60–70 min.
+- If the VPS itself is down, nothing pushes: the missing 09:00 Taipei digest is the signal.
+- It watches what the public API and the chain show. The Worker's internal errors appear only as their effects (a
+  stale snapshot, empty books, a ladder that does not open, low balances).
+- The API does not publish the maker's `paused` flag, so a deliberate pull needs the snooze.
+- `LADDER NOT OPENED` knows the stations from their ladders in the snapshot (remembered 4 days). A station taken out
+  of the maker's config would be reported for those days; snooze or ignore it.

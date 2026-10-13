@@ -57,5 +57,7 @@ of the cutover and rollback scripts, including a second cutover after a rollback
 
 If the CRE login on the VPS lapses, it keeps settling on the labelled harness and pushes `CRE LOGIN NEEDED`. The fix is one command on the Mac plus the browser sign-in: `packages/cre-workflow/vps/relogin.sh isotherm-vps` (runbook §4).
 
+During judging (until 2026-10-31) the VPS also runs a read-only stack watchdog that pushes to the phone when the maker, the books, the next ladder's roll, the drip, a balance or a settlement goes wrong, plus a daily digest; the Worker's own pushes do not arrive (runbook §13).
+
 **Not verified here** (it needs the owner's account): the CRE sign-in itself on a VPS and how long its session lasts.
 The tunnel and callback mechanics were verified.

@@ -1,0 +1,15 @@
+# Every 10 min at :00 :10 :20 :30 :40 :50 (UTC), never at :05 when isotherm-settle.timer starts the settlement job.
+# The 01:00 UTC run sends the daily digest. Persistent=true: a run missed while the VPS was down happens right after
+# boot (stack-watch.sh skips it if that lands at :03-:09). Installed and enabled only by vps/install-watch.sh.
+[Unit]
+Description=Isotherm stack watchdog, every 10 min (:00/:10/...; never :05)
+
+[Timer]
+OnCalendar=*-*-* *:00/10:00 UTC
+Persistent=true
+AccuracySec=10s
+RandomizedDelaySec=0
+Unit=isotherm-watch.service
+
+[Install]
+WantedBy=timers.target
