@@ -1,0 +1,19 @@
+relayer 0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f at block 70672505 (2026-10-13T11:41:01.066Z)
+balance 102.423603328 MON, gas price 102.0 gwei, reserve 0.1 -> spendable 102.323603 MON
+horizon 19 days -> perDay = 102.323603 / 19 = 5.385453 MON
+dripCost  = 0.25 + 99752 gas x price = 0.260175 MON
+relayCost = 335000 gas x price = 0.034170 MON
+DRIP_DAILY_CAP  = floor(5.385453 x 0.85 / 0.260175) = 17
+RELAY_DAILY_CAP = floor((5.385453 - 17 x 0.260175) / 0.034170) = 28
+worst-case day      = 5.379730 MON <= perDay 5.385453 MON: yes
+worst-case 19 days  = 102.214869 MON <= spendable 102.323603 MON: yes
+
+# wrangler.toml [vars] -- sized 2026-10-13T11:41Z from balance 102.424 MON at 102 gwei, reserve 0.1, horizon 19 days
+RELAYER_MIN_MON = "0.1"
+DRIP_GAS_MON = "0.011"
+RELAY_COST_MON = "0.035"
+DRIP_DAILY_CAP = "17"
+DRIP_PER_IP_PER_DAY = "8"
+RELAY_DAILY_CAP = "28"
+RELAY_PER_IP_PER_DAY = "14"
+RELAY_PER_ADDRESS_PER_DAY = "14"

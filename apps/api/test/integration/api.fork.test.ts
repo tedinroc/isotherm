@@ -196,6 +196,7 @@ beforeAll(async () => {
       '--var', `ADMIN_TOKEN:${ADMIN}`,
       // mechanics, not the live budget: 3 drips per network and room for every drip below; relays: 3 per network,
       // 2 per address, so both limits are hit for real below
+      '--var', 'DRIP_MON:0.15', // this test's expectations were written for a 0.15 MON drip (wrangler.toml may differ)
       '--var', 'DRIP_PER_IP_PER_DAY:3',
       '--var', 'DRIP_DAILY_CAP:10',
       '--var', 'RELAY_PER_IP_PER_DAY:3',

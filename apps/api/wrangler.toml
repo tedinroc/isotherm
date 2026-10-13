@@ -43,7 +43,7 @@ RPC_MAX_RPS = "8"
 CHAIN_ID = "10143"
 ALLOWED_ORIGINS = "https://isotherm.pages.dev,https://*.isotherm.pages.dev,http://localhost:*,http://127.0.0.1:*"
 DRIP_ENABLED = "1"
-DRIP_MON = "0.15"
+DRIP_MON = "0.25"
 DRIP_AUSD = "1000"
 DRIP_ADDRESS_COOLDOWN_H = "24"
 AUSD_FLOAT_TARGET = "50000"
@@ -55,25 +55,26 @@ RELAY_ALLOW_PERMIT = "0"
 GAS_MULTIPLIER_PCT = "108"
 # Drip + relay POSTs per client network per minute, enforced in the Durable Object before any RPC work (exact).
 POST_LIMIT_PER_MIN = "30"
-# ---- MON budget (testnet MON is scarce). Sized by `node scripts/size-caps.mjs` (default --days 7) from the relayer's
-# LIVE balance, spread over a HORIZON of 7 UTC days so one worst-case day can never take the whole balance:
-#   2026-10-11T03:51Z (relayer topped up to 39.79 MON for judging, horizon 17 days through 2026-10-27): spendable 39.687 MON
-#   -> 2.3346 MON/day. dripCost = 0.15 + 99,752 gas x 102 gwei = 0.1602; relayCost = 335,000 gas x 102 gwei = 0.0342.
-#   DRIP_DAILY_CAP = floor(2.3346 x 0.65 / 0.1602) = 9; RELAY_DAILY_CAP = floor((2.3346 - 9 x 0.1602) / 0.0342) = 26;
-#   worst-case UTC day = 2.330 MON <= 2.3346, so 17 consecutive worst-case days (39.61 MON) fit in the 39.687 spendable:
-#   UTC days Oct 11-27 are covered even at maximum use.
-#   Per network (IPv4 / IPv6 /64): at most half a day's drips and relays.
+# ---- MON budget (testnet MON is scarce). Sized by `node scripts/size-caps.mjs` from the relayer's LIVE balance,
+# spread over a HORIZON of UTC days so one worst-case day can never take the whole balance (formula: apps/api/README.md).
+#   JUDGING SIZING 2026-10-13T11:41Z (evidence/size-caps-2026-10-13-judging.txt): the relayer was funded to 102.424 MON
+#   (+63 from the deployer, tx 0x4d7120db…7ca5) for a 19-day horizon through 2026-10-31; DRIP_MON 0.25 so one drip pays for
+#   a first Buy YES, a first Buy NO, a Sell and a merge (0.229 MON at 102 gwei; 0.15 covered only Buy YES, then the app
+#   refused Buy NO). `size-caps.mjs --days 19 --drip-mon 0.25 --drip-share 0.85`: spendable 102.324 -> 5.3855 MON/day;
+#   dripCost 0.260175, relayCost 0.03417; DRIP_DAILY_CAP floor(5.3855 x 0.85 / 0.260175) = 17, RELAY_DAILY_CAP 28;
+#   worst-case UTC day 5.380 <= 5.3855 and 19 such days 102.215 <= 102.324: Oct 13-31 are covered even at maximum use.
+#   DRIP_PER_IP_PER_DAY is 5, not the script's floor(17/2) = 8: at 0.25 MON a drip, 8 would let one home network take
+#   2 MON a day; 5 still covers a judging room sharing one network. The other per-network values are the script's.
+#   Revert after 2026-10-31 (DRIP_MON 0.15 and a fresh size-caps run). Previous sizing: 2026-10-11, 39.79 MON, 9 / 26.
 # Drips and relays never spend below RELAYER_MIN_MON (the reserve; only the AUSD-float cron refill may use it).
-# After funding the relayer (or when the time to the next top-up changes), re-run the script with --days set to that
-# horizon, paste its output here and redeploy (formula: apps/api/README.md).
 RELAYER_MIN_MON = "0.1"
 DRIP_GAS_MON = "0.011"
 RELAY_COST_MON = "0.035"
-DRIP_DAILY_CAP = "9"
-DRIP_PER_IP_PER_DAY = "4"
-RELAY_DAILY_CAP = "26"
-RELAY_PER_IP_PER_DAY = "13"
-RELAY_PER_ADDRESS_PER_DAY = "13"
+DRIP_DAILY_CAP = "17"
+DRIP_PER_IP_PER_DAY = "5"
+RELAY_DAILY_CAP = "28"
+RELAY_PER_IP_PER_DAY = "14"
+RELAY_PER_ADDRESS_PER_DAY = "14"
 STATS_SCAN_MAX_WINDOWS = "20"
 REAL_STATIONS = "RCSS,RJTT,ZGSZ,RKSI,VHHH"
 # Wallets excluded from the public "non-maker" counts (deployments/testnet.json roles are added automatically).
