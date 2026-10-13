@@ -3,6 +3,31 @@
 Written 2026-10-07 14:15 Taipei (06:15 UTC), at go-live; balances and versions below are from then. Revised the same day after the v1 security review (attester gas, guardian runbook, owner key, API caps, settlement status). Balances and caps re-read at 2026-10-07 07:55 UTC (15:55 Taipei) are marked with that time. Revised again at 08:40 UTC (16:40 Taipei) for the CRE login, the re-sized API caps and the Dynamic build, and at 13:30 UTC (21:30 Taipei) for the Dynamic go-live (web app row and section 5), and at 16:30 UTC (00:30 Taipei, Oct 8) for the same-origin API at `https://isotherm.pages.dev/api/*` (sections 1, 2 and 5). Section 8 (the Cloudflare maker and its cutover runbook) was added on 2026-10-08 at 16:30 UTC and revised the same night after a tick-by-tick comparison of the shadow with the Mac maker (8.6), with a precise cutover runbook (8.3). On 2026-10-10 the settlement job moved to a small Linux server (section 6). Everything here is **testnet only**. AUSD is free
 faucet test money. Nothing here touches Monad mainnet.
 
+## 0. Judging override (2026-10-13 → 2026-10-31; revert after)
+
+Live since 2026-10-13 ~11:45 UTC, to keep the app smooth for judges (analysis: the 1.2 MON quoting cap was spent by
+fair tracking alone every day, leaving the at-the-money books empty 10-20 h a day, and a 0.15 MON drip let the app
+refuse a Buy NO after a Buy YES). The values below **override** the ones quoted later in this document:
+
+| Where | Key | Before | Judging | Set by |
+|---|---|---|---|---|
+| maker Worker | quoting cap (`budget.dailyCapMon.maker`) / soft tier | 1.2 / 60 % (0.72) | **4 / 75 % (3.0)** | `CONFIG_OVERRIDES` in `apps/maker-worker/wrangler.toml` (version d99cfe90) |
+| maker Worker | reserve alert line (`budget.reserveMon.maker`) | 0.5 | **0.8** | same |
+| treasury | maker top-up min / target / daily cap | 1.5 / 4 / 4 | **2 / 5 / 6** | same |
+| treasury | global daily cap / TREASURY LOW line | 6 / 10 | **12 / 20** | same (12 ≥ the 11.2 sum of the role caps) |
+| API Worker | `DRIP_MON` | 0.15 | **0.25** | `apps/api/wrangler.toml` (build 46cf2ef) |
+| API Worker | drips per UTC day / per network | 9 / 4 | **17 / 5** | same; sized by `size-caps.mjs --days 19 --drip-mon 0.25 --drip-share 0.85` |
+| API Worker | relays per UTC day / per network / per address | 26 / 13 / 13 | **28 / 14 / 14** | same (`apps/api/evidence/size-caps-2026-10-13-judging.txt`) |
+
+Funding for it: 63 MON deployer → relayer on 2026-10-13 (tx `0x4d7120dbec94d025fde0bda0f526d6039211b098bab798ec1a6662b0c8f47ca5`;
+relayer 102.42 MON, enough for 19 worst-case days of the new API caps). Expected spend to Oct 31 ~135 MON of 354.
+
+Check: `node scripts/control.mjs status` (budget.tier cap 4 / soft 3; `treasury.today.globalCap` 12). `control.mjs
+treasury` prints the thresholds of the local `config/worker.json`, not the merged override, so it still shows 1.5/4/4
+and 6. API: `GET /api/health` → `dripMon` 0.25 and `limits`. Rollback of the maker: `npx wrangler rollback
+1b000ee9-62c4-4c78-a7b5-1d5f6095ddd9 --name isotherm-maker`. **Revert after 2026-10-31:** delete the `CONFIG_OVERRIDES`
+line and `npm run deploy -- --live`; set `DRIP_MON` back to 0.15, re-run `size-caps.mjs` and `npm run deploy` in `apps/api`.
+
 ## 1. What is live
 
 | Thing | Where |
@@ -301,7 +326,7 @@ tick. The DO applies only the latest document, so `control.mjs` refuses a new on
 unapplied (`--force` replaces it). Always wait for `node scripts/control.mjs result` before the next command.
 
 **Budgets** (`apps/maker-worker/config/worker.json`; the settings of section 8.9, live since 2026-10-09 18:35 UTC):
-- Quoting: maker **1.2 MON/day** with tiers: above 60 % (0.72) spreads ×2 and only urgent re-quotes; at the cap no
+- Quoting (base value; **4 MON/day, soft 75 % during judging**, section 0): maker **1.2 MON/day** with tiers: above 60 % (0.72) spreads ×2 and only urgent re-quotes; at the cap no
   new quotes and an urgent strike is pulled.
 - Roll, separately: maker 0.8, operator 0.5, market creator 0.8. At most 4 strikes, none outside [0.05, 0.95].
 - Reserve meter (pulls, the kill switch, the YES withdraw, orphan cancels, the stale void): **never refused**; maker
