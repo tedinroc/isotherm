@@ -64,8 +64,11 @@ STATIONS = "RCSS"
 # the ladder's own trading day the fair moves with every METAR and Polymarket tick (57 re-quotes, 3.29 MON by 11:00
 # Taipei on Oct 14). Soft tier at 75 % (4.5); the maker's treasury top-up min/target/cap 2/6/8 (quoting 6 + reserve ~1
 # + roll 0.8); global top-up cap 14 >= the sum of the role caps (13.2), so no role can starve another; LOW alert at 20.
+# policy.pullReentry 0.01 (2026-10-14): after a band or guard pull a strike is re-quoted only once its fair is back
+# inside [0.04, 0.96] (and the guard divergence <= guardPull - 0.01): stops the quote/pull flapping at the thresholds
+# (each cycle ~0.0875 MON); replay: ~85 % of the savings of 0.02 with a third of the held time (longest hold 61 min).
 # Must stay a TOML literal string of valid JSON (a parse error stops every tick): test/unit/infra.test.ts reads it.
-CONFIG_OVERRIDES = '{"budget":{"dailyCapMon":{"maker":6},"softRatio":0.75,"reserveMon":{"maker":0.8}},"treasury":{"globalDailyCapMon":14,"lowAlertMon":20,"roles":{"maker":{"minMon":2,"targetMon":6,"dailyCapMon":8}}}}'
+CONFIG_OVERRIDES = '{"budget":{"dailyCapMon":{"maker":6},"softRatio":0.75,"reserveMon":{"maker":0.8}},"treasury":{"globalDailyCapMon":14,"lowAlertMon":20,"roles":{"maker":{"minMon":2,"targetMon":6,"dailyCapMon":8}}},"policy":{"pullReentry":0.01}}'
 ROLL_NOT_BEFORE_LOCAL = "12:00"
 ROLL_AUTO = "1"
 TICK_SEC = "60"

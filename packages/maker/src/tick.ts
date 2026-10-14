@@ -12,7 +12,7 @@ import { BudgetRefused, explainRevert, LiveRefused, nowSec, read, send, type Ctx
 import { budgetCfgOf, quotingTier, type BudgetTier, type SpendKind } from "./budget.ts";
 import type { LadderData, MarketData } from "./data-core.ts";
 import { createdOrders, fromSizeUnits, getBook, marginBalance, orderStatus, othersBest, scanOpenOrders, toPriceUnits, toSizeUnits, type Book } from "./kuru.ts";
-import { decide, type Action } from "./policy.ts";
+import { decide, pullCause, type Action } from "./policy.ts";
 import { makeQuote, type QuoteDecision } from "./pricing.ts";
 import { note, type LadderState, type SeriesState } from "./state-core.ts";
 
@@ -231,7 +231,9 @@ export async function tickLadder(ctx: Ctx, lad: LadderState, data: MarketData, o
       const widen = ti.tier !== "normal" && wm > 1 ? { mult: wm, why: `quoting budget ${ti.tier === "hard" ? "spent" : `above ${Math.round((ctx.cfg.budget.softRatio ?? 0) * 100)} % of its cap`} (${ti.spent.toFixed(3)} of ${ti.cap} MON)` } : null;
       const desired = makeQuote({ fair: f.fair, source: f.source, flags: f.flags, netYes: inv.netYes, freeYes: inv.marginYes + inv.lockedYes, freeAusd, others, cfg: ctx.cfg.quote, widen });
       view.desired = desired;
-      const action = decide({ now, stopAt: lad.stopAt, mode: s.mode, certain: f.certain === "yes", fair: f.fair, desired, resting: view.resting, lastQuote: s.lastQuote, wide: f.flags.includes("guard-wide"), tier: ti.tier, cfg: { ...ctx.cfg.policy, tick: ctx.cfg.quote.tick } });
+      // the pull hysteresis (policy.pullReentry) reads makeQuote's pull thresholds, the Polymarket/guard divergence and
+      // what the strike was last pulled for (its recorded pull reason)
+      const action = decide({ now, stopAt: lad.stopAt, mode: s.mode, certain: f.certain === "yes", fair: f.fair, desired, resting: view.resting, lastQuote: s.lastQuote, wide: f.flags.includes("guard-wide"), tier: ti.tier, divergence: f.divergence, pulledFor: pullCause(s.reason), cfg: { ...ctx.cfg.policy, tick: ctx.cfg.quote.tick, pullBelow: ctx.cfg.quote.pullBelow, pullAbove: ctx.cfg.quote.pullAbove, guardPull: ctx.cfg.fair.guardPull } });
       if (lad.paused || lad.status !== "active") {
         view.action = { kind: "none", urgent: false, reasons: [lad.paused ? "ladder paused (manual pull)" : `ladder ${lad.status}`] };
         continue;
@@ -241,7 +243,17 @@ export async function tickLadder(ctx: Ctx, lad: LadderState, data: MarketData, o
       res.actions.push(act);
       const cancelIds = [view.resting.bid?.id, view.resting.ask?.id].filter((x): x is number => typeof x === "number");
       if (action.kind === "none") {
-        if (action.mode && action.mode !== s.mode && !ctx.cfg.dryRun) s.mode = action.mode;
+        if (!ctx.cfg.dryRun) {
+          // an empty strike pulled by makeQuote (no tx to send): with the pull hysteresis on, record why, as a pull tx
+          // does below, so the hold keys on what pulled it. A band / guard pull stays the recorded cause until the
+          // strike is quoted again (a gap in the fair meanwhile does not end the hold). Off: the state is left as before.
+          if (desired.pull && action.mode === "pulled" && ctx.cfg.policy.pullReentry != null) {
+            const why = action.reasons.join("; ");
+            if (s.mode !== "pulled") s.lastPullAt = now;
+            if (s.mode !== "pulled" || pullCause(why) || !pullCause(s.reason)) s.reason = why;
+          }
+          if (action.mode && action.mode !== s.mode) s.mode = action.mode;
+        }
         continue;
       }
       if (action.kind === "pull" || action.kind === "close") {

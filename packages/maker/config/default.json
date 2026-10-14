@@ -57,7 +57,8 @@
     "requoteFairMove": 0.04,
     "staleRefreshHours": 2,
     "staleRefreshMinMove": 0.02,
-    "oneSided": true
+    "oneSided": true,
+    "pullReentry": null
   },
   "fair": {
     "pmMaxAgeSec": 1200,

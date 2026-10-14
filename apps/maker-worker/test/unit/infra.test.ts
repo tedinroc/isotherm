@@ -138,6 +138,7 @@ describe("wrangler.toml CONFIG_OVERRIDES (judging override)", () => {
     const b = budgetCfgOf(cfg);
     expect(b.dailyCapMon).toEqual({ maker: 6, operator: 0.5, marketCreator: 0.8 });
     expect(b.softRatio).toBe(0.75);
+    expect((cfg as any).policy.pullReentry).toBe(0.01);
     expect(b.rollCapMon).toEqual({ maker: 0.8, operator: 0.5, marketCreator: 0.8 });
     expect(b.reserveMon).toEqual({ maker: 0.8, operator: 0.1, marketCreator: 0.05 });
     const t = parseTreasuryCfg((cfg as any).treasury)!;

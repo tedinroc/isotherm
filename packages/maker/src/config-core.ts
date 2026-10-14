@@ -48,7 +48,10 @@ export interface MakerConfig {
    *  quote (per runtime: the Worker sets its own in config/worker.json). `lazy` replaces those rules (policy.ts): re-quote
    *  only when urgent, after a fill, when the fair moved >= requoteFairMove since the quote, or when the quote is older
    *  than staleRefreshHours and the fair moved >= staleRefreshMinMove. `oneSided`: replace only the side that needs it
-   *  (a fill, a crossed side) when the other side is still good (Kuru batchUpdate; 55-66 % of a full re-quote's gas). */
+   *  (a fill, a crossed side) when the other side is still good (Kuru batchUpdate; 55-66 % of a full re-quote's gas).
+   *  `pullReentry` (null/absent = off): pull hysteresis, an empty strike pulled for the fair band or the guard is quoted
+   *  again only once the fair is inside [quote.pullBelow + x, quote.pullAbove - x] and |Polymarket - guard| <=
+   *  fair.guardPull - x; other pulls are quoted again as without it (policy.ts). */
   policy: {
     requoteTicks: number;
     staleHours: number;
@@ -59,6 +62,7 @@ export interface MakerConfig {
     staleRefreshHours?: number | null;
     staleRefreshMinMove?: number | null;
     oneSided?: boolean | null;
+    pullReentry?: number | null;
   };
   /** guardWarnExit: guard-wide hysteresis (see forecast/src/fair.ts FairCfg); absent/null = none. */
   fair: { pmMaxAgeSec: number; guardWarn: number; guardWarnExit?: number | null; guardPull: number; intradayFromMin: number; minCondMass: number };
@@ -101,6 +105,12 @@ export function validateConfig(c: MakerConfig) {
     if (!(typeof P.requoteFairMove === "number" && P.requoteFairMove > 0 && P.requoteFairMove <= 0.5)) throw new Error(`policy.requoteFairMove ${P.requoteFairMove} must be in (0, 0.5] when policy.lazy is on`);
     if (!(typeof P.staleRefreshHours === "number" && P.staleRefreshHours > 0)) throw new Error(`policy.staleRefreshHours ${P.staleRefreshHours} must be > 0 when policy.lazy is on`);
     if (!(typeof P.staleRefreshMinMove === "number" && P.staleRefreshMinMove >= 0 && P.staleRefreshMinMove <= P.requoteFairMove)) throw new Error(`policy.staleRefreshMinMove ${P.staleRefreshMinMove} must be in [0, requoteFairMove]`);
+  }
+  const re = P.pullReentry;
+  if (re !== undefined && re !== null) {
+    if (!(typeof re === "number" && re >= 0 && re < 0.2)) throw new Error(`policy.pullReentry ${JSON.stringify(re)} must be a number in [0, 0.2) (null = off)`);
+    if (!(q.pullBelow + re < q.pullAbove - re)) throw new Error(`policy.pullReentry ${re}: the re-entry band [quote.pullBelow + ${re}, quote.pullAbove - ${re}] is empty`);
+    if (!(re < c.fair.guardPull)) throw new Error(`policy.pullReentry ${re} must be < fair.guardPull ${c.fair.guardPull}`);
   }
   const sr = c.budget.softRatio;
   if (sr !== undefined && sr !== null && !(sr > 0 && sr < 1)) throw new Error(`budget.softRatio ${sr} must be in (0, 1)`);

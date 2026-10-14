@@ -23,6 +23,17 @@
 // BUDGET TIERS (`tier`, from budget.ts quotingTier): "soft" -> only urgent re-quotes (new quotes on an empty strike
 // still go out, with the wider spread pricing.ts applies); "hard" -> no new quotes and no re-quotes; an urgent strike is
 // PULLED instead (pulls are metered on the reserve meter and never refused).
+//
+// PULL HYSTERESIS (policy.pullReentry; null/absent = off): makeQuote's pull thresholds (quote.pullBelow / pullAbove,
+// fair.guardPull) have none of their own, so a fair hovering at 0.03 or a Polymarket/guard divergence hovering at 0.4
+// flapped pull -> quote -> pull (~0.0875 MON a cycle: 0.059 quoting + 0.028 reserve; live, 2026-10-14). With it, an
+// EMPTY strike in mode "pulled" whose pull was for one of those thresholds (`pulledFor`: pullCause() of the pull reason
+// tick.ts records in SeriesState.reason) is quoted again only once the fair is inside [pullBelow + pullReentry,
+// pullAbove - pullReentry] AND the divergence (when there is one) is <= guardPull - pullReentry. Both margins apply after
+// either pull, so a strike near both thresholds cannot flap through the other one. Other pulls (no usable fair, no side
+// left after caps / margin, the hard budget tier, a manual pull then resume) are quoted again as without it. Pulls, the
+// kill switch, the close, certainty, a strike with resting orders (urgent crossings included) and new strikes
+// ("pending") are decided exactly as without it.
 import type { BudgetTier } from "./budget.ts";
 import type { QuoteDecision } from "./pricing.ts";
 import type { SeriesMode } from "./state-core.ts";
@@ -43,6 +54,12 @@ export interface PolicyCfg {
   staleRefreshHours?: number | null;
   staleRefreshMinMove?: number | null;
   oneSided?: boolean | null;
+  /** pull hysteresis margin (see above); null/absent = off */
+  pullReentry?: number | null;
+  /** makeQuote's pull thresholds (quote.pullBelow / pullAbove, fair.guardPull), read only with pullReentry set */
+  pullBelow?: number;
+  pullAbove?: number;
+  guardPull?: number;
 }
 export interface PolicyInput {
   now: number; // unix s
@@ -57,6 +74,10 @@ export interface PolicyInput {
   wide?: boolean;
   /** quoting budget tier (absent = "normal") */
   tier?: BudgetTier;
+  /** |Polymarket fair - guard| (fair.ts StrikeFair.divergence; null without both); read only with cfg.pullReentry */
+  divergence?: number | null;
+  /** the pull threshold the strike was pulled for (pullCause(SeriesState.reason)); read only with cfg.pullReentry */
+  pulledFor?: PullCause | null;
   cfg: PolicyCfg;
 }
 
@@ -72,6 +93,18 @@ export interface Action {
 
 const EPS = 1e-9;
 
+/** A pull for makeQuote's fair band (quote.pullBelow / pullAbove) or for the guard (fair.guardPull). */
+export type PullCause = "band" | "guard";
+/** The pull hysteresis's cause, read from a recorded pull reason (SeriesState.reason: makeQuote's reasons, kept by
+ *  tick.ts). null = any other reason (no usable fair, caps / margin, the budget, a quote's reasons). The markers are
+ *  pricing.ts's own wording; test/pull-hysteresis.test.ts runs makeQuote to keep the two in step. */
+export function pullCause(reason: string | null | undefined): PullCause | null {
+  if (!reason) return null;
+  if (reason.includes("disagree by > guardPull")) return "guard";
+  if (reason.includes("outcome ~known")) return "band";
+  return null;
+}
+
 export function decide(p: PolicyInput): Action {
   const hasResting = !!(p.resting.bid || p.resting.ask);
   const step = p.cfg.requoteTicks * p.cfg.tick - EPS;
@@ -83,6 +116,8 @@ export function decide(p: PolicyInput): Action {
   if (d.pull) return hasResting ? { kind: "pull", urgent: true, reasons: d.reasons, mode: "pulled" } : { kind: "none", urgent: false, reasons: d.reasons, mode: "pulled" };
   if (!hasResting) {
     if (p.tier === "hard") return { kind: "none", urgent: false, reasons: ["quoting budget spent for today: no new quotes"], mode: p.mode === "pending" ? "pending" : "pulled" };
+    const held = p.mode === "pulled" ? pullHeld(p) : null;
+    if (held) return { kind: "none", urgent: false, reasons: [held], mode: "pulled" };
     return { kind: "quote", urgent: false, reasons: ["no resting quote"], mode: "quoting" };
   }
 
@@ -137,4 +172,17 @@ export function decide(p: PolicyInput): Action {
     if (r && want !== null && Math.abs(r.price - want) < tol) out.sides = { bid: need.bid, ask: need.ask };
   }
   return out;
+}
+
+/** Pull hysteresis: why a pulled, empty strike is not quoted again yet (null = quote it). Off without cfg.pullReentry,
+ *  and for a strike not pulled for the band or the guard (p.pulledFor). */
+function pullHeld(p: PolicyInput): string | null {
+  const m = p.cfg.pullReentry;
+  if (typeof m !== "number" || !p.pulledFor || p.fair === null) return null;
+  const { pullBelow: lo, pullAbove: hi, guardPull: gp } = p.cfg;
+  if (typeof lo === "number" && typeof hi === "number" && (p.fair < lo + m - EPS || p.fair > hi - m + EPS))
+    return `pulled: fair ${p.fair} not back inside [${+(lo + m).toFixed(4)}, ${+(hi - m).toFixed(4)}] (pullReentry ${m})`;
+  if (typeof gp === "number" && typeof p.divergence === "number" && p.divergence > gp - m + EPS)
+    return `pulled: Polymarket and the guard model still disagree by ${p.divergence} (> guardPull ${gp} - pullReentry ${m})`;
+  return null;
 }
