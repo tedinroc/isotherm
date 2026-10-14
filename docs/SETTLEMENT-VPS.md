@@ -2,8 +2,10 @@
 
 **Status (2026-10-10).** Live: the VPS has settled since the cutover at 2026-10-10 08:18 UTC (Ubuntu 26.04 LTS; the
 kit was rehearsed on 24.04 and builds the byte-identical WASM `413d4429…` on 26.04). The Mac job is disabled and released.
-One CRE session per account: signing in on the VPS ended the Mac's session, so a rollback needs a fresh `cre login` on the
-Mac. The provider blocks NTP, so the VPS syncs time with `htpdate` over HTTPS. Rollback: section 7.
+When the VPS signed in to CRE, the Mac's session ended (seen once; whether an account can hold only one session is
+unverified), so plan a fresh `cre login` on the Mac for a rollback. The provider blocks NTP, so the VPS syncs time with
+`htpdate` over HTTPS. Rollback: section 7. The changes of 2026-10-14 (below) are in the repository and reach the VPS
+with the next `vps/push.sh`, which the owner approves.
 
 ## Why
 
@@ -55,9 +57,10 @@ of the cutover and rollback scripts, including a second cutover after a rollback
    `--execute`.
 7. Watch the first VPS run and the night's 18:05 UTC report. To go back: `vps/rollback.sh isotherm-vps --execute`.
 
-If the CRE login on the VPS lapses, it keeps settling on the labelled harness and pushes `CRE LOGIN NEEDED`. The fix is one command on the Mac plus the browser sign-in: `packages/cre-workflow/vps/relogin.sh isotherm-vps` (runbook §4).
+If the CRE login on the VPS lapses, it keeps settling on the labelled harness and pushes `CRE LOGIN NEEDED`. The fix is one command on the Mac plus the browser sign-in: `packages/cre-workflow/vps/relogin.sh isotherm-vps` (runbook §4). Since 2026-10-14 a failed `cre whoami` is checked once more 30 s later before the job takes the harness, so a brief CRE API error at 18:05 UTC no longer sends that day through the fallback, and a single `harness fallback ran` push says itself that it needs no action.
 
-During judging (until 2026-10-31) the VPS also runs a read-only stack watchdog that pushes to the phone when the maker, the books, the next ladder's roll, the drip, a balance or a settlement goes wrong, plus a daily digest; the Worker's own pushes do not arrive (runbook §13).
+During judging (until 2026-10-31) the VPS also runs a read-only stack watchdog that pushes to the phone when the maker, the books, the next ladder's roll, the drip, a balance (since 2026-10-14 also the guardian's and the attester's) or a settlement goes wrong, or (since 2026-10-14) the RPC the web app reads through fails, plus a daily digest; the Worker's own pushes do not arrive (runbook §13).
 
-**Not verified here** (it needs the owner's account): the CRE sign-in itself on a VPS and how long its session lasts.
-The tunnel and callback mechanics were verified.
+**Not verified** (it needs the owner's account): how long a CRE session lasts, and whether an account can hold more
+than one. The tunnel and callback mechanics were verified in a container, and the owner's own sign-in on the VPS worked
+at the cutover (official runs since 2026-10-10).

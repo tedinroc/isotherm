@@ -201,6 +201,9 @@ Funding flows deployer → treasury (by hand) → roles (here). Every 10 minutes
 | attester | `0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9` | 0.3 / 0.8 / 0.5 |
 | guardian | `0x30C8E371719Ff00577284dd9c10587Fa89357d50` | 0.05 / 0.15 / 0.2 |
 
+During judging (2026-10-13 → 2026-10-31) `CONFIG_OVERRIDES` in `wrangler.toml` sets the maker to 2 / 6 / 8, the global
+daily cap to 14 MON and the `TREASURY LOW` line to 20 MON (`docs/OPERATIONS.md` section 0).
+
 - A role below its minimum gets `target − balance`, capped by its daily cap, the global daily cap (6 MON) and the
   treasury floor (2 MON stay), as a plain transfer with gas limit 21,000 (0.0021 MON at 102 gwei) through the nonce
   tracker. Transfers of one pass are ≥ 5 blocks apart (Monad's reserve-balance rule for accounts under 10 MON). The
@@ -214,7 +217,12 @@ Funding flows deployer → treasury (by hand) → roles (here). Every 10 minutes
   minimum and cannot be topped up (no key, shadow, a cap, the floor, a failed send); LOW alerts repeat at most hourly.
   **Without any `TREASURY_KEY` the balance checks and the LOW alerts still run.**
 - `node scripts/control.mjs treasury` prints balances against min/target and today's top-ups; `status` has the
-  `treasury` section.
+  `treasury` section. Its thresholds are the ones the Worker merges (`config/worker.json`, then the `CONFIG_OVERRIDES`
+  line under `[vars]` in `wrangler.toml`, with `deepMerge` from `packages/maker/src/config-core.ts`), read from the
+  local files; the global cap comes from the live status, and a `WARNING` line says when the two disagree (the Worker
+  runs other files). A `CONFIG_OVERRIDES` spelling it cannot read is reported as "config/worker.json ONLY … may NOT be
+  the live thresholds". Only `treasury` loads that `.ts` file (plain Node ≥ 22.18), so `pull`, `disarm` and `arm` work
+  even if it cannot. Every KV command checks the namespace id before it does anything.
 
 ## Settlement guardrails
 
@@ -270,6 +278,10 @@ With it, every alert is also POSTed there:
   the value. Caveat from the ntfy server code: a publisher is keyed by its account instead of its IP only when the
   account has a **tier** (a paid ntfy.sh plan, which also gives reserved topics); a free account's token alone does not
   lift the per-IP limit. A Telegram bot is the free alternative that is not limited by the caller's IP.
+- **HTTP 401** from ntfy is not the IP limit: ntfy rejects the token sent with the push (`ALERT_WEBHOOK_TOKEN` or the
+  `?auth=` in the URL), and it repeats until the token or the URL changes. The live Worker's pushes ended in 401 by
+  2026-10-13, so its alerts reach no phone until `ALERT_WEBHOOK_URL` is switched to a Telegram bot
+  (`docs/OPERATIONS.md` sections 0 and 8.8); meanwhile read them with `control.mjs status` and `alerts`.
 
 ## Files
 
@@ -299,7 +311,8 @@ With it, every alert is also POSTed there:
 npm ci
 npm run typecheck
 npm test                     # unit: the Durable Object logic against a fake chain, the guardrails, the push, the cutover scripts,
-                             # the lazy policy / tiers / reserve meter, the RPC transport, the treasury (73 tests)
+                             # the lazy policy / tiers / reserve meter, the RPC transport, the treasury, the pull
+                             # re-entry hysteresis, control.mjs treasury (90 tests)
 npm run test:fork            # anvil fork (ports 19800-19802, 19804) + the bundled Worker in Miniflare, LIVE on the fork only
 MW_LIVE_SMOKE=1 npx vitest run test/integration/live-readonly.smoke.test.ts   # read-only: live RPC + live data, watch-only shadow, no keys
 MW_REHEARSAL=1 npx vitest run test/integration/cutover-rehearsal.fork.test.ts  # the cutover on a fork: the Mac's REAL state.json and ladder (ports 19810-19812)

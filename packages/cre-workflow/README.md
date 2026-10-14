@@ -40,9 +40,11 @@ scripts/jobs-fork-e2e.sh   # both LaunchAgents, started by launchd from the runt
 `cre whoami` succeeds, otherwise the labelled harness fallback, with one evidence record per run naming the path and
 the host. A single-writer guard makes sure only one host ever settles. The server builds the byte-identical WASM
 (`413d4429…`). The challenge watcher runs on the Cloudflare maker Worker, which holds the guardian key; the server holds
-only the attester key. Live results so far, all on the official path: RCSS 2026-10-08 at 28 °C (`0x65eee8ef…963d`,
-`evidence/live-settle-RCSS-20261008.json`), RCSS 2026-10-09 at 29 °C (`0xdfd28ea5…3ecd`) and RCSS 2026-10-10 at 30 °C
-(`0xacb724d3…bf9d`, the first settlement from the server); all three equal Polymarket's resolution.
+only the attester key. Live results so far, all on the official path at the first 18:05 UTC attempt: RCSS 2026-10-08
+at 28 °C (`0x65eee8ef…963d`, `evidence/live-settle-RCSS-20261008.json`), RCSS 2026-10-09 at 29 °C (`0xdfd28ea5…3ecd`),
+RCSS 2026-10-10 at 30 °C (`0xacb724d3…bf9d`, the first settlement from the server), RCSS 2026-10-11 at 30 °C
+(`0x0266fd63…7d1a`), RCSS 2026-10-12 at 30 °C (`0xc957ccc1…755f`) and RCSS 2026-10-13 at 31 °C (`0xf3e19cbb…1a6b`); all
+six equal Polymarket's resolution (the live list: `https://isotherm.pages.dev/api/settlements`).
 
 **Before that:** the same job ran as a LaunchAgent on the development Mac (2026-10-07 to 2026-10-10), next to
 `xyz.isotherm.challenge-watch` (every 120 s, until the Worker took over on 2026-10-08), from
@@ -58,14 +60,19 @@ rehearsed on a fork: `DON-CUTOVER.md`.
 | `scripts/harness-fork-check.sh` | Runs `run-official.sh --harness` end to end on a fork | 0 | no |
 | `scripts/dry-run.sh` | Runs the real handler against live reads and live HTTP, stopping before any send | 0 | no |
 | `scripts/run-official.sh` | Live settlement. Preflight, 30-min spacing guard, lock (shared with the runtime copy), then simulate `--broadcast` and confirm the receipts (each report's hash from its `tx 0x… ->` log line or from the result JSON, which survives when the simulator drops that last line: `scripts/sent-hashes.mjs`). A failed `cre whoami` is checked once more 30 s later before it reports no login (exit 3), and a simulate run that stops at the CLI's CRE credential check, before anything is compiled or sent, runs once more 45 s later (`scripts/official-retry-check.sh`) | about 0.02 per report | yes (`--harness` fallback: no) |
-| `scripts/settle-job.sh` | Job entry (systemd on the server via `vps/settle-vps.sh`; launchd on the Mac): picks the path (`cre whoami` OK → official, else harness; after a failed official run, harness once), runs `run-official.sh`, appends an evidence record naming the path (`var/evidence/`) | about 0.02 per report | optional |
+| `scripts/settle-job.sh` | Job entry (systemd on the server via `vps/settle-vps.sh`; launchd on the Mac): picks the path (`cre whoami` OK → official; a failed check is repeated once 30 s later, then the harness; after a failed official run, harness once), runs `run-official.sh`, appends an evidence record naming the path (`var/evidence/`) | about 0.02 per report | optional |
 | `scripts/challenge-watch.sh` | launchd entry: `settle/ops/challenge-watch.ts`, recomputes every `LadderResolved` with `decide()`, challenges a reproduced mismatch from the guardian key or prints the exact command | about 0.0064 per challenge | no |
 | `scripts/deploy-runtime.sh` | Copies the package (+ `packages/abi`, `deployments/testnet.json`) to `~/isotherm-live`; `--load` / `--unload` / `--status` | | |
 | `scripts/install-launchd.sh` | Renders `launchd/xyz.isotherm.{cre-settle,challenge-watch}.plist.template`; `--load` refuses a copy under `~/Documents` | | |
 | `scripts/jobs-fork-e2e.sh` | Both jobs started by launchd from the runtime copy on an anvil fork (port 19330) warped to 02:06 Taipei, Oct 9 | 0 | no |
 | `vps/push.sh`, `vps/setup.sh` | Ship the job's code to a VPS; install the pinned toolchain and the systemd units there (Ubuntu 24.04, amd64/arm64) | 0 | no |
 | `vps/cutover.sh`, `vps/rollback.sh` | Move the hourly job Mac → VPS and back. Dry run by default; `--execute` switches launchd and systemd in a safe order | 0 | the VPS needs its own `cre login` (`vps/README.md` §4) |
-| `vps/test/run-container-tests.sh` | The VPS kit rehearsed in Ubuntu 24.04 containers (systemd, ssh, anvil fork, stubbed launchd); writes `vps/evidence/` | 0 | no |
+| `vps/test/run-container-tests.sh` | The VPS kit rehearsed in Ubuntu 24.04 containers (systemd, ssh, anvil fork, stubbed launchd); writes its outputs under `$TMPDIR` (`vps/evidence/` only as below) | 0 | no |
+
+**Evidence files.** The test and fork scripts above (and `scripts/official-retry-check.sh`, `vps/test/*.sh`) write their
+report to a new file or directory under `$TMPDIR` and print its path. They overwrite the tracked file in `evidence/` or
+`vps/evidence/` only with `ISOTHERM_WRITE_EVIDENCE=1`, and never from a failed run, so a test run leaves `git status`
+clean.
 
 Keys are never printed:
 - **Attester (CRE secret `ISOTHERM_ATTESTER_KEY`).** Read from `~/.config/isotherm/attester.key`.

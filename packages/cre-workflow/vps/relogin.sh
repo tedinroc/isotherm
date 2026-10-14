@@ -10,7 +10,7 @@
 #      code); the browser's redirect to localhost:53682 reaches the CLI on the VPS through the tunnel.
 #   4. Waits for the VPS helper's answer: `cre whoami: yes` -> exit 0.
 # The VPS's next :05 run then takes the official path and pushes "CRE LOGIN RESTORED" (vps/README.md section 4).
-# One CRE session per account: this sign-in ends any other session of the same account (the Mac's, for example).
+# It may end another session of the account: the VPS's first sign-in ended the Mac's (seen once; otherwise unverified).
 #
 #   --dry-run       check the prerequisites only (tools, the alias in the ssh config, port 53682); no connection
 #   --timeout SEC   give up after SEC seconds in all (default 600; the sign-in URL itself must come within 180 s)

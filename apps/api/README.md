@@ -15,7 +15,7 @@ then 429, although every request carried a different spoofed `X-Real-IP` / `X-Fo
 | Route | What |
 |---|---|
 | `GET /api/health` | relayer address + balances, `dripReady` / `relayReady`, relay modes (from vault bytecode), `relayMinAusd`, `limits` (caps, reserve, `dripsToday`, `relaysToday`; memoised 5 s), `rpc` (state of each RPC endpoint, see "RPC endpoints") and `version` (see below) |
-| `POST /api/drip {address}` | 0.15 MON + 1,000 AUSD (float, faucet fallback). 1 per address / 24 h, `DRIP_PER_IP_PER_DAY` per network / UTC day, `DRIP_DAILY_CAP` per UTC day; never to contracts, 7702-delegated accounts or precompiles; never below the reserve |
+| `POST /api/drip {address}` | `DRIP_MON` (0.15 MON; 0.25 during judging) + 1,000 AUSD (float, faucet fallback). 1 per address / 24 h, `DRIP_PER_IP_PER_DAY` per network / UTC day, `DRIP_DAILY_CAP` per UTC day; never to contracts, 7702-delegated accounts or precompiles; never below the reserve |
 | `POST /api/relay/mint` | gasless complete-set mint, **authorization mode only**: `{mode:"authorization", chainId, seriesId, amount, holder, validAfter, validBefore, salt, signature}` (EIP-3009 ReceiveWithAuthorization to the vault, nonce = `keccak256(abi.encode(seriesId, amount, salt))`). 1–500 AUSD; `RELAY_PER_ADDRESS_PER_DAY`, `RELAY_PER_IP_PER_DAY`, `RELAY_DAILY_CAP`. Permit mode is refused for the v1 vault (a permit can be front-run and redirected to another series) |
 | `GET /api/snapshot` | latest maker snapshot, normalised (accepts `packages/maker` "isotherm.snapshot/v1"). Per strike: `fair`, `pmImplied`, `model` (guardrail), `bid`/`ask`, `bidSize`/`askSize` (as placed), `bidRemaining`/`askRemaining` (resting now), `mode`, `action` + `reason` (this tick's decision), `lastChangeReason` + `lastQuoteAt` (why/when the quote last changed), `fairSource` (`polymarket` / `certain` / `fallback-v0` / `fallback-intraday` / `none`) and `guardSource` (`v0` / `v0-truncated` / `intraday` / `certain`), null when not reported or not a short lowercase label |
 | `POST /api/snapshot` | `Authorization: Bearer <SNAPSHOT_TOKEN>` |
@@ -175,6 +175,12 @@ At 2026-10-07T07:59Z the relayer held 4.599 MON at 102 gwei: spendable 4.499, pe
 0.160, relayCost 0.034, so 2 drips + 9 relays per UTC day (worst case 0.628 MON/day, 4.395 MON over 7 days),
 1 drip and 4 relays per network, 4 relays per address. That covers UTC days Oct 7–13 at maximum use; top up and
 re-size before 2026-10-14. (Run 1, before the horizon, sized 0.599 MON as a single day: 2 drips + 5 relays.)
+
+Re-sized since: on 2026-10-11 from 39.79 MON (9 drips and 26 relays a day), and for judging on 2026-10-13 from
+102.42 MON over 19 days with `--drip-mon 0.25 --drip-share 0.85` (`evidence/size-caps-2026-10-13-judging.txt`): 17
+drips a day (5 per network, not the script's 8: at 0.25 MON a drip, 8 would let one home network take 2 MON a day)
+and 28 relays (14 per network and per address). Revert after 2026-10-31: `DRIP_MON` 0.15 and a fresh run
+(`docs/OPERATIONS.md` section 0).
 
 Other guards:
 - "Network" = the client IP for IPv4, its /64 for IPv6 (one subscriber holds a whole /64); stored only as a salted hash.

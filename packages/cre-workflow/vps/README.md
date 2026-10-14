@@ -2,8 +2,15 @@
 
 **Status (2026-10-10).** Live: the VPS has settled since the cutover at 2026-10-10 08:18 UTC (Ubuntu 26.04 LTS; the
 kit was rehearsed on 24.04 and builds the byte-identical WASM `413d4429…` on 26.04). The Mac job is disabled and released.
-One CRE session per account: signing in on the VPS ended the Mac's session, so a rollback needs a fresh `cre login` on the
-Mac. The provider blocks NTP, so the VPS syncs time with `htpdate` over HTTPS. Rollback: section 7.
+When the VPS signed in to CRE, the Mac's session ended (seen once, at the cutover; whether an account can hold only one
+session is unverified), so plan a fresh `cre login` on the Mac for a rollback. The provider blocks NTP, so the VPS syncs
+time with `htpdate` over HTTPS. Rollback: section 7.
+
+**Changes of 2026-10-14, in the repository but not yet on the VPS:** `settle-job.sh` checks a failed `cre whoami` once
+more before it takes the harness, the `harness fallback ran` push says whether to act (section 4), and the stack
+watchdog also reads the web app's RPC and the guardian and attester balances (section 13). They reach the VPS with the
+next `push.sh` (section 9), which ships the whole working tree in one go; the owner approves it, outside 17:50–18:30
+UTC.
 
 **Why.** Since the cutover on 2026-10-08, the market maker, the daily roll, the kill switch and the challenge watcher run on
 the Cloudflare Worker (`docs/OPERATIONS.md` §8). The hourly CRE settlement job is the last thing that needs the Mac to
@@ -15,7 +22,7 @@ instead of launchd.
 | Kept exactly as today | Added on the VPS (`vps/settle-vps.sh` around the job) |
 |---|---|
 | **Official path:** `cre workflow simulate ./settle -T testnet --non-interactive --trigger-index 2 --broadcast`, with CLI v1.37.0 pinned by SHA-256 | A single-writer guard (section 8), so the Mac and the VPS never both settle |
-| **Labelled harness fallback** when `cre whoami` fails, and one harness run after a failed official run. Since 2026-10-10 an official run that stops at the CLI's CRE credential check, before anything is compiled or sent, is first repeated once, 45 s later; since 2026-10-11 `run-official.sh` checks a failed `cre whoami` once more, 30 s later, before it reports no login. | An optional phone push through ntfy, sent from the VPS's own IP |
+| **Labelled harness fallback** when `cre whoami` fails, and one harness run after a failed official run. Since 2026-10-10 an official run that stops at the CLI's CRE credential check, before anything is compiled or sent, is first repeated once, 45 s later; since 2026-10-11 `run-official.sh` checks a failed `cre whoami` once more, 30 s later, before it reports no login; since 2026-10-14 `settle-job.sh` also checks a failed `cre whoami` once more, 30 s later, before it takes the harness. | An optional phone push through ntfy, sent from the VPS's own IP |
 | `run-official.sh`: the preflight, `var/run.lock`, the 30-min spacing guard, receipt confirmation, and the stand-down once the Resolver points at the DON | |
 | One evidence record per run (`var/evidence/`), which now also names the host (`"host": "vps"`) | |
 
@@ -156,17 +163,37 @@ the official run fails, the next run uses the harness, and you get a push.
 
 ### CRE login lapsed
 
-A CRE account has one active session, and its lifetime is undocumented. When the VPS's session lapses, settlement does
-not stop: the job takes the labelled harness fallback. You see it two ways:
+The session's lifetime is undocumented, and whether an account can hold more than one session is unverified (when the
+VPS signed in at the cutover, the Mac's session ended). When the VPS's session lapses, settlement does not stop: the job
+takes the labelled harness fallback. You see it two ways:
 - **Push `CRE LOGIN NEEDED`** (high priority, repeated every 3 h while it lasts). It fires when two runs in a row took
   the harness because `cre whoami` failed, or because `run-official.sh` found no login just before signing. One such
-  run alone pushes nothing: `cre whoami` asks the CRE API, which now and then times out. In the Mac's 74 runs, 3 single
-  misses had an official run an hour before and an hour after. A harness run after a failed official run is not a
-  miss, and a run whose `cre whoami` answered clears one. The `harness fallback ran` push is unchanged and still comes
-  on the first such run.
+  run alone pushes nothing: `cre whoami` asks the CRE API, which now and then fails for a moment. In the Mac's 74 runs,
+  3 single misses had an official run an hour before and an hour after. The VPS's records hold 3 more, each with
+  official runs on both sides: 2026-10-11 01:05 UTC (`run-official.sh` found no login just before signing) and
+  2026-10-13 05:05 and 23:05 UTC (a quick `cre whoami` failure). A harness run after a failed official run is not a
+  miss, and a run whose `cre whoami` answered clears one.
+- **The login check is repeated before the harness** (`scripts/settle-job.sh`, since 2026-10-14). In auto mode on the
+  live RPC without `CRE_API_KEY`, a failed `cre whoami` is run once more 30 s later, before anything is locked, read or
+  signed; only a second failure takes the harness, and the evidence record's reason then reads `cre whoami failed
+  twice, 30 s apart (no CRE login, or the CRE API did not answer)`. In both VPS misses of 2026-10-13, the records show
+  `run-official.sh`'s own `cre whoami` answering about a second after the job's had failed, so the re-check would most
+  likely have kept both runs on the official path. Each check is bounded at 45 s, so the path choice waits about 120 s
+  at most.
+- **The `harness fallback ran` push** (12 h dedupe, same title) now says whether to act:
+  - the first miss: "One miss alone can be a brief CRE API outage: act only on CRE LOGIN NEEDED, which is pushed if the
+    next run finds no login either.";
+  - a second or later miss in a row, when the dedupe lets it through: "N runs in a row without the CRE login: see CRE
+    LOGIN NEEDED. The fix, on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps";
+  - after a failed official run: "Not a login problem: no relogin needed.";
+  - if `lib.sh`'s `CRE_LAPSE_JS` cannot classify the run: "Cause not classified …", with the same fix.
+
+  If step 5's alert script itself fails on a run that exited non-zero, `settle job exit N` is still pushed ("the
+  alerts could not read this run's evidence record").
 - **`isotherm-vps.sh status`** shows `cre session LAPSED since …` after two misses in a row, `no login in the last
-  run …` after one, and otherwise `cre session valid for at least …` (the official runs since the last miss). It reads
-  the evidence records only, never `~/.cre`.
+  run …` after one (a single miss can be a brief CRE API outage), and otherwise `cre session valid for at least …` (the
+  official runs since the last miss). When the misses since then were all single ones between runs that showed the
+  login, it adds a second, labelled bound counted across them. It reads the evidence records only, never `~/.cre`.
 
 The fix is one command on the Mac (`--dry-run` checks the prerequisites only):
 ```bash
@@ -179,12 +206,16 @@ packages/cre-workflow/vps/relogin.sh isotherm-vps
   step cannot be automatic (Option B is unverified).
 - It never prints a token, and every exit removes its temp file and stops the ssh process, which ends the waiting
   `cre login` on the VPS.
-- The next :05 run takes the official path and pushes `CRE LOGIN RESTORED` once. Signing in on the VPS ends any other
-  session of the account, such as the Mac's.
+- The next :05 run takes the official path and pushes `CRE LOGIN RESTORED` once. Assume that signing in on the VPS can
+  end another session of the account, such as the Mac's: it did once, at the cutover (unverified beyond that).
 
-Tests, no container needed: `test/login-lapse-unit.sh` (66 checks with stubs, including single misses, a failed
-official run, lost state and Ctrl-C) and `test/relogin-local-sshd.sh` (9 checks with the real ssh client, a throwaway
-sshd on 127.0.0.1 and a fake `cre`). Their outputs are in `evidence/`.
+Tests, no container needed: `test/login-lapse-unit.sh` (83 checks with stubs, including single misses, a failed
+official run, lost state, Ctrl-C, the push advice by miss count and a broken `CRE_LAPSE_JS`; 82 on Linux, where R13
+needs `lsof`: `evidence/login-lapse-unit-linux.txt`), `scripts/official-retry-check.sh` (121 checks of the two `cre
+whoami` checks and `run-official.sh`'s retries, the same on Linux: `../evidence/official-retry-check-linux.txt`) and
+`test/relogin-local-sshd.sh` (9 checks with the real ssh client, a throwaway sshd on 127.0.0.1 and a fake `cre`). Each
+writes its report to a new file under `$TMPDIR` and prints the path; `ISOTHERM_WRITE_EVIDENCE=1` also writes the
+tracked file in `evidence/` (or the file named by `ISOTHERM_TEST_EVIDENCE`), and only after a pass.
 
 ## 5. Attester key, phone push, rehearsal (owner, no MON)
 
@@ -358,15 +389,16 @@ The nonce read is free, global, and needs no new secret.
 | Next run | `systemctl --user list-timers isotherm-settle.timer` |
 | Log in to CRE again | `packages/cre-workflow/vps/relogin.sh isotherm-vps`, run on the Mac itself (section 4) |
 | After a writer conflict, once one host settles | `bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh clear-conflict` |
-| Ship a code change | `packages/cre-workflow/vps/push.sh isotherm-vps` from the Mac, between :10 and :02. Run `vps/setup.sh` again only if the toolchain or `settle/bun.lock` changed. |
+| Ship a code change | `packages/cre-workflow/vps/push.sh isotherm-vps` from the Mac, between :10 and :02, never 17:50–18:30 UTC. It ships the whole `packages/cre-workflow` working tree (uncommitted edits included, `evidence/` excluded), so to ship one reviewed change alone, run it from a clean checkout of that commit (`git worktree`). Its byte-identity check covers the job's files; compare the watchdog's files by `sha256sum` until they are added. Run `vps/setup.sh` again only if the toolchain or `settle/bun.lock` changed. |
 | Pause settlement (nothing settles meanwhile) | `systemctl --user stop isotherm-settle.timer`; resume with `start` |
 
 **Alerts**, each with its own dedupe window:
 - `report sent <ICAO> <date>`, every time;
-- `settle job exit N` (3 h);
-- `harness fallback ran` (12 h);
+- `settle job exit N` (3 h), also when the alerts cannot read the run's evidence record;
+- `harness fallback ran` (12 h); its body says whether to act (section 4);
 - `CRE LOGIN NEEDED` from the second run in a row without the login (3 h), then `CRE LOGIN RESTORED` once (section 4);
-- `attester low on MON` below 0.1 MON (24 h);
+- `attester low on MON` below 0.1 MON (24 h), the first warning; the watchdog's high-priority `ATTESTER LOW` below 0.08
+  MON follows only if the treasury's top-ups fail (section 13);
 - `WRITER CONFLICT` (every time), then `still stopped` (6 h).
 
 Every alert is also kept in `var/alerts/ALERTS.log`. The stack watchdog (section 13) sends its own `ISOTHERM WATCH:`
@@ -378,6 +410,13 @@ Run `vps/test/run-container-tests.sh all` on a Mac with Docker or OrbStack. It u
 natively, and amd64 emulated. The stand-in VPS boots systemd as PID 1 and is reached over SSH like a real one. Nothing
 live is sent. No real key, CRE session, launchd job or `~/isotherm-live` is used: the Mac side runs against a stub
 `launchctl` and a scratch HOME.
+
+**Where the outputs go (since 2026-10-14).** Each step writes its file into a new directory under `$TMPDIR` and prints
+the path. The tracked files below are rewritten only with `ISOTHERM_WRITE_EVIDENCE=1`, and only for a step that passed
+(exit 0 and no `FAIL` line); a failed step leaves its tracked file unchanged. The other test scripts of this package
+(`test/login-lapse-unit.sh`, `test/relogin-local-sshd.sh`, `test/stack-watch-unit.sh`, `test/watch-systemd-e2e.sh`, and
+`scripts/official-retry-check.sh`, `sim-fork.sh`, `harness-fork-check.sh`, `fork-e2e.sh`, `don-gas-fork.sh`,
+`don-rehearse-fork.sh`, `jobs-fork-e2e.sh`) follow the same rule, so running a test no longer dirties `git status`.
 
 | File | What it shows |
 |---|---|
@@ -449,22 +488,35 @@ those accounts only to sign or to send reports to the forwarder, which never cal
 
 ## 13. Stack watchdog (judging period, until 2026-10-31)
 
-**Why.** The maker Worker's own alert pushes do not arrive: ntfy answers 401/429 to Cloudflare's shared egress IPs
-(`docs/OPERATIONS.md` 8.9). This VPS pushes from its own IP. So during judging the VPS also watches the rest of the
-stack and pushes to the phone when the maker stalls, the books go empty, the next ladder does not open, the drip or the
-relayer fails, a bot uses up the day's drips, a balance runs low, or a settlement is overdue.
+**Why.** The maker Worker's own alert pushes do not arrive (`docs/OPERATIONS.md` 8.8, 8.9): ntfy.sh answered them with
+HTTP 429, its per-IP limit on Cloudflare's shared egress IPs, and by 2026-10-13 with HTTP 401, which means ntfy
+rejects the access token the Worker sends; that one does not heal by itself. This VPS pushes from its own IP. So during
+judging the VPS also watches the rest of the stack and pushes to the phone when the maker stalls, the books go empty,
+the next ladder does not open, the drip or the relayer fails, a bot uses up the day's drips, a balance runs low, a
+settlement is overdue, or the RPC the web app reads through fails.
 
 **What a run does** (`stack-watch.sh`, every 10 min at :00/:10/…/:50 UTC, never at :05):
 - 4 GETs of the public API: `/api/health`, `/api/snapshot`, `/api/settlements`, `/api/stats`;
-- 3 `cast balance` reads (treasury, maker, operator; Ankr first, then the official RPC), and `Resolver.resultOf` only
-  for a ladder that reached the chain, is past day end + 5 h and is not listed in `/api/settlements` yet;
+- alongside them, the web app's RPC (`https://testnet-rpc.monad.xyz`, `apps/web/src/config.ts` `RPC_URL`) read as a
+  browser on the site reads it: its CORS preflight (an OPTIONS) and one `eth_blockNumber` POST, both with
+  `Origin: https://isotherm.pages.dev`;
+- one GET of the site's `index.html`, plus its main script (about 0.6 MB) once per new build, to learn which of
+  `apps/web`'s fallback RPCs (Ankr, thirdweb) the deployed build lists (cached in `var/watch/web-build`); each listed
+  fallback is read the same way;
+- 5 `cast balance` reads (treasury, maker, operator, guardian, attester; Ankr first, then the official RPC), and
+  `Resolver.resultOf` only for a ladder that reached the chain, is past day end + 5 h and is not listed in
+  `/api/settlements` yet;
+- `var/evidence/settle-runs.jsonl`, the settlement job's evidence records, read (never written) for the digest's CRE
+  line, and only on a run that may send the digest;
 - then the checks below, the pushes through `lib.sh` `push_alert` (the same `alert-webhook.url` as the settlement
   job, never printed), and its state in `var/watch/`.
 
-It is **read-only**. It sends no transaction, never POSTs to the API, holds no key, and never touches the settlement
-job's `var/` files, the CRE login or `isotherm-settle.timer`. It runs niced (15), with idle I/O, a 300 MB memory cap and
-a 60 s budget for chain reads. A run takes a few seconds (about 20 s live from the Mac); the worst case is about 110 s,
-well before :03. A start at :03–:09 (a `Persistent` catch-up after a reboot) is skipped.
+It is **read-only**. It sends no transaction, never POSTs to the API (its POSTs are `eth_blockNumber` reads of the web
+app's RPCs, its OPTIONS their CORS preflight), holds no key, never writes the settlement job's `var/` files, and never
+touches the CRE login or `isotherm-settle.timer`. It runs niced (15), with idle I/O, a 300 MB memory cap and a 60 s
+budget for chain reads. A run takes a few seconds (about 20 s live from the Mac); the worst case is about 110 s, well
+before :03 (the web RPC reads run alongside the 4 GETs and end inside their 40 s). A start at :03–:09 (a `Persistent`
+catch-up after a reboot) is skipped.
 
 | Push (`ISOTHERM WATCH: …`) | Fires when | Priority, repeat | Why this line |
 |---|---|---|---|
@@ -478,9 +530,11 @@ well before :03. A start at :03–:09 (a `Persistent` catch-up after a reboot) i
 | `DRIP CAP USED EARLY`, `RELAY CAP USED EARLY` | `dripsToday` ≥ 17 or `relaysToday` ≥ 28 before 08:00 UTC; once per UTC day. After 08:00: `… CAP REACHED` at **low** priority (no sound) | high, once a day | likely a bot (judges took 9 drips in 6 days); the body says what to set back: `docs/OPERATIONS.md` section 0. Later in the day it is heavy use, and 15:00–24:00 UTC is the Taipei night |
 | `TREASURY LOW` | treasury < 20 MON | high, 6 h | the judging line of the Worker's own `TREASURY LOW` |
 | `MAKER LOW`, `OPERATOR LOW` | maker < 1.0 or operator < 0.9 MON for > 20 min over 3 runs | high, 6 h | the treasury tops them up below 2 and 1.2 every 10 min, so two passes without it means top-ups fail. Operator 0.9, not 0.6: the 04:00 UTC roll needs ~0.85 and is refused below it |
+| `GUARDIAN LOW`, `ATTESTER LOW` (added 2026-10-14) | guardian < 0.03 or attester < 0.08 MON for > 20 min over 3 runs | high, 6 h | the treasury tops them up below 0.05 and 0.3, so this means top-ups fail. The guardian pays `challenge()` (about 0.011 MON) and `pause()`: without it a wrong result pays out. The attester sends every report (0.0204 MON): 0.08 is about 3 reports. The settlement job's own `attester low on MON` (< 0.1, default priority, 24 h) is the first warning |
+| `WEB RPC DOWN` (added 2026-10-14) | the web app's RPC fails as a browser on the site reads it, on the 3rd run in a row: no answer, not HTTP 200 or no block number; a POST answer whose CORS header does not allow the site; a preflight that is not 2xx, does not allow the site or does not allow `content-type`; or a block that has not moved in 5+ min. A good run resets the count | **high** while no fallback RPC of the deployed build answers (the build live since 2026-10-13 has none: judges see no prices and cannot trade); default while one does, and high again at once if they fail too. Repeats every 3 h | the web app reads, trades and signs (Dynamic) through it first, while the API, the maker and this watch read Ankr first, so nothing else would notice. The body gives the check to run from the Mac for the kind of failure (a CORS failure is never blamed on the VPS's network). Hold it with `--snooze-web HOURS` |
 | `SETTLEMENT OVERDUE <ICAO> <date>` | no result on the Resolver by day end + 5 h (21:00 UTC for Taipei), for a ladder that reached the chain (a series or a market) | high, 3 h | the VPS settles at 18:05 and retries hourly: three attempts failed. A roll that never sent a transaction has nothing to settle (`LADDER NOT OPENED` covers it) |
 | `WATCH CANNOT REACH THE API` | the 3rd run in a row that cannot read `/api/health` or `/api/snapshot` | high, 3 h | one or two failed runs are network weather |
-| `daily digest <date>` | the first run at or after 01:00 UTC (09:00 Taipei) | default, daily | yesterday's drips and relays, the relayer's runway, the treasury, maker and operator, the ladders (active, next roll), settlements, judge trading, open alerts. **No digest by 09:10 Taipei = the watchdog is down** |
+| `daily digest <date>` | the first run at or after 01:00 UTC (09:00 Taipei) | default, daily | yesterday's drips and relays, the relayer's runway, the treasury, maker, operator, guardian and attester, the ladders (active, next roll), settlements, judge trading, the web RPC's block and the deployed build's fallbacks, the CRE line, open alerts. **No digest by 09:10 Taipei = the watchdog is down** |
 | `CLEARED <alert>` | a pushed alert has been gone for 30 min (a `SETTLEMENT OVERDUE`: at once, a result is final) | low, once | it also resets that alert's repeat window |
 
 **Hysteresis.** A problem ends only after 30 min without it (four runs). Until then it keeps its start time, its run
@@ -493,10 +547,17 @@ re-sent on the next runs until `push_alert`'s delivery stamp for that title chan
 answer): at most 2 re-sends per run, for at most 24 h. A single 429 from ntfy therefore delays them by 10 min instead of
 losing them. The other alerts already retry, because their repeat window starts only on a delivered push.
 
+**The digest's CRE line** (since 2026-10-14) says only what the settlement records show: the last official run and its
+exit, a stand-down (`STOOD DOWN`, DON or writer released) or a harness run, the last report, and "Login shown from X to
+Y on every recorded run". That is a span, not the session's age: a relogin with no miss before it leaves no record. It
+also names the largest gap over 2 h between records (and counts the others), single misses (CRE API errors, no
+action), a lapse (2+ misses in a row: `CRE LOGIN NEEDED` has the fix), and `NO SETTLEMENT RUN RECORDED SINCE …` when
+the newest record is over 2 h old.
+
 A balance read that fails, or an unreadable API, never raises or clears anything; the alert's state is kept. The
-maker's quoting spend against its 4 MON cap is not public (the API strips the snapshot's budget), so the digest leaves
-it out: `node scripts/control.mjs status` in `apps/maker-worker` shows it. Details and every threshold's reasoning are
-in the comments of `stack-watch.mjs`.
+maker's quoting spend against its cap (6 MON during judging) is not public (the API strips the snapshot's budget), so
+the digest leaves it out: `node scripts/control.mjs status` in `apps/maker-worker` shows it. Details and every
+threshold's reasoning are in the comments of `stack-watch.mjs`.
 
 **Install** (from the repository root on the Mac, between :10 and :02):
 ```bash
@@ -523,6 +584,13 @@ is idempotent and touches only `isotherm-watch.service` and `isotherm-watch.time
   ssh isotherm-vps bash isotherm/packages/cre-workflow/vps/stack-watch.sh --snooze 6
   ssh isotherm-vps bash isotherm/packages/cre-workflow/vps/stack-watch.sh --snooze 0
   ```
+  This snooze is unchanged by the 2026-10-14 additions: it never holds `WEB RPC DOWN`, the balance checks or the rest.
+- **A known web RPC outage** that nobody can fix, or one only this VPS sees: hold `WEB RPC DOWN` alone for 1–72 h with
+  `stack-watch.sh --snooze-web HOURS`; `--snooze-web 0` ends it. It writes `var/watch/snooze-web-until`; the digest and
+  `install-watch.sh --status` show it while it holds.
+- `var/watch/web-build` caches the deployed site's main script name and the fallback RPCs it lists, so the script is
+  read again only after a web deploy. If `apps/web`'s `FALLBACK_RPC_URLS` changes, update `WEB_FALLBACKS` in
+  `stack-watch.sh`: a fallback it does not know is ignored, which keeps `WEB RPC DOWN` at high priority (the safe side).
 
 **Remove it after 2026-10-31** (with the rest of the judging override, `docs/OPERATIONS.md` section 0):
 ```bash
@@ -532,26 +600,38 @@ ssh isotherm-vps bash isotherm/packages/cre-workflow/vps/install-watch.sh --unin
 From 2026-11-01 the watchdog stops checking (its thresholds are the judging ones) and pushes one low-priority
 reminder a day to uninstall it.
 
-**Tests** (local only, `evidence/`):
+**Tests** (local only, `evidence/`; each writes a kept report under `$TMPDIR` and prints its path, and
+`ISOTHERM_WRITE_EVIDENCE=1` writes the tracked file only from a passing run):
 - `stack-watch-unit.txt` (macOS `/bin/bash` 3.2) and `stack-watch-unit-bash5.txt` (GNU bash 5.2, Linux container,
-  no network): **98 checks** of every alert, positive and negative, with fixtures and stubs. They cover the close
+  no network): **156 checks** of every alert, positive and negative, with fixtures and stubs. They cover the close
   window, before the roll, a stuck or missing roll, the 3-run threshold, dedupe and the 30-min clear, problems that
   come and go (a maker failing on and off, API reads failing 3 runs out of 4, a drip outage with a good reading every
   20 min), a 429 from ntfy, the snooze, the digest once a day, `--dry-run` pushing and saving nothing, the :03–:09
-  skip, the lock, malformed API data and a failing evaluator. They also check that no push went anywhere but
-  `https://ntfy.invalid` and that no GET or `cast` call was made.
-- `watch-systemd-e2e.txt`: **19 checks** of the units and `install-watch.sh` under a real systemd user manager in the
+  skip, the lock, malformed API data and a failing evaluator. Since 2026-10-14 also: the web RPC (each CORS failure
+  kind, a stuck block, the deployed build's fallbacks answering or not, the build cache, `--snooze-web`), the guardian
+  and attester lines, and the CRE line (single misses, a lapse, stale records, a gap, a stand-down, the records read
+  only on a run that may send the digest). They also check that no push went anywhere but `https://ntfy.invalid`, that
+  no real GET or `cast` call was made, and that the only POST and OPTIONS are the web RPC reads.
+- `watch-systemd-e2e.txt`: **23 checks** of the units and `install-watch.sh` under a real systemd user manager in the
   Ubuntu 24.04 test container, with no network. Covered: root refused; render, verify and enable; idempotent; the
-  schedule never at :03–:09; one run through systemd with Nice, idle I/O, CPUWeight and MemoryMax applied;
-  `--status` without the hostname, and with a snooze set and ended; uninstall and purge; the settlement units untouched.
-- `stack-watch-live-dryrun.txt`: one `--dry-run` against the live API and live testnet reads (2026-10-13 14:44 UTC),
-  with `ISOTHERM_ALERT_URL_FILE=/nonexistent` as well: all healthy; only the first digest would be pushed.
+  schedule never at :03–:09; one run through systemd with Nice, idle I/O, CPUWeight and MemoryMax applied, the
+  settlement records read and left byte-identical; `--status` without the hostname, with a snooze and a web snooze set
+  and ended; uninstall and purge; the settlement units untouched.
+- `stack-watch-live-dryrun.txt`: one `--dry-run` from the Mac against the live API, the live web RPC and site, and live
+  testnet reads (2026-10-14 06:00 UTC), with `ISOTHERM_ALERT_URL_FILE=/nonexistent` and a read-only copy of the VPS's
+  settlement records: all healthy; it shows the live build (`index-Cd8KBz0E.js`) has no fallback RPC and the records'
+  20 h gap (2026-10-11 18:05 to 10-12 14:05 UTC). Not yet run on the VPS's own bash 5.3.9 / curl 8.18: run the unit
+  suite and a `--dry-run` there after the next push.
 
 **Limits.**
 - It samples every 10 min, so "60 min" means 60–70 min.
 - If the VPS itself is down, nothing pushes: the missing 09:00 Taipei digest is the signal.
-- It watches what the public API and the chain show. The Worker's internal errors appear only as their effects (a
-  stale snapshot, empty books, a ladder that does not open, low balances).
+- It watches what the public API, the chain and the web app's RPC show. The Worker's internal errors appear only as
+  their effects (a stale snapshot, empty books, a ladder that does not open, low balances). Its integrity alerts
+  (`MISMATCH`, `CHALLENGE FAILED`, `UNVERIFIED`, the stale-void alerts, `RESERVE METER OVER`, `RPC ENDPOINT
+  EXCLUDED`) have no phone route until the Worker's own push works again (`docs/OPERATIONS.md` section 0).
+- `WEB RPC DOWN` reads the web app's RPC from the VPS's IP, not a judge's. A failure that the Mac's check does not
+  reproduce is this IP's problem (snooze it with `--snooze-web`); the body says which check to run.
 - The API does not publish the maker's `paused` flag, so a deliberate pull needs the snooze.
 - `LADDER NOT OPENED` knows the stations from their ladders in the snapshot (remembered 4 days). A station taken out
   of the maker's config would be reported for those days; snooze or ignore it.

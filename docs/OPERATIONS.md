@@ -1,20 +1,24 @@
 # Isotherm — live operations (Monad testnet 10143)
 
-Written 2026-10-07 14:15 Taipei (06:15 UTC), at go-live; balances and versions below are from then. Revised the same day after the v1 security review (attester gas, guardian runbook, owner key, API caps, settlement status). Balances and caps re-read at 2026-10-07 07:55 UTC (15:55 Taipei) are marked with that time. Revised again at 08:40 UTC (16:40 Taipei) for the CRE login, the re-sized API caps and the Dynamic build, and at 13:30 UTC (21:30 Taipei) for the Dynamic go-live (web app row and section 5), and at 16:30 UTC (00:30 Taipei, Oct 8) for the same-origin API at `https://isotherm.pages.dev/api/*` (sections 1, 2 and 5). Section 8 (the Cloudflare maker and its cutover runbook) was added on 2026-10-08 at 16:30 UTC and revised the same night after a tick-by-tick comparison of the shadow with the Mac maker (8.6), with a precise cutover runbook (8.3). On 2026-10-10 the settlement job moved to a small Linux server (section 6). Everything here is **testnet only**. AUSD is free
+Written 2026-10-07 14:15 Taipei (06:15 UTC), at go-live; balances and versions below are from then. Revised the same day after the v1 security review (attester gas, guardian runbook, owner key, API caps, settlement status). Balances and caps re-read at 2026-10-07 07:55 UTC (15:55 Taipei) are marked with that time. Revised again at 08:40 UTC (16:40 Taipei) for the CRE login, the re-sized API caps and the Dynamic build, and at 13:30 UTC (21:30 Taipei) for the Dynamic go-live (web app row and section 5), and at 16:30 UTC (00:30 Taipei, Oct 8) for the same-origin API at `https://isotherm.pages.dev/api/*` (sections 1, 2 and 5). Section 8 (the Cloudflare maker and its cutover runbook) was added on 2026-10-08 at 16:30 UTC and revised the same night after a tick-by-tick comparison of the shadow with the Mac maker (8.6), with a precise cutover runbook (8.3). On 2026-10-10 the settlement job moved to a small Linux server (section 6). Revised 2026-10-14 after the post-submission health audit (sections 0, 1, 2, 5, 6, 8.5, 8.8, 8.9). Everything here is **testnet only**. AUSD is free
 faucet test money. Nothing here touches Monad mainnet.
 
 ## 0. Judging override (2026-10-13 → 2026-10-31; revert after)
 
 Live since 2026-10-13 ~11:45 UTC, to keep the app smooth for judges (analysis: the 1.2 MON quoting cap was spent by
 fair tracking alone every day, leaving the at-the-money books empty 10-20 h a day, and a 0.15 MON drip let the app
-refuse a Buy NO after a Buy YES). The values below **override** the ones quoted later in this document:
+refuse a Buy NO after a Buy YES). Raised again on 2026-10-14: on a ladder's own trading day the fair moves with every
+weather report and Polymarket tick (57 re-quotes and 3.29 MON by 11:00 Taipei), so the 4 MON cap would have emptied the
+at-the-money books by the afternoon (version 28347a89); then the pull re-entry hysteresis was turned on (version
+68cbcd93). The values below **override** the ones quoted later in this document:
 
 | Where | Key | Before | Judging | Set by |
 |---|---|---|---|---|
-| maker Worker | quoting cap (`budget.dailyCapMon.maker`) / soft tier | 1.2 / 60 % (0.72) | **4 / 75 % (3.0)** | `CONFIG_OVERRIDES` in `apps/maker-worker/wrangler.toml` (version d99cfe90) |
+| maker Worker | quoting cap (`budget.dailyCapMon.maker`) / soft tier | 1.2 / 60 % (0.72) | **6 / 75 % (4.5)**; 4 / 75 % (3.0) on 10-13 | `CONFIG_OVERRIDES` in `apps/maker-worker/wrangler.toml` (version 28347a89; d99cfe90 had 4) |
 | maker Worker | reserve alert line (`budget.reserveMon.maker`) | 0.5 | **0.8** | same |
-| treasury | maker top-up min / target / daily cap | 1.5 / 4 / 4 | **2 / 5 / 6** | same |
-| treasury | global daily cap / TREASURY LOW line | 6 / 10 | **12 / 20** | same (12 ≥ the 11.2 sum of the role caps) |
+| maker Worker | pull re-entry hysteresis (`policy.pullReentry`) | off | **0.01** | same (version 68cbcd93): a strike pulled for the fair band or the guard divergence is quoted again only once it is 0.01 back inside |
+| treasury | maker top-up min / target / daily cap | 1.5 / 4 / 4 | **2 / 6 / 8**; 2 / 5 / 6 on 10-13 | same |
+| treasury | global daily cap / TREASURY LOW line | 6 / 10 | **14 / 20**; 12 / 20 on 10-13 | same (14 ≥ the 13.2 sum of the role caps) |
 | API Worker | `DRIP_MON` | 0.15 | **0.25** | `apps/api/wrangler.toml` (build 46cf2ef) |
 | API Worker | drips per UTC day / per network | 9 / 4 | **17 / 5** | same; sized by `size-caps.mjs --days 19 --drip-mon 0.25 --drip-share 0.85` |
 | API Worker | relays per UTC day / per network / per address | 26 / 13 / 13 | **28 / 14 / 14** | same (`apps/api/evidence/size-caps-2026-10-13-judging.txt`) |
@@ -22,13 +26,20 @@ refuse a Buy NO after a Buy YES). The values below **override** the ones quoted 
 Funding for it: 63 MON deployer → relayer on 2026-10-13 (tx `0x4d7120dbec94d025fde0bda0f526d6039211b098bab798ec1a6662b0c8f47ca5`;
 relayer 102.42 MON, enough for 19 worst-case days of the new API caps). Expected spend to Oct 31 ~135 MON of 354.
 
-Check: `node scripts/control.mjs status` (budget.tier cap 4 / soft 3; `treasury.today.globalCap` 12). `control.mjs
-treasury` prints the thresholds of the local `config/worker.json`, not the merged override, so it still shows 1.5/4/4
-and 6. API: `GET /api/health` → `dripMon` 0.25 and `limits`. Rollback of the maker: `npx wrangler rollback
+Check: `node scripts/control.mjs status` (budget.tier cap 6 / soft 4.5; `treasury.today.globalCap` 14). Since
+2026-10-14 `control.mjs treasury` prints the thresholds the Worker merges (`config/worker.json`, then the
+`CONFIG_OVERRIDES` line of `wrangler.toml`), with the global cap from the live status, and a `WARNING` line when the
+two disagree (the Worker runs other files); a `CONFIG_OVERRIDES` spelling it cannot read is reported as
+"config/worker.json ONLY … may NOT be the live thresholds". Before, it printed `config/worker.json` alone (1.5/4/4 and
+6). API: `GET /api/health` → `dripMon` 0.25 and `limits`. Rollback of the maker: `npx wrangler rollback
 1b000ee9-62c4-4c78-a7b5-1d5f6095ddd9 --name isotherm-maker`. **Revert after 2026-10-31:** delete the `CONFIG_OVERRIDES`
 line and `npm run deploy -- --live`; set `DRIP_MON` back to 0.15, re-run `size-caps.mjs` and `npm run deploy` in `apps/api`.
 
-**Phone alerts during judging:** the settlement VPS runs a read-only stack watchdog every 10 min (MAKER STALLED, BOOKS EMPTY, LADDER NOT OPENED, NO ACTIVE LADDER, DRIP/RELAY DOWN, the drip or relay cap used before 08:00 UTC, TREASURY/RELAYER/MAKER/OPERATOR LOW, SETTLEMENT OVERDUE, and a 09:00 Taipei digest; no digest = the watchdog is down), because the maker Worker's own pushes do not arrive. Install and remove it with `packages/cre-workflow/vps/install-watch.sh` (`--uninstall` after 2026-10-31); before pausing the maker on purpose, snooze its maker checks (sections 8.4, 8.5); details in `packages/cre-workflow/vps/README.md` section 13.
+**Phone alerts during judging:** the settlement VPS runs a read-only stack watchdog every 10 min (MAKER STALLED, BOOKS EMPTY, LADDER NOT OPENED, NO ACTIVE LADDER, DRIP/RELAY DOWN, the drip or relay cap used before 08:00 UTC, TREASURY/RELAYER/MAKER/OPERATOR LOW, SETTLEMENT OVERDUE, and a 09:00 Taipei digest; no digest = the watchdog is down), because the maker Worker's own pushes do not arrive. Install and remove it with `packages/cre-workflow/vps/install-watch.sh` (`--uninstall` after 2026-10-31); before pausing the maker on purpose, snooze its maker checks (sections 8.4, 8.5); details in `packages/cre-workflow/vps/README.md` section 13. Added on 2026-10-14, in the repository and live on the VPS only after the next `vps/push.sh` (owner's approval, outside 17:50–18:30 UTC): GUARDIAN LOW (< 0.03 MON) and ATTESTER LOW (< 0.08 MON); WEB RPC DOWN, when `https://testnet-rpc.monad.xyz`, the RPC the web app reads, trades and signs through, fails as a browser on the site reads it (CORS preflight and `eth_blockNumber`, 3 runs in a row; high priority while the deployed build has no fallback RPC that answers, which is the case for the live build; hold it alone with `stack-watch.sh --snooze-web HOURS`, while `--snooze` still holds only the maker checks); and a CRE line in the digest (the last official run, the last report, the span the records show the login, gaps, single misses).
+
+**The Worker's own integrity alerts reach no phone** until its push channel works again: `MISMATCH` (and `MISMATCH … NOT CHALLENGED automatically`), `CHALLENGED` / `CHALLENGE FAILED`, `UNVERIFIED`, the stale-void alerts (`STALE VOIDED`, `STALE VOID DUE`, `FAILED`, `HELD`, `REFUSED`, `NOT SENT`), `RESERVE METER OVER` and `RPC ENDPOINT EXCLUDED`. Its last pushes all failed (read on 2026-10-13): ntfy answered 429 (its per-IP limit on Cloudflare's shared egress IPs) and then 401, which means ntfy rejects the access token the Worker sends (`status.push.auth` names the form); that does not heal by itself (8.9). The fix is a Telegram bot URL as `ALERT_WEBHOOK_URL` (8.8; it makes a new Worker version), then `control.mjs status` must still show mode live, cap 6 / soft 4.5, global cap 14 and LOW 20, and `control.mjs test-alert` + `result` must deliver one `TEST ALERT`. Until then, once a day from `apps/maker-worker`: `node scripts/control.mjs status` (each settled day's `watcher.verdicts` should read `MATCH`; `push.last` lists the last 5 push results) and `node scripts/control.mjs alerts` (any of the titles above). The automatic challenge does not depend on the push. The VPS watchdog covers stalls, balances (including, after the next push, the guardian and the attester) and overdue settlement, not these.
+
+**MetaMask agent plugin:** keep the signed-in `@metamask/agent-wallet` host on 7.0.0 through judging. 7.2.0 was tested signed out on 2026-10-14 (install, `doctor`, `markets`, `quote`, `edge`, `kuru book` behave as on 7.0.0), but signing on 7.2.0 has not been exercised; `MM_SKIP_NEW_VERSION_CHECK=1` hides 7.0.0's upgrade warning (`packages/mm-plugin/README.md`, "Install and setup").
 
 ## 1. What is live
 
@@ -38,7 +49,7 @@ line and `npm run deploy -- --live`; set `DRIP_MON` back to 0.15, re-run `size-c
 | API: drip, gasless-mint relayer, stats, snapshot | https://isotherm.pages.dev/api/* (Pages Function `apps/web/functions/api/[[path]].ts` → service binding `API` → Worker `isotherm-api`; the Worker has no public hostname of its own since 2026-10-07 16:05 UTC). Worker version `60f3a919` deployed 16:24 UTC; its source equals `0c112836` (13:27 UTC, stats classification), and the re-sized caps are live since `ea73ccfa` (08:02 UTC); the go-live version was `ed0ab137` |
 | Contracts (v1, Sourcify exact_match) | Resolver `0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B`, Vault/factory `0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39`, Zap `0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0`. Source of truth: `deployments/testnet.json` |
 | Market maker | **Live: the Cloudflare Worker `isotherm-maker`** (`apps/maker-worker`), cron every minute plus a Durable Object, since the cutover at 2026-10-08 23:00 UTC (07:00 Taipei, Oct 9); first live tx 23:06 UTC. Before that it ran 6.5 h in SHADOW mode and matched the Mac's decisions tick by tick (section 8.6). The Mac launchd jobs `xyz.isotherm.maker/roll/watchdog/challenge-watch` are booted out and disabled; rollback is section 8.4. |
-| Settlement | The official CRE CLI, hourly at :05, on a small Linux server (systemd timer `isotherm-settle.timer`) since 2026-10-10 08:18 UTC; the Mac job `xyz.isotherm.cre-settle` is booted out, disabled and released (section 6). Settled so far, all on the official path: RCSS 2026-10-08 at 28 °C, RCSS 2026-10-09 at 29 °C and RCSS 2026-10-10 at 30 °C (the server's first). |
+| Settlement | The official CRE CLI, hourly at :05, on a small Linux server (systemd timer `isotherm-settle.timer`) since 2026-10-10 08:18 UTC; the Mac job `xyz.isotherm.cre-settle` is booted out, disabled and released (section 6). Settled so far, all on the official path at the first 18:05 UTC attempt and each equal to Polymarket's resolution: RCSS 2026-10-08 at 28 °C, RCSS 2026-10-09 at 29 °C, RCSS 2026-10-10 at 30 °C (the server's first), RCSS 2026-10-11 at 30 °C, RCSS 2026-10-12 at 30 °C and RCSS 2026-10-13 at 31 °C (live list: `/api/settlements`). |
 
 ### The first live ladder: Taipei (RCSS), Thursday 2026-10-08
 
@@ -59,7 +70,7 @@ Full seriesIds, every tx hash and the on-chain checks are in `docs/evidence/goli
 
 | Role | Address | Pays for | MON after go-live | MON at 2026-10-07 07:55 UTC |
 |---|---|---|---|---|
-| deployer = contract owner | `0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11` | owner calls; **funds the others**. Hot key: with it alone an attacker could replace the guardian and attester, so move ownership of the Resolver and Vault to a cold key (v1 review N3) | 0.85 | 23.84 |
+| deployer = contract owner | `0xb855f2bCA7C12Db2aA9D70740c6cF40808325c11` | owner calls; **funds the others**. Hot key: with it alone an attacker could replace the guardian and attester, so move ownership of the Resolver and Vault to a cold key (v1 review N3). **Deliberately deferred until after 2026-10-27:** only the owner can `unpause()` or `setAttester()`, so a cold owner during judging would slow the response to an incident. Then, on both contracts: `transferOwnership(cold)`, `acceptOwnership()` from the cold key, and stop using the deployer as the funding wallet | 0.85 | 23.84 |
 | operator (also creates Kuru markets) | `0x602dbf3937558B1d18d76315635fD5410089bd51` | daily `createLadder` + 4 × `deployProxy` + 4 × `setCanonicalMarket` (≈0.78 MON) | 0.12 | 1.82 |
 | maker | `0xd572638F07829D1c3636400FB73CF34Ca6c7448a` | mint, margin, quotes, re-quotes, kill switch | 1.73 | 2.62 |
 | relayer (API Worker secret `RELAYER_KEY`) | `0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f` | drips (0.15 MON + 1,000 AUSD each), relayed gasless mints, AUSD float refills | 0.75 | 4.60 |
@@ -224,11 +235,23 @@ The human faucet gives about 5 MON/day.
   - **The embedded-wallet proof passed on the live site** (2026-10-07 12:36 UTC). A team member signed in with email and got embedded wallet `0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427`, a team test wallet. The deployer funded it (0.25 MON `0x6ed02038…90be`, 10,000 AUSD `0xf4f38886…e664`). The wallet then made a relayed mint (`0xca08d0150c228c16f9841b00244654ec39f96551c52a0e063584d2adabb6bf04`) and a Zap Buy Yes (`0x361668d832a2acd47180b8875c9ce44ce0ff6f7dec9a071755e7c8d9dcb4681c`), both `success`. Details: `apps/web/evidence/dynamic/RESULT.md` §5.
   - Monad Testnet and Monad Mainnet are enabled in the Sandbox environment. Check with `curl -s https://app.dynamicauth.com/api/v0/sdk/3eaae4f7-b9bb-4a0a-a578-00ff7008a460/settings`; at 13:24 UTC it listed chains 1, 143 and 10143.
   - Emergency dev-wallet-only build: `VITE_DYNAMIC_ENVIRONMENT_ID= npm run build` (a shell variable beats the file).
+  - **RPC fallback (in the working tree since 2026-10-14, not deployed).** The live build (main chunk
+    `assets/index-Cd8KBz0E.js`) reads, trades and signs through `https://testnet-rpc.monad.xyz` alone. The prepared
+    change (`apps/web/src/lib/chain.ts`, `src/config.ts`; `apps/web/README.md`): web reads and the dev wallet go to the
+    official RPC first (a 429/5xx is retried there once, 400 ms later; a 5 s timeout or a second failure skips it for
+    30 s), then Ankr, then thirdweb; reverts, rejected signatures and deterministic transaction errors (insufficient
+    balance, nonce too low, …) are thrown at once, never re-sent. Dynamic's embedded wallet still sends through the
+    official RPC only (an SDK limitation). Only the public testnet RPC URLs fall back; a fork URL keeps one endpoint.
+    The same change labels the ladder's "max so far" time as station time ("as of 13:00 local"). Deploying it changes
+    the judged app after the deadline, so it is the owner's decision: `npm run build` then
+    `npx wrangler@3 pages deploy --branch main` (expect main chunk `index-CW0u1glW.js`); `apps/web/dist` holds the
+    live build until then. Until it ships, the VPS watchdog's `WEB RPC DOWN` (section 0) is the alarm for that one
+    endpoint, at high priority; afterwards it drops to default priority while a fallback answers.
 - **Smoke-test wallet.** The go-live smoke test used dev wallet `0xd42A0b394F09df88BB2120D0973569b845f2D79c`, stored in the in-app browser. It is listed in `TEAM_ADDRESSES`, so the public "trading wallets" counter does not count our own test. `/api/stats` classifies its fill as `team`. The team's Dynamic test wallet `0xF4a3377D1200584D8Ab7d7e64c6B17dc6c792427` is in `TEAM_ADDRESSES` too; at 13:28 UTC `/api/stats` classified its Buy Yes as `team`, with `nonMakerWallets 0`.
 
 ## 6. Settlement (not run by the maker)
 
-Every ladder is settled by the CRE workflow in `packages/cre-workflow`, through the MockKeystoneForwarder plus the attester signature. The CRE workstream installed the jobs on 2026-10-07 (`packages/cre-workflow/README.md`, `RESULT.md`); since 2026-10-10 08:18 UTC the job runs on the server (below). Results so far, all on the official path: RCSS 2026-10-08 at 28 °C (`0x65eee8ef…963d`, 18:05:39 UTC), RCSS 2026-10-09 at 29 °C (`0xdfd28ea5…3ecd`, 18:05:42 UTC) and RCSS 2026-10-10 at 30 °C (`0xacb724d3…bf9d`, 18:05:26 UTC, the first from the server).
+Every ladder is settled by the CRE workflow in `packages/cre-workflow`, through the MockKeystoneForwarder plus the attester signature. The CRE workstream installed the jobs on 2026-10-07 (`packages/cre-workflow/README.md`, `RESULT.md`); since 2026-10-10 08:18 UTC the job runs on the server (below). Results so far, all on the official path: RCSS 2026-10-08 at 28 °C (`0x65eee8ef…963d`, 18:05:39 UTC), RCSS 2026-10-09 at 29 °C (`0xdfd28ea5…3ecd`, 18:05:42 UTC), RCSS 2026-10-10 at 30 °C (`0xacb724d3…bf9d`, 18:05:26 UTC, the first from the server), RCSS 2026-10-11 at 30 °C (`0x0266fd63…7d1a`), RCSS 2026-10-12 at 30 °C (`0xc957ccc1…755f`) and RCSS 2026-10-13 at 31 °C (`0xf3e19cbb…1a6b`), each at the first 18:05 UTC attempt (1,444-byte calldata from the attester to the MockKeystoneForwarder, as the official path sends) and each equal to Polymarket's resolution.
 - **When:** `xyz.isotherm.cre-settle` runs hourly at :05; nothing is attempted before day end + 2 h, so the first real attempt for the Oct 8 ladder is **2026-10-08 18:05 UTC (02:05 Taipei, Oct 9)**. Disagreeing or incomplete sources stay pending and are retried hourly; a void comes only after 36 h (46 h backstop).
 - **Which path:** the official path (`cre workflow simulate --broadcast`) needs `cre login`.
   - **Login.** Done on 2026-10-07; the session file `~/.cre/cre.yaml` was written at about 07:59 UTC.
@@ -243,9 +266,16 @@ Every ladder is settled by the CRE workflow in `packages/cre-workflow`, through 
   disabled and its runtime copy carries `var/writer.released`. Team summary in `docs/SETTLEMENT-VPS.md`, runbook (status,
   logs, rollback) in `packages/cre-workflow/vps/README.md`. The VPS's WASM build is byte-identical to the Mac's
   (`413d4429…`). Notes from the cutover:
-  - **One CRE session per account.** Signing in on the VPS ended the Mac's session (its 08:05 UTC run fell back to the
-    harness with "not logged in"). Do not run `cre login` on the Mac while the VPS settles; a rollback to the Mac needs a
-    fresh `cre login` there.
+  - **Signing in on the VPS ended the Mac's session** (its 08:05 UTC run fell back to the harness with "not logged
+    in"). Seen once; whether a CRE account can hold only one session is unverified. Do not run `cre login` on the Mac
+    while the VPS settles; plan a fresh `cre login` there for a rollback to the Mac.
+  - **Login check before each run.** `settle-job.sh` takes the official path when `cre whoami` answers. Since 2026-10-14
+    (in the repository; on the VPS after the next `vps/push.sh`) a failed check is run once more 30 s later before the
+    labelled harness is chosen, so a brief CRE API error at 18:05 UTC no longer sends that day through the fallback (the
+    VPS had such single misses at 2026-10-13 05:05 and 23:05 UTC). A single `harness fallback ran` push now says itself
+    whether to act; act on `CRE LOGIN NEEDED` (two runs in a row) with `packages/cre-workflow/vps/relogin.sh
+    isotherm-vps` on the Mac, the same day, before 18:05 UTC. Never `cre login` anywhere else, and keep `cre` and status
+    calls out of minutes :03–:09.
   - **Time sync.** The provider blocks outbound NTP (UDP 123), so the VPS keeps its clock with `htpdate` over HTTPS
     (Google, Cloudflare, Apple, Microsoft); chrony is disabled. Offset at setup: 0.06 s.
   - **Phone push** from the VPS goes to the ntfy topic from its own IP (no shared-IP limit).
@@ -469,8 +499,8 @@ Run everything from `apps/maker-worker` with `XDG_CONFIG_HOME` set as in 8.2.
 | Overdue ladders, stale voids, push channel | `node scripts/control.mjs status` (`watcher.overdue`, `watcher.staleVoids`, `push`); `alerts` for the texts |
 | Check the phone push | `node scripts/control.mjs test-alert`, then `result`; one `TEST ALERT <seq>` arrives (8.8) |
 | Reset the shadow's own state and summary | `node scripts/control.mjs reset-shadow` |
-| Treasury and role balances | `node scripts/control.mjs treasury` (balances vs min/target, today's top-ups and caps); `status` has `treasury`, `budget.tier`, `rpc.endpoints` |
-| Tests | `npm test` (73 unit), `npm run test:fork` (anvil fork + the bundled Worker in Miniflare, live on the fork), `MW_REHEARSAL=1 npx vitest run test/integration/cutover-rehearsal.fork.test.ts` (this runbook on a fork with the Mac's real state), `MW_LIVE_SMOKE=1 npx vitest run test/integration/live-readonly.smoke.test.ts` (read-only, no keys) |
+| Treasury and role balances | `node scripts/control.mjs treasury` (balances vs min/target, today's top-ups and caps; the thresholds are `config/worker.json` merged with `wrangler.toml`'s `CONFIG_OVERRIDES` as the Worker merges them, the global cap comes from the live status, and a `WARNING` line means the two disagree); `status` has `treasury`, `budget.tier`, `rpc.endpoints` |
+| Tests | `npm test` (90 unit), `npm run test:fork` (anvil fork + the bundled Worker in Miniflare, live on the fork), `MW_REHEARSAL=1 npx vitest run test/integration/cutover-rehearsal.fork.test.ts` (this runbook on a fork with the Mac's real state), `MW_LIVE_SMOKE=1 npx vitest run test/integration/live-readonly.smoke.test.ts` (read-only, no keys) |
 
 **Known limits.**
 - **Settlement runs on one small Linux server** (since 2026-10-10 08:18 UTC, `docs/SETTLEMENT-VPS.md`). If it
@@ -713,6 +743,13 @@ node scripts/control.mjs test-alert && node scripts/control.mjs result   # one "
 Every alert is then also pushed: at most once per title per hour, 5 s timeout, never blocking a tick. The URL never
 appears in logs or KV. Remove it with `npx wrangler secret delete ALERT_WEBHOOK_URL --name isotherm-maker`.
 
+**Status (2026-10-14): the push does not arrive.** The last pushes failed with HTTP 429 and then 401 from ntfy (8.9):
+the 401 means ntfy rejects the access token the Worker sends, so it will not recover by itself. Switch to Telegram as
+above: write the bot URL to `alert-webhook.url`, run `put-secrets.mjs --only ALERT_WEBHOOK_URL --live` (a new Worker
+version with the same code and vars), check that `control.mjs status` still shows mode live with cap 6 / soft 4.5,
+global cap 14 and LOW 20 (section 0), then `test-alert` and `result`. Keep the VPS's own `alert-webhook.url` an ntfy
+URL (the VPS push speaks ntfy only). Until it works, read `status` and `alerts` by hand once a day (section 0).
+
 **Off switch.** Set `AUTO_STALE_VOID = "0"` in `wrangler.toml` and run `npm run deploy -- --live`: the alerts stay,
 and a due void becomes a `STALE VOID DUE` alert to act on by hand.
 
@@ -798,7 +835,7 @@ A read-only run of the same bundle against live testnet with the production `RPC
 
 **Deploy** (the Worker is live). From `apps/maker-worker`, with `XDG_CONFIG_HOME` set as in 8.2:
 ```bash
-npm ci && npm test && npm run typecheck             # 73 unit tests
+npm ci && npm test && npm run typecheck             # 90 unit tests (73 on 2026-10-09)
 npm run test:fork                                   # optional: anvil fork + Miniflare, throwaway keys
 node scripts/put-secrets.mjs --dry --only TREASURY_KEY   # checks treasury.key: address 0x655d…BEed, not another role's key
 npm run deploy -- --live                            # the output must show MAKER_MODE "live", RPC_URLS (3 URLs), the cron,
@@ -810,6 +847,12 @@ node scripts/control.mjs ticks 5                    # live ticks; "sent:" only f
 node scripts/control.mjs treasury                   # after <= 10 min: balances vs min/target, any top-up
 ```
 Then fund the treasury from the deployer (section 4) and watch for `TOPUP <ROLE>` alerts.
+
+**ntfy's 429 and 401.** A 429 is ntfy's per-IP limit: Workers share Cloudflare's egress IPs, so other tenants' traffic
+counts against the Worker. A **401** is not an IP limit: ntfy rejects the access token sent with the push
+(`ALERT_WEBHOOK_TOKEN`, or an `?auth=` parameter in the URL; `status.push.auth` says which), for example a revoked or
+mistyped token, and it repeats until the token or the URL changes. The Worker's pushes ended in 401 by 2026-10-13
+(section 0).
 
 **ntfy over a shared IP (owner, optional).** A free ntfy.sh account's token does **not** lift the per-IP limit: the
 ntfy server keys a publisher by its account only when the account has a tier (a paid plan), and reserving a topic is
