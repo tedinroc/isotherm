@@ -19,9 +19,10 @@
 #                re-baselines.
 #   5. alerts    optional ntfy push (~/.config/isotherm/alert-webhook.url): failures, a writer conflict, the harness
 #                fallback, a low attester balance, and every report sent. 5b: a lapsed CRE login (two runs in a row
-#                took the harness because `cre whoami` failed; one miss is often a CRE API timeout) pushes "CRE LOGIN
-#                NEEDED" with the one-line fix (3 h dedupe), and the first run with the login after that push pushes
-#                "CRE LOGIN RESTORED" once (lib.sh cre_login_watch). Read-only on the evidence; the exit code is kept.
+#                took the harness because `cre whoami` failed; one miss alone can be a brief CRE API outage) pushes
+#                "CRE LOGIN NEEDED" with the one-line fix (3 h dedupe), and the first run with the login after that push
+#                pushes "CRE LOGIN RESTORED" once (lib.sh cre_login_watch). Read-only on the evidence; the exit code is
+#                kept.
 #
 # Env (set by the unit): ISOTHERM_STATE_DIR, ISOTHERM_HOST_LABEL=vps, ISOTHERM_JOB_LABEL=isotherm-settle.service,
 #   ISOTHERM_WRITER_CLAIM_REQUIRED (default 1). Optional: ISOTHERM_CRE_API_KEY_FILE (default
@@ -117,20 +118,34 @@ fi
 LATEST="$STATE/evidence/LATEST.json"
 FRESH=$(node -e 'try { const r = require(process.argv[1]); console.log(Date.parse(r.startedAt) >= (Number(process.argv[2]) - 5) * 1000 ? 1 : 0) } catch { console.log(0) }' "$LATEST" "$START" 2>/dev/null || echo 0)
 if [ "$FRESH" = 1 ]; then
+  # The harness-fallback push tells a missing login from a harness run for another reason (after a failed official run,
+  # which has its own exit alert), and a first miss from a lapse already reported. MISS: this run missed the login
+  # (lib.sh CRE_LAPSE_JS lapsed(), as step 5b); PREV: the runs in a row that missed it before this one (5b's state, read
+  # before 5b counts this run). Its own node call: if it fails, that push loses only its advice, never an alert.
+  MISS=$(node -e "$CRE_LAPSE_JS"' console.log(lapsed(require(process.argv[1])) ? 1 : 0)' "$LATEST" 2>/dev/null) || MISS=""
+  PREV=$(cre_lapsed_runs)
   # one alert per line: priority <TAB> dedupe seconds <TAB> title <TAB> body
   # shellcheck disable=SC2016  # JavaScript template literals, not shell expansions
-  node -e '
-    const r = require(process.argv[1]); const out = [];
+  ALERTS=$(node -e '
+    const r = require(process.argv[1]); const [miss, prev, fix] = process.argv.slice(2); const out = [];
     const tab = (p, d, t, b) => out.push([p, d, t, String(b).replace(/[\t\n]+/g, " ")].join("\t"));
     for (const s of r.reportsSent || [])
       tab("default", 0, `ISOTHERM VPS: report sent ${s.station} ${s.date}`, `${s.action}${s.tmaxC != null ? ` tmaxC=${s.tmaxC}` : ""} confirmed=${s.confirmed ?? "?"} tx ${s.txHash} (path ${r.path})`);
     if (r.exitCode !== 0) tab("high", 10800, `ISOTHERM VPS: settle job exit ${r.exitCode}`, `${r.exitMeaning}; path ${r.path}. ${(r.runner || []).slice(-2).join(" | ")}. Logs: journalctl --user -u isotherm-settle`);
+    const advice = miss === "0" ? "Not a login problem: no relogin needed."
+      : miss !== "1" ? `Cause not classified (lib.sh CRE_LAPSE_JS failed). If the CRE login is missing, the fix, on the Mac: ${fix}`
+      : prev === "0" ? "One miss alone can be a brief CRE API outage: act only on CRE LOGIN NEEDED, which is pushed if the next run finds no login either."
+      : `${Number(prev) + 1} runs in a row without the CRE login: see CRE LOGIN NEEDED. The fix, on the Mac: ${fix}`;
     if (r.path !== "official" && !r.dryRun && !r.stoodDownForDon && !r.stoodDownForWriter)
-      tab("default", 43200, "ISOTHERM VPS: harness fallback ran (official CRE path unavailable)", `${r.pathReason}. Log in again on the VPS (vps/README.md section 4).`);
+      tab("default", 43200, "ISOTHERM VPS: harness fallback ran (official CRE path unavailable)", `${r.pathReason}. ${advice}`);
     const bal = (r.runner || []).map((l) => l.match(/tx sender (0x[0-9a-fA-F]{40}) has ([0-9.]+) MON/)).find(Boolean);
     if (bal && Number(bal[2]) < 0.1) tab("default", 86400, "ISOTHERM VPS: attester low on MON", `${bal[1]} holds ${Number(bal[2]).toFixed(4)} MON, about ${Math.floor(Number(bal[2]) / 0.0204)} reports at 0.0204 MON. Fund it (docs/OPERATIONS.md section 4).`);
     console.log(out.join("\n"));
-  ' "$LATEST" 2>/dev/null | while IFS=$'\t' read -r P D T B; do [ -n "$T" ] && push_alert "$T" "$B" "$P" "$D"; done
+  ' "$LATEST" "$MISS" "$PREV" "$RELOGIN_CMD" 2>/dev/null); ARC=$?
+  printf '%s\n' "$ALERTS" | while IFS=$'\t' read -r P D T B; do [ -n "$T" ] && push_alert "$T" "$B" "$P" "$D"; done
+  if [ "$ARC" != 0 ] && [ "$RC" != 0 ]; then   # the alert script failed: the exit alert still goes out
+    push_alert "ISOTHERM VPS: settle job exit $RC" "the alerts could not read this run's evidence record; see $OUT and journalctl --user -u isotherm-settle" high 10800
+  fi
   # ---- 5b. CRE login lapsed / restored (in addition to the alerts above, which are unchanged)
   cre_login_watch "$LATEST"
 elif [ "$RC" != 0 ]; then

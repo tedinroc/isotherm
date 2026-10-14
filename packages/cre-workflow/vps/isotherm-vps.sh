@@ -35,6 +35,8 @@ file_mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }
 # How long the current CRE session has been valid, from the evidence records (the official runs since the last miss,
 # lib.sh CRE_LAPSE_JS). A lower bound: the session was valid at each of those runs. Never reads ~/.cre.
 # LAPSED needs CRE_NEEDED_AFTER misses in a row, as the CRE LOGIN NEEDED push does; a single miss is shown as such.
+# A single miss between runs that showed the login, the next one official, is most likely a CRE API timeout: the strict
+# bound restarts after it, and a second bound counted across such misses follows, labelled as such.
 # shellcheck disable=SC2016  # JavaScript template literals, not shell expansions
 cre_session() {
   local f="$STATE/evidence/settle-runs.jsonl"
@@ -51,10 +53,16 @@ cre_session() {
       const miss = runs.filter((r, i) => i > ok && lapsed(r)), n = miss.length, first = t(miss[0]);
       const last = ok >= 0 ? `the login last showed at ${iso(t(runs[ok]))}` : `no run with the login in the last ${runs.length} runs`;
       if (n >= after) console.log(`LAPSED since ${iso(first)} (${dur(now - first)}, ${n} harness runs in a row); ${last}. Fix, on the Mac: ${fix}`);
-      else console.log(`no login in the last run (${iso(first)}, harness); a single miss is often a CRE API timeout, so CRE LOGIN NEEDED waits for the next run; ${last}`);
+      else console.log(`no login in the last run (${iso(first)}, harness); a single miss can be a brief CRE API outage, so CRE LOGIN NEEDED waits for the next run; ${last}`);
     } else if (off > lap) {
       const a = t(runs[runs.findIndex((r, i) => i > lap && r.path === "official")]), b = t(runs[off]);
-      console.log(`valid for at least ${dur(b - a)}: official runs from ${iso(a)} to ${iso(b)}, the last one ${dur(now - b)} ago; ${lap >= 0 ? `after the miss seen at ${iso(t(runs[lap]))}` : `no run without the login in the last ${runs.length} runs`}`);
+      // single miss: the nearest runs before and after it that show or miss the login both show it, the one after official
+      const dec = []; runs.forEach((r, i) => { if (lapsed(r)) dec.push([i, 0]); else if (loginOk(r)) dec.push([i, 1]) });
+      const single = (j) => { const k = dec.findIndex((d) => d[0] === j); return k > 0 && dec[k - 1][1] === 1 && k + 1 < dec.length && dec[k + 1][1] === 1 && runs[dec[k + 1][0]].path === "official" };
+      let hard = lap, n = 0; while (hard >= 0 && single(hard)) { n++; do hard--; while (hard >= 0 && !lapsed(runs[hard])) }
+      const a2 = n ? t(runs[runs.findIndex((r, i) => i > hard && r.path === "official")]) : 0;
+      const across = !n ? "" : `. Across ${n > 1 ? `those ${n} single misses` : "that single miss"} (the login showed in the runs on both sides, the next one official: most likely ${n > 1 ? "CRE API timeouts" : "a CRE API timeout"}): at least ${dur(b - a2)}, official runs from ${iso(a2)}; ${hard >= 0 ? `after the miss seen at ${iso(t(runs[hard]))}` : `no other miss in the last ${runs.length} runs`}`;
+      console.log(`valid for at least ${dur(b - a)}: official runs from ${iso(a)} to ${iso(b)}, the last one ${dur(now - b)} ago; ${lap >= 0 ? `after the miss seen at ${iso(t(runs[lap]))}` : `no run without the login in the last ${runs.length} runs`}${across}`);
     } else if (ok >= 0) console.log(`cre whoami answered at ${iso(t(runs[ok]))}${lap >= 0 ? `, after the miss seen at ${iso(t(runs[lap]))}` : ""}; no official run since${lap >= 0 ? " that miss" : ` in the last ${runs.length} runs`} (the harness ran after a failed official run)`);
     else console.log(`no official run in the last ${runs.length} runs (none showed a missing login)`);
   ' "$RELOGIN_CMD" "$CRE_NEEDED_AFTER" 2>/dev/null || echo "? (evidence unreadable)"

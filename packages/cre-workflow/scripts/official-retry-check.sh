@@ -43,6 +43,19 @@
 #         whoami answers but run-official.sh's first check fails, then answers -> official, NOT a miss (it clears a
 #         previous single miss); both checks fail (twice in a row) -> exit 3, harness fallback, a miss each time, and
 #         CRE LOGIN NEEDED on the second
+#   J5 settle-job.sh's own cre whoami fails, then answers -> one wait of 30 s (before the lock and the last-run stamp),
+#      the identical check once more, the official path; the evidence reason says "at the second check"; not a miss
+#   J5b the same after a failed official run (official-failed present) -> the harness, as after any failed official
+#      run, with cre whoami's answer recorded (creLogin true, "at the second check"): not a miss; official-failed
+#      removed
+#   J6 settle-job.sh's cre whoami fails twice, 30 s apart -> the harness fallback as before (no simulate call), after
+#      that one wait; the reason "(no CRE login, or the CRE API did not answer)"; a miss for cre_login_watch (no push
+#      yet)
+#   J7 CRE_API_KEY set -> cre whoami never asked, no wait, the official path
+#   J8 no second check where the answer cannot change the path: ISOTHERM_SETTLE_MODE=harness, ISOTHERM_SETTLE_MODE=
+#      official (run-official.sh's own 30 s check only), a fork RPC in auto mode
+#   J9 settle-job.sh's first check hangs (bounded by its 45 s alarm, as a CRE API timeout), the second answers -> official
+#   J10 settle-job.sh's first check fails, the second hangs (the same 45 s alarm ends it) -> the harness, a miss
 #   D1 a report sent, its "tx 0x… ->" line dropped (the simulator stopped first; live 2026-10-11 18:05 UTC), its hash
 #      only in the result JSON -> step 6 still checks its receipt (bun e2e/confirm.ts, a shim here) with that hash;
 #      run-official.sh before scripts/sent-hashes.mjs (the newest committed one without it) checked nothing
@@ -52,19 +65,27 @@
 #      it was before the retry existed (the newest committed version without it), with the same exit code
 #   B2 the same against the newest committed run-official.sh without the login-check retry: identical logs (and stdout)
 #      for the W3-W5 cases; for W2 identical apart from the one new line, same exit 3
+#   B3 the newest committed settle-job.sh without its login-check retry vs now: job log, evidence record, exit code, cre
+#      whoami calls and waits identical where no second check runs (J7, J8 and an answering check); when both checks
+#      fail, identical apart from the one new line, the reason ("failed twice, 30 s apart (no CRE login, or the CRE API
+#      did not answer)" for "failed (not logged in to CRE)"), one more call and the 30 s wait
 # Usage: scripts/official-retry-check.sh        Env: ISOTHERM_TEST_BASH (default /bin/bash), KEEP=1 keeps the scratch,
 #   ISOTHERM_RETRY_CHECK_TARGET=<a copy of run-official.sh> tests that copy instead (to check that this test catches a
-#   broken retry rule); its output goes to stdout only.
-# Output: stdout and evidence/official-retry-check.txt (local paths replaced by <repo>, <scratch>, ~). Exit 0 = all pass.
+#   broken retry rule); its report never goes to the tracked file.
+# Output: stdout, and the report (local paths replaced by <repo>, <scratch>, ~) in a new file under $TMPDIR whose path is
+#   printed. ISOTHERM_WRITE_EVIDENCE=1 also writes the tracked evidence/official-retry-check.txt (or the file named by
+#   ISOTHERM_TEST_EVIDENCE=<file>, as in vps/test/stack-watch-unit.sh), and only when every check passed. Exit 0 = all
+#   pass.
 set -uo pipefail
 REAL="$(cd "$(dirname "$0")/.." && pwd)"; REPO=$(cd "$REAL/../.." && pwd)
 TBASH=${ISOTHERM_TEST_BASH:-/bin/bash}
 TARGET=${ISOTHERM_RETRY_CHECK_TARGET:-$REAL/scripts/run-official.sh}
-EVOUT="$REAL/evidence/official-retry-check.txt"
+EVOUT=${ISOTHERM_TEST_EVIDENCE:-$REAL/evidence/official-retry-check.txt}
 SEARCH="$REAL/.tools/bin:$REAL/.tools/node_modules/.bin:$PATH:/opt/homebrew/bin:/usr/local/bin:$HOME/.bun/bin:$HOME/.local/bin"
 BUN=$(PATH=$SEARCH; command -v bun) || { echo "bun not found" >&2; exit 2; }
 NODE=$(PATH=$SEARCH; command -v node) || { echo "node not found" >&2; exit 2; }
 TMPBASE=${TMPDIR:-/tmp}; SC=$(mktemp -d "${TMPBASE%/}/isotherm-retry-check.XXXXXX"); SCP=$(cd "$SC" && pwd -P)
+# shellcheck disable=SC2317  # called by the EXIT trap
 cleanup() { rm -rf "$SC/keys"; [ "${KEEP:-0}" = 1 ] || rm -rf "$SC"; }
 trap cleanup EXIT
 P="$SC/root/packages/cre-workflow"; BIN="$P/.tools/bin"
@@ -114,6 +135,14 @@ for c in $(git -C "$REPO" log --format=%h -- packages/cre-workflow/scripts/run-o
   case "$(git -C "$REPO" show "$c:packages/cre-workflow/scripts/run-official.sh")" in *sent-hashes.mjs*) ;; *) BASE3_REF=$c; break ;; esac
 done
 [ -n "$BASE3_REF" ] && git -C "$REPO" show "$BASE3_REF:packages/cre-workflow/scripts/run-official.sh" >"$P/scripts/run-official.baseline3.sh"
+
+# ---- baseline 4: the newest committed settle-job.sh without its own login-check retry (B3); in scripts/, so it resolves
+# PKG to the scratch package like the symlinked one
+BASE4_REF=""
+for c in $(git -C "$REPO" log --format=%h -- packages/cre-workflow/scripts/settle-job.sh 2>/dev/null); do
+  case "$(git -C "$REPO" show "$c:packages/cre-workflow/scripts/settle-job.sh")" in *'CRE login check:'*) ;; *) BASE4_REF=$c; break ;; esac
+done
+[ -n "$BASE4_REF" ] && git -C "$REPO" show "$BASE4_REF:packages/cre-workflow/scripts/settle-job.sh" >"$P/scripts/settle-job.baseline.sh"
 
 # ---- shims
 cat >"$BIN/cre" <<'EOF'
@@ -199,7 +228,7 @@ case "$1" in
   nonce) n=$(( $(cat "$D/nonce-reads" 2>/dev/null || echo 0) + 1 )); echo "$n" >"$D/nonce-reads"
          v=$(sed -n "${n}p" "$D/nonce-plan"); [ -n "$v" ] || v=$(tail -n1 "$D/nonce-plan")
          [ "$v" = fail ] && { echo "shim cast: RPC error" >&2; exit 1; }
-         [ "$v" = hang ] && exec /bin/sleep 30   # an RPC that never answers: only the caller's perl alarm ends it
+         [ "$v" = hang ] && exec /bin/sleep 60   # an RPC that never answers: only the caller's perl alarm ends it
          echo "$v" ;;
   *) echo "shim cast: unexpected: $*" >&2; exit 97 ;;
 esac
@@ -251,7 +280,7 @@ BASELINE_CASES=""
 
 {
 echo "# $(date -u +%FT%TZ) run-official.sh one-retry check: $("$TBASH" -c 'echo bash $BASH_VERSION') on $(uname -s) $(uname -m); shims for cre, cast, sleep; no network, no real key, 0 MON"
-echo "# scratch package <scratch>/root/packages/cre-workflow (scripts/ symlinked to the code under test); tx sender $ADDR (fresh random key); baseline: run-official.sh at ${BASE_REF:-<none found>}; baseline 2 (no login-check retry): ${BASE2_REF:-<none found>}; baseline 3 (no sent-hashes.mjs): ${BASE3_REF:-<none found>}"
+echo "# scratch package <scratch>/root/packages/cre-workflow (scripts/ symlinked to the code under test); tx sender $ADDR (fresh random key); baseline: run-official.sh at ${BASE_REF:-<none found>}; baseline 2 (no login-check retry): ${BASE2_REF:-<none found>}; baseline 3 (no sent-hashes.mjs): ${BASE3_REF:-<none found>}; baseline 4 (settle-job.sh without its login-check retry): ${BASE4_REF:-<none found>}"
 
 echo; echo "## R1. credential failure, then success: one retry after 45 s"
 setup_case r1 cred,ok "7 7"; runoff current --official
@@ -347,7 +376,7 @@ ok "$([ "$RC" = 1 ] && [ "$(attempts)" = 1 ] && [ "$(sleeps)" = 45 ] && [ "$(cou
 
 echo; echo "## R16. the nonce read before the run hangs (bounded at 20 s) / answers something that is not a decimal: no retry"
 setup_case r16a cred,ok "hang 7"; T0=$(date +%s); runoff current --official; EL=$(( $(date +%s) - T0 ))
-ok "$([ "$RC" = 1 ] && [ "$(attempts)" = 1 ] && [ -z "$(sleeps)" ] && [ "$EL" -ge 19 ] && [ "$EL" -lt 29 ] && [ "$(count 'OFFICIAL retry:')" = 0 ] && echo 1 || echo 0)" "exit $RC after $EL s (the 20 s alarm, not the 30 s hang), simulate calls $(attempts), waits [$(sleeps)]"
+ok "$([ "$RC" = 1 ] && [ "$(attempts)" = 1 ] && [ -z "$(sleeps)" ] && [ "$EL" -ge 19 ] && [ "$EL" -lt 50 ] && [ "$(count 'OFFICIAL retry:')" = 0 ] && echo 1 || echo 0)" "exit $RC after $EL s (the 20 s alarm, not the 60 s hang), simulate calls $(attempts), waits [$(sleeps)]"
 setup_case r16b cred,ok "0x7 7"; runoff current --official
 no_retry_checks "nonce answer 0x7"
 BASELINE_CASES="$BASELINE_CASES r16b:cred,ok:0x7_7"
@@ -397,13 +426,14 @@ ok "$([ "$RC" = 0 ] && [ "$(whoamis)" = 2 ] && [ "$(sleeps)" = "30 45" ] && [ "$
 ok "$([ "$(sed -n 1p "$C/shim/sleep-state")" = "30 run.lock=free last-run=none" ] && [ "$(sed -n 2p "$C/shim/sleep-state")" = "45 run.lock=held last-run=stamped" ] && echo 1 || echo 0)" "the 30 s wait before the lock and the stamp, the 45 s wait under them: $(tr '\n' ';' <"$C/shim/sleep-state" | sed 's/;$//')"
 
 echo; echo "## W7. cre whoami fails, then the second check hangs: the same 45 s alarm ends it, exit 3"
+# (W7, W8, J9: elapsed under 88 s tells the 45 s alarm from the 90 s hang, with room for a busy machine)
 setup_case w7 ok "7 7"; echo fail,hang >"$C/shim/whoami-plan"; T0=$(date +%s); runoff current --official; EL=$(( $(date +%s) - T0 ))
-ok "$([ "$RC" = 3 ] && [ "$(whoamis)" = 2 ] && [ "$(sleeps)" = 30 ] && [ "$EL" -ge 45 ] && [ "$EL" -lt 58 ] && [ "$(count '^NOT LOGGED IN TO CRE.')" = 1 ] && echo 1 || echo 0)" "exit $RC after $EL s (the shim's 1 s wait plus the 45 s alarm, not the 90 s hang), whoami $(whoamis), waits [$(sleeps)]"
+ok "$([ "$RC" = 3 ] && [ "$(whoamis)" = 2 ] && [ "$(sleeps)" = 30 ] && [ "$EL" -ge 45 ] && [ "$EL" -lt 88 ] && [ "$(count '^NOT LOGGED IN TO CRE.')" = 1 ] && echo 1 || echo 0)" "exit $RC after $EL s (the shim's 1 s wait plus the 45 s alarm, not the 90 s hang), whoami $(whoamis), waits [$(sleeps)]"
 
 echo; echo "## W8. the most one run waits: the first check hangs (a CRE API timeout), the second answers, then simulate stops at"
 echo "   the credential check twice"
 setup_case w8 cred,cred "7 7"; echo hang,ok >"$C/shim/whoami-plan"; T0=$(date +%s); runoff current --official; EL=$(( $(date +%s) - T0 ))
-ok "$([ "$RC" = 1 ] && [ "$(whoamis)" = 2 ] && [ "$(sleeps)" = "30 45" ] && [ "$(attempts)" = 2 ] && [ "$EL" -ge 45 ] && [ "$EL" -lt 60 ] && echo 1 || echo 0)" "exit $RC after $EL s (the 45 s alarm on the first check plus the shim's two 1 s waits), whoami $(whoamis), waits [$(sleeps)] and no more, simulate calls $(attempts)"
+ok "$([ "$RC" = 1 ] && [ "$(whoamis)" = 2 ] && [ "$(sleeps)" = "30 45" ] && [ "$(attempts)" = 2 ] && [ "$EL" -ge 45 ] && [ "$EL" -lt 88 ] && echo 1 || echo 0)" "exit $RC after $EL s (the 45 s alarm on the first check plus the shim's two 1 s waits, not the 90 s hang), whoami $(whoamis), waits [$(sleeps)] and no more, simulate calls $(attempts)"
 ok "$([ "$(whoami_waits)" = "whoami#1 after 0 wait(s);whoami#2 after 1 wait(s)" ] && [ "$(count 'CRE login check:')" = 1 ] && [ "$(count 'cre-login=yes')" = 1 ] && [ "$(count 'OFFICIAL retry:')" = 1 ] && [ "$(count 'run exited 1')" = 1 ] && [ "$(count 'NOT LOGGED IN')" = 0 ] && [ ! -d "$C/state/run.lock" ] && echo 1 || echo 0)" "the timed-out check counts as a failure and is checked once more after the wait ($(whoami_waits)); one line per retry, 'run exited 1', lock released"
 
 HD=0x$(printf 'cd%.0s' $(seq 1 32)); HF=0x$(printf 'ef%.0s' $(seq 1 32))
@@ -454,7 +484,7 @@ ok "$([ "$(jq_ 'r.runner.slice(-2)')" = "$(jq_ 'r.runner.filter((l) => /^(OFFICI
 # settle-vps.sh step 5b runs it (no alert URL in the scratch HOME: an alert is logged to ALERTS.log and the output, never
 # sent)
 jobrun() {
-  caseenv "$TBASH" "$P/scripts/settle-job.sh" >"$C/stdout-$1" 2>&1; RC=$?
+  caseenv ${RUNENV:+"$RUNENV"} "$TBASH" "$P/scripts/settle-job.sh" >"$C/stdout-$1" 2>&1; RC=$?
   caseenv PKG="$P" "$TBASH" -c '. "$PKG/vps/lib.sh"; cre_login_watch "$STATE/evidence/LATEST.json"' >"$C/watch-$1" 2>&1
   J="$C/state/evidence/LATEST.json"
 }
@@ -484,6 +514,55 @@ ok "$([ "$RC" = 0 ] && [ "$(whoamis)" = 4 ] && [ "$(needed "$C/watch-2")" = 1 ] 
 OWN=$(for i in 1 2; do "$NODE" "$REAL/scripts/sent-hashes.mjs" "$C/stdout-$i"; done | sort -u | wc -l | tr -d ' '); UNSURE=$(cat "$C/stdout-1" "$C/stdout-2" | grep -cE '\[USER LOG\] .*: writeReport |send-report failed')
 ok "$([ "$OWN" = 0 ] && [ "$UNSURE" = 0 ] && echo 1 || echo 0)" "vps tripwire patterns on both jobs' output: own txs $OWN, failed reports $UNSURE"
 echo "  cre_login_watch, hours 1 and 2:"; cat "$C/watch-1" "$C/watch-2" | sed -E 's/^\[[^]]+\] //; s/^/    | /' | cut -c1-240 | san
+
+jobl() { local f; for f in "$C/state/logs"/job-*.log; do [ -e "$f" ] && echo "$f"; break; done; }   # the case's (first) job log
+echo; echo "## J5. settle-job.sh: its own cre whoami fails, then answers 30 s later (a CRE API blip at :05)"
+setup_case j5 ok "7 7"; echo fail,ok >"$C/shim/whoami-plan"; jobrun 1; JOB=$(jobl)
+ok "$([ "$RC" = 0 ] && [ "$(whoamis)" = 3 ] && [ "$(sleeps)" = 30 ] && [ "$(attempts)" = 1 ] && [ ! -f "$C/state/official-failed" ] && echo 1 || echo 0)" "job exit $RC, cre whoami asked $(whoamis) times (the job's check, the job's check again, run-official.sh's), waits [$(sleeps)], simulate calls $(attempts)"
+ok "$([ "$(whoami_waits)" = "whoami#1 after 0 wait(s);whoami#2 after 1 wait(s);whoami#3 after 1 wait(s)" ] && [ "$(cat "$C/shim/sleep-state")" = "30 run.lock=free last-run=none" ] && grep -c '^whoami#[123] argv=\[whoami\] -> ' "$C/shim/whoami-calls" | grep -qx 3 && echo 1 || echo 0)" "the wait comes between the job's two identical checks, before the lock and the last-run stamp: $(whoami_waits); $(cat "$C/shim/sleep-state")"
+ok "$([ "$(grep -c '\[settle-job\] CRE login check:' "$JOB")" = 1 ] && [ "$(grep -n '\[settle-job\] CRE login check:' "$JOB" | cut -d: -f1)" -lt "$(grep -n '\[settle-job\] path=' "$JOB" | cut -d: -f1)" ] && grep -q '\[settle-job\] path=official (cre whoami succeeded (at the second check, 30 s after a failed one)); ' "$JOB" && echo 1 || echo 0)" "job log: one new line, then 'path=official (cre whoami succeeded (at the second check, 30 s after a failed one))'"
+ok "$([ "$(jq_ '[r.path, r.creLogin, r.exitCode, r.pathReason]')" = '["official",true,0,"cre whoami succeeded (at the second check, 30 s after a failed one)"]' ] && [ "$(jq_ 'r.runner.filter((l) => /CRE login check:/.test(l)).length')" = 0 ] && echo 1 || echo 0)" "evidence: $(jq_ '[r.path, r.creLogin, r.exitCode, r.pathReason]'); the [settle-job] line stays out of runner[]"
+ok "$([ ! -s "$C/watch-1" ] && [ "$(lapse)" = absent ] && echo 1 || echo 0)" "cre_login_watch: not a miss (nothing logged, lapse state $(lapse))"
+ok "$(! grep -q 'shim-whoami-output' "$JOB" "$C/stdout-1" && echo 1 || echo 0)" "cre whoami's own output stays out of the job log and stdout, all three checks"
+JL=$(grep '\[settle-job\] CRE login check:' "$JOB" | sed 's/^\[[^]]*\] //')
+ok "$(! grep -qE '^SKIPPED:|run exited|tx 0x[0-9a-fA-F]{64}|\[USER LOG\]|send-report failed|: writeReport |-> not-accepted|tx sender 0x[0-9a-fA-F]{40} has|Simulation Result|^\[result\] |^\[TEST\] |Credential validation failed|OFFICIAL retry:|NOT LOGGED IN|reported no login|\[vps\]|^\[[0-9]{4}-' <<<"$JL" && echo 1 || echo 0)" \
+  "the new line matches none of the patterns that run-official, settle-job, settle-vps, lib.sh and evidence-record parse"
+echo "  the job log up to the official run:"; sed -n '1,/OFFICIAL: cre workflow simulate/p' "$JOB" | san | sed 's/^/    | /'
+
+echo; echo "## J5b. the same after a failed official run (official-failed present): the harness, with the answer recorded"
+setup_case j5b ok "7 7"; echo fail,ok >"$C/shim/whoami-plan"; touch "$C/shim/harness-ok"; echo "rc=1 at 2026-10-13T04:05:31Z" >"$C/state/official-failed"
+jobrun 1; JOB=$(jobl)
+ok "$([ "$RC" = 0 ] && [ "$(whoamis)" = 3 ] && [ "$(sleeps)" = 30 ] && [ "$(attempts)" = 0 ] && [ "$(bun_runs)" = 1 ] && [ ! -f "$C/state/official-failed" ] && echo 1 || echo 0)" "job exit $RC: whoami $(whoamis) (the job's two, the harness run's own), waits [$(sleeps)], simulate calls $(attempts), harness runs $(bun_runs); official-failed removed (the next run retries OFFICIAL)"
+ok "$([ "$(jq_ '[r.path, r.creLogin, r.exitCode, r.pathReason]')" = '["harness-fallback",true,0,"cre whoami succeeded (at the second check, 30 s after a failed one), but the previous OFFICIAL run failed (rc=1 at 2026-10-13T04:05:31Z); this run uses the harness, the next one retries OFFICIAL"]' ] && echo 1 || echo 0)" "evidence: $(jq_ '[r.path, r.creLogin, r.exitCode, r.pathReason]')"
+ok "$([ ! -s "$C/watch-1" ] && [ "$(lapse)" = absent ] && echo 1 || echo 0)" "cre_login_watch: not a miss (creLogin true; nothing logged, lapse state $(lapse))"
+
+echo; echo "## J6. settle-job.sh: its own cre whoami fails twice, 30 s apart: the harness fallback, as before"
+setup_case j6 ok "7 7"; echo fail >"$C/shim/whoami-plan"; touch "$C/shim/harness-ok"; jobrun 1; JOB=$(jobl)
+ok "$([ "$RC" = 0 ] && [ "$(whoamis)" = 3 ] && [ "$(sleeps)" = 30 ] && [ "$(attempts)" = 0 ] && [ "$(bun_runs)" = 1 ] && [ "$(whoami_waits)" = "whoami#1 after 0 wait(s);whoami#2 after 1 wait(s);whoami#3 after 1 wait(s)" ] && echo 1 || echo 0)" "job exit $RC: whoami $(whoamis) (the job's two, the harness run's own), waits [$(sleeps)] (the harness run does not wait), simulate calls $(attempts), harness runs $(bun_runs)"
+TWICE="cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)"
+ok "$([ "$(jq_ '[r.path, r.creLogin, r.exitCode, r.pathReason]')" = "[\"harness-fallback\",false,0,\"$TWICE\"]" ] && grep -qF "[settle-job] path=harness ($TWICE); " "$JOB" && echo 1 || echo 0)" "evidence: $(jq_ '[r.path, r.creLogin, r.exitCode, r.pathReason]')"
+ok "$([ "$(needed "$C/watch-1")" = 0 ] && grep -qF "CRE login: none in this run ($TWICE)" "$C/watch-1" && [ "$(lapse)" = 1 ] && echo 1 || echo 0)" "cre_login_watch: a miss (lapse state runs=$(lapse)), no push yet, as before"
+
+echo; echo "## J7. settle-job.sh with CRE_API_KEY set: cre whoami never asked, no wait, the official path"
+setup_case j7 ok "7 7"; echo fail >"$C/shim/whoami-plan"; RUNENV="CRE_API_KEY=test-only-not-a-key"; jobrun 1; RUNENV=""
+ok "$([ "$RC" = 0 ] && [ "$(whoamis)" = 0 ] && [ -z "$(sleeps)" ] && [ "$(attempts)" = 1 ] && [ "$(jq_ '[r.path, r.creLogin, r.pathReason]')" = '["official",true,"cre whoami succeeded"]' ] && [ "$(grep -c 'CRE login check:' "$(jobl)")" = 0 ] && echo 1 || echo 0)" "job exit $RC, cre whoami asked $(whoamis) times, waits [$(sleeps)], simulate calls $(attempts), evidence $(jq_ '[r.path, r.creLogin]')"
+
+echo; echo "## J8. no second check where the answer cannot change the path (cre whoami failing)"
+setup_case j8a ok "7 7"; echo fail >"$C/shim/whoami-plan"; touch "$C/shim/harness-ok"; RUNENV="ISOTHERM_SETTLE_MODE=harness"; jobrun 1; RUNENV=""
+ok "$([ "$RC" = 0 ] && [ "$(whoamis)" = 2 ] && [ -z "$(sleeps)" ] && [ "$(jq_ '[r.path, r.pathReason]')" = '["harness-fallback","ISOTHERM_SETTLE_MODE=harness"]' ] && echo 1 || echo 0)" "ISOTHERM_SETTLE_MODE=harness: exit $RC, whoami $(whoamis) (the job's, the harness run's), waits [$(sleeps)]"
+setup_case j8b ok "7 7"; echo fail >"$C/shim/whoami-plan"; touch "$C/shim/harness-ok"; RUNENV="ISOTHERM_SETTLE_MODE=official"; jobrun 1; RUNENV=""
+ok "$([ "$RC" = 0 ] && [ "$(whoamis)" = 4 ] && [ "$(sleeps)" = 30 ] && [ "$(attempts)" = 0 ] && [ "$(grep -c 'CRE login check:' "$(jobl)")" = 1 ] && [ "$(grep -c '\[settle-job\] CRE login check:' "$(jobl)")" = 0 ] && [ "$(jq_ '[r.path, r.pathReason]')" = '["harness-fallback","ISOTHERM_SETTLE_MODE=official; then run-official.sh reported no login (exit 3) before signing"]' ] && echo 1 || echo 0)" "ISOTHERM_SETTLE_MODE=official: exit $RC, whoami $(whoamis) (the job's; run-official.sh's two; the harness run's), waits [$(sleeps)]: run-official.sh's own only"
+setup_case j8c ok "7 7"; echo fail >"$C/shim/whoami-plan"; touch "$C/shim/harness-ok"; RUNENV="ISOTHERM_RPC=http://127.0.0.1:9"; jobrun 1; RUNENV=""
+ok "$([ "$RC" = 0 ] && [ "$(whoamis)" = 2 ] && [ -z "$(sleeps)" ] && [ "$(jq_ '[r.path, r.creLogin, r.pathReason]')" = '["harness-fallback",false,"cre whoami failed (not logged in to CRE)"]' ] && echo 1 || echo 0)" "a fork RPC in auto mode: exit $RC, whoami $(whoamis), waits [$(sleeps)], the harness with the reason as before"
+
+echo; echo "## J9. settle-job.sh: its first check hangs (the 45 s alarm ends it, as with a CRE API timeout), the second answers"
+setup_case j9 ok "7 7"; echo hang,ok >"$C/shim/whoami-plan"; T0=$(date +%s); jobrun 1; EL=$(( $(date +%s) - T0 ))
+ok "$([ "$RC" = 0 ] && [ "$(whoamis)" = 3 ] && [ "$(sleeps)" = 30 ] && [ "$(attempts)" = 1 ] && [ "$EL" -ge 45 ] && [ "$EL" -lt 88 ] && [ "$(jq_ '[r.path, r.creLogin]')" = '["official",true]' ] && echo 1 || echo 0)" "job exit $RC after $EL s (the 45 s alarm, not the 90 s hang), whoami $(whoamis), waits [$(sleeps)], simulate calls $(attempts), path $(jq_ 'r.path')"
+
+echo; echo "## J10. settle-job.sh: its first check fails, the second hangs (the same 45 s alarm ends it): the harness, a miss"
+setup_case j10 ok "7 7"; echo fail,hang,fail >"$C/shim/whoami-plan"; touch "$C/shim/harness-ok"; T0=$(date +%s); jobrun 1; EL=$(( $(date +%s) - T0 ))
+ok "$([ "$RC" = 0 ] && [ "$(whoamis)" = 3 ] && [ "$(sleeps)" = 30 ] && [ "$(attempts)" = 0 ] && [ "$(bun_runs)" = 1 ] && [ "$EL" -ge 45 ] && [ "$EL" -lt 88 ] && [ "$(jq_ '[r.path, r.creLogin, r.pathReason]')" = "[\"harness-fallback\",false,\"$TWICE\"]" ] && echo 1 || echo 0)" "job exit $RC after $EL s (the shim's 1 s wait plus the 45 s alarm, not the 90 s hang), whoami $(whoamis) (the job's two, the harness run's own), waits [$(sleeps)], harness runs $(bun_runs), evidence $(jq_ '[r.path, r.creLogin]')"
+ok "$([ "$(needed "$C/watch-1")" = 0 ] && [ "$(lapse)" = 1 ] && echo 1 || echo 0)" "cre_login_watch: a miss (lapse state runs=$(lapse)), no push yet"
 
 echo; echo "## B. without a retry the run log is as before: run-official.sh at ${BASE_REF:-<none>} vs now, same case, same shims"
 if ! git -C "$REPO" rev-parse --git-dir >/dev/null 2>&1; then echo "  SKIP  no git history here (a pushed copy): nothing to compare with"
@@ -523,7 +602,48 @@ else
   b2 non-live-rpc fail 0 ISOTHERM_RPC=http://127.0.0.1:9 --official
 fi
 
+echo; echo "## B3. settle-job.sh's login-check retry changes nothing else: settle-job.sh at ${BASE4_REF:-<none>} vs now, same case, same shims"
+# normj <file>: norm, plus the job log's own timestamps and names (the shims print the same fixed ones on both sides)
+normj() { norm "$1" | sed -E -e 's#job-[0-9]{8}T[0-9]{6}Z#job-<ts>#g' -e 's/20[0-9]{2}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z/<T>/g' -e 's/last-run=[0-9]+/last-run=<n>/g'; }
+# evid: the evidence record's fields that the path choice and the run decide (timestamps and paths normalised)
+evid() { "$NODE" -e 'const r = require(process.argv[1]); for (const k of ["path", "pathReason", "creLogin", "exitCode", "exitMeaning", "dryRun", "reportsSent", "workflow", "stoodDownForDon", "stoodDownForWriter", "runner"]) console.log(k + " " + JSON.stringify(r[k]))' "$C/state/evidence/LATEST.json" >"$C/evid.txt" 2>&1; normj "$C/evid.txt"; }
+# b3 <name> <whoami plan> <one NAME=VALUE or -> <second check: 0|1>: job log, stdout and evidence identical (with 1:
+# apart from the one new line and the reason's " twice, 30 s apart"); same exit code and simulate calls; with 0 also the
+# same cre whoami calls and waits, with 1 one more call and one 30 s wait first
+b3() {
+  local name=$1 wp=$2 e=$3 sc=$4 ro co rn wo so wn sn same; [ "$e" = - ] && e=""
+  setup_case "b3-$name-old" ok "7 7"; echo "$wp" >"$C/shim/whoami-plan"; touch "$C/shim/harness-ok"
+  caseenv ${e:+"$e"} "$TBASH" "$P/scripts/settle-job.baseline.sh" >"$C/stdout" 2>&1; ro=$?; wo=$(whoamis); so=$(sleeps); co=$C
+  normj "$(jobl)" >"$C/job.n"; normj "$C/stdout" >"$C/stdout.n"; evid >"$C/evid.n"
+  setup_case "b3-$name-new" ok "7 7"; echo "$wp" >"$C/shim/whoami-plan"; touch "$C/shim/harness-ok"
+  caseenv ${e:+"$e"} "$TBASH" "$P/scripts/settle-job.sh" >"$C/stdout" 2>&1; rn=$?; wn=$(whoamis); sn=$(sleeps)
+  strip() { if [ "$sc" = 1 ]; then grep -v '^\[T\] \[settle-job\] CRE login check: ' | sed 's/cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)/cre whoami failed (not logged in to CRE)/g'; else cat; fi; }
+  normj "$(jobl)" | strip >"$C/job.n"; normj "$C/stdout" | strip >"$C/stdout.n"; evid | strip >"$C/evid.n"
+  if { diff "$co/job.n" "$C/job.n" && diff "$co/stdout.n" "$C/stdout.n" && diff "$co/evid.n" "$C/evid.n"; } >"$C/diff"; then same=1; else same=0; fi
+  ok "$([ "$same" = 1 ] && [ "$ro" = "$rn" ] && [ "$(cat "$co/shim/attempts" 2>/dev/null || echo 0)" = "$(attempts)" ] && [ "$(grep -c '\[settle-job\] CRE login check:' "$(jobl)")" = "$sc" ] \
+      && { { [ "$sc" = 0 ] && [ "$wo" = "$wn" ] && [ "$so" = "$sn" ]; } || { [ "$sc" = 1 ] && [ "$wn" = $((wo + 1)) ] && [ "$sn" = "30${so:+ $so}" ]; }; } && echo 1 || echo 0)" \
+    "$name (${e:-auto mode}; whoami $wp): job log ($(wc -l <"$C/job.n" | tr -d ' ') lines), stdout and evidence identical apart from $sc new line(s); exit $ro / $rn; whoami $wo / $wn; waits [$so] / [$sn]"
+  [ "$same" = 1 ] || sed 's/^/    | /' "$C/diff" | san
+}
+if ! git -C "$REPO" rev-parse --git-dir >/dev/null 2>&1; then echo "  SKIP  no git history here (a pushed copy): nothing to compare with"
+elif [ -z "$BASE4_REF" ]; then ok 0 "no committed settle-job.sh without the login-check retry found"
+else
+  b3 answers ok - 0
+  b3 api-key fail CRE_API_KEY=test-only-not-a-key 0
+  b3 mode-harness fail ISOTHERM_SETTLE_MODE=harness 0
+  b3 mode-official fail ISOTHERM_SETTLE_MODE=official 0
+  b3 fork-rpc fail ISOTHERM_RPC=http://127.0.0.1:9 0
+  b3 fails-twice fail - 1
+fi
+
 echo; echo "# $(date -u +%FT%TZ) done: $PASS passed, $FAIL failed"
 } 2>&1 | san | tee "$SC/out.txt"
-[ -n "${ISOTHERM_RETRY_CHECK_TARGET:-}" ] || cp "$SC/out.txt" "$EVOUT"
-grep -q '^# .* done: [0-9]* passed, 0 failed$' "$SC/out.txt"
+grep -q '^# .* done: [0-9]* passed, 0 failed$' "$SC/out.txt"; RC=$?
+# the report: always to a new file kept under $TMPDIR; to the tracked evidence file only on request, only after a pass,
+# and never for ISOTHERM_RETRY_CHECK_TARGET (a copy under test, not the shipped script)
+KEPT=$(mktemp -d "${TMPBASE%/}/isotherm-evidence.XXXXXX")/official-retry-check.txt; cp "$SC/out.txt" "$KEPT"; echo "-> $KEPT"
+if [ -z "${ISOTHERM_RETRY_CHECK_TARGET:-}" ] && [ "${ISOTHERM_WRITE_EVIDENCE:-0}" = 1 ]; then
+  if [ "$RC" = 0 ]; then mkdir -p "$(dirname "$EVOUT")"; cp "$KEPT" "$EVOUT"; echo "-> ${EVOUT#"$REPO"/}"
+  else echo "-> ${EVOUT#"$REPO"/} left unchanged: the run failed"; fi
+fi
+exit "$RC"

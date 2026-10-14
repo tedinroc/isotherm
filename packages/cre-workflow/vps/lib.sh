@@ -69,8 +69,9 @@ push_alert() {
 
 # ---- CRE login watch (settle-vps.sh step 5b, isotherm-vps.sh status). Reads evidence records only, never ~/.cre.
 # A run MISSED the login when it settled on the harness because the CRE login was missing: settle-job.sh's
-# `cre whoami` failed (evidence creLogin=false), or it passed but run-official.sh found no login just before signing
-# (exit 3). Not a miss: a harness run after a failed OFFICIAL run (creLogin=true), a dry run, a stand-down.
+# `cre whoami` failed, and again 30 s later (evidence creLogin=false), or it passed but run-official.sh found no login
+# just before signing (exit 3). Not a miss: a harness run after a failed OFFICIAL run (creLogin=true), a dry run, a
+# stand-down.
 # A run shows the login is there when it took the official path or its `cre whoami` answered (creLogin=true).
 # One miss alone is not reported: `cre whoami` asks the CRE API, which now and then times out. The Mac's own records
 # (2026-10-07 to 10-10, 74 runs) hold 3 single misses with an official run an hour before and an hour after.
@@ -82,6 +83,14 @@ CRE_NEEDED_AFTER=2                          # runs in a row without the login be
 CRE_NEEDED_DEDUPE=10800                     # 3 h
 CRE_LAPSED_FILE="$STATE/cre-login-lapsed.json"   # present after a miss, until the login is back: {at, reason, runs}
 
+# The runs in a row without the login so far, as the lapse state holds them (before cre_login_watch counts the run at
+# hand): 0 without the state, 1 when its count is unreadable.
+cre_lapsed_runs() {
+  local n=0
+  if [ -f "$CRE_LAPSED_FILE" ]; then n=$(jfield "$CRE_LAPSED_FILE" runs); case "$n" in ''|*[!0-9]*) n=1 ;; esac; fi
+  echo "$n"
+}
+
 # cre_login_watch <this run's evidence record>: CRE_NEEDED_AFTER runs in a row without the login -> a high-priority
 # push naming the one-line fix (3 h dedupe). The first run that shows the login again clears the state; if the push
 # went out, it also sends one "restored" push, and the next lapse pushes at once again. A single miss pushes nothing.
@@ -89,8 +98,7 @@ CRE_LAPSED_FILE="$STATE/cre-login-lapsed.json"   # present after a miss, until t
 cre_login_watch() {
   local kind runs since reason now_at mins what
   kind=$(node -e "$CRE_LAPSE_JS"' try { const r = require(process.argv[1]); console.log(lapsed(r) ? "lapsed" : !loginOk(r) ? "other" : r.path === "official" ? "official" : "login-ok") } catch { console.log("other") }' "$1" 2>/dev/null)
-  runs=0
-  if [ -f "$CRE_LAPSED_FILE" ]; then runs=$(jfield "$CRE_LAPSED_FILE" runs); case "$runs" in ''|*[!0-9]*) runs=1 ;; esac; fi
+  runs=$(cre_lapsed_runs)
   case "$kind" in
     lapsed)
       runs=$((runs + 1))
@@ -98,7 +106,7 @@ cre_login_watch() {
       reason=$(jfield "$1" pathReason | cut -c1-200)
       json_line at "$since" reason "$reason" runs "$runs" >"$CRE_LAPSED_FILE.tmp" && mv -f "$CRE_LAPSED_FILE.tmp" "$CRE_LAPSED_FILE"
       if [ "$runs" -lt "$CRE_NEEDED_AFTER" ]; then
-        vlog "CRE login: none in this run ($reason). One miss is often a CRE API timeout; CRE LOGIN NEEDED is pushed if the next run finds none either."
+        vlog "CRE login: none in this run ($reason). One miss alone can be a brief CRE API outage; CRE LOGIN NEEDED is pushed if the next run finds none either."
         return 0
       fi
       push_alert "$CRE_NEEDED_TITLE" "The CRE login on the VPS has lapsed: $runs runs in a row without it, since ${since:-?} (this run: $reason). Settlement continues on the labelled harness fallback, not the CRE engine. Fix, one line on the Mac: $RELOGIN_CMD" high "$CRE_NEEDED_DEDUPE"

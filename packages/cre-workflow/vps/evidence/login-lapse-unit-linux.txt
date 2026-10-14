@@ -1,0 +1,569 @@
+# Linux run of vps/test/login-lapse-unit.sh (the same test and scripts as login-lapse-unit.txt): docker run --rm --init
+#   --network none, image node:22-bookworm (Debian 12: GNU bash 5.2.15, coreutils 9.1, grep 3.8, perl 5.36, node
+#   22.23.3), the repository mounted read-only, the package's macOS .tools hidden by an empty tmpfs,
+#   ISOTHERM_WRITE_EVIDENCE=1 with ISOTHERM_TEST_EVIDENCE=<a mounted file> (the test writes its report there only after
+#   a pass; saved here below this header). bun is not in that image: a stand-in runs `bun <file.ts>` with node 22
+#   (evidence-record.ts through node's type stripping). The image has no lsof, so R13 is skipped.
+# 2026-10-14T06:11:21Z login-lapse-unit: bash 5.2.15(1)-release on Linux aarch64; stubs, no network, no key, 0 MON
+# scratch package <scratch>/root/packages/cre-workflow (vps/*.sh, settle-job.sh and settle/ symlinked to the code under test)
+
+## L1. one miss: cre whoami fails, and again 30 s later (settle-job.sh checks twice before the harness)
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). One miss alone can be a brief CRE API outage: act only on CRE LOGIN NEEDED, which is pushed if the next run finds no login either.
+    | [vps] push: sent (HTTP 200)
+    | [vps] CRE login: none in this run (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). One miss alone can be a brief CRE API outage; CRE LOGIN NEEDED is pushed if the next run finds none either.
+    exit 0; lapse state: {"at":"2026-10-14T06:11:21Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"1"}
+  PASS  no CRE LOGIN NEEDED push for a single miss
+  PASS  settle-job.sh asked cre whoami 2 times, waits [30], then the harness
+  PASS  the miss is logged (journal), with the reason
+  PASS  the existing harness-fallback push, same title
+  PASS  its body: the reason, then act only on CRE LOGIN NEEDED (no longer 'Log in again')
+    body: cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). One miss alone can be a brief CRE API outage: act only on CRE LOGIN NEEDED, which is pushed if the next run finds no login either.
+  PASS  lapse state recorded, runs=1: {"at":"2026-10-14T06:11:21Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"1"}
+
+## L2. a second miss in a row: CRE LOGIN NEEDED (the harness-fallback push's 12 h dedupe aged out first)
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). 2 runs in a row without the CRE login: see CRE LOGIN NEEDED. The fix, on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: sent (HTTP 200)
+    | [vps] ALERT: ISOTHERM VPS: CRE LOGIN NEEDED | The CRE login on the VPS has lapsed: 2 runs in a row without it, since 2026-10-14T06:11:21Z (this run: cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). Settlement continues on the labelled harness fallback, not the CRE engine. Fix, one line on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: sent (HTTP 200)
+    exit 0; lapse state: {"at":"2026-10-14T06:11:21Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"2"}
+  PASS  one CRE LOGIN NEEDED push
+  PASS  priority high
+  PASS  the body: how many runs, since when and why; settlement continues on the labelled harness; the one-line fix
+    body: The CRE login on the VPS has lapsed: 2 runs in a row without it, since 2026-10-14T06:11:21Z (this run: cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). Settlement continues on the labelled harness fallback, not the CRE engine. Fix, one line on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+  PASS  the harness-fallback push (its stamp 12 h 1 min old): '2 runs in a row', CRE LOGIN NEEDED and the fix named, not 'one miss alone'
+    body: cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). 2 runs in a row without the CRE login: see CRE LOGIN NEEDED. The fix, on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+  PASS  'since' is the first miss's start, kept across runs
+
+## L3. a third miss: not repeated within 3 h
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). 3 runs in a row without the CRE login: see CRE LOGIN NEEDED. The fix, on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] ALERT: ISOTHERM VPS: CRE LOGIN NEEDED | The CRE login on the VPS has lapsed: 3 runs in a row without it, since 2026-10-14T06:11:21Z (this run: cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). Settlement continues on the labelled harness fallback, not the CRE engine. Fix, one line on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: 'ISOTHERM VPS: CRE LOGIN NEEDED' already pushed 0 min ago; not repeated
+    exit 0; lapse state: {"at":"2026-10-14T06:11:21Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"3"}
+  PASS  still one push
+  PASS  both attempts (runs 2 and 3) are in ALERTS.log
+  PASS  the harness-fallback alert: '3 runs in a row' (logged; not pushed again within 12 h)
+
+## L4. the push stamp aged 2 h 59 min, then 3 h 1 min
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). 4 runs in a row without the CRE login: see CRE LOGIN NEEDED. The fix, on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] ALERT: ISOTHERM VPS: CRE LOGIN NEEDED | The CRE login on the VPS has lapsed: 4 runs in a row without it, since 2026-10-14T06:11:21Z (this run: cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). Settlement continues on the labelled harness fallback, not the CRE engine. Fix, one line on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: 'ISOTHERM VPS: CRE LOGIN NEEDED' already pushed 179 min ago; not repeated
+    exit 0; lapse state: {"at":"2026-10-14T06:11:21Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"4"}
+  PASS  2 h 59 min: not pushed
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). 5 runs in a row without the CRE login: see CRE LOGIN NEEDED. The fix, on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] ALERT: ISOTHERM VPS: CRE LOGIN NEEDED | The CRE login on the VPS has lapsed: 5 runs in a row without it, since 2026-10-14T06:11:21Z (this run: cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). Settlement continues on the labelled harness fallback, not the CRE engine. Fix, one line on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: sent (HTTP 200)
+    exit 0; lapse state: {"at":"2026-10-14T06:11:21Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"5"}
+  PASS  3 h 1 min: pushed again
+
+## L5. isotherm-vps.sh status while lapsed
+    | cre login   no   (cre v1.37.0)
+    | cre session LAPSED since 2026-10-14T06:11:21Z (0 min, 5 harness runs in a row); no run with the login in the last 5 runs. Fix, on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | phone push  on (alert.url, mode 600)
+  PASS  cre session LAPSED, 5 harness runs in a row, the fix named
+
+## L6. the login is back: an official run
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: CRE LOGIN RESTORED | The official CRE path ran again at 2026-10-14T06:11:25Z; the login had lapsed from 2026-10-14T06:11:21Z (0 min on the harness). No action needed.
+    | [vps] push: sent (HTTP 200)
+    exit 0; lapse state: absent
+  PASS  one CRE LOGIN RESTORED push
+    body: The official CRE path ran again at 2026-10-14T06:11:25Z; the login had lapsed from 2026-10-14T06:11:21Z (0 min on the harness). No action needed.
+  PASS  priority default; the body names when the lapse began and how long it lasted
+  PASS  lapse state and the CRE LOGIN NEEDED stamp cleared
+  PASS  no CRE LOGIN NEEDED on an official run
+
+## L7. another official run: RESTORED is not repeated
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    exit 0; lapse state: absent
+  PASS  still one RESTORED push
+    | cre login   yes   (cre v1.37.0)
+    | cre session valid for at least 0 min: official runs from 2026-10-14T06:11:25Z to 2026-10-14T06:11:25Z, the last one 0 min ago; after the miss seen at 2026-10-14T06:11:24Z
+  PASS  cre session: valid for at least ..., after the lapse
+
+## L8. the official run fails (exit 1), so the next run takes the harness with cre whoami fine: not a lapse
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: settle job exit 1 | run failed; path official. OFFICIAL: cre workflow simulate (stub) | run exited 1. Logs: journalctl --user -u isotherm-settle
+    | [vps] push: sent (HTTP 200)
+    exit 1; lapse state: absent
+  PASS  official run exit 1: settle-vps.sh exits 1 (the job's code), settle-job.sh wrote official-failed, the existing 'settle job exit 1' push
+    | [settle-job] path=harness (cre whoami succeeded, but the previous OFFICIAL run failed (rc=1 at 2026-10-14T06:11:26Z); this run uses the harness, the next one retries OFFICIAL); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami succeeded, but the previous OFFICIAL run failed (rc=1 at 2026-10-14T06:11:26Z); this run uses the harness, the next one retries OFFICIAL. Not a login problem: no relogin needed.
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    exit 0; lapse state: absent
+  PASS  the next run took the harness (settle-job.sh's rule, unchanged), exit 0
+  PASS  its harness-fallback alert says it is not a login problem (not 'act only on CRE LOGIN NEEDED')
+  PASS  no CRE LOGIN NEEDED, no lapse state
+    | cre session valid for at least 0 min: official runs from 2026-10-14T06:11:25Z to 2026-10-14T06:11:26Z, the last one 0 min ago; after the miss seen at 2026-10-14T06:11:24Z
+  PASS  status still: valid
+
+## L9. cre whoami fine, but run-official.sh exits 3 (the login vanished before signing), twice
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami succeeded; then run-official.sh reported no login (exit 3) before signing. One miss alone can be a brief CRE API outage: act only on CRE LOGIN NEEDED, which is pushed if the next run finds no login either.
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] CRE login: none in this run (cre whoami succeeded; then run-official.sh reported no login (exit 3) before signing). One miss alone can be a brief CRE API outage; CRE LOGIN NEEDED is pushed if the next run finds none either.
+    exit 0; lapse state: {"at":"2026-10-14T06:11:27Z","reason":"cre whoami succeeded; then run-official.sh reported no login (exit 3) before signing","runs":"1"}
+  PASS  the first exit 3 counts as a miss, no push
+  PASS  its harness-fallback alert: the exit-3 reason, then 'one miss alone'
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami succeeded; then run-official.sh reported no login (exit 3) before signing. 2 runs in a row without the CRE login: see CRE LOGIN NEEDED. The fix, on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] ALERT: ISOTHERM VPS: CRE LOGIN NEEDED | The CRE login on the VPS has lapsed: 2 runs in a row without it, since 2026-10-14T06:11:27Z (this run: cre whoami succeeded; then run-official.sh reported no login (exit 3) before signing). Settlement continues on the labelled harness fallback, not the CRE engine. Fix, one line on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: sent (HTTP 200)
+    exit 0; lapse state: {"at":"2026-10-14T06:11:27Z","reason":"cre whoami succeeded; then run-official.sh reported no login (exit 3) before signing","runs":"2"}
+  PASS  the second: CRE LOGIN NEEDED pushed at once (the restore reset the 3 h dedupe)
+  PASS  its harness-fallback alert: '2 runs in a row'
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: CRE LOGIN RESTORED | The official CRE path ran again at 2026-10-14T06:11:28Z; the login had lapsed from 2026-10-14T06:11:27Z (0 min on the harness). No action needed.
+    | [vps] push: sent (HTTP 200)
+    exit 0; lapse state: absent
+  PASS  official again: RESTORED
+
+## L10. misses that do not repeat (a CRE API timeout now and then): miss, official, miss, official, miss, official
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). One miss alone can be a brief CRE API outage: act only on CRE LOGIN NEEDED, which is pushed if the next run finds no login either.
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] CRE login: none in this run (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). One miss alone can be a brief CRE API outage; CRE LOGIN NEEDED is pushed if the next run finds none either.
+    exit 0; lapse state: {"at":"2026-10-14T06:11:29Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"1"}
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] CRE login: there again at 2026-10-14T06:11:29Z after a single miss at 2026-10-14T06:11:29Z; nothing was pushed
+    exit 0; lapse state: absent
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). One miss alone can be a brief CRE API outage: act only on CRE LOGIN NEEDED, which is pushed if the next run finds no login either.
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] CRE login: none in this run (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). One miss alone can be a brief CRE API outage; CRE LOGIN NEEDED is pushed if the next run finds none either.
+    exit 0; lapse state: {"at":"2026-10-14T06:11:30Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"1"}
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] CRE login: there again at 2026-10-14T06:11:30Z after a single miss at 2026-10-14T06:11:30Z; nothing was pushed
+    exit 0; lapse state: absent
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). One miss alone can be a brief CRE API outage: act only on CRE LOGIN NEEDED, which is pushed if the next run finds no login either.
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] CRE login: none in this run (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). One miss alone can be a brief CRE API outage; CRE LOGIN NEEDED is pushed if the next run finds none either.
+    exit 0; lapse state: {"at":"2026-10-14T06:11:31Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"1"}
+    | cre session no login in the last run (2026-10-14T06:11:31Z, harness); a single miss can be a brief CRE API outage, so CRE LOGIN NEEDED waits for the next run; the login last showed at 2026-10-14T06:11:30Z
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] CRE login: there again at 2026-10-14T06:11:31Z after a single miss at 2026-10-14T06:11:31Z; nothing was pushed
+    exit 0; lapse state: absent
+  PASS  no CRE LOGIN NEEDED and no RESTORED push at all; no lapse state left
+  PASS  each recovery logged as 'after a single miss; nothing was pushed'
+  PASS  status after a single miss says so (not LAPSED)
+    | cre session valid for at least 0 min: official runs from 2026-10-14T06:11:31Z to 2026-10-14T06:11:31Z, the last one 0 min ago; after the miss seen at 2026-10-14T06:11:31Z. Across those 3 single misses (the login showed in the runs on both sides, the next one official: most likely CRE API timeouts): at least 0 min, official runs from 2026-10-14T06:11:28Z; after the miss seen at 2026-10-14T06:11:27Z
+  PASS  status after the last official run: the strict bound from the last single miss, then one across the 3 single misses, from L9c's official run (2026-10-14T06:11:28Z, after L9b's 2nd miss in a row)
+
+## L11. a miss, then a harness run whose cre whoami answered (after a failed official run): the miss is cleared
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: settle job exit 1 | run failed; path official. OFFICIAL: cre workflow simulate (stub) | run exited 1. Logs: journalctl --user -u isotherm-settle
+    | [vps] push: 'ISOTHERM VPS: settle job exit 1' already pushed 0 min ago; not repeated
+    exit 1; lapse state: absent
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). One miss alone can be a brief CRE API outage: act only on CRE LOGIN NEEDED, which is pushed if the next run finds no login either.
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] CRE login: none in this run (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). One miss alone can be a brief CRE API outage; CRE LOGIN NEEDED is pushed if the next run finds none either.
+    exit 0; lapse state: {"at":"2026-10-14T06:11:32Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"1"}
+    | [settle-job] path=harness (cre whoami succeeded, but the previous OFFICIAL run failed (rc=1 at 2026-10-14T06:11:32Z); this run uses the harness, the next one retries OFFICIAL); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami succeeded, but the previous OFFICIAL run failed (rc=1 at 2026-10-14T06:11:32Z); this run uses the harness, the next one retries OFFICIAL. Not a login problem: no relogin needed.
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] CRE login: there again at 2026-10-14T06:11:33Z after a single miss at 2026-10-14T06:11:32Z; nothing was pushed
+    exit 0; lapse state: absent
+  PASS  the miss is cleared by the run whose cre whoami answered
+    | cre session cre whoami answered at 2026-10-14T06:11:33Z, after the miss seen at 2026-10-14T06:11:32Z; no official run since that miss (the harness ran after a failed official run)
+  PASS  status: cre whoami answered after the miss, no official run since
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). One miss alone can be a brief CRE API outage: act only on CRE LOGIN NEEDED, which is pushed if the next run finds no login either.
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] CRE login: none in this run (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). One miss alone can be a brief CRE API outage; CRE LOGIN NEEDED is pushed if the next run finds none either.
+    exit 0; lapse state: {"at":"2026-10-14T06:11:34Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"1"}
+  PASS  the next miss starts again at runs=1: no push
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] CRE login: there again at 2026-10-14T06:11:34Z after a single miss at 2026-10-14T06:11:34Z; nothing was pushed
+    exit 0; lapse state: absent
+  PASS  an official run clears it silently (no RESTORED for a miss that was never pushed)
+
+## L12. the state is lost mid-lapse (var/alerts and the lapse file wiped): at most one extra push
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). One miss alone can be a brief CRE API outage: act only on CRE LOGIN NEEDED, which is pushed if the next run finds no login either.
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] CRE login: none in this run (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). One miss alone can be a brief CRE API outage; CRE LOGIN NEEDED is pushed if the next run finds none either.
+    exit 0; lapse state: {"at":"2026-10-14T06:11:35Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"1"}
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). 2 runs in a row without the CRE login: see CRE LOGIN NEEDED. The fix, on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] ALERT: ISOTHERM VPS: CRE LOGIN NEEDED | The CRE login on the VPS has lapsed: 2 runs in a row without it, since 2026-10-14T06:11:35Z (this run: cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). Settlement continues on the labelled harness fallback, not the CRE engine. Fix, one line on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: sent (HTTP 200)
+    exit 0; lapse state: {"at":"2026-10-14T06:11:35Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"2"}
+  PASS  two misses: one push
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). One miss alone can be a brief CRE API outage: act only on CRE LOGIN NEEDED, which is pushed if the next run finds no login either.
+    | [vps] push: sent (HTTP 200)
+    | [vps] CRE login: none in this run (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). One miss alone can be a brief CRE API outage; CRE LOGIN NEEDED is pushed if the next run finds none either.
+    exit 0; lapse state: {"at":"2026-10-14T06:11:36Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"1"}
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). 2 runs in a row without the CRE login: see CRE LOGIN NEEDED. The fix, on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] ALERT: ISOTHERM VPS: CRE LOGIN NEEDED | The CRE login on the VPS has lapsed: 2 runs in a row without it, since 2026-10-14T06:11:36Z (this run: cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). Settlement continues on the labelled harness fallback, not the CRE engine. Fix, one line on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: sent (HTTP 200)
+    exit 0; lapse state: {"at":"2026-10-14T06:11:36Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"2"}
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). 3 runs in a row without the CRE login: see CRE LOGIN NEEDED. The fix, on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] ALERT: ISOTHERM VPS: CRE LOGIN NEEDED | The CRE login on the VPS has lapsed: 3 runs in a row without it, since 2026-10-14T06:11:36Z (this run: cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). Settlement continues on the labelled harness fallback, not the CRE engine. Fix, one line on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: 'ISOTHERM VPS: CRE LOGIN NEEDED' already pushed 0 min ago; not repeated
+    exit 0; lapse state: {"at":"2026-10-14T06:11:36Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"3"}
+  PASS  after the wipe: no push, then one, then deduplicated again (4 -> 4 -> 5 -> 5)
+  PASS  the harness-fallback alert follows the watch's own count: 'one miss alone' right after the wipe, then '2 runs in a row'
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: CRE LOGIN RESTORED | The official CRE path ran again at 2026-10-14T06:11:38Z; the login had lapsed from 2026-10-14T06:11:36Z (0 min on the harness). No action needed.
+    | [vps] push: sent (HTTP 200)
+    exit 0; lapse state: absent
+  PASS  RESTORED once when the login is back
+
+## L12b. after CRE LOGIN NEEDED, the first run with the login is a harness run (after a failed official run)
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: settle job exit 1 | run failed; path official. OFFICIAL: cre workflow simulate (stub) | run exited 1. Logs: journalctl --user -u isotherm-settle
+    | [vps] push: sent (HTTP 200)
+    exit 1; lapse state: absent
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). One miss alone can be a brief CRE API outage: act only on CRE LOGIN NEEDED, which is pushed if the next run finds no login either.
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] CRE login: none in this run (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). One miss alone can be a brief CRE API outage; CRE LOGIN NEEDED is pushed if the next run finds none either.
+    exit 0; lapse state: {"at":"2026-10-14T06:11:39Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"1"}
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer). 2 runs in a row without the CRE login: see CRE LOGIN NEEDED. The fix, on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] ALERT: ISOTHERM VPS: CRE LOGIN NEEDED | The CRE login on the VPS has lapsed: 2 runs in a row without it, since 2026-10-14T06:11:39Z (this run: cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)). Settlement continues on the labelled harness fallback, not the CRE engine. Fix, one line on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: sent (HTTP 200)
+    exit 0; lapse state: {"at":"2026-10-14T06:11:39Z","reason":"cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)","runs":"2"}
+    | [settle-job] path=harness (cre whoami succeeded, but the previous OFFICIAL run failed (rc=1 at 2026-10-14T06:11:38Z); this run uses the harness, the next one retries OFFICIAL); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami succeeded, but the previous OFFICIAL run failed (rc=1 at 2026-10-14T06:11:38Z); this run uses the harness, the next one retries OFFICIAL. Not a login problem: no relogin needed.
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    | [vps] ALERT: ISOTHERM VPS: CRE LOGIN RESTORED | cre whoami answered again at 2026-10-14T06:11:40Z (this run still took the harness, after a failed official run; the next run retries the official path); the login had lapsed from 2026-10-14T06:11:39Z (0 min on the harness). No action needed.
+    | [vps] push: sent (HTTP 200)
+    exit 0; lapse state: absent
+  PASS  NEEDED, then RESTORED saying the harness ran this time; state cleared
+    body: cre whoami answered again at 2026-10-14T06:11:40Z (this run still took the harness, after a failed official run; the next run retries the official path); the login had lapsed from 2026-10-14T06:11:39Z (0 min on the harness). No action needed.
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    exit 0; lapse state: absent
+  PASS  the official run after it: no second RESTORED
+
+## L15. a CRE API blip at the job's login check: cre whoami fails, then answers 30 s later
+    | [settle-job] CRE login check: cre whoami failed (often a CRE API timeout); running the identical check once more in 30 s, before choosing the path
+    | [settle-job] path=official (cre whoami succeeded (at the second check, 30 s after a failed one)); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    exit 0; lapse state: absent
+  PASS  exit 0: cre whoami asked 2 times, waits [30], then the official path
+  PASS  no alert at all (no harness-fallback push, no CRE LOGIN NEEDED/RESTORED), no lapse state: not a miss
+  PASS  evidence: ["official",true,"cre whoami succeeded (at the second check, 30 s after a failed one)"]
+
+## L16. a CRE API key file (settle-vps.sh step 0): cre whoami is never asked, no wait, even while it would fail
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    exit 0; lapse state: absent
+  PASS  exit 0, cre whoami asked 0 times, waits [], the official path, no alert
+
+## L17. step 5 with lib.sh's CRE_LAPSE_JS broken (a syntax error), then with its alert script failing
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: settle job exit 1 | run failed; path official. OFFICIAL: cre workflow simulate (stub) | run exited 1. Logs: journalctl --user -u isotherm-settle
+    | [vps] push: 'ISOTHERM VPS: settle job exit 1' already pushed 0 min ago; not repeated
+    exit 1; lapse state: absent
+    | [settle-job] path=harness (cre whoami succeeded, but the previous OFFICIAL run failed (rc=1 at 2026-10-14T06:11:41Z); this run uses the harness, the next one retries OFFICIAL); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami succeeded, but the previous OFFICIAL run failed (rc=1 at 2026-10-14T06:11:41Z); this run uses the harness, the next one retries OFFICIAL. Cause not classified (lib.sh CRE_LAPSE_JS failed). If the CRE login is missing, the fix, on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    exit 0; lapse state: absent
+  PASS  a broken CRE_LAPSE_JS: the official run's exit 1 still alerts ('settle job exit 1', from the evidence record)
+  PASS  the next run's harness-fallback alert: 'cause not classified', the fix named
+    body: cre whoami succeeded, but the previous OFFICIAL run failed (rc=1 at 2026-10-14T06:11:41Z); this run uses the harness, the next one retries OFFICIAL. Cause not classified (lib.sh CRE_LAPSE_JS failed). If the CRE login is missing, the fix, on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps
+    | [settle-job] path=official (cre whoami succeeded); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: settle job exit 1 | the alerts could not read this run's evidence record; see <scratch>/state/logs/vps-20261014T061142Z.log and journalctl --user -u isotherm-settle
+    | [vps] push: 'ISOTHERM VPS: settle job exit 1' already pushed 0 min ago; not repeated
+    exit 1; lapse state: absent
+    | [settle-job] path=harness (cre whoami succeeded, but the previous OFFICIAL run failed (rc=1 at 2026-10-14T06:11:42Z); this run uses the harness, the next one retries OFFICIAL); rpc=https://testnet-rpc.monad.xyz; state=<scratch>/state; dry=0
+    | [vps] ALERT: ISOTHERM VPS: harness fallback ran (official CRE path unavailable) | cre whoami succeeded, but the previous OFFICIAL run failed (rc=1 at 2026-10-14T06:11:42Z); this run uses the harness, the next one retries OFFICIAL. Not a login problem: no relogin needed.
+    | [vps] push: 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)' already pushed 0 min ago; not repeated
+    exit 0; lapse state: absent
+  PASS  the alert script failing: exit 1, and the exit alert still goes out, once, from the fallback
+
+## L13. path decisions and evidence unchanged by the watch (all runs above, L15 to L17 included)
+  PASS  one evidence record per run (40 records, 40 runs)
+  PASS  run-official.sh was called exactly as the evidence records say (42 calls)
+  PASS  a whoami failure still selects the harness, a whoami success the official path
+  PASS  every 30 s wait (18) is one run whose record names the second check (18), and one 'CRE login check:' line
+
+## L14. the alert URL never reaches an output, a log or an evidence file
+  PASS  0 files contain it; every push read it from the file (curl -K)
+
+## R1. relogin.sh --dry-run: prerequisites only
+    | OK       ssh
+    | OK       perl
+    | OK       mktemp
+    | OK       browser: the sign-in URL opens with `open` (default browser)
+    | OK       port 45023 free on this machine
+    | OK       ssh config: 'isotherm-test' is an alias
+    | DRY RUN: nothing started. Without --dry-run this runs, with its output in a private temp file:
+    |   ssh -tt -o BatchMode=yes -o ExitOnForwardFailure=yes -L 45023:127.0.0.1:53682 isotherm-test 'stty cols 1000 2>/dev/null; bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh login'
+    | then opens the sign-in URL and waits up to 600 s for 'cre whoami: yes'
+    exit 0
+  PASS  exit 0, no connection started
+
+## R2. the callback port is in use on this machine
+    | OK       ssh
+    | OK       perl
+    | OK       mktemp
+    | OK       browser: the sign-in URL opens with `open` (default browser)
+    | FAIL     port 45023: something on this machine already listens on it (a `cre login` running here?); stop it, then run this again
+    | OK       ssh config: 'isotherm-test' is an alias
+    | REFUSED: 1 prerequisite(s) failed; nothing started
+    exit 2
+  PASS  refused (exit 2), ssh never started
+
+## R3. the sign-in completes
+    | OK       ssh
+    | OK       perl
+    | OK       mktemp
+    | OK       browser: the sign-in URL opens with `open` (default browser)
+    | OK       port 45023 free on this machine
+    | OK       ssh config: 'isotherm-test' is an alias
+    | connecting to isotherm-test: tunnel localhost:45023 -> the VPS's 127.0.0.1:53682, then isotherm-vps.sh login there
+    |   vps | CRE Login
+    |   vps |   Authenticate with your Chainlink account
+    |   vps |  Opening browser to:
+    |   vps | <sign-in URL>
+    |   vps | ! Could not open browser automatically
+    |   vps |   Please open the URL above in your browser
+    |   vps |   Waiting for authentication... (Press Ctrl+C to cancel)
+    | sign-in page opened in your default browser
+    | sign in there (password + authenticator code); waiting for the browser's callback through the tunnel (up to 10 min)
+    |   vps | refresh_token: <masked>
+    |   vps | ✓ Login successful (<e-mail>, org <masked>)
+    |   vps | cre whoami: yes
+    | SIGNED IN: the VPS answered 'cre whoami: yes'. Its next :05 run takes the official path and pushes CRE LOGIN RESTORED.
+    exit 0
+  PASS  exit 0, 'cre whoami: yes' shown
+  PASS  `open` got the exact sign-in URL (terminal codes stripped)
+  PASS  the CLI's progress streamed (the URL masked; the helper's manual instructions skipped)
+  PASS  no token, e-mail, org id or URL parameter in the output
+  PASS  no tool or shell error in the output (the first passes saw an empty file)
+    ssh argv: -tt -o BatchMode=yes -o ConnectTimeout=15 -o ExitOnForwardFailure=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o LogLevel=ERROR -L 45023:127.0.0.1:53682 isotherm-test stty cols 1000 2>/dev/null; bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh login 
+  PASS  ssh -tt, BatchMode, ExitOnForwardFailure, -L <port>:127.0.0.1:53682, the alias, isotherm-vps.sh login
+  PASS  ssh's stdin is not the terminal (nothing is typed on the VPS)
+  PASS  ssh process gone, temp dir empty
+  PASS  the sign-in URL is in no file under HOME or TMPDIR afterwards (it lived only in the private temp file)
+
+## R4. --print-url: the URL printed instead of opened
+    | OK       ssh
+    | OK       perl
+    | OK       mktemp
+    | OK       browser: the sign-in URL will be printed here; open it on THIS machine (the tunnel listens here)
+    | OK       port 45023 free on this machine
+    | OK       ssh config: 'isotherm-test' is an alias
+    | connecting to isotherm-test: tunnel localhost:45023 -> the VPS's 127.0.0.1:53682, then isotherm-vps.sh login there
+    |   vps | CRE Login
+    |   vps |   Authenticate with your Chainlink account
+    |   vps |  Opening browser to:
+    |   vps | <sign-in URL>
+    |   vps | ! Could not open browser automatically
+    |   vps |   Please open the URL above in your browser
+    |   vps |   Waiting for authentication... (Press Ctrl+C to cancel)
+    |   vps | refresh_token: <masked>
+    |   vps | ✓ Login successful (<e-mail>, org <masked>)
+    |   vps | cre whoami: yes
+    | open this sign-in URL in a browser on THIS machine (the tunnel listens here, not on the VPS):
+    | 
+    |   https://login.chain.link/authorize?audience=https%3A%2F%2Fapi.cre.chain.link%2F&client_id=TESTCLIENTID0001&code_challenge=TESTCHALLENGE0001&code_challenge_method=S256&redirect_uri=http%3A%2F%2Flocalhost%3A53682%2Fcallback&response_type=code&scope=openid+profile+email+offline_access&state=TESTSTATE0001
+    | 
+    | sign in there (password + authenticator code); waiting for the browser's callback through the tunnel (up to 10 min)
+    | SIGNED IN: the VPS answered 'cre whoami: yes'. Its next :05 run takes the official path and pushes CRE LOGIN RESTORED.
+    exit 0
+  PASS  exit 0, `open` not called, the URL printed once
+
+## R5. no browser sign-in before --timeout 4
+    | OK       ssh
+    | OK       perl
+    | OK       mktemp
+    | OK       browser: the sign-in URL opens with `open` (default browser)
+    | OK       port 45023 free on this machine
+    | OK       ssh config: 'isotherm-test' is an alias
+    | connecting to isotherm-test: tunnel localhost:45023 -> the VPS's 127.0.0.1:53682, then isotherm-vps.sh login there
+    |   vps | CRE Login
+    |   vps |   Authenticate with your Chainlink account
+    |   vps |  Opening browser to:
+    |   vps | <sign-in URL>
+    |   vps | ! Could not open browser automatically
+    |   vps |   Please open the URL above in your browser
+    |   vps |   Waiting for authentication... (Press Ctrl+C to cancel)
+    | sign-in page opened in your default browser
+    | sign in there (password + authenticator code); waiting for the browser's callback through the tunnel (up to 1 min)
+    | TIMED OUT after 4 s waiting for the browser sign-in; stopping ssh (the cre login waiting on the VPS ends with it).
+    | If you did finish signing in, check: ssh isotherm-test bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh status   (cre login: yes)
+    | Try again: packages/cre-workflow/vps/relogin.sh isotherm-test [--timeout SEC]
+    exit 124
+  PASS  exit 124 after 4 s, a clear message
+  PASS  ssh process gone, temp dir empty
+
+## R6. no sign-in URL at all before --timeout 3
+    | OK       ssh
+    | OK       perl
+    | OK       mktemp
+    | OK       browser: the sign-in URL opens with `open` (default browser)
+    | OK       port 45023 free on this machine
+    | OK       ssh config: 'isotherm-test' is an alias
+    | connecting to isotherm-test: tunnel localhost:45023 -> the VPS's 127.0.0.1:53682, then isotherm-vps.sh login there
+    | TIMED OUT after 3 s waiting for the sign-in URL; stopping ssh. Last output:
+    |   vps | CRE login on a headless VPS (the CLI waits for the browser on http://localhost:53682/callback ON THIS VPS):
+    |   vps |   2. The CLI prints "Opening browser to: <sign-in URL> and "Could not open browser
+    | Try again: packages/cre-workflow/vps/relogin.sh isotherm-test
+    exit 124
+  PASS  exit 124 (URL stage), nothing opened, cleaned up
+
+## R7. the VPS answers 'cre whoami: no'
+    | OK       ssh
+    | OK       perl
+    | OK       mktemp
+    | OK       browser: the sign-in URL opens with `open` (default browser)
+    | OK       port 45023 free on this machine
+    | OK       ssh config: 'isotherm-test' is an alias
+    | connecting to isotherm-test: tunnel localhost:45023 -> the VPS's 127.0.0.1:53682, then isotherm-vps.sh login there
+    |   vps | CRE Login
+    |   vps |   Authenticate with your Chainlink account
+    |   vps |  Opening browser to:
+    |   vps | <sign-in URL>
+    |   vps | ! Could not open browser automatically
+    |   vps |   Please open the URL above in your browser
+    |   vps |   Waiting for authentication... (Press Ctrl+C to cancel)
+    | sign-in page opened in your default browser
+    | sign in there (password + authenticator code); waiting for the browser's callback through the tunnel (up to 10 min)
+    |   vps | refresh_token: <masked>
+    |   vps | ✓ Login successful (<e-mail>, org <masked>)
+    |   vps | cre whoami: no
+    | FAILED: after cre login the VPS answered 'cre whoami: no', not 'yes'; the sign-in did not complete. Last output:
+    |   vps | CRE login on a headless VPS (the CLI waits for the browser on http://localhost:53682/callback ON THIS VPS):
+    |   vps |   2. The CLI prints "Opening browser to: <sign-in URL> and "Could not open browser
+    |   vps | CRE Login
+    |   vps |   Authenticate with your Chainlink account
+    |   vps |  Opening browser to:
+    |   vps | <sign-in URL>
+    |   vps | ! Could not open browser automatically
+    |   vps |   Please open the URL above in your browser
+    |   vps |   Waiting for authentication... (Press Ctrl+C to cancel)
+    |   vps | refresh_token: <masked>
+    |   vps | ✓ Login successful (<e-mail>, org <masked>)
+    |   vps | cre whoami: no
+    | If the browser said the login succeeded, the CRE API may have timed out: check in a minute with ssh isotherm-test bash isotherm/packages/cre-workflow/vps/isotherm-vps.sh status
+    exit 1
+  PASS  exit 1
+  PASS  the failure output shows nothing secret
+
+## R8. ssh cannot connect
+    | OK       ssh
+    | OK       perl
+    | OK       mktemp
+    | OK       browser: the sign-in URL opens with `open` (default browser)
+    | OK       port 45023 free on this machine
+    | OK       ssh config: 'isotherm-test' is an alias
+    | connecting to isotherm-test: tunnel localhost:45023 -> the VPS's 127.0.0.1:53682, then isotherm-vps.sh login there
+    | FAILED: ssh ended (exit 255) before the VPS answered 'cre whoami: yes': ssh could not connect or log in to 'isotherm-test' (it runs with BatchMode=yes: key login only). Last output:
+    |   vps | ssh: connect to host test-host.invalid port 22: Connection refused
+    exit 1
+  PASS  exit 1 with the reason
+
+## R9. destinations that are options or carry odd characters
+    | unknown option -oProxyCommand=false (see --help)
+    exit 2
+    | refusing the ssh destination 'isotherm-test;id': use the alias from ~/.ssh/config
+    exit 2
+  PASS  both refused (exit 2), ssh never started
+
+## R10. Ctrl-C while waiting for the browser sign-in (SIGINT to the whole process group)
+    | OK       ssh
+    | OK       perl
+    | OK       mktemp
+    | OK       browser: the sign-in URL opens with `open` (default browser)
+    | OK       port 45023 free on this machine
+    | OK       ssh config: 'isotherm-test' is an alias
+    | connecting to isotherm-test: tunnel localhost:45023 -> the VPS's 127.0.0.1:53682, then isotherm-vps.sh login there
+    |   vps | CRE Login
+    |   vps |   Authenticate with your Chainlink account
+    |   vps |  Opening browser to:
+    |   vps | <sign-in URL>
+    |   vps | ! Could not open browser automatically
+    |   vps |   Please open the URL above in your browser
+    |   vps |   Waiting for authentication... (Press Ctrl+C to cancel)
+    | sign-in page opened in your default browser
+    | sign in there (password + authenticator code); waiting for the browser's callback through the tunnel (up to 1 min)
+    | 
+    | interrupted: stopping ssh (the cre login waiting on the VPS ends with it)
+    exit 130
+  PASS  exit 130, 'interrupted' (the ssh stub had started: pid file present)
+  PASS  ssh process gone (it ignores SIGINT as a background job; the trap stopped it), temp dir empty, nothing secret shown
+
+## R11. the terminal closes while waiting (SIGHUP to the process group)
+    | OK       ssh
+    | OK       perl
+    | OK       mktemp
+    | OK       browser: the sign-in URL opens with `open` (default browser)
+    | OK       port 45023 free on this machine
+    | OK       ssh config: 'isotherm-test' is an alias
+    | connecting to isotherm-test: tunnel localhost:45023 -> the VPS's 127.0.0.1:53682, then isotherm-vps.sh login there
+    |   vps | CRE Login
+    |   vps |   Authenticate with your Chainlink account
+    |   vps |  Opening browser to:
+    |   vps | <sign-in URL>
+    |   vps | ! Could not open browser automatically
+    |   vps |   Please open the URL above in your browser
+    |   vps |   Waiting for authentication... (Press Ctrl+C to cancel)
+    | sign-in page opened in your default browser
+    | sign in there (password + authenticator code); waiting for the browser's callback through the tunnel (up to 1 min)
+    | Hangup
+    | 
+    | interrupted: stopping ssh (the cre login waiting on the VPS ends with it)
+    exit 130
+  PASS  exit 130, ssh process gone, temp dir empty
+
+## R12. Ctrl-C twice, with an ssh that ignores SIGTERM
+    | OK       ssh
+    | OK       perl
+    | OK       mktemp
+    | OK       browser: the sign-in URL opens with `open` (default browser)
+    | OK       port 45023 free on this machine
+    | OK       ssh config: 'isotherm-test' is an alias
+    | connecting to isotherm-test: tunnel localhost:45023 -> the VPS's 127.0.0.1:53682, then isotherm-vps.sh login there
+    |   vps | CRE Login
+    |   vps |   Authenticate with your Chainlink account
+    |   vps |  Opening browser to:
+    |   vps | <sign-in URL>
+    |   vps | ! Could not open browser automatically
+    |   vps |   Please open the URL above in your browser
+    |   vps |   Waiting for authentication... (Press Ctrl+C to cancel)
+    | sign-in page opened in your default browser
+    | sign in there (password + authenticator code); waiting for the browser's callback through the tunnel (up to 1 min)
+    | 
+    | interrupted: stopping ssh (the cre login waiting on the VPS ends with it)
+    exit 130
+  PASS  exit 130 after 5 s; the cleanup finished (kill -9): ssh process gone, temp dir empty
+
+## R13. the callback port held on the IPv6 loopback only
+  SKIP  no lsof or no IPv6 loopback here (the /dev/tcp probe covers 127.0.0.1 only)
+
+# 2026-10-14T06:12:13Z done: 82 passed, 0 failed

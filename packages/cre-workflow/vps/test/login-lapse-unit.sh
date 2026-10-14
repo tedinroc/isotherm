@@ -4,26 +4,38 @@
 # Part L, the CRE login watch (vps/settle-vps.sh step 5b, vps/lib.sh cre_login_watch, isotherm-vps.sh status): the REAL
 #   settle-vps.sh, lib.sh, isotherm-vps.sh, scripts/settle-job.sh and settle/e2e/evidence-record.ts run from a scratch
 #   package whose scripts/run-official.sh is a stub (official or harness log lines, no keys) and whose .tools/bin holds
-#   shims: `cre` (version, whoami from a file), `curl` (records each push, never connects). No tx key exists, so the
-#   tripwire skips its nonce reads.
-#   L1 one miss (cre whoami fails)              -> NO push (one miss is often a CRE API timeout); state runs=1; the
-#                                                  existing harness-fallback push as before
-#   L2 a second miss in a row                   -> one CRE LOGIN NEEDED push, high priority, naming the one-line fix
+#   shims: `cre` (version, whoami from a file or a per-call plan), `curl` (records each push, never connects), `sleep`
+#   (records settle-job.sh's 30 s wait, returns at once). No tx key exists, so the tripwire skips its nonce reads.
+#   L1 one miss (cre whoami fails, and again 30 s later) -> NO push (one miss can be a brief CRE API outage); state
+#                                                  runs=1; the harness-fallback push, same title, its body now "act
+#                                                  only on CRE LOGIN NEEDED" (it said "Log in again")
+#   L2 a second miss in a row                   -> one CRE LOGIN NEEDED push, high priority, naming the one-line fix;
+#                                                  the harness-fallback push (its 12 h dedupe aged out here) says "2
+#                                                  runs in a row", not "one miss alone"
 #   L3 a third miss                             -> no second push (3 h dedupe); the alert still in ALERTS.log
 #   L4 the push stamp aged 2 h 59 min / 3 h 1 min -> not pushed / pushed again
 #   L5 isotherm-vps.sh status while lapsed      -> "cre session LAPSED since ..." with the fix
 #   L6 an official run                          -> one CRE LOGIN RESTORED push; the lapse state cleared
 #   L7 another official run                     -> no second RESTORED; status "valid for at least ..."
 #   L8 the official run FAILS (exit 1; the real settle-job.sh writes official-failed), so the next run takes the
-#      harness with cre whoami fine -> no CRE LOGIN NEEDED, no lapse state; the exit codes are the job's
+#      harness with cre whoami fine -> no CRE LOGIN NEEDED, no lapse state; the exit codes are the job's; its
+#      harness-fallback push says it is not a login problem
 #   L9 cre whoami fine, run-official.sh exits 3 (login gone before signing), twice -> nothing, then CRE LOGIN NEEDED at
-#      once (the restore reset its dedupe)
+#      once (the restore reset its dedupe); the harness-fallback body: "one miss alone", then "2 runs in a row"
 #   L10 misses that do not repeat (miss, official, miss, official, miss, official) -> no push at all; status after a
-#      single miss says so
+#      single miss says so; after the last official run it adds a bound counted across the 3 single misses
 #   L11 a miss, then a harness run whose cre whoami answered (after a failed official run) -> the miss is cleared
-#   L12 the state lost mid-lapse (var/alerts and the lapse file gone) -> at most one extra push, never a burst;
+#   L12 the state lost mid-lapse (var/alerts and the lapse file gone) -> at most one extra push, never a burst; the
+#      harness-fallback body follows the count the watch has (a first miss again, then 2 in a row);
 #      L12b after CRE LOGIN NEEDED, the first run with the login is a harness run -> RESTORED says so, once
-#   L13 path decisions and evidence: one evidence record per run, the run-official.sh calls as settle-job.sh decides
+#   L15 cre whoami fails, then answers 30 s later (settle-job.sh's second check) -> the official path, one wait, no
+#      alert at all, no lapse state
+#   L16 a CRE API key file (settle-vps.sh step 0) -> cre whoami never asked, no wait
+#   L17 step 5 with a broken lib.sh CRE_LAPSE_JS (a syntax error) -> the official run's exit 1 still alerts, the next
+#      harness-fallback push says "cause not classified"; then with step 5's alert script failing (a node shim) -> the
+#      exit alert still goes out, from the fallback (L15 to L17 run before L13)
+#   L13 path decisions and evidence: one evidence record per run, the run-official.sh calls as settle-job.sh decides;
+#      every 30 s wait is one run whose record names the second check
 #   L14 no output, log or evidence file contains the alert URL
 # Part R, vps/relogin.sh with stubs on PATH: `ssh` (never connects; prints what the VPS helper and the CLI print,
 #   through a pseudo-terminal: CRLF and colour codes), `open` (records the URL), `uname` (Darwin).
@@ -44,11 +56,13 @@
 #   R12 Ctrl-C twice, with an ssh that ignores SIGTERM -> the cleanup still completes (kill -9 after 3 s)
 #   R13 the callback port held on the IPv6 loopback only -> refused (lsof); skipped where lsof or ::1 is missing
 # Usage: vps/test/login-lapse-unit.sh     Env: ISOTHERM_TEST_BASH (default /bin/bash), KEEP=1 keeps the scratch.
-# Output: stdout and vps/evidence/login-lapse-unit.txt (local paths replaced by <repo>, <scratch>, ~). Exit 0 = all pass.
+# Output: stdout, and the report (local paths replaced by <repo>, <scratch>, ~) in a new file under $TMPDIR whose path is
+#   printed. ISOTHERM_WRITE_EVIDENCE=1 also writes the tracked vps/evidence/login-lapse-unit.txt (or the file named by
+#   ISOTHERM_TEST_EVIDENCE=<file>, as in stack-watch-unit.sh), and only when every check passed. Exit 0 = all pass.
 set -uo pipefail
 REAL="$(cd "$(dirname "$0")/../.." && pwd)"; REPO=$(cd "$REAL/../.." && pwd)
 TBASH=${ISOTHERM_TEST_BASH:-/bin/bash}
-EVOUT="$REAL/vps/evidence/login-lapse-unit.txt"
+EVOUT=${ISOTHERM_TEST_EVIDENCE:-$REAL/vps/evidence/login-lapse-unit.txt}
 SEARCH="$REAL/.tools/bin:$REAL/.tools/node_modules/.bin:$PATH:/opt/homebrew/bin:/usr/local/bin:$HOME/.bun/bin:$HOME/.local/bin"
 BUN=$(PATH=$SEARCH; command -v bun) || { echo "bun not found" >&2; exit 2; }
 NODE=$(PATH=$SEARCH; command -v node) || { echo "node not found" >&2; exit 2; }
@@ -66,12 +80,21 @@ ln -s "$REAL/settle" "$P/settle"                       # evidence-record.ts (nod
 ln -s "$NODE" "$BIN/node"; ln -s "$BUN" "$BIN/bun"; ln -s "$TBASH" "$BIN/bash"   # nested `bash` = the bash under test
 cat >"$BIN/cre" <<'EOF'
 #!/bin/bash
-# TEST shim of the CRE CLI: no network, never reads or writes ~/.cre
+# TEST shim of the CRE CLI: no network, never reads or writes ~/.cre. whoami answers from the file whoami (ok/fail), or,
+# while the file whoami-plan exists, from that plan (one step per call, the last step repeats)
+D=${SHIM_DIR:?}
 case "$1" in
   version) echo "CRE CLI version v1.37.0" ;;
-  whoami) [ "$(cat "${SHIM_DIR:?}/whoami")" = ok ] ;;
+  whoami) echo x >>"$D/whoami-calls"; s=$(cat "$D/whoami")
+    if [ -f "$D/whoami-plan" ]; then n=$(wc -l <"$D/whoami-calls" | tr -d ' '); s=$(awk -F, -v n="$n" '{ i = (n <= NF) ? n : NF; print $i }' "$D/whoami-plan"); fi
+    [ "$s" = ok ] ;;
   *) echo "shim cre: unexpected: $*" >&2; exit 97 ;;
 esac
+EOF
+cat >"$BIN/sleep" <<'EOF'
+#!/bin/bash
+# TEST shim of sleep (settle-job.sh's 30 s wait before its second login check): records the seconds, returns at once
+echo "$*" >>"${SHIM_DIR:?}/sleeps"
 EOF
 cat >"$BIN/curl" <<'EOF'
 #!/bin/bash
@@ -109,7 +132,7 @@ else
 fi
 echo "[$(at)] done; log: (stub)"
 EOF
-chmod +x "$BIN/cre" "$BIN/curl" "$P/scripts/run-official.sh"
+chmod +x "$BIN/cre" "$BIN/curl" "$BIN/sleep" "$P/scripts/run-official.sh"
 TOPIC="isotherm-test-$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 24)"
 printf 'https://ntfy.invalid/%s\n' "$TOPIC" >"$SC/alert.url"; chmod 600 "$SC/alert.url"
 
@@ -126,40 +149,58 @@ envrun() {
     ISOTHERM_STATE_DIR="$ST" ISOTHERM_WRITER_CLAIM_REQUIRED=0 ISOTHERM_TX_KEY_FILE="$SC/no-such.key" \
     ISOTHERM_CRE_API_KEY_FILE="$SC/no-such-api-key" ISOTHERM_ALERT_URL_FILE="$SC/alert.url" "$@"
 }
+whoami_calls() { if [ -f "$SD/whoami-calls" ]; then wc -l <"$SD/whoami-calls" | tr -d ' '; else echo 0; fi; }
+sleeps() { [ -f "$SD/sleeps" ] && tr '\n' ' ' <"$SD/sleeps" | sed 's/ $//'; }   # the waits of the last vrun
 vrun() { # vrun <case>: one run of the real settle-vps.sh; its [vps] ALERT/push lines shown
+  rm -f "$SD/whoami-calls" "$SD/sleeps"
   envrun "$TBASH" "$P/vps/settle-vps.sh" >"$SC/out-$1.log" 2>&1; local rc=$?
-  grep -E '\[settle-job\] path=|\[vps\] (ALERT|push|CRE login)' "$SC/out-$1.log" | sed -E 's/^\[[^]]+\] //; s/^/    | /'
+  grep -E '\[settle-job\] (path=|CRE login check:)|\[vps\] (ALERT|push|CRE login)' "$SC/out-$1.log" | sed -E 's/^\[[^]]+\] //; s/^/    | /'
   echo "    exit $rc; lapse state: $(cat "$ST/cre-login-lapsed.json" 2>/dev/null || echo absent)"
-  VRC=$rc; RUNS=$((RUNS + 1))
+  VRC=$rc; RUNS=$((RUNS + 1)); [ -f "$SD/sleeps" ] && WAITS=$((WAITS + $(wc -l <"$SD/sleeps")))
   return $rc
 }
-RUNS=0; VRC=0
+RUNS=0; VRC=0; WAITS=0
 stamp_age() { echo $(($(date +%s) - $1)) >"$STAMP"; }   # stamp_age <seconds>: the last NEEDED push that long ago
 lapse_runs() { "$NODE" -e 'try { console.log(require(process.argv[1]).runs || "") } catch { console.log("absent") }' "$ST/cre-login-lapsed.json"; }
+jfield_() { "$NODE" -e 'const r = require(process.argv[1]); console.log(JSON.stringify(eval(process.argv[2])))' "$1" "$2"; }   # <json file> <expression on r>
 
 echo "# $(date -u +%FT%TZ) login-lapse-unit: $("$TBASH" -c 'echo "bash $BASH_VERSION"') on $(uname -s) $(uname -m); stubs, no network, no key, 0 MON"
 echo "# scratch package <scratch>/root/packages/cre-workflow (vps/*.sh, settle-job.sh and settle/ symlinked to the code under test)"
 
-echo; echo "## L1. one miss: cre whoami fails once"
+echo; echo "## L1. one miss: cre whoami fails, and again 30 s later (settle-job.sh checks twice before the harness)"
 echo fail >"$SD/whoami"; vrun L1
 ok "$(t [ "$(pushes "$NEEDED")" = 0 ])" "no CRE LOGIN NEEDED push for a single miss"
+ok "$([ "$(whoami_calls)" = 2 ] && [ "$(sleeps)" = 30 ] && grep -qF '[settle-job] path=harness (cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer))' "$SC/out-L1.log" && echo 1 || echo 0)" "settle-job.sh asked cre whoami $(whoami_calls) times, waits [$(sleeps)], then the harness"
 ok "$(grep -q 'CRE login: none in this run (cre whoami failed' "$SC/out-L1.log" && echo 1 || echo 0)" "the miss is logged (journal), with the reason"
-ok "$(t [ "$(pushes 'ISOTHERM VPS: harness fallback ran (official CRE path unavailable)')" = 1 ])" "the existing harness-fallback push, unchanged"
+FB="ISOTHERM VPS: harness fallback ran (official CRE path unavailable)"
+FBSTAMP="$ST/alerts/$(printf '%s' "$FB" | tr -c 'A-Za-z0-9' '_' | cut -c1-80).last"   # lib.sh alert_slug
+fb_body() { awk -v p="ALERT: $FB | " 'i = index($0, p) { print substr($0, i + length(p)) }' "$SC/out-$1.log"; }   # logged, pushed or not
+FIRST="One miss alone can be a brief CRE API outage: act only on CRE LOGIN NEEDED, which is pushed if the next run finds no login either."
+NTH=" runs in a row without the CRE login: see CRE LOGIN NEEDED. The fix, on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps"
+TWICE="cre whoami failed twice, 30 s apart (no CRE login, or the CRE API did not answer)"
+ok "$(t [ "$(pushes "$FB")" = 1 ])" "the existing harness-fallback push, same title"
+L=$(grep "^$FB	" "$SD/pushes" | head -n1 | cut -f4)
+ok "$(t [ "$L" = "$TWICE. $FIRST" ])" "its body: the reason, then act only on CRE LOGIN NEEDED (no longer 'Log in again')"
+echo "    body: $L"
 ok "$(t [ "$(lapse_runs)" = 1 ])" "lapse state recorded, runs=1: $(cat "$ST/cre-login-lapsed.json" 2>/dev/null)"
 
-echo; echo "## L2. a second miss in a row: CRE LOGIN NEEDED"
-vrun L2
+echo; echo "## L2. a second miss in a row: CRE LOGIN NEEDED (the harness-fallback push's 12 h dedupe aged out first)"
+echo $(($(date +%s) - 43260)) >"$FBSTAMP"; vrun L2
 ok "$(t [ "$(pushes "$NEEDED")" = 1 ])" "one CRE LOGIN NEEDED push"
 L=$(grep "^$NEEDED	" "$SD/pushes" | head -n1)
 ok "$(t [ "$(printf '%s' "$L" | cut -f2)" = high ])" "priority high"
 ok "$(printf '%s' "$L" | cut -f4 | grep -qE '^The CRE login on the VPS has lapsed: 2 runs in a row without it, since 20[0-9-]{8}T[0-9:]{8}Z \(this run: cre whoami failed' && printf '%s' "$L" | cut -f4 | grep -q 'Settlement continues on the labelled harness fallback' && printf '%s' "$L" | cut -f4 | grep -qF 'Fix, one line on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps' && echo 1 || echo 0)" "the body: how many runs, since when and why; settlement continues on the labelled harness; the one-line fix"
 echo "    body: $(printf '%s' "$L" | cut -f4)"
+L=$(grep "^$FB	" "$SD/pushes" | sed -n 2p | cut -f4)
+ok "$([ "$(pushes "$FB")" = 2 ] && [ "$L" = "$TWICE. 2$NTH" ] && echo 1 || echo 0)" "the harness-fallback push (its stamp 12 h 1 min old): '2 runs in a row', CRE LOGIN NEEDED and the fix named, not 'one miss alone'"
+echo "    body: $L"
 ok "$(t [ "$("$NODE" -e 'console.log(require(process.argv[1]).at)' "$ST/cre-login-lapsed.json")" = "$(head -n1 "$ST/evidence/settle-runs.jsonl" | "$NODE" -e 'console.log(JSON.parse(require("fs").readFileSync(0, "utf8")).startedAt)')" ])" "'since' is the first miss's start, kept across runs"
 
 echo; echo "## L3. a third miss: not repeated within 3 h"
 vrun L3
 ok "$(t [ "$(pushes "$NEEDED")" = 1 ])" "still one push"
 ok "$(t [ "$(grep -c "	$NEEDED	" "$ST/alerts/ALERTS.log")" = 2 ])" "both attempts (runs 2 and 3) are in ALERTS.log"
+ok "$([ "$(fb_body L3)" = "$TWICE. 3$NTH" ] && [ "$(pushes "$FB")" = 2 ] && echo 1 || echo 0)" "the harness-fallback alert: '3 runs in a row' (logged; not pushed again within 12 h)"
 
 echo; echo "## L4. the push stamp aged 2 h 59 min, then 3 h 1 min"
 stamp_age 10740; vrun L4a
@@ -192,6 +233,9 @@ echo 1 >"$SD/official-rc"; vrun L8a; R1=$VRC; rm -f "$SD/official-rc"
 ok "$([ "$R1" = 1 ] && [ -f "$ST/official-failed" ] && [ "$(pushes 'ISOTHERM VPS: settle job exit 1')" = 1 ] && echo 1 || echo 0)" "official run exit 1: settle-vps.sh exits 1 (the job's code), settle-job.sh wrote official-failed, the existing 'settle job exit 1' push"
 vrun L8b; R2=$VRC
 ok "$(grep -q 'previous OFFICIAL run failed' "$SC/out-L8b.log" && [ ! -f "$ST/official-failed" ] && [ "$R2" = 0 ] && echo 1 || echo 0)" "the next run took the harness (settle-job.sh's rule, unchanged), exit 0"
+L=$(grep -F "ALERT: $FB | " "$SC/out-L8b.log" | sed 's/^.* | //')
+X=0; [[ "$L" == "cre whoami succeeded, but the previous OFFICIAL run failed ("*"); this run uses the harness, the next one retries OFFICIAL. Not a login problem: no relogin needed." ]] && X=1
+ok "$X" "its harness-fallback alert says it is not a login problem (not 'act only on CRE LOGIN NEEDED')"
 ok "$([ "$(pushes "$NEEDED")" = 2 ] && [ ! -f "$ST/cre-login-lapsed.json" ] && echo 1 || echo 0)" "no CRE LOGIN NEEDED, no lapse state"
 envrun "$TBASH" "$P/vps/isotherm-vps.sh" status >"$SC/status-L8.txt" 2>&1
 grep -E '^cre session' "$SC/status-L8.txt" | sed 's/^/    | /'
@@ -200,9 +244,12 @@ ok "$(grep -qE '^cre session valid for at least' "$SC/status-L8.txt" && echo 1 |
 echo; echo "## L9. cre whoami fine, but run-official.sh exits 3 (the login vanished before signing), twice"
 echo 3 >"$SD/official-rc"; vrun L9a
 ok "$(grep -q 'reported no login (exit 3)' "$SC/out-L9a.log" && [ "$(pushes "$NEEDED")" = 2 ] && [ "$(lapse_runs)" = 1 ] && echo 1 || echo 0)" "the first exit 3 counts as a miss, no push"
+X3="cre whoami succeeded; then run-official.sh reported no login (exit 3) before signing"
+ok "$(t [ "$(fb_body L9a)" = "$X3. $FIRST" ])" "its harness-fallback alert: the exit-3 reason, then 'one miss alone'"
 vrun L9b; rm -f "$SD/official-rc"
 ok "$([ "$(pushes "$NEEDED")" = 3 ] && echo 1 || echo 0)" "the second: CRE LOGIN NEEDED pushed at once (the restore reset the 3 h dedupe)"
-vrun L9c
+ok "$(t [ "$(fb_body L9b)" = "$X3. 2$NTH" ])" "its harness-fallback alert: '2 runs in a row'"
+vrun L9c; L9C=$("$NODE" -e 'console.log(require(process.argv[1]).startedAt)' "$ST/evidence/LATEST.json")
 ok "$(t [ "$(pushes "$RESTORED")" = 2 ])" "official again: RESTORED"
 
 echo; echo "## L10. misses that do not repeat (a CRE API timeout now and then): miss, official, miss, official, miss, official"
@@ -212,7 +259,10 @@ for i in 1 2 3; do echo fail >"$SD/whoami"; vrun "L10m$i"; echo ok >"$SD/whoami"
   vrun "L10o$i"; done
 ok "$([ "$(pushes "$NEEDED")" = "$N0" ] && [ "$(pushes "$RESTORED")" = "$R0" ] && [ ! -f "$ST/cre-login-lapsed.json" ] && echo 1 || echo 0)" "no CRE LOGIN NEEDED and no RESTORED push at all; no lapse state left"
 ok "$(grep -c 'there again at .* after a single miss' "$SC"/out-L10o*.log | awk -F: '{ s += $2 } END { print (s == 3) ? 1 : 0 }')" "each recovery logged as 'after a single miss; nothing was pushed'"
-ok "$(grep -qE '^cre session no login in the last run \(.*harness\); a single miss is often a CRE API timeout, so CRE LOGIN NEEDED waits for the next run' "$SC/status-L10.txt" && echo 1 || echo 0)" "status after a single miss says so (not LAPSED)"
+ok "$(grep -qE '^cre session no login in the last run \(.*harness\); a single miss can be a brief CRE API outage, so CRE LOGIN NEEDED waits for the next run' "$SC/status-L10.txt" && echo 1 || echo 0)" "status after a single miss says so (not LAPSED)"
+envrun "$TBASH" "$P/vps/isotherm-vps.sh" status >"$SC/status-L10o.txt" 2>&1
+grep -E '^cre session' "$SC/status-L10o.txt" | sed 's/^/    | /'
+ok "$(grep -E '^cre session valid for at least [0-9]+ min: official runs from .*; after the miss seen at .*\. Across those 3 single misses \(the login showed in the runs on both sides, the next one official: most likely CRE API timeouts\): at least [0-9]+ min, official runs from ' "$SC/status-L10o.txt" | grep -qF "official runs from ${L9C:-?}; after the miss seen at " && echo 1 || echo 0)" "status after the last official run: the strict bound from the last single miss, then one across the 3 single misses, from L9c's official run ($L9C, after L9b's 2nd miss in a row)"
 
 echo; echo "## L11. a miss, then a harness run whose cre whoami answered (after a failed official run): the miss is cleared"
 echo 1 >"$SD/official-rc"; vrun L11a; rm -f "$SD/official-rc"          # official fails: official-failed written
@@ -235,6 +285,7 @@ vrun L12c; N2=$(pushes "$NEEDED")
 vrun L12d; N3=$(pushes "$NEEDED")
 vrun L12e; N4=$(pushes "$NEEDED")
 ok "$([ "$N2" = "$N1" ] && [ "$N3" = $((N1 + 1)) ] && [ "$N4" = "$N3" ] && [ -d "$ST/alerts" ] && echo 1 || echo 0)" "after the wipe: no push, then one, then deduplicated again ($N1 -> $N2 -> $N3 -> $N4)"
+ok "$([ "$(fb_body L12c)" = "$TWICE. $FIRST" ] && [ "$(fb_body L12d)" = "$TWICE. 2$NTH" ] && echo 1 || echo 0)" "the harness-fallback alert follows the watch's own count: 'one miss alone' right after the wipe, then '2 runs in a row'"
 echo ok >"$SD/whoami"; vrun L12f
 ok "$(t [ "$(pushes "$RESTORED")" = $((R0 + 1)) ])" "RESTORED once when the login is back"
 
@@ -248,7 +299,40 @@ echo "    body: $L"
 vrun L12k
 ok "$(t [ "$(pushes "$RESTORED")" = $((R0 + 2)) ])" "the official run after it: no second RESTORED"
 
-echo; echo "## L13. path decisions and evidence unchanged by the watch"
+echo; echo "## L15. a CRE API blip at the job's login check: cre whoami fails, then answers 30 s later"
+N5=$(pushes "$NEEDED"); R5=$(pushes "$RESTORED"); F5=$(pushes "$FB")
+echo fail,ok >"$SD/whoami-plan"; vrun L15; rm -f "$SD/whoami-plan"
+ok "$([ "$VRC" = 0 ] && [ "$(whoami_calls)" = 2 ] && [ "$(sleeps)" = 30 ] && grep -q '\[settle-job\] path=official (cre whoami succeeded (at the second check, 30 s after a failed one))' "$SC/out-L15.log" && [ "$(tail -n1 "$SD/run-official-calls")" = --official ] && echo 1 || echo 0)" "exit $VRC: cre whoami asked $(whoami_calls) times, waits [$(sleeps)], then the official path"
+ok "$([ "$(grep -c 'ALERT: ' "$SC/out-L15.log")" = 0 ] && [ "$(pushes "$FB")" = "$F5" ] && [ "$(pushes "$NEEDED")" = "$N5" ] && [ "$(pushes "$RESTORED")" = "$R5" ] && [ ! -f "$ST/cre-login-lapsed.json" ] && echo 1 || echo 0)" "no alert at all (no harness-fallback push, no CRE LOGIN NEEDED/RESTORED), no lapse state: not a miss"
+ok "$(t [ "$(jfield_ "$ST/evidence/LATEST.json" '[r.path, r.creLogin, r.pathReason]')" = '["official",true,"cre whoami succeeded (at the second check, 30 s after a failed one)"]' ])" "evidence: $(jfield_ "$ST/evidence/LATEST.json" '[r.path, r.creLogin, r.pathReason]')"
+
+echo; echo "## L16. a CRE API key file (settle-vps.sh step 0): cre whoami is never asked, no wait, even while it would fail"
+printf 'test-only-not-a-key\n' >"$SC/no-such-api-key"; echo fail >"$SD/whoami"; vrun L16; rm -f "$SC/no-such-api-key"; echo ok >"$SD/whoami"
+ok "$([ "$VRC" = 0 ] && [ "$(whoami_calls)" = 0 ] && [ -z "$(sleeps)" ] && grep -q '\[settle-job\] path=official (cre whoami succeeded)' "$SC/out-L16.log" && [ "$(grep -c 'ALERT: ' "$SC/out-L16.log")" = 0 ] && echo 1 || echo 0)" "exit $VRC, cre whoami asked $(whoami_calls) times, waits [$(sleeps)], the official path, no alert"
+
+echo; echo "## L17. step 5 with lib.sh's CRE_LAPSE_JS broken (a syntax error), then with its alert script failing"
+rm "$P/vps/lib.sh"; { cat "$REAL/vps/lib.sh"; echo "CRE_LAPSE_JS='const lapsed = ('   # TEST: broken"; } >"$P/vps/lib.sh"
+echo 1 >"$SD/official-rc"; vrun L17a; R1=$VRC; rm -f "$SD/official-rc"   # official fails: official-failed written
+vrun L17b                                                                # the harness, after the failed official run
+rm "$P/vps/lib.sh"; ln -s "$REAL/vps/lib.sh" "$P/vps/lib.sh"
+ok "$([ "$R1" = 1 ] && grep -qF 'ALERT: ISOTHERM VPS: settle job exit 1 | run failed; path official. ' "$SC/out-L17a.log" && echo 1 || echo 0)" "a broken CRE_LAPSE_JS: the official run's exit $R1 still alerts ('settle job exit 1', from the evidence record)"
+L=$(fb_body L17b); X=0
+[[ "$L" == "cre whoami succeeded, but the previous OFFICIAL run failed ("*"); this run uses the harness, the next one retries OFFICIAL. Cause not classified (lib.sh CRE_LAPSE_JS failed). If the CRE login is missing, the fix, on the Mac: packages/cre-workflow/vps/relogin.sh isotherm-vps" ]] && X=1
+ok "$X" "the next run's harness-fallback alert: 'cause not classified', the fix named"
+echo "    body: $L"
+rm "$BIN/node"; cat >"$BIN/node" <<EOF
+#!/bin/bash
+# TEST shim: the real node, except settle-vps.sh's step-5 alert script, which fails (as on a record it cannot read)
+case "\${2:-}" in *'const tab = (p, d, t, b)'*) echo "node shim: the alert script failed" >&2; exit 1 ;; esac
+exec "$NODE" "\$@"
+EOF
+chmod +x "$BIN/node"
+echo 1 >"$SD/official-rc"; vrun L17c; R1=$VRC; rm -f "$SD/official-rc"   # official fails again
+rm "$BIN/node"; ln -s "$NODE" "$BIN/node"
+vrun L17d                                                                # the harness, after the failed official run
+ok "$([ "$R1" = 1 ] && [ "$(grep -c 'ALERT: ' "$SC/out-L17c.log")" = 1 ] && grep -qF "ALERT: ISOTHERM VPS: settle job exit 1 | the alerts could not read this run's evidence record; see " "$SC/out-L17c.log" && [ "$VRC" = 0 ] && [ ! -f "$ST/official-failed" ] && echo 1 || echo 0)" "the alert script failing: exit $R1, and the exit alert still goes out, once, from the fallback"
+
+echo; echo "## L13. path decisions and evidence unchanged by the watch (all runs above, L15 to L17 included)"
 EV=$(wc -l <"$ST/evidence/settle-runs.jsonl" | tr -d ' ')
 ok "$(t [ "$EV" = "$RUNS" ])" "one evidence record per run ($EV records, $RUNS runs)"
 CALLS=$(tr '\n' ' ' <"$SD/run-official-calls")
@@ -260,6 +344,8 @@ EXPECT=$("$NODE" -e '
   console.log(out.join(" ") + " ")' "$ST/evidence/settle-runs.jsonl")
 ok "$(t [ "$CALLS" = "$EXPECT" ])" "run-official.sh was called exactly as the evidence records say ($(echo "$CALLS" | wc -w | tr -d ' ') calls)"
 ok "$(grep -q '\[settle-job\] path=harness (cre whoami failed' "$SC/out-L1.log" && grep -q '\[settle-job\] path=official (cre whoami succeeded)' "$SC/out-L6.log" && echo 1 || echo 0)" "a whoami failure still selects the harness, a whoami success the official path"
+SECOND=$(grep -cE '"pathReason":"cre whoami (failed twice, 30 s apart|succeeded \(at the second check)' "$ST/evidence/settle-runs.jsonl")
+ok "$([ "$WAITS" = "$SECOND" ] && [ "$WAITS" -gt 0 ] && [ "$(grep -c '\[settle-job\] CRE login check:' "$SC"/out-*.log | awk -F: '{ s += $2 } END { print s }')" = "$WAITS" ] && echo 1 || echo 0)" "every 30 s wait ($WAITS) is one run whose record names the second check ($SECOND), and one 'CRE login check:' line"
 
 echo; echo "## L14. the alert URL never reaches an output, a log or an evidence file"
 N=$(grep -rlF "$TOPIC" "$SC"/out-*.log "$SC"/status-*.txt "$ST" 2>/dev/null | wc -l | tr -d ' ')
@@ -394,7 +480,8 @@ sleep 0.3; ok "$([ "$RC" = 130 ] && gone && echo 1 || echo 0)" "exit 130, ssh pr
 echo; echo "## R12. Ctrl-C twice, with an ssh that ignores SIGTERM"
 S=$(date +%s); rr_bg R12 stubborn isotherm-test --timeout 60
 kill -INT -- -"$BGPID"; sleep 0.8; kill -INT -- -"$BGPID" 2>/dev/null; bg_end R12; E=$(($(date +%s) - S))
-sleep 0.3; ok "$([ "$RC" = 130 ] && gone && [ "$E" -le 15 ] && echo 1 || echo 0)" "exit 130 after ${E} s; the cleanup finished (kill -9): ssh process gone, temp dir empty"
+# (under 60 s: without the kill -9, the cleanup's wait would last the ssh stub's 300 s; room left for a busy machine)
+sleep 0.3; ok "$([ "$RC" = 130 ] && gone && [ "$E" -le 60 ] && echo 1 || echo 0)" "exit 130 after ${E} s; the cleanup finished (kill -9): ssh process gone, temp dir empty"
 
 echo; echo "## R13. the callback port held on the IPv6 loopback only"
 if command -v lsof >/dev/null 2>&1 && "$NODE" -e 'const s = require("net").createServer().on("error", () => process.exit(1)).listen(0, "::1", () => s.close())' 2>/dev/null; then
@@ -410,7 +497,12 @@ echo; echo "# $(date -u +%FT%TZ) done: $PASS passed, $FAIL failed"
 }
 
 main 2>&1 | tee "$SC/report.txt"; RC=${PIPESTATUS[0]}
-mkdir -p "$(dirname "$EVOUT")"
-sed -e "s#$SCP#<scratch>#g" -e "s#$SC#<scratch>#g" -e "s#$REPO#<repo>#g" -e "s#$HOME#~#g" "$SC/report.txt" >"$EVOUT"
-echo "-> vps/evidence/login-lapse-unit.txt"
+# the report: always to a new file kept under $TMPDIR; to the tracked evidence file only on request, and only after a pass
+KEPT=$(mktemp -d "${TMPBASE%/}/isotherm-evidence.XXXXXX")/login-lapse-unit.txt
+sed -e "s#$SCP#<scratch>#g" -e "s#$SC#<scratch>#g" -e "s#$REPO#<repo>#g" -e "s#$HOME#~#g" "$SC/report.txt" >"$KEPT"
+echo "-> $KEPT"
+if [ "${ISOTHERM_WRITE_EVIDENCE:-0}" = 1 ]; then
+  if [ "$RC" = 0 ]; then mkdir -p "$(dirname "$EVOUT")"; cp "$KEPT" "$EVOUT"; echo "-> ${EVOUT#"$REPO"/}"
+  else echo "-> ${EVOUT#"$REPO"/} left unchanged: the run failed (exit $RC)"; fi
+fi
 exit "$RC"
