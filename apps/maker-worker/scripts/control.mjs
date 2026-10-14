@@ -6,6 +6,7 @@
 //                                              (status: mode, ladders, meters with the quoting tier and the reserve meter,
 //                                              RPC endpoints, push channel, watcher, and the treasury section)
 //   node scripts/control.mjs treasury          the last treasury pass: balances vs min/target, today's top-ups and caps
+//                                              (thresholds: config/worker.json + wrangler.toml CONFIG_OVERRIDES, merged)
 //   node scripts/control.mjs ticks [n]          the last n (<= 90) ticks, one line per strike: fair, guard, action,
 //                                              desired vs resting quote, and the live maker's published quote
 //   node scripts/control.mjs compare [maker.log] shadow vs the live Mac maker over those ticks (agreement %, and every
@@ -24,7 +25,7 @@
 //                                              if the ALERT_WEBHOOK_URL secret is set, on that push channel
 // A new control document is refused while the previous one has not been applied yet (--force replaces it).
 // Set XDG_CONFIG_HOME to your wrangler config dir if you use several Cloudflare logins.
-import { readFileSync, existsSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, mkdtempSync, rmSync, realpathSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -34,11 +35,31 @@ import { kvNamespaceId } from './deploy.mjs';
 import { prepareImport } from './import-budget.mjs';
 import { compare, macTxs } from './shadow-compare.mjs';
 
+// The Worker's own deepMerge, for `treasury` only. A .ts file plain Node may fail to load (Node < 22.18, a TypeScript
+// construct type stripping cannot erase), so it is loaded guarded: pull, disarm and arm never depend on it.
+let deepMerge, deepMergeErr;
+try {
+  ({ deepMerge } = await import('../../../packages/maker/src/config-core.ts'));
+} catch (e) {
+  deepMergeErr = e;
+}
+
 const here = join(dirname(fileURLToPath(import.meta.url)), '..');
 const [cmd, a1, a2] = process.argv.slice(2).filter((a) => a !== '--force');
-const ns = kvNamespaceId();
+// every command except the help reads or writes the control KV; the namespace id is checked before any of them runs
+export const KV_COMMANDS = ['status', 'summary', 'alerts', 'tick', 'ticks', 'compare', 'cron', 'treasury', 'result', 'arm', 'disarm', 'import-state', 'pull', 'resume', 'roll', 'reset-shadow', 'test-alert'];
+// run as a command; test/unit/control-treasury.test.ts imports the treasury helpers below without running one
+const isMain = (() => {
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+})();
+let nsId;
+const ns = () => (nsId ??= kvNamespaceId());
 const wr = (args, input) => {
-  const r = spawnSync('npx', ['wrangler', 'kv', 'key', ...args, '--namespace-id', ns], { cwd: here, encoding: 'utf8', input });
+  const r = spawnSync('npx', ['wrangler', 'kv', 'key', ...args, '--namespace-id', ns()], { cwd: here, encoding: 'utf8', input });
   if (r.status !== 0) {
     console.error((r.stderr || r.stdout).split('\n').filter((l) => !/out-of-date|update available|npm install --save-dev wrangler|After installation|Please update/.test(l)).join('\n').replace(/[0-9a-f]{32}/g, '<id>'));
     process.exit(r.status ?? 1);
@@ -54,7 +75,7 @@ const get = (key) => {
   }
 };
 const tryGet = (key) => {
-  const r = spawnSync('npx', ['wrangler', 'kv', 'key', 'get', key, '--namespace-id', ns], { cwd: here, encoding: 'utf8' });
+  const r = spawnSync('npx', ['wrangler', 'kv', 'key', 'get', key, '--namespace-id', ns()], { cwd: here, encoding: 'utf8' });
   if (r.status !== 0) return null;
   try {
     return JSON.parse(r.stdout);
@@ -82,101 +103,157 @@ const makerAddress = () => {
   return privateKeyToAccount(raw.startsWith('0x') ? raw : `0x${raw}`).address;
 };
 
-switch (cmd) {
-  case 'status':
-  case 'summary':
-  case 'alerts':
-    console.log(JSON.stringify(get(cmd === 'summary' ? 'shadow:summary' : cmd), null, 1));
-    break;
-  case 'tick':
-    console.log(JSON.stringify(get('tick:last'), null, 1));
-    break;
-  case 'ticks': {
-    const lines = get('ticks:recent');
-    const n = Math.max(1, Math.min(90, Number(a1 ?? 15)));
-    for (const t of (Array.isArray(lines) ? lines : []).slice(-n)) {
-      console.log(`${t.at} ${t.mode} ${t.ms}ms block ${t.block}${t.errors.length ? ` ERRORS ${t.errors.join(' | ')}` : ''}${t.alerts.length ? ` ALERTS ${t.alerts.join(' | ')}` : ''}`);
-      for (const x of [...t.kill.map((k) => `kill ${k}`), ...t.rolls.map((r) => `roll ${r}`), ...t.intents.map((i) => `would send: ${i}`), ...t.txs.map((i) => `sent: ${i}`), ...(t.treasury ?? []).map((i) => `treasury: ${i}`)]) console.log(`    ${x}`);
-      for (const s of t.strikes)
-        console.log(`    ${s.key} >=${s.k} fair ${s.fair ?? '-'} guard ${s.guard ?? '-'}${s.flags.length ? ` [${s.flags.join(',')}]` : ''} ${s.action ?? '-'} want ${s.desired} rest ${s.resting}${s.action && s.action !== 'none' ? ` (${s.reasons})` : ''}${s.mac ? ` | live maker: ${typeof s.mac === 'string' ? s.mac : `fair ${s.mac.fair} guard ${s.mac.guard} quote ${s.mac.quote} ${s.mac.mode ?? '-'}`}` : ''}`);
+/** CONFIG_OVERRIDES as wrangler.toml hands it to the Worker: the one-line TOML literal string under [vars] (the form
+ *  test/unit/infra.test.ts pins), parsed as src/env.ts does. undefined = not set; null = set but not readable here,
+ *  including any other spelling (quoted or dotted key, inline table, ...) on an uncommented line outside [env.*]. */
+export function tomlConfigOverrides(toml) {
+  let section = '';
+  let elsewhere = false;
+  for (const raw of toml.split('\n')) {
+    const l = raw.trim();
+    if (l.startsWith('[')) section = l.replace(/\s*#.*$/, '').replace(/\s+/g, '');
+    if (section === '[vars]' && /^CONFIG_OVERRIDES\s*=/.test(l)) {
+      const m = l.match(/^CONFIG_OVERRIDES\s*=\s*'([^']*)'\s*(#.*)?$/);
+      try {
+        const v = m ? (m[1].trim() ? JSON.parse(m[1]) : {}) : null;
+        return v && typeof v === 'object' && !Array.isArray(v) ? v : null;
+      } catch {
+        return null;
+      }
     }
-    break;
+    if (!l.startsWith('#') && l.includes('CONFIG_OVERRIDES') && !/^\[+env\./.test(section)) elsewhere = true;
   }
-  case 'compare': {
-    // shadow vs the live Mac maker over the last <= 90 ticks (the cutover review, docs/OPERATIONS.md section 8.2)
-    const log = a1 ? resolve(a1) : join(homedir(), 'isotherm-live/packages/maker/var/maker.log');
-    const r = compare(get('ticks:recent'), existsSync(log) ? macTxs(readFileSync(log, 'utf8')) : []);
-    if (!existsSync(log)) console.log(`(no ${log}: live-maker txs not checked)`);
-    console.log(`shadow ticks ${r.ticks} (${r.from} .. ${r.to}); strike decisions ${r.pairs}: agreement ${r.agreementPct}%, agreement or timing ${r.explainedPct}%`);
-    console.log(`  ${JSON.stringify(r.verdicts)}`);
-    console.log(`live-maker txs in the window ${r.macTxs}: ${JSON.stringify(r.macVerdicts)}`);
-    for (const i of r.items) console.log(`  ${i.at} ${i.key ?? ''} >=${i.k} ${i.verdict} | shadow: ${i.shadow ?? '-'} | live: ${i.live}`);
-    break;
+  return elsewhere ? null : undefined;
+}
+
+/** The treasury thresholds the Worker runs with: packages/maker/config/default.json, config/worker.json, then
+ *  CONFIG_OVERRIDES, deep-merged in that order with the Worker's own deepMerge (src/config.ts). These are local files:
+ *  the live Worker runs what was last deployed, and its status shows only the global cap (treasury.today.globalCap). */
+export function treasuryConfig({ defaults, overlay, toml }) {
+  if (!deepMerge) throw new Error(`cannot load packages/maker/src/config-core.ts (plain Node needs >= 22.18): ${deepMergeErr?.message}`, { cause: deepMergeErr });
+  const over = tomlConfigOverrides(toml);
+  const cfg = deepMerge(deepMerge(structuredClone(defaults), overlay), over ?? {});
+  const source =
+    over === undefined
+      ? 'config/worker.json (wrangler.toml sets no CONFIG_OVERRIDES)'
+      : over === null
+        ? "config/worker.json ONLY: wrangler.toml has a CONFIG_OVERRIDES this script cannot read (it reads one uncommented CONFIG_OVERRIDES = '<JSON object>' line under [vars]), so these may NOT be the live thresholds"
+        : 'config/worker.json + CONFIG_OVERRIDES from wrangler.toml, deep-merged as src/config.ts does';
+  return { cfg: cfg.treasury ?? null, source }; // null: no treasury in the merged config, the Worker runs no pass
+}
+
+/** The `treasury` command's report: the last pass (status.treasury) against the merged thresholds. */
+export function treasuryLines(st, { cfg, source }) {
+  const readable = st !== null && typeof st === 'object'; // get() returns the raw text when the status is not JSON
+  const t = (readable && st.treasury) || {};
+  if (!cfg) return [`treasury: off in the merged config (no treasury block), so the Worker runs no treasury pass; last pass in the status ${t.at ?? 'none'}${t.at ? ' (a recent one means the Worker runs another config)' : ''}`, `  thresholds: ${source}`];
+  const liveCap = t.today?.globalCap;
+  const out = [`treasury ${t.address ?? cfg.address}: ${t.mon ?? '?'} MON (floor ${cfg.floorMon}, alert below ${cfg.lowAlertMon})${typeof t.mon === 'number' && t.mon < cfg.lowAlertMon ? ' BELOW ALERT LINE' : ''}; key: ${t.key ?? '?'}; last pass ${t.at ?? (readable ? 'none' : '?')} (${t.mode ?? '-'})`];
+  out.push(`  thresholds: ${source}; global cap ${liveCap !== undefined ? 'from the live status' : `from those files (${readable ? 'no treasury pass in the status' : 'status unreadable: not JSON'})`}`);
+  if (liveCap !== undefined && liveCap !== cfg.globalDailyCapMon)
+    out.push(`  WARNING: the live global cap is ${liveCap} but these files give ${cfg.globalDailyCapMon}: the Worker runs another config (deployed from different files, or no treasury pass since the last deploy), so the min/target/caps below may not be the live ones`);
+  for (const [role, r] of Object.entries(cfg.roles)) {
+    const bal = t.balances?.[role];
+    const sent = t.today?.sent?.[role] ?? 0;
+    out.push(`  ${role.padEnd(9)} ${String(bal ?? '?').padStart(10)} MON  min ${r.minMon} target ${r.targetMon}  topped up today ${sent} of ${r.dailyCapMon}${bal !== undefined && bal < r.minMon ? '  BELOW MIN' : ''}`);
   }
-  case 'cron':
-    console.log(JSON.stringify(get('cron:last'), null, 1));
-    break;
-  case 'treasury': {
-    const st = get('status');
-    const t = st?.treasury ?? {};
-    const cfg = JSON.parse(readFileSync(join(here, 'config/worker.json'), 'utf8')).treasury ?? { roles: {} };
-    console.log(`treasury ${t.address ?? cfg.address}: ${t.mon ?? '?'} MON (floor ${cfg.floorMon}, alert below ${cfg.lowAlertMon}); key: ${t.key ?? '?'}; last pass ${t.at ?? 'none'} (${t.mode ?? '-'})`);
-    for (const [role, r] of Object.entries(cfg.roles)) {
-      const bal = t.balances?.[role];
-      const sent = t.today?.sent?.[role] ?? 0;
-      console.log(`  ${role.padEnd(9)} ${String(bal ?? '?').padStart(10)} MON  min ${r.minMon} target ${r.targetMon}  topped up today ${sent} of ${r.dailyCapMon}${bal !== undefined && bal < r.minMon ? '  BELOW MIN' : ''}`);
+  out.push(`  all roles today: ${t.today?.total ?? 0} of ${liveCap ?? cfg.globalDailyCapMon} MON (${t.today?.day ?? '-'})`);
+  for (const a of t.actions ?? []) out.push(`  last pass: ${a.role} ${a.balanceMon} MON -> ${a.amountMon} MON: ${a.outcome}${a.hash ? ` ${a.hash}` : ''}`);
+  return out;
+}
+
+if (isMain) {
+  if (KV_COMMANDS.includes(cmd)) ns(); // exits on a missing id before import-state writes its temp file or arm reads the key
+  switch (cmd) {
+    case 'status':
+    case 'summary':
+    case 'alerts':
+      console.log(JSON.stringify(get(cmd === 'summary' ? 'shadow:summary' : cmd), null, 1));
+      break;
+    case 'tick':
+      console.log(JSON.stringify(get('tick:last'), null, 1));
+      break;
+    case 'ticks': {
+      const lines = get('ticks:recent');
+      const n = Math.max(1, Math.min(90, Number(a1 ?? 15)));
+      for (const t of (Array.isArray(lines) ? lines : []).slice(-n)) {
+        console.log(`${t.at} ${t.mode} ${t.ms}ms block ${t.block}${t.errors.length ? ` ERRORS ${t.errors.join(' | ')}` : ''}${t.alerts.length ? ` ALERTS ${t.alerts.join(' | ')}` : ''}`);
+        for (const x of [...t.kill.map((k) => `kill ${k}`), ...t.rolls.map((r) => `roll ${r}`), ...t.intents.map((i) => `would send: ${i}`), ...t.txs.map((i) => `sent: ${i}`), ...(t.treasury ?? []).map((i) => `treasury: ${i}`)]) console.log(`    ${x}`);
+        for (const s of t.strikes)
+          console.log(`    ${s.key} >=${s.k} fair ${s.fair ?? '-'} guard ${s.guard ?? '-'}${s.flags.length ? ` [${s.flags.join(',')}]` : ''} ${s.action ?? '-'} want ${s.desired} rest ${s.resting}${s.action && s.action !== 'none' ? ` (${s.reasons})` : ''}${s.mac ? ` | live maker: ${typeof s.mac === 'string' ? s.mac : `fair ${s.mac.fair} guard ${s.mac.guard} quote ${s.mac.quote} ${s.mac.mode ?? '-'}`}` : ''}`);
+      }
+      break;
     }
-    console.log(`  all roles today: ${t.today?.total ?? 0} of ${cfg.globalDailyCapMon} MON (${t.today?.day ?? '-'})`);
-    for (const a of t.actions ?? []) console.log(`  last pass: ${a.role} ${a.balanceMon} MON -> ${a.amountMon} MON: ${a.outcome}${a.hash ? ` ${a.hash}` : ''}`);
-    break;
-  }
-  case 'result':
-    console.log(JSON.stringify({ applied: get('control:result'), document: get('control') }, null, 1));
-    break;
-  case 'arm':
-    putDoc({ live: true, confirm: makerAddress(), note: 'arm (scripts/control.mjs)' });
-    break;
-  case 'disarm':
-    putDoc({ live: false, note: 'disarm (scripts/control.mjs)' });
-    break;
-  case 'import-state': {
-    if (!a1) throw new Error('usage: import-state <state.json> [txs.jsonl]');
-    const p = resolve(a1);
-    const state = JSON.parse(readFileSync(p, 'utf8')); // must be JSON
-    const tx = a2 ? resolve(a2) : join(dirname(p), 'txs.jsonl');
-    const { state: out, notes } = prepareImport(state, existsSync(tx) ? readFileSync(tx, 'utf8') : null);
-    for (const n of notes) console.log(n);
-    console.log(`ladders: ${Object.values(out.ladders ?? {}).map((l) => `${l.key} ${l.status}`).join(', ') || 'none'}`);
-    const dir = mkdtempSync(join(tmpdir(), 'isotherm-import-'));
-    const f = join(dir, 'state.json');
-    // a fresh key per import: KV is eventually consistent, and a re-used key could serve an older import for ~60 s
-    const key = `import:state:${Date.now()}`;
-    try {
-      writeFileSync(f, JSON.stringify(out), { mode: 0o600 });
-      wr(['put', key, '--path', f]);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
+    case 'compare': {
+      // shadow vs the live Mac maker over the last <= 90 ticks (the cutover review, docs/OPERATIONS.md section 8.2)
+      const log = a1 ? resolve(a1) : join(homedir(), 'isotherm-live/packages/maker/var/maker.log');
+      const r = compare(get('ticks:recent'), existsSync(log) ? macTxs(readFileSync(log, 'utf8')) : []);
+      if (!existsSync(log)) console.log(`(no ${log}: live-maker txs not checked)`);
+      console.log(`shadow ticks ${r.ticks} (${r.from} .. ${r.to}); strike decisions ${r.pairs}: agreement ${r.agreementPct}%, agreement or timing ${r.explainedPct}%`);
+      console.log(`  ${JSON.stringify(r.verdicts)}`);
+      console.log(`live-maker txs in the window ${r.macTxs}: ${JSON.stringify(r.macVerdicts)}`);
+      for (const i of r.items) console.log(`  ${i.at} ${i.key ?? ''} >=${i.k} ${i.verdict} | shadow: ${i.shadow ?? '-'} | live: ${i.live}`);
+      break;
     }
-    putDoc({ importState: key });
-    break;
+    case 'cron':
+      console.log(JSON.stringify(get('cron:last'), null, 1));
+      break;
+    case 'treasury': {
+      const json = (p) => JSON.parse(readFileSync(join(here, p), 'utf8'));
+      const cfg = treasuryConfig({ defaults: json('../../packages/maker/config/default.json'), overlay: json('config/worker.json'), toml: readFileSync(join(here, 'wrangler.toml'), 'utf8') });
+      for (const l of treasuryLines(get('status'), cfg)) console.log(l);
+      break;
+    }
+    case 'result':
+      console.log(JSON.stringify({ applied: get('control:result'), document: get('control') }, null, 1));
+      break;
+    case 'arm':
+      putDoc({ live: true, confirm: makerAddress(), note: 'arm (scripts/control.mjs)' });
+      break;
+    case 'disarm':
+      putDoc({ live: false, note: 'disarm (scripts/control.mjs)' });
+      break;
+    case 'import-state': {
+      if (!a1) throw new Error('usage: import-state <state.json> [txs.jsonl]');
+      const p = resolve(a1);
+      const state = JSON.parse(readFileSync(p, 'utf8')); // must be JSON
+      const tx = a2 ? resolve(a2) : join(dirname(p), 'txs.jsonl');
+      const { state: out, notes } = prepareImport(state, existsSync(tx) ? readFileSync(tx, 'utf8') : null);
+      for (const n of notes) console.log(n);
+      console.log(`ladders: ${Object.values(out.ladders ?? {}).map((l) => `${l.key} ${l.status}`).join(', ') || 'none'}`);
+      const dir = mkdtempSync(join(tmpdir(), 'isotherm-import-'));
+      const f = join(dir, 'state.json');
+      // a fresh key per import: KV is eventually consistent, and a re-used key could serve an older import for ~60 s
+      const key = `import:state:${Date.now()}`;
+      try {
+        writeFileSync(f, JSON.stringify(out), { mode: 0o600 });
+        wr(['put', key, '--path', f]);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+      putDoc({ importState: key });
+      break;
+    }
+    case 'pull':
+      putDoc({ pull: a1 || 'all' });
+      break;
+    case 'resume':
+      if (!a1) throw new Error('usage: resume <ladder key>');
+      putDoc({ resume: a1 });
+      break;
+    case 'roll':
+      if (!a1 || !/^\d{4}-\d{2}-\d{2}$/.test(a2 ?? '')) throw new Error('usage: roll <ICAO> <YYYY-MM-DD>');
+      putDoc({ roll: [{ station: a1.toUpperCase(), date: a2 }] });
+      break;
+    case 'reset-shadow':
+      putDoc({ resetShadow: true });
+      break;
+    case 'test-alert':
+      putDoc({ testAlert: true, note: 'test alert (scripts/control.mjs)' });
+      break;
+    default: {
+      const src = readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n');
+      console.log(src.slice(0, src.findIndex((l) => !l.startsWith('//'))).join('\n')); // the header comment above
+    }
   }
-  case 'pull':
-    putDoc({ pull: a1 || 'all' });
-    break;
-  case 'resume':
-    if (!a1) throw new Error('usage: resume <ladder key>');
-    putDoc({ resume: a1 });
-    break;
-  case 'roll':
-    if (!a1 || !/^\d{4}-\d{2}-\d{2}$/.test(a2 ?? '')) throw new Error('usage: roll <ICAO> <YYYY-MM-DD>');
-    putDoc({ roll: [{ station: a1.toUpperCase(), date: a2 }] });
-    break;
-  case 'reset-shadow':
-    putDoc({ resetShadow: true });
-    break;
-  case 'test-alert':
-    putDoc({ testAlert: true, note: 'test alert (scripts/control.mjs)' });
-    break;
-  default:
-    console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(0, 23).join('\n'));
 }
