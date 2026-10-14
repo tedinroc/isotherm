@@ -136,14 +136,14 @@ describe("wrangler.toml CONFIG_OVERRIDES (judging override)", () => {
     expect(m, "CONFIG_OVERRIDES must be a one-line TOML literal string").not.toBeNull();
     const cfg = workerConfig(settingsFrom({ CONFIG_OVERRIDES: m![1] } as Env), "live");
     const b = budgetCfgOf(cfg);
-    expect(b.dailyCapMon).toEqual({ maker: 4, operator: 0.5, marketCreator: 0.8 });
+    expect(b.dailyCapMon).toEqual({ maker: 6, operator: 0.5, marketCreator: 0.8 });
     expect(b.softRatio).toBe(0.75);
     expect(b.rollCapMon).toEqual({ maker: 0.8, operator: 0.5, marketCreator: 0.8 });
     expect(b.reserveMon).toEqual({ maker: 0.8, operator: 0.1, marketCreator: 0.05 });
     const t = parseTreasuryCfg((cfg as any).treasury)!;
     expect(t.address).toBe("0x655dE7F5E6EdB42f26C422ED056F94BA9964BEed");
-    expect([t.floorMon, t.lowAlertMon, t.globalDailyCapMon]).toEqual([2, 20, 12]);
-    expect(t.roles.maker).toEqual({ address: "0xd572638F07829D1c3636400FB73CF34Ca6c7448a", minMon: 2, targetMon: 5, dailyCapMon: 6 });
+    expect([t.floorMon, t.lowAlertMon, t.globalDailyCapMon]).toEqual([2, 20, 14]);
+    expect(t.roles.maker).toEqual({ address: "0xd572638F07829D1c3636400FB73CF34Ca6c7448a", minMon: 2, targetMon: 6, dailyCapMon: 8 });
     expect(t.roles.operator).toEqual({ address: "0x602dbf3937558B1d18d76315635fD5410089bd51", minMon: 1.2, targetMon: 2.5, dailyCapMon: 1.5 });
     expect(t.roles.relayer).toEqual({ address: "0xb0b9F5E93C4D4Bb448eC96191393bf35C9E8429f", minMon: 3, targetMon: 8, dailyCapMon: 3 });
     expect(t.roles.attester).toEqual({ address: "0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9", minMon: 0.3, targetMon: 0.8, dailyCapMon: 0.5 });

@@ -59,12 +59,13 @@ RPC_RETRIES = "2"
 RPC_COOLDOWN_SEC = "30"
 STATIONS = "RCSS"
 # JUDGING OVERRIDE (2026-10-13, through 2026-10-31; revert after: delete this line and `npm run deploy -- --live`).
-# Deep-merged over config/worker.json (src/config.ts). Quoting cap 1.2 -> 4 MON per Taipei day (fair tracking alone hit
-# 1.2 every day and left the at-the-money books empty 10-20 h a day; replays of Oct 8-9 at 4.0 left none empty), soft
-# tier at 75 % (3.0); the maker's treasury top-up min/target/cap 2/5/6 (quoting 4 + reserve ~1 + roll 0.8); global
-# top-up cap 12 >= the sum of the role caps (11.2), so no role can starve another; TREASURY LOW alert at 20.
+# Deep-merged over config/worker.json (src/config.ts). Quoting cap 1.2 -> 4 MON per Taipei day on 2026-10-13 (fair
+# tracking alone hit 1.2 every day and left the at-the-money books empty 10-20 h a day), then 4 -> 6 on 2026-10-14: on
+# the ladder's own trading day the fair moves with every METAR and Polymarket tick (57 re-quotes, 3.29 MON by 11:00
+# Taipei on Oct 14). Soft tier at 75 % (4.5); the maker's treasury top-up min/target/cap 2/6/8 (quoting 6 + reserve ~1
+# + roll 0.8); global top-up cap 14 >= the sum of the role caps (13.2), so no role can starve another; LOW alert at 20.
 # Must stay a TOML literal string of valid JSON (a parse error stops every tick): test/unit/infra.test.ts reads it.
-CONFIG_OVERRIDES = '{"budget":{"dailyCapMon":{"maker":4},"softRatio":0.75,"reserveMon":{"maker":0.8}},"treasury":{"globalDailyCapMon":12,"lowAlertMon":20,"roles":{"maker":{"minMon":2,"targetMon":5,"dailyCapMon":6}}}}'
+CONFIG_OVERRIDES = '{"budget":{"dailyCapMon":{"maker":6},"softRatio":0.75,"reserveMon":{"maker":0.8}},"treasury":{"globalDailyCapMon":14,"lowAlertMon":20,"roles":{"maker":{"minMon":2,"targetMon":6,"dailyCapMon":8}}}}'
 ROLL_NOT_BEFORE_LOCAL = "12:00"
 ROLL_AUTO = "1"
 TICK_SEC = "60"
