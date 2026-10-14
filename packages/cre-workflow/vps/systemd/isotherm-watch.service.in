@@ -1,6 +1,8 @@
 # Isotherm stack watchdog on the VPS (systemd USER unit; vps/install-watch.sh fills in the package path and installs it
 # into ~/.config/systemd/user/). Started every 10 min by isotherm-watch.timer. READ-ONLY: GETs of the public API and
-# `cast` read calls; phone pushes through ntfy (vps/lib.sh push_alert). Its state is var/watch/ only.
+# of the site's index.html, the web app's RPCs read as a browser reads them (eth_blockNumber and its CORS preflight)
+# and `cast` read calls; phone pushes through ntfy (vps/lib.sh push_alert). Its state is var/watch/ only (it reads,
+# never writes, the settlement job's var/evidence/settle-runs.jsonl).
 # It shares the 1-CPU VPS with the hourly :05 settlement job, so it runs niced, idle-I/O and memory-capped, and never
 # starts at :03-:09 (the timer's minutes, plus a guard in stack-watch.sh for a Persistent catch-up).
 [Unit]
@@ -12,7 +14,8 @@ Type=oneshot
 WorkingDirectory=@PKG@
 Environment=ISOTHERM_WATCH_DIR=@PKG@/var/watch
 ExecStart=/bin/bash @PKG@/vps/stack-watch.sh
-# a run takes a few seconds; worst case about 110 s: 4 GETs (10 s cap each, no retry) and the cast reads (60 s budget)
+# a run takes a few seconds; worst case about 110 s: 4 GETs (10 s cap each, no retry; the web RPC reads run alongside
+# them and end inside their 40 s) and the cast reads (60 s budget)
 TimeoutStartSec=150
 UMask=0077
 Nice=15

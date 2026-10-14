@@ -1,4 +1,4 @@
-# 2026-10-13T14:44:04Z stack-watch-unit: bash 5.2.15(1)-release on Linux aarch64, node v22.23.3; fixtures, stubs, no network, no key, 0 MON
+# 2026-10-14T05:59:15Z stack-watch-unit: bash 5.2.15(1)-release on Linux aarch64, node v22.23.3; fixtures, stubs, no network, no key, 0 MON
 # scratch package <scratch>/root/packages/cre-workflow (vps/stack-watch.sh, stack-watch.mjs and lib.sh symlinked to the code under test)
 
 ## Z. first run, dry run, minute guard, lock, var/ isolation
@@ -18,7 +18,7 @@
     | [watch] skipped: minute :05 is next to the :05 settlement run (the timer runs at :00/:10/...; --force runs anyway)
     2026-10-14T06:05:00Z exit 0: 0 push(es) 
   PASS  at :05 the run is skipped (no read, no push, no state)
-    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.50 MON (< 20, the judging line); it tops up the maker, operator, relayer and attester, up to 12 MON a day. Fund it from the deployer: cd docs/evidence/golive && node fund.mjs ...
+    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.50 MON (< 20, the judging line); it tops up the maker, operator, relayer, attester and guardian, up to 14 MON a day. Fund it from the deployer: cd docs/evidence/golive && nod ...
     | [vps] push: sent (HTTP 200)
     2026-10-14T06:09:00Z exit 0: 1 push(es) TREASURY LOW/high
   PASS  --force runs at :09
@@ -28,7 +28,7 @@
     | [watch] clearing: TREASURY LOW (not seen since 06:40Z; over after 30 min without it, then CLEARED)
     2026-10-14T06:40:00Z exit 0: 0 push(es) 
   PASS  a stale lock (> 10 min): taken over; removed at exit
-  PASS  default state dir: var<repo>atch only, even with the settlement unit's ISOTHERM_STATE_DIR inherited (var/ holds: watch )
+  PASS  default state dir: var/watch only, even with the settlement unit's ISOTHERM_STATE_DIR inherited (var/ holds: watch )
     | [watch] clearing: TREASURY LOW (not seen since 06:40Z; over after 30 min without it, then CLEARED)
     2026-10-14T07:00:00Z exit 0: 0 push(es) 
   PASS  malformed API data (null ladders, strikes not a list, null settlements, no limits): no crash, exit 0
@@ -41,6 +41,30 @@
     | [vps] push: sent (HTTP 200)
     2026-10-14T07:20:00Z exit 1: 1 push(es) WATCH ERROR/default
   PASS  the evaluator itself fails: exit 1 and one WATCH ERROR push (6 h repeat), so a broken watch is not silent
+    | CURL -sS --max-time 10 -A isotherm-stack-watch/1 -H accept: application/json -o <scratch>/tmp/isotherm-watch.NepIPt/health.json -w %{http_code} https://isotherm.pages.dev/api/health
+    | CURL -sS --max-time 10 -A isotherm-stack-watch/1 -H accept: application/json -o <scratch>/tmp/isotherm-watch.NepIPt/settlements.json -w %{http_code} https://isotherm.pages.dev/api/settlements
+    | CURL -sS --max-time 10 -A isotherm-stack-watch/1 -H accept: application/json -o <scratch>/tmp/isotherm-watch.NepIPt/snapshot.json -w %{http_code} https://isotherm.pages.dev/api/snapshot
+    | CURL -sS --max-time 10 -A isotherm-stack-watch/1 -H accept: application/json -o <scratch>/tmp/isotherm-watch.NepIPt/stats.json -w %{http_code} https://isotherm.pages.dev/api/stats
+    | CURL -sS --max-time 10 -A isotherm-stack-watch/1 -H content-type: application/json -H Origin: https://isotherm.pages.dev --data {"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]} -D <scratch>/tmp/isotherm-watch.NepIPt/webrpc.headers -o <scratch>/tmp/isotherm-watch.NepIPt/webrpc.json -w %{http_code} https://testnet-rpc.monad.xyz
+    | CURL -sS --max-time 10 -A isotherm-stack-watch/1 -X OPTIONS -H Origin: https://isotherm.pages.dev -H Access-Control-Request-Method: POST -H Access-Control-Request-Headers: content-type -D <scratch>/tmp/isotherm-watch.NepIPt/webrpc-pre.headers -o /dev/null -w %{http_code} https://testnet-rpc.monad.xyz
+    | CURL -sS --max-time 10 -A isotherm-stack-watch/1 https://isotherm.pages.dev/
+  PASS  live path: 4 GETs of the API, and ONE POST, eth_blockNumber to https://testnet-rpc.monad.xyz with the site's Origin
+  PASS  live path: its CORS preflight, ONE OPTIONS with the site's Origin, POST and content-type; one GET of the site's index.html (unreadable here: no fallback read)
+  PASS  live path, nothing answers: WEB RPC DOWN and the API both pending (1/3), the site's fallbacks unknown
+  PASS  live path: only cast balance reads, 5 roles (treasury, maker, operator, guardian, attester) x 2 RPCs
+    | CURL -sS --max-time 10 -A isotherm-stack-watch/1 -H content-type: application/json -H Origin: https://isotherm.pages.dev --data {"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]} -D <scratch>/tmp/isotherm-watch.6p4klT/webfb1.headers -o <scratch>/tmp/isotherm-watch.6p4klT/webfb1.json -w %{http_code} https://rpc.ankr.com/monad_testnet
+    | CURL -sS --max-time 10 -A isotherm-stack-watch/1 -H content-type: application/json -H Origin: https://isotherm.pages.dev --data {"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]} -D <scratch>/tmp/isotherm-watch.6p4klT/webfb2.headers -o <scratch>/tmp/isotherm-watch.6p4klT/webfb2.json -w %{http_code} https://10143.rpc.thirdweb.com
+    | CURL -sS --max-time 10 -A isotherm-stack-watch/1 -H content-type: application/json -H Origin: https://isotherm.pages.dev --data {"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]} -D <scratch>/tmp/isotherm-watch.6p4klT/webrpc.headers -o <scratch>/tmp/isotherm-watch.6p4klT/webrpc.json -w %{http_code} https://testnet-rpc.monad.xyz
+    | CURL -sS --max-time 10 -A isotherm-stack-watch/1 -X OPTIONS -H Origin: https://isotherm.pages.dev -H Access-Control-Request-Method: POST -H Access-Control-Request-Headers: content-type -D <scratch>/tmp/isotherm-watch.6p4klT/webfb1-pre.headers -o /dev/null -w %{http_code} https://rpc.ankr.com/monad_testnet
+    | CURL -sS --max-time 10 -A isotherm-stack-watch/1 -X OPTIONS -H Origin: https://isotherm.pages.dev -H Access-Control-Request-Method: POST -H Access-Control-Request-Headers: content-type -D <scratch>/tmp/isotherm-watch.6p4klT/webfb2-pre.headers -o /dev/null -w %{http_code} https://10143.rpc.thirdweb.com
+    | CURL -sS --max-time 10 -A isotherm-stack-watch/1 -X OPTIONS -H Origin: https://isotherm.pages.dev -H Access-Control-Request-Method: POST -H Access-Control-Request-Headers: content-type -D <scratch>/tmp/isotherm-watch.6p4klT/webrpc-pre.headers -o /dev/null -w %{http_code} https://testnet-rpc.monad.xyz
+    | CURL -sS --max-time 10 -A isotherm-stack-watch/1 https://isotherm.pages.dev/
+    | CURL -sS --max-time 20 -A isotherm-stack-watch/1 -o <scratch>/tmp/isotherm-watch.6p4klT/site.js -w %{http_code} https://isotherm.pages.dev/assets/index-Test1234.js
+  PASS  a new build: its script read once, its 2 fallbacks cached in var/watch/web-build and each read (eth_blockNumber + preflight)
+  PASS  the same build on the next run: index.html only (the script not read again), the cached fallbacks read
+  PASS  --dry-run reads the script but caches nothing (no state)
+  PASS  a script that does not even list the web RPC (not the app's config): nothing cached, no fallback assumed
+  PASS  --help prints the header comment and stops at the first line of code (41 lines)
 
 ## A. MAKER STALLED
     | [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-14 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
@@ -98,18 +122,18 @@
     | [watch] delivered: daily digest 2026-10-14 (try 1)
     2026-10-14T06:50:00Z exit 0: 0 push(es) 
   PASS  50 min: no push
-    | [vps] ALERT: ISOTHERM WATCH: BOOKS EMPTY | 1 at-the-money strike(s) without a maker quote on one side for over 1 h 00 min: RCSS 2026-10-15 >=30C (fair 0.50) no bid since 06:00Z. Judges cannot trade there. Likely the quoting cap (4 MON per T ...
+    | [vps] ALERT: ISOTHERM WATCH: BOOKS EMPTY | 1 at-the-money strike(s) without a maker quote on one side for over 1 h 00 min: RCSS 2026-10-15 >=30C (fair 0.50) no bid since 06:00Z. Judges cannot trade there. Likely the quoting cap (6 MON per T ...
     | [vps] push: sent (HTTP 200)
     2026-10-14T07:00:00Z exit 0: 1 push(es) BOOKS EMPTY/default
   PASS  60 min: BOOKS EMPTY (default), the strike and the likely cause named
-    body: 1 at-the-money strike(s) without a maker quote on one side for over 1 h 00 min: RCSS 2026-10-15 >=30C (fair 0.50) no bid since 06:00Z. Judges cannot trade there. Likely the quoting cap (4 MON per Taipei day, resets 16:00 UTC) is spent or the maker cannot send: from apps/maker-worker, node scripts/control.mjs status (budget.tier, errors). Cap: CONFIG_OVERRIDES, docs/OPERATIONS.md section 0. A deliberate pull: stack-watch.sh --snooze HOURS on the VPS.
+    body: 1 at-the-money strike(s) without a maker quote on one side for over 1 h 00 min: RCSS 2026-10-15 >=30C (fair 0.50) no bid since 06:00Z. Judges cannot trade there. Likely the quoting cap (6 MON per Taipei day, resets 16:00 UTC) is spent or the maker cannot send: from apps/maker-worker, node scripts/control.mjs status (budget.tier, errors). Cap: CONFIG_OVERRIDES, docs/OPERATIONS.md section 0. A deliberate pull: stack-watch.sh --snooze HOURS on the VPS.
     | [watch] clearing: BOOKS EMPTY (not seen since 07:10Z; over after 30 min without it, then CLEARED)
     2026-10-14T07:10:00Z exit 0: 0 push(es) 
     | [vps] ALERT: ISOTHERM WATCH: CLEARED BOOKS EMPTY | every at-the-money strike has a maker bid and ask again (or left 0.10-0.90). Open since 2026-10-14T07:00Z, not seen since 2026-10-14T07:10Z. No action needed.
     | [vps] push: sent (HTTP 200)
     2026-10-14T07:40:00Z exit 0: 1 push(es) CLEARED BOOKS EMPTY/low
   PASS  quoted again at 07:10Z: CLEARED at 07:40Z (30 min later)
-    | [vps] ALERT: ISOTHERM WATCH: BOOKS EMPTY | 1 at-the-money strike(s) without a maker quote on one side for over 1 h 00 min: RCSS 2026-10-14 >=30C (fair 0.10) no ask since 06:00Z. Judges cannot trade there. Likely the quoting cap (4 MON per T ...
+    | [vps] ALERT: ISOTHERM WATCH: BOOKS EMPTY | 1 at-the-money strike(s) without a maker quote on one side for over 1 h 00 min: RCSS 2026-10-14 >=30C (fair 0.10) no ask since 06:00Z. Judges cannot trade there. Likely the quoting cap (6 MON per T ...
     | [vps] push: 'ISOTHERM WATCH: BOOKS EMPTY' already pushed 0 min ago; not repeated
     2026-10-14T08:10:00Z exit 0: 0 push(es) 
   PASS  after 2 h: fair 0.95 and 0.09 never count; fair 0.10 with its ask filled (askRemaining 0) does (pushed at 07:00, held since)
@@ -119,7 +143,7 @@
     | [watch] BOOKS EMPTY held: inside a close window (closeTime - 15 min to + 5 min: the kill switch); 1 strike(s) due
     2026-10-14T09:30:00Z exit 0: 0 push(es) 
   PASS  09:20 and 09:30Z (60 and 70 min): held, inside 09:15-09:35
-    | [vps] ALERT: ISOTHERM WATCH: BOOKS EMPTY | 1 at-the-money strike(s) without a maker quote on one side for over 1 h 00 min: RCSS 2026-10-15 >=29C (fair 0.85) no bid since 08:20Z. Judges cannot trade there. Likely the quoting cap (4 MON per T ...
+    | [vps] ALERT: ISOTHERM WATCH: BOOKS EMPTY | 1 at-the-money strike(s) without a maker quote on one side for over 1 h 00 min: RCSS 2026-10-15 >=29C (fair 0.85) no bid since 08:20Z. Judges cannot trade there. Likely the quoting cap (6 MON per T ...
     | [vps] push: sent (HTTP 200)
     2026-10-14T09:40:00Z exit 0: 1 push(es) BOOKS EMPTY/default
   PASS  09:40Z: pushed for the 10-15 ladder only (the 10-14 one closed; its kill switch pulled it by design)
@@ -271,12 +295,12 @@
     | [vps] push: sent (HTTP 200)
     2026-10-14T05:00:00Z exit 0: 1 push(es) daily digest 2026-10-14/default
   PASS  16/17 drips, 27/28 relays at 05:00Z: nothing
-    | [vps] ALERT: ISOTHERM WATCH: DRIP CAP USED EARLY | 17/17 drips used by 07:50 UTC (the counter resets 00:00 UTC). If no judges are active, it is likely a bot: set DRIP_MON back to 0.15 or pause drips (DRIP_ENABLED = "0" in apps/api<repo>rangler. ...
+    | [vps] ALERT: ISOTHERM WATCH: DRIP CAP USED EARLY | 17/17 drips used by 07:50 UTC (the counter resets 00:00 UTC). If no judges are active, it is likely a bot: set DRIP_MON back to 0.15 or pause drips (DRIP_ENABLED = "0" in apps/api/wrangler. ...
     | [vps] push: sent (HTTP 200)
     | [watch] delivered: daily digest 2026-10-14 (try 1)
     2026-10-14T07:50:00Z exit 0: 1 push(es) DRIP CAP USED EARLY/high
   PASS  17/17 drips by 07:50Z: DRIP CAP USED EARLY, high, the action and OPERATIONS section 0
-    body: 17/17 drips used by 07:50 UTC (the counter resets 00:00 UTC). If no judges are active, it is likely a bot: set DRIP_MON back to 0.15 or pause drips (DRIP_ENABLED = "0" in apps/api<repo>rangler.toml, then npm run deploy in apps/api): see docs/OPERATIONS.md section 0. New users get none until 00:00 UTC.
+    body: 17/17 drips used by 07:50 UTC (the counter resets 00:00 UTC). If no judges are active, it is likely a bot: set DRIP_MON back to 0.15 or pause drips (DRIP_ENABLED = "0" in apps/api/wrangler.toml, then npm run deploy in apps/api): see docs/OPERATIONS.md section 0. New users get none until 00:00 UTC.
     | [watch] delivered: DRIP CAP USED EARLY (try 1)
     2026-10-14T08:00:00Z exit 0: 0 push(es) 
   PASS  08:00Z, still full: no second push that day (and no CAP REACHED)
@@ -284,7 +308,7 @@
     | [vps] push: sent (HTTP 200)
     2026-10-14T08:10:00Z exit 0: 1 push(es) RELAY CAP REACHED/low
   PASS  28/28 relays first seen at 08:10Z: RELAY CAP REACHED at LOW priority (no sound at night), not EARLY
-    | [vps] ALERT: ISOTHERM WATCH: DRIP CAP USED EARLY | 17/17 drips used by 02:00 UTC (the counter resets 00:00 UTC). If no judges are active, it is likely a bot: set DRIP_MON back to 0.15 or pause drips (DRIP_ENABLED = "0" in apps/api<repo>rangler. ...
+    | [vps] ALERT: ISOTHERM WATCH: DRIP CAP USED EARLY | 17/17 drips used by 02:00 UTC (the counter resets 00:00 UTC). If no judges are active, it is likely a bot: set DRIP_MON back to 0.15 or pause drips (DRIP_ENABLED = "0" in apps/api/wrangler. ...
     | [vps] push: sent (HTTP 200)
     | [vps] ALERT: ISOTHERM WATCH: RELAY CAP USED EARLY | 28/28 relayed mints used by 02:00 UTC (the counter resets 00:00 UTC). If no judges are active, it is likely a bot: lower RELAY_DAILY_CAP / RELAY_PER_IP_PER_DAY or pause relays (RELAY_ENABL ...
     | [vps] push: sent (HTTP 200)
@@ -295,14 +319,14 @@
   PASS  the next UTC day, full by 02:00Z: both CAP USED EARLY again (relays: lower the caps or RELAY_ENABLED=0)
 
 ## O. a one-off push whose delivery failed is re-sent (the review's probe: ntfy answers 429 once)
-    | [vps] ALERT: ISOTHERM WATCH: DRIP CAP USED EARLY | 17/17 drips used by 03:00 UTC (the counter resets 00:00 UTC). If no judges are active, it is likely a bot: set DRIP_MON back to 0.15 or pause drips (DRIP_ENABLED = "0" in apps/api<repo>rangler. ...
+    | [vps] ALERT: ISOTHERM WATCH: DRIP CAP USED EARLY | 17/17 drips used by 03:00 UTC (the counter resets 00:00 UTC). If no judges are active, it is likely a bot: set DRIP_MON back to 0.15 or pause drips (DRIP_ENABLED = "0" in apps/api/wrangler. ...
     | [vps] push: FAILED (HTTP 429); the alert stays in <scratch>/st-o/alerts/ALERTS.log
     | [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-14 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
     | [vps] push: FAILED (HTTP 429); the alert stays in <scratch>/st-o/alerts/ALERTS.log
     2026-10-14T03:00:00Z exit 0: 0 push(es) 
   PASS  03:00Z, 17/17 drips: DRIP CAP USED EARLY and the first digest both answered 429: nothing delivered
     | [watch] re-sending (try 2; not delivered since 2026-10-14T03:00Z): DRIP CAP USED EARLY
-    | [vps] ALERT: ISOTHERM WATCH: DRIP CAP USED EARLY | 17/17 drips used by 03:00 UTC (the counter resets 00:00 UTC). If no judges are active, it is likely a bot: set DRIP_MON back to 0.15 or pause drips (DRIP_ENABLED = "0" in apps/api<repo>rangler. ...
+    | [vps] ALERT: ISOTHERM WATCH: DRIP CAP USED EARLY | 17/17 drips used by 03:00 UTC (the counter resets 00:00 UTC). If no judges are active, it is likely a bot: set DRIP_MON back to 0.15 or pause drips (DRIP_ENABLED = "0" in apps/api/wrangler. ...
     | [vps] push: sent (HTTP 200)
     | [watch] re-sending (try 2; not delivered since 2026-10-14T03:00Z): daily digest 2026-10-14
     | [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-14 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
@@ -319,7 +343,7 @@
     | [vps] push: sent (HTTP 200)
     2026-10-14T06:00:00Z exit 0: 1 push(es) daily digest 2026-10-14/default
   PASS  treasury 20.0, maker 1.0, operator 0.9 (the lines): nothing but the first digest
-    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.90 MON (< 20, the judging line); it tops up the maker, operator, relayer and attester, up to 12 MON a day. Fund it from the deployer: cd docs/evidence/golive && node fund.mjs ...
+    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.90 MON (< 20, the judging line); it tops up the maker, operator, relayer, attester and guardian, up to 14 MON a day. Fund it from the deployer: cd docs/evidence/golive && nod ...
     | [vps] push: sent (HTTP 200)
     | [watch] delivered: daily digest 2026-10-14 (try 1)
     2026-10-14T06:10:00Z exit 0: 1 push(es) TREASURY LOW/high
@@ -362,6 +386,172 @@
     | [vps] push: sent (HTTP 200)
     2026-10-14T05:20:00Z exit 0: 1 push(es) OPERATOR LOW/high
   PASS  operator 0.85 for 20 min: OPERATOR LOW (the roll needs ~0.85)
+    | [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-14 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:00:00Z exit 0: 1 push(es) daily digest 2026-10-14/default
+  PASS  guardian 0.03 and attester 0.08 (the lines; the settlement job's own push warns below 0.1): nothing but the first digest
+    | [watch] pending: GUARDIAN LOW (first seen 2026-10-14T06:10Z, run 1; pushed if it lasts 20 min over 3 runs)
+    | [watch] pending: ATTESTER LOW (first seen 2026-10-14T06:10Z, run 1; pushed if it lasts 20 min over 3 runs)
+    | [watch] delivered: daily digest 2026-10-14 (try 1)
+    2026-10-14T06:10:00Z exit 0: 0 push(es) 
+    | [watch] pending: GUARDIAN LOW (first seen 2026-10-14T06:10Z, run 2; pushed if it lasts 20 min over 3 runs)
+    | [watch] pending: ATTESTER LOW (first seen 2026-10-14T06:10Z, run 2; pushed if it lasts 20 min over 3 runs)
+    2026-10-14T06:20:00Z exit 0: 0 push(es) 
+    | [vps] ALERT: ISOTHERM WATCH: GUARDIAN LOW | The guardian holds 0.0290 MON (< 0.03) since 2026-10-14T06:10Z; the treasury (158.62 MON) tops it up below 0.05, so its top-ups are failing. It pays the gas of challenge() (~0.011 MON: the Worker  ...
+    | [vps] push: sent (HTTP 200)
+    | [vps] ALERT: ISOTHERM WATCH: ATTESTER LOW | The attester holds 0.0790 MON (< 0.08, about 3 reports at 0.0204) since 2026-10-14T06:10Z; the treasury (158.62 MON) tops it up below 0.3, so its top-ups are failing. It sends every settlement rep ...
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:30:00Z exit 0: 2 push(es) GUARDIAN LOW/high,ATTESTER LOW/high
+  PASS  guardian 0.029, attester 0.079 MON from 06:10Z: pending, then both LOW at 06:30Z (20 min, 3 runs), high
+  PASS  the bodies say what each pays for (a challenge; the reports left) and how to fund it
+    body: The guardian holds 0.0290 MON (< 0.03) since 2026-10-14T06:10Z; the treasury (158.62 MON) tops it up below 0.05, so its top-ups are failing. It pays the gas of challenge() (~0.011 MON: the Worker challenges a wrong settlement inside the 900 s window) and pause(); without it a wrong result pays out. From apps/maker-worker: node scripts/control.mjs treasury; by hand: cd docs/evidence/golive && node fund.mjs guardian=0.15 (docs/OPERATIONS.md sections 3 and 4).
+    body: The attester holds 0.0790 MON (< 0.08, about 3 reports at 0.0204) since 2026-10-14T06:10Z; the treasury (158.62 MON) tops it up below 0.3, so its top-ups are failing. It sends every settlement report (18:05 UTC, retried hourly): without gas no day settles, and the Worker voids a day 48 h after its end. From apps/maker-worker: node scripts/control.mjs treasury; by hand: cd docs/evidence/golive && node fund.mjs attester=0.5 (docs/OPERATIONS.md sections 2 and 4).
+    2026-10-14T06:40:00Z exit 0: 0 push(es) 
+  PASS  both reads fail: no CLEARED, both stay open in the state
+    | [watch] clearing: GUARDIAN LOW (not seen since 06:50Z; over after 30 min without it, then CLEARED)
+    | [watch] clearing: ATTESTER LOW (not seen since 06:50Z; over after 30 min without it, then CLEARED)
+    2026-10-14T06:50:00Z exit 0: 0 push(es) 
+    | [vps] ALERT: ISOTHERM WATCH: CLEARED GUARDIAN LOW | the guardian holds 0.0500 MON. Open since 2026-10-14T06:10Z, not seen since 2026-10-14T06:50Z. No action needed.
+    | [vps] push: sent (HTTP 200)
+    | [vps] ALERT: ISOTHERM WATCH: CLEARED ATTESTER LOW | the attester holds 0.7776 MON. Open since 2026-10-14T06:10Z, not seen since 2026-10-14T06:50Z. No action needed.
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T07:20:00Z exit 0: 2 push(es) CLEARED GUARDIAN LOW/low,CLEARED ATTESTER LOW/low
+  PASS  topped up at 06:50Z: both CLEARED at 07:20Z
+    | [watch] pending: GUARDIAN LOW (first seen 2026-10-14T18:10Z, run 1; pushed if it lasts 20 min over 3 runs)
+    | [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-14 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T18:10:00Z exit 0: 1 push(es) daily digest 2026-10-14/default
+    | [watch] clearing: GUARDIAN LOW (not seen since 18:20Z; over after 30 min without it)
+    | [watch] delivered: daily digest 2026-10-14 (try 1)
+    2026-10-14T18:20:00Z exit 0: 0 push(es) 
+  PASS  a dip (two challenges: 0.028), topped up by the next run: no push
+
+## R. WEB RPC DOWN (the web app's RPC read as a browser on the site reads it; the deployed build's fallbacks)
+    | [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-14 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:00:00Z exit 0: 1 push(es) daily digest 2026-10-14/default
+  PASS  answering: nothing pushed but the first digest, which shows the block
+    | [watch] pending: WEB RPC DOWN: https://testnet-rpc.monad.xyz failed 1/3 runs in a row (no answer); pushed from the 3rd, high
+    | [watch] delivered: daily digest 2026-10-14 (try 1)
+    2026-10-14T06:10:00Z exit 0: 0 push(es) 
+    | [watch] pending: WEB RPC DOWN: https://testnet-rpc.monad.xyz failed 2/3 runs in a row (no answer); pushed from the 3rd, high
+    2026-10-14T06:20:00Z exit 0: 0 push(es) 
+  PASS  no answer on the 1st and 2nd run: pending, no push
+    | [vps] ALERT: ISOTHERM WATCH: WEB RPC DOWN | 3 run(s) in a row since 2026-10-14T06:10Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): HTTP 503. The web app  ...
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:30:00Z exit 0: 1 push(es) WEB RPC DOWN/high
+  PASS  the 3rd failed run in a row (HTTP 503): WEB RPC DOWN, high (the deployed build has no fallback), since the first failure, with the check to run from the Mac (headers shown) and, for a network failure, this VPS's network as a suspect
+    body: 3 run(s) in a row since 2026-10-14T06:10Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): HTTP 503. The web app reads prices, trades and signs (Dynamic) through it first (apps/web/src/config.ts RPC_URL), and the deployed site (/assets/index-Cd8KBz0E.js) has no fallback RPC: judges see no prices and cannot trade while it fails. The API, the maker and this watch read Ankr first, so nothing else notices. Check from the Mac: curl -s -D - -H 'content-type: application/json' -H 'Origin: https://isotherm.pages.dev' --data '{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]}' https://testnet-rpc.monad.xyz ; if it answers there (HTTP 200, a block number, access-control-allow-origin https://isotherm.pages.dev) and WATCH CANNOT REACH THE API is open too, suspect this VPS's network. Known and nothing to fix: stack-watch.sh --snooze-web HOURS on the VPS.
+    | [vps] ALERT: ISOTHERM WATCH: WEB RPC DOWN | 4 run(s) in a row since 2026-10-14T06:10Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): no answer. The web app ...
+    | [vps] push: 'ISOTHERM WATCH: WEB RPC DOWN' already pushed 0 min ago; not repeated
+    2026-10-14T06:40:00Z exit 0: 0 push(es) 
+  PASS  the 4th: not repeated (3 h window)
+    | [watch] clearing: WEB RPC DOWN (not seen since 06:50Z; over after 30 min without it, then CLEARED)
+    2026-10-14T06:50:00Z exit 0: 0 push(es) 
+    | [vps] ALERT: ISOTHERM WATCH: CLEARED WEB RPC DOWN | https://testnet-rpc.monad.xyz answers the site again (block 2874000). Open since 2026-10-14T06:10Z, not seen since 2026-10-14T06:50Z. No action needed.
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T07:20:00Z exit 0: 1 push(es) CLEARED WEB RPC DOWN/low
+  PASS  answering again from 06:50Z: CLEARED (low) at 07:20Z
+    | [watch] pending: WEB RPC DOWN: https://testnet-rpc.monad.xyz failed 1/3 runs in a row (no answer); pushed from the 3rd, high
+    | [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-14 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:00:00Z exit 0: 1 push(es) daily digest 2026-10-14/default
+    | [watch] pending: WEB RPC DOWN: https://testnet-rpc.monad.xyz failed 2/3 runs in a row (no answer); pushed from the 3rd, high
+    | [watch] delivered: daily digest 2026-10-14 (try 1)
+    2026-10-14T06:10:00Z exit 0: 0 push(es) 
+    | [watch] clearing: WEB RPC DOWN (not seen since 06:20Z; over after 30 min without it)
+    2026-10-14T06:20:00Z exit 0: 0 push(es) 
+    | [watch] pending: WEB RPC DOWN: https://testnet-rpc.monad.xyz failed 1/3 runs in a row (no answer); pushed from the 3rd, high
+    2026-10-14T06:30:00Z exit 0: 0 push(es) 
+    | [watch] pending: WEB RPC DOWN: https://testnet-rpc.monad.xyz failed 2/3 runs in a row (no answer); pushed from the 3rd, high
+    2026-10-14T06:40:00Z exit 0: 0 push(es) 
+  PASS  fail, fail, ok, fail, fail: no push (a good run resets the count)
+    | [vps] ALERT: ISOTHERM WATCH: WEB RPC DOWN | 3 run(s) in a row since 2026-10-14T06:00Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): no block number (error ...
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:20:00Z exit 0: 1 push(es) WEB RPC DOWN/high
+  PASS  HTTP 200 with a JSON-RPC error: WEB RPC DOWN on the 3rd run, saying "no block number (error -32005: request limit reached)"
+    | [vps] ALERT: ISOTHERM WATCH: WEB RPC DOWN | 3 run(s) in a row since 2026-10-14T06:00Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): not JSON. The web app  ...
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:20:00Z exit 0: 1 push(es) WEB RPC DOWN/high
+  PASS  HTTP 200 with an HTML page: WEB RPC DOWN on the 3rd run, saying ": not JSON"
+    | [vps] ALERT: ISOTHERM WATCH: WEB RPC DOWN | 3 run(s) in a row since 2026-10-14T06:00Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): its CORS header (acces ...
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:20:00Z exit 0: 1 push(es) WEB RPC DOWN/high
+  PASS  a CORS header for another origin (browsers drop the answer): WEB RPC DOWN on the 3rd run, saying "access-control-allow-origin "https://example.org") does not allow https://isotherm.pages.dev"
+    | [vps] ALERT: ISOTHERM WATCH: WEB RPC DOWN | 3 run(s) in a row since 2026-10-14T06:00Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): its CORS header (acces ...
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:20:00Z exit 0: 1 push(es) WEB RPC DOWN/high
+  PASS  no CORS header at all: WEB RPC DOWN on the 3rd run, saying "access-control-allow-origin missing"
+    | [vps] ALERT: ISOTHERM WATCH: WEB RPC DOWN | 3 run(s) in a row since 2026-10-14T06:00Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): its CORS preflight (OP ...
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:20:00Z exit 0: 1 push(es) WEB RPC DOWN/high
+  PASS  the preflight refused (HTTP 403), the POST itself fine: WEB RPC DOWN on the 3rd run, saying "its CORS preflight (OPTIONS): HTTP 403, so browsers never send the read"
+    | [vps] ALERT: ISOTHERM WATCH: WEB RPC DOWN | 3 run(s) in a row since 2026-10-14T06:00Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): its CORS preflight (OP ...
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:20:00Z exit 0: 1 push(es) WEB RPC DOWN/high
+  PASS  the preflight unanswered: WEB RPC DOWN on the 3rd run, saying "its CORS preflight (OPTIONS): no answer"
+    | [vps] ALERT: ISOTHERM WATCH: WEB RPC DOWN | 3 run(s) in a row since 2026-10-14T06:00Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): its CORS preflight (OP ...
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:20:00Z exit 0: 1 push(es) WEB RPC DOWN/high
+  PASS  the preflight allows another origin: WEB RPC DOWN on the 3rd run, saying "its CORS preflight (OPTIONS): access-control-allow-origin "https://example.org""
+    | [vps] ALERT: ISOTHERM WATCH: WEB RPC DOWN | 3 run(s) in a row since 2026-10-14T06:00Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): its CORS preflight (OP ...
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:20:00Z exit 0: 1 push(es) WEB RPC DOWN/high
+  PASS  the preflight does not allow the content-type header: WEB RPC DOWN on the 3rd run, saying "access-control-allow-headers "Authorization,User-Agent", without content-type"
+  PASS  the check from the Mac fits the failure: a CORS one prints the headers of both requests and never blames this VPS's network; an HTTP error or no answer does; a JSON-RPC error does not
+    body: 3 run(s) in a row since 2026-10-14T06:00Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): its CORS header (access-control-allow-origin "https://example.org") does not allow https://isotherm.pages.dev: browsers drop the answer. The web app reads prices, trades and signs (Dynamic) through it first (apps/web/src/config.ts RPC_URL), and the deployed site (/assets/index-Cd8KBz0E.js) has no fallback RPC: judges see no prices and cannot trade while it fails. The API, the maker and this watch read Ankr first, so nothing else notices. Check from the Mac: curl -s -D - -o /dev/null -X OPTIONS -H 'Origin: https://isotherm.pages.dev' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: content-type' https://testnet-rpc.monad.xyz ; then curl -s -D - -H 'content-type: application/json' -H 'Origin: https://isotherm.pages.dev' --data '{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]}' https://testnet-rpc.monad.xyz ; both must show access-control-allow-origin https://isotherm.pages.dev (or *), the first also content-type in access-control-allow-headers (a block number alone does not mean a browser can use it). Known and nothing to fix: stack-watch.sh --snooze-web HOURS on the VPS.
+  PASS  a 204 preflight allowing "*" and content-type (Ankr's and thirdweb's answer): fine
+    | [vps] ALERT: ISOTHERM WATCH: WEB RPC DOWN | 3 run(s) in a row since 2026-10-14T06:10Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): stuck: block 2862000,  ...
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:30:00Z exit 0: 1 push(es) WEB RPC DOWN/high
+  PASS  the same block from 06:00Z on (stuck): failed from the 2nd run (06:10Z), WEB RPC DOWN on the 3rd failed one (06:30Z)
+  PASS  access-control-allow-origin "*": fine (no pending, no push)
+    | [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-14 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:00:00Z exit 0: 1 push(es) daily digest 2026-10-14/default
+    | [watch] pending: WEB RPC DOWN: https://testnet-rpc.monad.xyz failed 1/3 runs in a row (stuck: block 1000, and 2862000 at 2026-10-14T06:00Z); pushed from the 3rd, high
+    | [watch] delivered: daily digest 2026-10-14 (try 1)
+    2026-10-14T06:10:00Z exit 0: 0 push(es) 
+    | [watch] clearing: WEB RPC DOWN (not seen since 06:20Z; over after 30 min without it)
+    2026-10-14T06:20:00Z exit 0: 0 push(es) 
+    | [watch] clearing: WEB RPC DOWN (not seen since 06:20Z; over after 30 min without it)
+    2026-10-14T06:30:00Z exit 0: 0 push(es) 
+  PASS  a chain reset (block 1000 after millions): one failed run, then it counts from there (no push)
+    | [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-14 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:00:00Z exit 0: 1 push(es) daily digest 2026-10-14/default
+    | [watch] delivered: daily digest 2026-10-14 (try 1)
+    2026-10-14T06:01:00Z exit 0: 0 push(es) 
+  PASS  a run 1 min after the last with the same block: not judged stuck
+    | [vps] ALERT: ISOTHERM WATCH: WEB RPC DOWN | 3 run(s) in a row since 2026-10-14T06:00Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): no answer. The web app ...
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:20:00Z exit 0: 1 push(es) WEB RPC DOWN/default
+  PASS  the deployed build falls back to Ankr and thirdweb, both answer: WEB RPC DOWN on the 3rd run at DEFAULT priority, saying judges still trade
+    body: 3 run(s) in a row since 2026-10-14T06:00Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): no answer. The web app reads prices, trades and signs (Dynamic) through it first (apps/web/src/config.ts RPC_URL), and the deployed site (/assets/index-Cd8KBz0E.js) falls back to rpc.ankr.com/monad_testnet (ok), 10143.rpc.thirdweb.com (ok): judges can still read and trade through the fallback. The API, the maker and this watch read Ankr first, so nothing else notices. Check from the Mac: curl -s -D - -H 'content-type: application/json' -H 'Origin: https://isotherm.pages.dev' --data '{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]}' https://testnet-rpc.monad.xyz ; if it answers there (HTTP 200, a block number, access-control-allow-origin https://isotherm.pages.dev) and WATCH CANNOT REACH THE API is open too, suspect this VPS's network. Known and nothing to fix: stack-watch.sh --snooze-web HOURS on the VPS.
+    | [vps] ALERT: ISOTHERM WATCH: WEB RPC DOWN | 4 run(s) in a row since 2026-10-14T06:00Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): no answer. The web app ...
+    | [vps] push: sent (HTTP 200)
+    2026-10-14T06:30:00Z exit 0: 1 push(es) WEB RPC DOWN/high
+  PASS  10 min later the fallbacks fail too: HIGH at once (the default push's 3 h repeat stamp reset), no fallback answers
+    | [vps] ALERT: ISOTHERM WATCH: WEB RPC DOWN | 5 run(s) in a row since 2026-10-14T06:00Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): no answer. The web app ...
+    | [vps] push: 'ISOTHERM WATCH: WEB RPC DOWN' already pushed 0 min ago; not repeated
+    2026-10-14T06:40:00Z exit 0: 0 push(es) 
+    | [vps] ALERT: ISOTHERM WATCH: WEB RPC DOWN | 6 run(s) in a row since 2026-10-14T06:00Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): no answer. The web app ...
+    | [vps] push: 'ISOTHERM WATCH: WEB RPC DOWN' already pushed 0 min ago; not repeated
+    2026-10-14T06:50:00Z exit 0: 0 push(es) 
+  PASS  after the high push, a fallback back and then none again: no more pushes inside the 3 h window
+  PASS  a build whose only fallback fails too: high from the start
+  PASS  the deployed build unknown (the site unreadable): no fallback assumed, high
+    | [watch] clearing: WEB RPC DOWN (not seen since 07:00Z; over after 30 min without it, then CLEARED)
+    2026-10-14T07:00:00Z exit 0: 0 push(es) 
+  PASS  the run's summary line lists the deployed build's fallbacks and how each answered
+  PASS  --snooze-web 73: refused (exit 2), nothing written
+    | [watch] WEB RPC DOWN snoozed until 2026-10-14T07:55Z (2 h); the other checks keep running; --snooze-web 0 ends it
+  PASS  --snooze-web 2 at 05:55Z: 3 failed runs, no WEB RPC DOWN; TREASURY LOW still pushed; the digest shows the snooze
+    | [vps] ALERT: ISOTHERM WATCH: WEB RPC DOWN | 4 run(s) in a row since 2026-10-14T06:00Z, https://testnet-rpc.monad.xyz failed as a browser on https://isotherm.pages.dev reads it (eth_blockNumber and its CORS preflight): no answer. The web app ...
+    | [vps] push: sent (HTTP 200)
+    | [watch] clearing: TREASURY LOW (not seen since 06:30Z; over after 30 min without it, then CLEARED)
+    2026-10-14T06:30:00Z exit 0: 1 push(es) WEB RPC DOWN/high
+  PASS  --snooze-web 0 ends it: the next failed run pushes at once (it kept counting: 4 runs since 06:00Z)
 
 ## F. SETTLEMENT OVERDUE (RCSS 2026-10-14: day end 16:00Z, due by 21:00Z)
     | [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-14 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
@@ -463,32 +653,32 @@
     | [watch] MAKER STALLED, BOOKS EMPTY, LADDER NOT OPENED and NO ACTIVE LADDER snoozed until 2026-10-14T11:05Z (6 h); the other checks keep running; --snooze 0 ends it
   PASS  --snooze 6 at 05:05Z (inside :03-:09: it runs no check): snooze-until written, no state, no push
     | [watch] snoozed until 2026-10-14T11:05Z: MAKER STALLED, BOOKS EMPTY, LADDER NOT OPENED and NO ACTIVE LADDER are held (stack-watch.sh --snooze 0 ends it)
-    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.00 MON (< 20, the judging line); it tops up the maker, operator, relayer and attester, up to 12 MON a day. Fund it from the deployer: cd docs/evidence/golive && node fund.mjs ...
+    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.00 MON (< 20, the judging line); it tops up the maker, operator, relayer, attester and guardian, up to 14 MON a day. Fund it from the deployer: cd docs/evidence/golive && nod ...
     | [vps] push: sent (HTTP 200)
     | [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-14 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
     | [vps] push: sent (HTTP 200)
     2026-10-14T06:00:00Z exit 0: 2 push(es) TREASURY LOW/high,daily digest 2026-10-14/default
     | [watch] snoozed until 2026-10-14T11:05Z: MAKER STALLED, BOOKS EMPTY, LADDER NOT OPENED and NO ACTIVE LADDER are held (stack-watch.sh --snooze 0 ends it)
-    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.00 MON (< 20, the judging line); it tops up the maker, operator, relayer and attester, up to 12 MON a day. Fund it from the deployer: cd docs/evidence/golive && node fund.mjs ...
+    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.00 MON (< 20, the judging line); it tops up the maker, operator, relayer, attester and guardian, up to 14 MON a day. Fund it from the deployer: cd docs/evidence/golive && nod ...
     | [vps] push: 'ISOTHERM WATCH: TREASURY LOW' already pushed 0 min ago; not repeated
     | [watch] delivered: daily digest 2026-10-14 (try 1)
     2026-10-14T06:10:00Z exit 0: 0 push(es) 
   PASS  snoozed, the snapshot 40 min old for 2 runs: no MAKER STALLED; TREASURY LOW still pushed; the digest shows the snooze
     | [vps] ALERT: ISOTHERM WATCH: MAKER STALLED | The maker Worker's last snapshot is 40 min old (2026-10-14T05:40Z); it publishes one every minute. Its ticks are failing or stopped: quotes go stale, and the roll, the kill switch and the challen ...
     | [vps] push: sent (HTTP 200)
-    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.00 MON (< 20, the judging line); it tops up the maker, operator, relayer and attester, up to 12 MON a day. Fund it from the deployer: cd docs/evidence/golive && node fund.mjs ...
+    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.00 MON (< 20, the judging line); it tops up the maker, operator, relayer, attester and guardian, up to 14 MON a day. Fund it from the deployer: cd docs/evidence/golive && nod ...
     | [vps] push: 'ISOTHERM WATCH: TREASURY LOW' already pushed 0 min ago; not repeated
     2026-10-14T06:20:00Z exit 0: 1 push(es) MAKER STALLED/high
   PASS  --snooze 0 ends it: the next run pushes MAKER STALLED at once (40 min old)
     | [watch] snoozed until 2026-10-14T07:00Z: MAKER STALLED, BOOKS EMPTY, LADDER NOT OPENED and NO ACTIVE LADDER are held (stack-watch.sh --snooze 0 ends it)
-    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.00 MON (< 20, the judging line); it tops up the maker, operator, relayer and attester, up to 12 MON a day. Fund it from the deployer: cd docs/evidence/golive && node fund.mjs ...
+    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.00 MON (< 20, the judging line); it tops up the maker, operator, relayer, attester and guardian, up to 14 MON a day. Fund it from the deployer: cd docs/evidence/golive && nod ...
     | [vps] push: sent (HTTP 200)
     | [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-14 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
     | [vps] push: sent (HTTP 200)
     2026-10-14T06:50:00Z exit 0: 2 push(es) TREASURY LOW/high,daily digest 2026-10-14/default
     | [vps] ALERT: ISOTHERM WATCH: MAKER STALLED | The maker Worker's last snapshot is 40 min old (2026-10-14T06:30Z); it publishes one every minute. Its ticks are failing or stopped: quotes go stale, and the roll, the kill switch and the challen ...
     | [vps] push: sent (HTTP 200)
-    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.00 MON (< 20, the judging line); it tops up the maker, operator, relayer and attester, up to 12 MON a day. Fund it from the deployer: cd docs/evidence/golive && node fund.mjs ...
+    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.00 MON (< 20, the judging line); it tops up the maker, operator, relayer, attester and guardian, up to 14 MON a day. Fund it from the deployer: cd docs/evidence/golive && nod ...
     | [vps] push: 'ISOTHERM WATCH: TREASURY LOW' already pushed 0 min ago; not repeated
     | [watch] delivered: daily digest 2026-10-14 (try 1)
     2026-10-14T07:10:00Z exit 0: 1 push(es) MAKER STALLED/high
@@ -508,25 +698,51 @@
   PASS  01:00Z: the digest: yesterday's counters (peak), deltas, relayer runway, ladders (active, next), open alerts, run count
     | Yesterday (UTC 10-13): 3/17 drips, 5/28 relayed mints (last seen 23:50Z). Since the last digest: +3 drips, +5 mints.
     | Relayer 102.42 MON = 19.0 worst-case days at the current caps (17 drips x 0.260 + 28 relays x 0.03417 = 5.38 MON/day; 18.0 days left to 10-31); AUSD float 51000.
-    | Treasury 158.62, maker 4.99, operator 2.24 MON. Maker quoting spend vs its 4 MON cap is not public (control.mjs status).
+    | Treasury 158.62, maker 4.99, operator 2.24, guardian 0.0500, attester 0.7776 MON. Maker quoting spend vs its 6 MON cap is not public (control.mjs status).
+    | Web RPC (testnet-rpc.monad.xyz): ok, block 2817000; the deployed site (/assets/index-Cd8KBz0E.js) has no fallback RPC.
     | Ladders: 1 active (RCSS 2026-10-14 to 09:30Z); next RCSS 2026-10-15 opens 2026-10-14T04:00Z (not planned yet).
     | Settlements: 6 settled, 0 void; latest RCSS 2026-10-13 30C.
     | Trading: 4 non-maker wallets, 10 non-maker fills in all.
     | Open alerts: none.
     | Watch: 3 run(s) since the last digest, 0 could not read the API.
+  PASS  the digest also shows the guardian and the attester, and the web RPC's block
     | [watch] delivered: daily digest 2026-10-14 (try 1)
     2026-10-14T01:10:00Z exit 0: 0 push(es) 
   PASS  01:10Z: no second digest
-    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.00 MON (< 20, the judging line); it tops up the maker, operator, relayer and attester, up to 12 MON a day. Fund it from the deployer: cd docs/evidence/golive && node fund.mjs ...
+    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.00 MON (< 20, the judging line); it tops up the maker, operator, relayer, attester and guardian, up to 14 MON a day. Fund it from the deployer: cd docs/evidence/golive && nod ...
     | [vps] push: sent (HTTP 200)
     2026-10-14T12:00:00Z exit 0: 1 push(es) TREASURY LOW/high
-    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.00 MON (< 20, the judging line); it tops up the maker, operator, relayer and attester, up to 12 MON a day. Fund it from the deployer: cd docs/evidence/golive && node fund.mjs ...
+    | [vps] ALERT: ISOTHERM WATCH: TREASURY LOW | The treasury holds 19.00 MON (< 20, the judging line); it tops up the maker, operator, relayer, attester and guardian, up to 14 MON a day. Fund it from the deployer: cd docs/evidence/golive && nod ...
     | [vps] push: 'ISOTHERM WATCH: TREASURY LOW' already pushed 0 min ago; not repeated
     | [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-15 | Yesterday (UTC 10-14): 2/17 drips, 0/28 relayed mints (last seen 12:00Z). Since the last digest: +-3 drips, +-5 mints.
     | [vps] push: sent (HTTP 200)
     2026-10-15T01:00:00Z exit 0: 1 push(es) daily digest 2026-10-15/default
   PASS  the next day's digest lists the open alert; a missing /api/stats only drops its line
   PASS  one digest per UTC day: 3 digests over 10-13, 10-14, 10-15 in 7 runs
+
+## K. the digest's CRE line (from the settlement job's evidence records; read only, never ~/.cre)
+    | CRE: last official run 2026-10-14T00:05Z ok; last report RCSS 2026-10-13 settled 30C (resolved) at 2026-10-13T18:05Z on the official path. Login shown from 2026-10-10T09:05Z to 2026-10-14T00:05Z on every recorded run but 3 single miss(es) (the last at 2026-10-13T23:05Z; each followed by a run with it: CRE API errors, no action); a span of 3 d 15 h, not the session's age (a relogin with no miss before it leaves no record).
+  PASS  the VPS's own pattern (a failed first official run, 3 single misses, a dry run): last official run ok, last report, the login shown from 10-10 09:05Z to the last run (a span, not an age: a relogin leaves no record); single misses are not a new session
+  PASS  the settlement records are only read: byte-identical, nothing added to that var/
+    | CRE: last official run 2026-10-13T22:05Z ok; last report RCSS 2026-10-13 settled 30C (resolved) at 2026-10-13T18:05Z on the official path. LOGIN LAPSED: 2 runs in a row without it since 2026-10-13T23:05Z (last shown 2026-10-13T22:05Z); CRE LOGIN NEEDED has the fix (vps/relogin.sh on the Mac).
+  PASS  2 misses in a row (23:05, 00:05Z): LOGIN LAPSED, since when, the last run that had it
+    | CRE: last official run 2026-10-13T23:05Z ok; last report RCSS 2026-10-13 settled 30C (resolved) at 2026-10-13T18:05Z on the official path. Login shown from 2026-10-10T09:05Z to 2026-10-13T23:05Z on every recorded run; a span of 3 d 14 h, not the session's age (a relogin with no miss before it leaves no record); the LAST run (2026-10-14T00:05Z) missed it: CRE LOGIN NEEDED follows if the next one does too.
+  PASS  the last run alone missed it: said so, not LAPSED
+    | CRE: NO SETTLEMENT RUN RECORDED SINCE 2026-10-13T19:05Z (5 h 55 min ago; it runs hourly at :05): is isotherm-settle.timer running? (isotherm-vps.sh status); last official run 2026-10-13T18:05Z FAILED (exit 4: a report was sent but NOT accepted on chain); the last run (2026-10-13T19:05Z) took the HARNESS fallback (cre whoami succeeded, but the previous OFFICIAL run failed (rc=1 at 2026-10-13T19:05:00Z); this run uses the harness, the next one retries OFFICIAL); last report RCSS 2026-10-13 settled 30C (not-accepted) at 2026-10-13T18:05Z on the official path. Login shown from 2026-10-10T09:05Z to 2026-10-13T19:05Z on every recorded run; a span of 3 d 10 h, not the session's age (a relogin with no miss before it leaves no record).
+  PASS  the official run failed (exit 4), the harness ran after it: both said
+    | CRE: last official run 2026-10-14T00:05Z ok; last report RCSS 2026-10-13 settled 30C (resolved) at 2026-10-13T18:05Z on the official path. Login shown from 2026-10-12T15:05Z to 2026-10-14T00:05Z on every recorded run; a span of 1 d 9 h, not the session's age (a relogin with no miss before it leaves no record).
+  PASS  a real lapse (5 misses, 10-12 10:05-14:05Z) and a new login: the span starts at the first run after it
+  PASS  records that do not parse: "no settlement run recorded yet", no crash
+  PASS  no records at all (no settlement job on the host, as in the other groups): no CRE line
+    | CRE: NO SETTLEMENT RUN RECORDED SINCE 2026-10-12T05:05Z (1 d 19 h ago; it runs hourly at :05): is isotherm-settle.timer running? (isotherm-vps.sh status); last official run 2026-10-12T05:05Z ok; last report RCSS 2026-10-11 settled 30C (resolved) at 2026-10-11T18:05Z on the official path. Login shown from 2026-10-10T09:05Z to 2026-10-12T05:05Z on every recorded run; a span of 1 d 20 h, not the session's age (a relogin with no miss before it leaves no record).
+  PASS  records ending 44 h before the digest: NO SETTLEMENT RUN RECORDED SINCE, first; the login's span ends at the last record, not now
+    | CRE: last official run 2026-10-13T23:05Z ok; last report RCSS 2026-10-13 settled 30C (resolved) at 2026-10-13T18:05Z on the official path. Login shown from 2026-10-10T09:05Z to 2026-10-13T23:05Z on every recorded run; a span of 3 d 14 h, not the session's age (a relogin with no miss before it leaves no record).
+  PASS  the last record 1 h 55 min old (one hourly run missing): no warning
+    | CRE: last official run 2026-10-14T00:05Z ok; last report RCSS 2026-10-13 settled 30C (resolved) at 2026-10-13T18:05Z on the official path. Login shown from 2026-10-10T09:05Z to 2026-10-14T00:05Z on every recorded run; no run recorded 2026-10-11T18:05Z to 2026-10-12T14:05Z (and 1 shorter gap(s)); a span of 3 d 15 h, not the session's age (a relogin with no miss before it leaves no record).
+  PASS  a 20 h gap in the records (and a 3 h one): the largest named, the other counted, inside the span
+    | CRE: last official run 2026-10-13T23:05Z ok; the last run (2026-10-14T00:05Z) STOOD DOWN (this host released the settlement writer role to another host; nothing signed here); last report RCSS 2026-10-13 settled 30C (resolved) at 2026-10-13T18:05Z on the official path. Login shown from 2026-10-10T09:05Z to 2026-10-14T00:05Z on every recorded run; a span of 3 d 15 h, not the session's age (a relogin with no miss before it leaves no record).
+  PASS  the last run stood down (writer role released): said so, not called a harness fallback run
+  PASS  the records parsed only for a digest: 00:50Z no (0), 01:00Z yes (1, with the CRE line), 01:10Z no (0: today's sent), the next day's 01:00Z yes (1)
 
 ## X. past the end date (2026-10-31)
     | [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-31 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
@@ -542,10 +758,10 @@
   PASS  the same day again: nothing
 
 ## S. safety of the test itself and of the code
-  PASS  all 96 pushes went to the test URL https://ntfy.invalid/... (read by push_alert from the file, curl -K)
-  PASS  fixture mode: no GET and no cast call was made
+  PASS  all 150 pushes went to the test URL https://ntfy.invalid/... (read by push_alert from the file, curl -K)
+  PASS  fixture mode: no curl call but the pushes, and no cast call
   PASS  the alert URL's topic is in no output, state or ALERTS.log file
-  PASS  the watchdog's code has no tx-sending cast command, no key flag, no POST (lib.sh push_alert is the only POST: the ntfy push)
+  PASS  the watchdog's code has no tx-sending cast command, no key flag, no -X POST / --request, no fetch; its one --data is the eth_blockNumber read (lib.sh push_alert's is the ntfy push) and its one -X the OPTIONS preflight; the evaluator runs nothing but cast (the curls in WEB RPC DOWN's body are for a person)
   PASS  ASCII only in stack-watch.mjs (push titles go out as HTTP headers)
 
-# 2026-10-13T14:44:13Z done: 98 passed, 0 failed
+# 2026-10-14T06:00:27Z done: 156 passed, 0 failed

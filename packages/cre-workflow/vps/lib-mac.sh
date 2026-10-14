@@ -27,4 +27,4 @@ gate() { if [ "$1" = 1 ]; then say "GATE OK    $2: $3"; else say "GATE FAIL  $2:
 jq_() { node -e 'try { const v = process.argv[2].split(".").reduce((o, k) => o?.[k], JSON.parse(process.argv[1])); if (v != null) console.log(typeof v === "object" ? JSON.stringify(v) : v) } catch {}' "$1" "$2"; }
 sha_local() { (cd "$PKG" && shasum -a 256 "$@" | awk '{print $2 "=" $1}'); }
 # files whose bytes must be equal on the Mac checkout and on the VPS before a cutover
-CODE_FILES="scripts/run-official.sh scripts/settle-job.sh scripts/lib-don.sh settle/e2e/evidence-record.ts vps/settle-vps.sh vps/lib.sh vps/isotherm-vps.sh"
+CODE_FILES="scripts/run-official.sh scripts/settle-job.sh scripts/lib-don.sh settle/e2e/evidence-record.ts vps/settle-vps.sh vps/lib.sh vps/isotherm-vps.sh vps/stack-watch.sh vps/stack-watch.mjs vps/install-watch.sh"

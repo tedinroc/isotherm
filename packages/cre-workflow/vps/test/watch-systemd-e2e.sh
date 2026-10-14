@@ -9,12 +9,16 @@
 #      run at a :x0 minute; a second install changes nothing
 #   W3 the schedule: OnCalendar *:00/10 UTC never lands on :03-:09 (systemd-analyze calendar, the next 12)
 #   W4 the service through systemd: Result=success; Nice 15, idle I/O, CPUWeight 20, MemoryMax 300M applied; the first
-#      digest handed to push_alert, which sends nothing without an alert URL file; its state
-#      in var/watch/state.json; nothing else under var/; the journal shows the run (or the :03-:09 skip)
-#   W5 --status (the run's journal lines, never the machine's hostname; a snooze set and ended); --uninstall: timer
-#      gone, both units removed, var/watch kept; --uninstall --purge: var/watch gone; isotherm-settle.* never touched
-#      (a stand-in settle unit stays enabled throughout)
-# Output: stdout and vps/evidence/watch-systemd-e2e.txt. Exit 0 = all pass.
+#      digest handed to push_alert, which sends nothing without an alert URL file, with the CRE line read from a
+#      stand-in settlement record in var/evidence/ (left byte-identical); the web RPC reads failing (pending 1/3), the
+#      site's fallbacks unknown; its state in var/watch/state.json; nothing else under var/. It is started outside
+#      minutes :02-:09 (the script waits), so the :03-:09 guard never skips its checks.
+#   W5 --status (the run's journal lines, never the machine's hostname; a snooze and a web snooze set and ended);
+#      --uninstall: timer gone, both units removed, var/watch kept; --uninstall --purge: var/watch gone;
+#      isotherm-settle.* never touched (a stand-in settle unit stays enabled throughout)
+# Run it from 01:00 to 23:59 UTC: the first digest (W4) is not sent before 01:00 UTC; it refuses to start at 00:xx.
+# Output: stdout and a kept scratch report (its path is printed). ISOTHERM_WRITE_EVIDENCE=1 also writes the tracked
+# vps/evidence/watch-systemd-e2e.txt, and only from a run where every check passed. Exit 0 = all pass.
 set -uo pipefail
 PKG="$(cd "$(dirname "$0")/../.." && pwd)"; REPO=$(cd "$PKG/../.." && pwd)
 EVOUT=$PKG/vps/evidence/watch-systemd-e2e.txt
@@ -30,6 +34,7 @@ ok() { if [ "$1" = 1 ]; then PASS=$((PASS + 1)); echo "  PASS  $2"; else FAIL=$(
 # as the job's user with its user manager; umask 022 as in a login shell (docker exec's own default is 000)
 U() { docker exec -u isotherm -e XDG_RUNTIME_DIR="/run/user/$UIDN" -e DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus" -w /home/isotherm "$CT" bash -c "umask 022; $1"; }
 VP=/home/isotherm/isotherm/packages/cre-workflow
+[ "$(date -u +%H)" != 00 ] || { echo "it is 00:xx UTC: the first digest (W4) is only sent from 01:00 UTC; start it then"; return 2; }
 for i in "$IMG" "$NODEIMG"; do docker image inspect "$i" >/dev/null 2>&1 || { echo "missing local image $i (build: docker build -t $IMG vps/test; pull: docker pull $NODEIMG)"; return 2; }; done
 docker rm -f "$CT" >/dev/null 2>&1
 HOSTN=watch-e2e-hostname   # must never show up in --status (it would be the provider's hostname on the real VPS)
@@ -71,29 +76,34 @@ grep -E 'Normalized|Next elapse|Iter' "$SC/w3.txt" | sed 's/^/    | /'
 ok "$(grep -E '(Next elapse|Iter(ation|\.) #[0-9]+):' "$SC/w3.txt" | grep -oE ' [0-9]{2}:[0-9]{2}:[0-9]{2} UTC' | awk -F: '{ m = $2 + 0; if (m >= 3 && m <= 9) bad++; n++ } END { print (n == 12 && !bad) ? 1 : 0 }')" "12 elapses, none at minutes :03-:09"
 
 echo; echo "## W4. one run through systemd (no network: the API is unreadable, nothing is pushed)"
-M=$(docker exec "$CT" date -u +%M); M=$((10#$M))
+# a stand-in record of the settlement job (var/evidence/settle-runs.jsonl, as the settle unit writes it): read for the
+# digest's CRE line, never changed
+U "mkdir -p $VP/var/evidence && node -e 'const t = Date.now() - 3600e3; console.log(JSON.stringify({ job: \"isotherm-settle.service\", host: \"vps\", startedAt: new Date(t).toISOString(), path: \"official\", pathReason: \"cre whoami succeeded\", stoodDownForDon: false, stoodDownForWriter: false, creLogin: true, dryRun: false, exitCode: 0, exitMeaning: \"ok / nothing to do / skipped\", reportsSent: [] }))' >$VP/var/evidence/settle-runs.jsonl && sha256sum $VP/var/evidence/settle-runs.jsonl" >"$SC/ev-before"
+# never at minutes :03-:09, where stack-watch.sh skips the run (and :02, so the start cannot slip into :03)
+while M=$(docker exec "$CT" date -u +%M); M=$((10#$M)); [ "$M" -ge 2 ] && [ "$M" -le 9 ]; do echo "    (minute :$M: waiting for :10)"; sleep 20; done
 U 'systemctl --user start isotherm-watch.service; systemctl --user show isotherm-watch.service -p Result -p ExecMainStatus -p Nice -p IOSchedulingClass -p CPUWeight -p MemoryMax -p ActiveState' >"$SC/w4.txt" 2>&1
 sed 's/^/    | /' "$SC/w4.txt"
 ok "$(grep -q '^Result=success' "$SC/w4.txt" && grep -q '^ExecMainStatus=0' "$SC/w4.txt" && echo 1 || echo 0)" "Result=success, exit 0"
 ok "$(grep -q '^Nice=15' "$SC/w4.txt" && grep -q '^IOSchedulingClass=3' "$SC/w4.txt" && grep -q '^CPUWeight=20' "$SC/w4.txt" && grep -q '^MemoryMax=314572800' "$SC/w4.txt" && echo 1 || echo 0)" "Nice 15, I/O class idle (3), CPUWeight 20, MemoryMax 300M"
-U 'journalctl --user -u isotherm-watch -n 20 --no-pager -o cat' >"$SC/w4j.txt" 2>&1
+U 'journalctl --user -u isotherm-watch -n 40 --no-pager -o cat' >"$SC/w4j.txt" 2>&1
 sed -E 's/(.{220}).*/\1 .../; s/^/    | /' "$SC/w4j.txt"
-if [ "$M" -ge 3 ] && [ "$M" -le 9 ]; then
-  ok "$(grep -q 'skipped: minute' "$SC/w4j.txt" && echo 1 || echo 0)" "started at minute :$M: skipped by the :03-:09 guard (as designed)"
-else
-  ok "$(grep -q 'pending: API unreadable, 1/3 runs in a row (/api/health: no answer' "$SC/w4j.txt" && ! grep -q 'WATCH CANNOT REACH' "$SC/w4j.txt" && echo 1 || echo 0)" "the run: API unreadable 1/3 (no CANNOT REACH push before the 3rd)"
-  ok "$(grep -q 'ALERT: ISOTHERM WATCH: daily digest' "$SC/w4j.txt" && ! grep -q 'push: ' "$SC/w4j.txt" && echo 1 || echo 0)" "the first digest went to push_alert, which sent nothing: no alert URL file here (it only logs)"
-  ok "$(U "node -e 'const s = require(\"$VP/var/watch/state.json\"); process.exit(s.api.fails === 1 ? 0 : 1)' && echo 1 || echo 0")" "var/watch/state.json written (api.fails 1)"
-fi
-ok "$(U "[ \"\$(ls $VP/var)\" = watch ] && echo 1 || echo 0")" "var/ holds only watch/"
+ok "$(! grep -q 'skipped: minute' "$SC/w4j.txt" && grep -q 'pending: API unreadable, 1/3 runs in a row (/api/health: no answer' "$SC/w4j.txt" && ! grep -q 'WATCH CANNOT REACH' "$SC/w4j.txt" && echo 1 || echo 0)" "the run (started at minute :$M, not skipped): API unreadable 1/3 (no CANNOT REACH push before the 3rd)"
+ok "$(grep -q 'pending: WEB RPC DOWN: https://testnet-rpc.monad.xyz failed 1/3 runs in a row (no answer)' "$SC/w4j.txt" && grep -q "the site's fallbacks unknown" "$SC/w4j.txt" && echo 1 || echo 0)" "the web RPC reads (no network): WEB RPC DOWN pending 1/3; the site unreadable, so its fallbacks unknown"
+ok "$(grep -q 'ALERT: ISOTHERM WATCH: daily digest' "$SC/w4j.txt" && ! grep -q 'push: ' "$SC/w4j.txt" && echo 1 || echo 0)" "the first digest went to push_alert, which sent nothing: no alert URL file here (it only logs)"
+ok "$(grep -qE '^CRE: last official run 20[0-9-]+T[0-9:]+Z ok\. Login shown from 20[0-9-]+T[0-9:]+Z to ' "$SC/w4j.txt" && echo 1 || echo 0)" "the digest's CRE line, from the stand-in settlement record"
+ok "$(U "node -e 'const s = require(\"$VP/var/watch/state.json\"); process.exit(s.api.fails === 1 && s.webRpc.fails === 1 ? 0 : 1)' && echo 1 || echo 0")" "var/watch/state.json written (api.fails 1, webRpc.fails 1)"
+U "sha256sum $VP/var/evidence/settle-runs.jsonl" >"$SC/ev-after"
+ok "$(U "[ \"\$(ls $VP/var | tr '\n' ' ')\" = 'evidence watch ' ] && [ \"\$(ls $VP/var/evidence)\" = settle-runs.jsonl ] && echo 1 || echo 0")" "var/ holds only watch/ and the settlement's evidence/, with nothing added there"
+ok "$(cmp -s "$SC/ev-before" "$SC/ev-after" && [ -s "$SC/ev-before" ] && echo 1 || echo 0)" "the settlement record byte-identical (only read)"
 
 echo; echo "## W5. status, uninstall, purge; the settlement units untouched"
 U "bash $VP/vps/install-watch.sh --status" >"$SC/w5s.txt" 2>&1
 sed -E 's/(.{200}).*/\1 .../; s/^/    | /' "$SC/w5s.txt"
 ok "$([ "$(docker exec "$CT" hostname)" = "$HOSTN" ] && ! grep -qF "$HOSTN" "$SC/w5s.txt" && grep -q '\[watch\] ' "$SC/w5s.txt" && grep -q '^snooze   none' "$SC/w5s.txt" && echo 1 || echo 0)" "--status shows the run's journal lines and the snooze, and never the machine's hostname (journalctl -o cat)"
-U "bash $VP/vps/stack-watch.sh --snooze 2 && bash $VP/vps/install-watch.sh --status | grep '^snooze' && bash $VP/vps/stack-watch.sh --snooze 0 && bash $VP/vps/install-watch.sh --status | grep '^snooze'" >"$SC/w5z.txt" 2>&1
+U "bash $VP/vps/stack-watch.sh --snooze 2 && bash $VP/vps/install-watch.sh --status | grep '^snooze' && bash $VP/vps/stack-watch.sh --snooze 0 && bash $VP/vps/install-watch.sh --status | grep '^snooze' && bash $VP/vps/stack-watch.sh --snooze-web 3 && bash $VP/vps/install-watch.sh --status | grep '^snooze' && bash $VP/vps/stack-watch.sh --snooze-web 0 && bash $VP/vps/install-watch.sh --status | grep '^snooze'" >"$SC/w5z.txt" 2>&1
 sed 's/^/    | /' "$SC/w5z.txt"
-ok "$(grep -qE '^snooze   maker checks held until 20[0-9-]+T[0-9:]+Z' "$SC/w5z.txt" && grep -q 'snooze ended' "$SC/w5z.txt" && [ "$(grep -c '^snooze   none' "$SC/w5z.txt")" = 1 ] && echo 1 || echo 0)" "stack-watch.sh --snooze 2 shows in --status (GNU date); --snooze 0 ends it"
+ok "$(grep -qE '^snooze   maker checks held until 20[0-9-]+T[0-9:]+Z' "$SC/w5z.txt" && grep -q 'snooze ended: the maker checks' "$SC/w5z.txt" && [ "$(grep -c '^snooze   none' "$SC/w5z.txt")" = 3 ] && echo 1 || echo 0)" "stack-watch.sh --snooze 2 shows in --status (GNU date); --snooze 0 ends it"
+ok "$(grep -qE '^snooze   WEB RPC DOWN held until 20[0-9-]+T[0-9:]+Z' "$SC/w5z.txt" && [ "$(grep -c '^snooze   WEB RPC DOWN' "$SC/w5z.txt")" = 1 ] && grep -q 'snooze ended: WEB RPC DOWN' "$SC/w5z.txt" && echo 1 || echo 0)" "stack-watch.sh --snooze-web 3 shows in --status as a second line, only while it holds; --snooze-web 0 ends it"
 U "bash $VP/vps/install-watch.sh --uninstall" >"$SC/w5a.txt" 2>&1; RC=$?
 sed 's/^/    | /' "$SC/w5a.txt"
 ok "$([ "$RC" = 0 ] && U '[ ! -e ~/.config/systemd/user/isotherm-watch.service ] && [ ! -e ~/.config/systemd/user/isotherm-watch.timer ] && ! systemctl --user list-timers --all --no-pager | grep -q isotherm-watch && echo 1 || echo 0' | grep -q 1 && echo 1 || echo 0)" "--uninstall: timer gone, both units removed"
@@ -108,6 +118,13 @@ echo; echo "# $(date -u +%FT%TZ) done: $PASS passed, $FAIL failed"
 }
 
 main 2>&1 | tee "$SC/report.txt"; RC=${PIPESTATUS[0]}
-sed -e "s#$SC#<scratch>#g" -e "s#$REPO#<repo>#g" -e "s#$HOME#~#g" "$SC/report.txt" >"$EVOUT"
-echo "-> ${EVOUT#"$REPO"/}"
+# the report: always a kept scratch file; the tracked evidence only on request (ISOTHERM_WRITE_EVIDENCE=1) and only
+# from a run where every check passed
+TMPBASE=${TMPDIR:-/tmp}; REPORT=$(mktemp "${TMPBASE%/}/isotherm-watch-systemd-e2e-report.XXXXXX") || { echo "mktemp failed" >&2; exit 2; }
+sed -e "s#$SC#<scratch>#g" -e "s#$REPO#<repo>#g" -e "s#$HOME#~#g" "$SC/report.txt" >"$REPORT"
+echo "-> report: $REPORT"
+if [ "${ISOTHERM_WRITE_EVIDENCE:-0}" = 1 ]; then
+  if [ "$RC" = 0 ]; then cp "$REPORT" "$EVOUT"; echo "-> evidence: ${EVOUT#"$REPO"/}"
+  else echo "-> evidence NOT written (a check failed): ${EVOUT#"$REPO"/} unchanged"; fi
+fi
 exit "$RC"

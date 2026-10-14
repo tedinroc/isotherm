@@ -1,16 +1,23 @@
 // Evaluator of vps/stack-watch.sh (run by it, never on its own). READ-ONLY: it reads the JSON that stack-watch.sh
-// fetched with GETs (or the test fixtures), makes a few `cast` read calls (balances, Resolver.resultOf), and prints
-// what to do as tab-separated lines; stack-watch.sh does the pushes and saves the state. It sends no transaction,
-// holds no key and never touches the settlement job's var/ files.
+// fetched with GETs and its reads of the web app's RPCs (or the test fixtures), makes a few `cast` read calls
+// (balances, Resolver.resultOf), and prints what to do as tab-separated lines; stack-watch.sh does the pushes and
+// saves the state. It sends no transaction, holds no key and never writes the settlement job's var/ files.
 //
 //   node vps/stack-watch.mjs --in DIR --state FILE --out-state FILE --now EPOCH [--watch DIR] [--push 0|1] [--fixtures]
+//                            [--cre-runs FILE --cre-after N]
 //     DIR       <name>.json (+ <name>.code, the HTTP status) for health, snapshot, settlements, stats. A missing or
-//               unparsable file = that GET failed. With --fixtures, also balance-<role>.txt and
-//               result-<STATION>-<yyyymmdd>.txt (cast's output) instead of chain reads; a missing file = a failed read.
+//               unparsable file = that GET failed. The web app's RPCs (check i): webrpc.* (its RPC) and webfb<N>.*
+//               (the Nth fallback RPC listed in webbuild, the deployed build's script then its fallbacks), each
+//               .json / .code / .headers (eth_blockNumber) and -pre.code / -pre.headers (its CORS preflight).
+//               With --fixtures, also balance-<role>.txt and result-<STATION>-<yyyymmdd>.txt (cast's output)
+//               instead of chain reads; a missing file = a failed read.
 //     FILE      the previous state (may be missing) / where to write the new one (stack-watch.sh moves it into place)
-//     --watch   the watch's own directory (lib.sh STATE), read only: alerts/<slug>.last (push_alert's delivery stamps)
-//               and snooze-until (stack-watch.sh --snooze)
+//     --watch   the watch's own directory (lib.sh STATE), read only: alerts/<slug>.last (push_alert's delivery stamps),
+//               snooze-until and snooze-web-until (stack-watch.sh --snooze / --snooze-web)
 //     --push 1  an alert URL file is there, so a one-off push is re-sent until it is delivered (0: handed over once)
+//     --cre-runs  the settlement job's runs as stack-watch.sh classified them from var/evidence/settle-runs.jsonl
+//               (a JSON list; a missing file = no settlement job on this host: the digest has no CRE line);
+//               --cre-after = lib.sh CRE_NEEDED_AFTER
 // Output, one per line (fields separated by a TAB; a body's newlines encoded as \x1f):
 //   LOG <text>                                  a journal line
 //   PUSH <priority> <dedupe s> <title> <body>   a phone push through lib.sh push_alert (per-title dedupe)
@@ -65,7 +72,7 @@ const T = {
   //    judge use is fine.
   capEarlyHourUtc: 8,
   // e. TREASURY LOW 20 = the judging override's own line (the Worker's TREASURY LOW push does not arrive: ntfy refuses
-  //    Cloudflare's shared IPs). The treasury tops the maker up below 2 (to 5) and the operator below 1.2 (to 2.5)
+  //    Cloudflare's shared IPs). The treasury tops the maker up below 2 (to 6) and the operator below 1.2 (to 2.5)
   //    every 10 min, so the maker under 1.0 or the operator under 0.9 for 20 min (two treasury passes) means the
   //    top-ups are failing. Operator 0.9, not 0.6: the 12:00 Taipei roll (04:00 UTC) needs ~0.85 MON and is refused
   //    below that, so 0.6 would warn only after the roll failed. The 20 min also covers the roll's own dip (0.78 MON)
@@ -74,6 +81,15 @@ const T = {
   makerLowMon: 1.0,
   operatorLowMon: 0.9,
   roleLowAfterSec: 20 * MIN,
+  //    The guardian (the Worker's GUARDIAN_KEY) pays the gas of challenge() (~44k gas, about 0.011 MON) and pause();
+  //    the attester is the settlement job's transaction sender, about 0.0204 MON per report (docs/OPERATIONS.md
+  //    section 2). The treasury tops them up below 0.05 (to 0.15) and below 0.3 (to 0.8), so the guardian under 0.03
+  //    (two challenges' worth) or the attester under 0.08 (three reports) for 20 min means those top-ups are failing.
+  //    The attester's line sits under the settlement job's own "ISOTHERM VPS: attester low on MON" (vps/settle-vps.sh:
+  //    below 0.1, default priority, once a day): that one is the first word, this high one says the top-ups failed.
+  //    Read after the settlement check (f): under RPC trouble the 60 s chain budget goes to that first.
+  guardianLowMon: 0.03,
+  attesterLowMon: 0.08,
   // f. The day ends 16:00 UTC; the VPS settles at 18:05 UTC (day end + 2 h 05) and retries hourly. Day end + 5 h
   //    (21:00 UTC) = three attempts (18:05, 19:05, 20:05) without a result. The Worker's own SETTLEMENT OVERDUE (day end
   //    + 3 h) does not reach the phone. Only a ladder that reached the chain (a series or a market, or once "active")
@@ -82,8 +98,12 @@ const T = {
   // How long a ladder or a station seen in a snapshot is remembered (the snapshot drops a closed ladder 36 h after
   // its close).
   ladderMemorySec: 4 * DAY,
-  // g. The digest goes out on the first run at or after 01:00 UTC (09:00 Taipei).
+  // g. The digest goes out on the first run at or after 01:00 UTC (09:00 Taipei; stack-watch.sh reads the settlement
+  //    records only from then). Its CRE line: the settlement job runs hourly at :05, so a newest record over 2 h old
+  //    (two runs missing) is NO SETTLEMENT RUN, and a step over 2 h between two records is a gap in them.
   digestHourUtc: 1,
+  creStaleSec: 2 * HOUR,
+  creGapSec: 2 * HOUR,
   // h. Ladders. The maker opens (rolls) the ladder of local day D at 12:00 local on D-1 (rollNotBeforeLocal: 04:00 UTC
   //    for Taipei), retries a refused roll every 5 min, and a normal roll takes a few minutes. So from 13:00 local the
   //    ladder of tomorrow must be "active" (before 13:00, today's): "planned" (saved before any transaction),
@@ -96,6 +116,18 @@ const T = {
   noActiveAfterSec: 20 * MIN,
   // The watchdog's own trouble: one or two failed runs are normal network weather.
   apiFailRuns: 3,
+  // i. The web app reads prices, trades and signs (the Dynamic wallet) through https://testnet-rpc.monad.xyz
+  //    (apps/web/src/config.ts RPC_URL), while the API, the maker and this watch read Ankr first, so nothing else would
+  //    notice it down. Each run reads it as a browser on the site does: its CORS preflight (OPTIONS) and one
+  //    eth_blockNumber (a POST with Origin isotherm.pages.dev). Failed = no answer, not HTTP 200, no block number, a
+  //    CORS answer that does not allow the site (preflight not 2xx, allow-origin not the site or "*", allow-headers
+  //    without content-type: the browser never sends the POST or drops its answer), or the same block as 5+ min
+  //    before (stuck). Pushed on the 3rd failed run in a row, as for the API: the endpoint limits each IP to
+  //    15 req/s and has short hiccups; a good run resets the count. High priority while the deployed build has no
+  //    fallback RPC that answers (the build of 2026-10-13 has none: judges see no prices); default while one does
+  //    (the site still works through it), back to high at once if they fail too. stack-watch.sh --snooze-web holds it.
+  webRpcFailRuns: 3,
+  webRpcStuckSec: 5 * MIN,
   // A problem is over only after 30 min without it (from its first clean reading: four runs). Until then it keeps its
   // start time, its run count and push_alert's repeat stamp, so a problem that comes and goes is one push per repeat
   // window (not one per recurrence, each followed by a CLEARED), and a pending one keeps counting toward its
@@ -116,13 +148,18 @@ const T = {
 const STD = 3 * HOUR, BAL = 6 * HOUR;
 // Unit costs for the relayer runway (size-caps 2026-10-13 at 102 gwei): drip = DRIP_MON + 99,752 gas, relay 335,000 gas.
 const DRIP_GAS_MON = 0.010175, RELAY_MON = 0.03417;
+const REPORT_MON = 0.0204; // one settlement report tx, billed to the attester (docs/OPERATIONS.md section 2)
 const END_DAY = "2026-10-31";
+// The web app's RPC and origin (= stack-watch.sh WEB_RPC, SITE).
+const WEB_RPC = "https://testnet-rpc.monad.xyz", SITE = "https://isotherm.pages.dev";
 
 // Public addresses (deployments/testnet.json; docs/OPERATIONS.md section 2).
 const ADDR = {
   treasury: "0x655dE7F5E6EdB42f26C422ED056F94BA9964BEed",
   maker: "0xd572638F07829D1c3636400FB73CF34Ca6c7448a",
   operator: "0x602dbf3937558B1d18d76315635fD5410089bd51",
+  guardian: "0x30C8E371719Ff00577284dd9c10587Fa89357d50",
+  attester: "0x63D2523dDC4BB055A19682Bf2d61fe94959D0Bb9",
   resolver: "0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B",
 };
 const W = "ISOTHERM WATCH: ";
@@ -135,7 +172,8 @@ const arg = (k) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : un
 const IN = arg("--in"), STATE_IN = arg("--state"), STATE_OUT = arg("--out-state"), NOW = Number(arg("--now"));
 const WATCHDIR = arg("--watch") || null, CAN_PUSH = arg("--push") === "1";
 const FIX = argv.includes("--fixtures");
-if (!IN || !STATE_OUT || !Number.isFinite(NOW)) { console.error("usage: stack-watch.mjs --in DIR --state FILE --out-state FILE --now EPOCH [--watch DIR] [--push 0|1] [--fixtures]"); process.exit(2); }
+const CRE_RUNS = arg("--cre-runs") || null, CRE_AFTER = Number(arg("--cre-after")) || 2;
+if (!IN || !STATE_OUT || !Number.isFinite(NOW)) { console.error("usage: stack-watch.mjs --in DIR --state FILE --out-state FILE --now EPOCH [--watch DIR] [--push 0|1] [--fixtures] [--cre-runs FILE --cre-after N]"); process.exit(2); }
 const CAST = process.env.ISOTHERM_CAST || "cast";
 const RPCS = (process.env.ISOTHERM_WATCH_RPCS || "https://rpc.ankr.com/monad_testnet https://testnet-rpc.monad.xyz").split(/\s+/).filter(Boolean);
 
@@ -158,11 +196,13 @@ const push = (prio, dedupe, title, body) => out.push(["PUSH", prio, dedupe, clea
 const unstamp = (title) => out.push(`UNSTAMP\t${clean(title)}`);
 const num = (v) => (v === null || v === undefined || v === "" || !Number.isFinite(Number(v)) ? null : Number(v));
 const f2 = (x) => (x === null ? "?" : x.toFixed(2));
+const f4 = (x) => (x === null ? "?" : x.toFixed(4));
 const isoMin = (t) => new Date(t * 1000).toISOString().slice(0, 16) + "Z";
 const hhmm = (t) => new Date(t * 1000).toISOString().slice(11, 16);
 const utcDay = (t) => new Date(t * 1000).toISOString().slice(0, 10);
 const dayStart = (t) => t - (((t % DAY) + DAY) % DAY);
 const dur = (s) => { const m = Math.max(0, Math.round(s / 60)); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} min` : `${m} min`; };
+const durD = (s) => (s >= DAY ? `${Math.floor(s / DAY)} d ${Math.floor((s % DAY) / HOUR)} h` : dur(s));
 const ymd = (d) => { const s = String(d); return /^\d{8}$/.test(s) ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6)}` : s; };
 const bytes4 = (station) => "0x" + Buffer.from(String(station).padEnd(4, "\0").slice(0, 4), "latin1").toString("hex");
 const short = (title) => String(title).slice(W.length);
@@ -191,7 +231,7 @@ function resultOf(station, date) {
 }
 
 // The new state. Every field is rebuilt from `prev` on purpose, so nothing stale lingers.
-const S = { v: 2, lastRun: NOW, conds: {}, books: {}, ladders: {}, stations: {}, api: { fails: 0 }, caps: {}, usage: prev.usage || null,
+const S = { v: 2, lastRun: NOW, conds: {}, books: {}, ladders: {}, stations: {}, api: { fails: 0 }, webRpc: { fails: 0 }, caps: {}, usage: prev.usage || null,
   usagePrev: prev.usagePrev || null, digest: prev.digest || null, counts: { runs: (prev.counts?.runs || 0) + 1, apiFails: prev.counts?.apiFails || 0 }, ended: prev.ended || null,
   outbox: (Array.isArray(prev.outbox) ? prev.outbox : []).filter((x) => x && typeof x.title === "string" && typeof x.body === "string").map((x) => ({ ...x, old: true })) };
 
@@ -265,7 +305,7 @@ if (NOW >= T.untilEpoch) {
     S.ended = utcDay(NOW);
     once("low", `${W}past its end date`, `The judging watchdog was meant to run until ${END_DAY}; it no longer checks anything. Uninstall it on the VPS: bash isotherm/packages/cre-workflow/vps/install-watch.sh --uninstall (vps/README.md, "Stack watchdog").`);
   } else log(`past ${END_DAY}: no checks (uninstall: vps/install-watch.sh --uninstall)`);
-  Object.assign(S, { conds: prev.conds || {}, books: prev.books || {}, ladders: prev.ladders || {}, stations: prev.stations || {}, api: prev.api || { fails: 0 }, caps: prev.caps || {} });
+  Object.assign(S, { conds: prev.conds || {}, books: prev.books || {}, ladders: prev.ladders || {}, stations: prev.stations || {}, api: prev.api || { fails: 0 }, webRpc: prev.webRpc || { fails: 0 }, caps: prev.caps || {} });
   finish();
 }
 
@@ -274,10 +314,12 @@ const H = health.ok ? health.json : null, L = H?.limits && typeof H.limits === "
 
 // The snooze (stack-watch.sh --snooze HOURS, for a deliberate pause of the maker: control.mjs pull or disarm, the
 // rollback of docs/OPERATIONS.md 8.4): the maker checks (a, b, h) are held as unknown, everything else runs.
-let snoozeUntil = null;
-if (WATCHDIR) try { snoozeUntil = num(fs.readFileSync(path.join(WATCHDIR, "snooze-until"), "utf8").trim()); } catch { /* none */ }
-const snoozed = snoozeUntil !== null && NOW < snoozeUntil;
+// --snooze-web HOURS holds WEB RPC DOWN the same way (an outage that cannot be fixed, or one only this VPS sees).
+const snoozeOf = (f) => { if (!WATCHDIR) return null; try { return num(fs.readFileSync(path.join(WATCHDIR, f), "utf8").trim()); } catch { return null; } };
+const snoozeUntil = snoozeOf("snooze-until"), webSnoozeUntil = snoozeOf("snooze-web-until");
+const snoozed = snoozeUntil !== null && NOW < snoozeUntil, webSnoozed = webSnoozeUntil !== null && NOW < webSnoozeUntil;
 if (snoozed) log(`snoozed until ${isoMin(snoozeUntil)}: MAKER STALLED, BOOKS EMPTY, LADDER NOT OPENED and NO ACTIVE LADDER are held (stack-watch.sh --snooze 0 ends it)`);
+if (webSnoozed) log(`snoozed until ${isoMin(webSnoozeUntil)}: WEB RPC DOWN is held (stack-watch.sh --snooze-web 0 ends it)`);
 
 // ------------------------------------------------------------------------------------------------ the API itself
 const apiOk = health.ok && snap.ok;
@@ -293,6 +335,69 @@ cond("api", !apiOk, {
   body: () => `${S.api.fails} run(s) in a row since ${isoMin(S.api.since)} could not read the API (${S.api.last}). The other checks are blind meanwhile. Open https://isotherm.pages.dev/api/health in a browser: if it fails for you too, the API Worker or Pages is down (${OPS} section 5, npx wrangler tail isotherm-api); if not, it is the VPS's network.`,
   okText: () => "the watchdog reads the API again",
 });
+
+// ------------------------------------------------------------------------------------------------ i. web RPC down
+// stack-watch.sh rpcprobe's reads of one RPC as the site's browser code reads it: <name>.code / .json (removed when not
+// HTTP 200) / .headers (curl -D) for eth_blockNumber, <name>-pre.code / -pre.headers for its CORS preflight. kind: "net"
+// (no answer, an HTTP error: maybe only from this VPS), "cors" (it answers, but a browser on the site cannot use it),
+// "rpc" (an answer without a block number) or "stuck" (below).
+const header = (h, k) => (h == null ? null : (new RegExp(`^${k}:[ \\t]*([^\\r\\n]*)`, "im").exec(h)?.[1].trim() ?? ""));
+const httpWhy = (code) => (code && code !== "000" ? `HTTP ${code}` : "no answer");
+function readRpc(name) {
+  const code = (readText(`${name}.code`) || "").trim(), raw = readText(`${name}.json`), hdr = readText(`${name}.headers`);
+  if (raw == null) return { ok: false, block: null, kind: "net", why: code === "200" ? "no answer" : httpWhy(code) };
+  let j = null; try { j = JSON.parse(raw); } catch { /* below */ }
+  const block = typeof j?.result === "string" && /^0x[0-9a-f]+$/i.test(j.result) ? parseInt(j.result, 16) : null;
+  if (block === null) return { ok: false, block, kind: "rpc", why: !j || typeof j !== "object" ? "not JSON" : `no block number (${j.error ? `error ${j.error.code ?? "?"}: ${String(j.error.message ?? "").slice(0, 80)}` : "no result"})` };
+  const acao = header(hdr, "access-control-allow-origin");
+  if (acao !== null && acao !== "*" && acao !== SITE) return { ok: false, block, kind: "cors", why: `its CORS header (access-control-allow-origin ${acao ? `"${acao}"` : "missing"}) does not allow ${SITE}: browsers drop the answer` };
+  // the preflight: a browser sends the POST only after a 2xx that allows the site's origin and the content-type header
+  const pcode = (readText(`${name}-pre.code`) || "").trim(), ph = readText(`${name}-pre.headers`);
+  const pao = header(ph, "access-control-allow-origin"), pah = header(ph, "access-control-allow-headers") || "";
+  const allowed = pah.split(",").map((s) => s.trim().toLowerCase());
+  const pre = !/^2\d\d$/.test(pcode) ? ["net", httpWhy(pcode)]
+    : pao !== "*" && pao !== SITE ? ["cors", `access-control-allow-origin ${pao ? `"${pao}"` : "missing"}`]
+    : !allowed.includes("content-type") && !allowed.includes("*") ? ["cors", `access-control-allow-headers ${pah ? `"${pah}"` : "missing"}, without content-type`]
+    : null;
+  if (pre) return { ok: false, block, kind: pre[0], why: `its CORS preflight (OPTIONS): ${pre[1]}, so browsers never send the read` };
+  return { ok: true, block, kind: "", why: "" };
+}
+// Stuck = a block number not above the one it gave 5+ min before (a run seconds after another is not judged). Each
+// judged reading becomes the next baseline, so a chain reset to a lower block fails one run, not every run after it.
+const web = readRpc("webrpc"), pw = prev.webRpc || {};
+const pwBlock = num(pw.block), pwAt = num(pw.blockAt);
+const advanced = web.block !== null && (pwBlock === null || web.block > pwBlock);
+const judged = web.block !== null && (advanced || pwAt === null || NOW - pwAt >= T.webRpcStuckSec - JIT);
+if (web.ok && !advanced && judged) Object.assign(web, { ok: false, kind: "stuck", why: `stuck: block ${web.block}, and ${pwBlock} at ${isoMin(pwAt)}` });
+// The deployed build's fallback RPCs (webbuild: its main script, then the fallbacks that script lists, read as webfb1,
+// webfb2, ... in that order; no file = unknown, taken as none), each read the same way (one reading: no stuck check).
+const build = (readText("webbuild") || "").split("\n").map((s) => s.trim()).filter(Boolean);
+const siteJs = build[0] || null, fbs = build.slice(1).map((url, i) => ({ url, ...readRpc(`webfb${i + 1}`) }));
+const fbOk = fbs.filter((f) => f.ok), webSev = fbOk.length ? "default" : "high";
+const host = (u) => String(u).replace(/^https:\/\//, "");
+const fbText = () => fbs.map((f) => `${host(f.url)} (${f.ok ? "ok" : f.why})`).join(", ");
+const siteText = () => (!siteJs ? "the deployed site's script could not be read for its fallback RPCs (none assumed)"
+  : `the deployed site (${siteJs}) ${fbs.length ? `falls back to ${fbText()}` : "has no fallback RPC"}`);
+S.webRpc = { fails: web.ok ? 0 : (pw.fails || 0) + 1, block: judged ? web.block : pwBlock, blockAt: judged ? NOW : pwAt };
+if (!web.ok) Object.assign(S.webRpc, { since: pw.fails ? pw.since ?? NOW : NOW, last: web.why, kind: web.kind });
+// Pushed at default (the site was on a fallback) and now no fallback answers: the high push goes out at once, not
+// after the default one's 3 h repeat window.
+const wasWeb = prev.conds?.["web-rpc"];
+if (!webSnoozed && !web.ok && webSev === "high" && wasWeb?.alerted && !pw.hi) unstamp(`${W}WEB RPC DOWN`);
+const curlPost = `curl -s -D - -H 'content-type: application/json' -H 'Origin: ${SITE}' --data '{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]}' ${WEB_RPC}`;
+const curlPre = `curl -s -D - -o /dev/null -X OPTIONS -H 'Origin: ${SITE}' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: content-type' ${WEB_RPC}`;
+const macCheck = (kind) => (kind === "cors"
+  ? `Check from the Mac: ${curlPre} ; then ${curlPost} ; both must show access-control-allow-origin ${SITE} (or *), the first also content-type in access-control-allow-headers (a block number alone does not mean a browser can use it).`
+  : kind === "net" ? `Check from the Mac: ${curlPost} ; if it answers there (HTTP 200, a block number, access-control-allow-origin ${SITE}) and WATCH CANNOT REACH THE API is open too, suspect this VPS's network.`
+  : `Check from the Mac: ${curlPost} ; it answers, but ${kind === "stuck" ? "its block does not move (it should rise ~2.5 a second)" : "without a block number"}: a problem of the RPC itself.`);
+cond("web-rpc", webSnoozed ? null : !web.ok, {
+  name: "WEB RPC DOWN", title: `${W}WEB RPC DOWN`, prio: webSev, dedupe: STD,
+  due: () => S.webRpc.fails >= T.webRpcFailRuns,
+  pending: () => `WEB RPC DOWN: ${WEB_RPC} failed ${S.webRpc.fails}/${T.webRpcFailRuns} runs in a row (${S.webRpc.last}); pushed from the ${T.webRpcFailRuns}rd, ${webSev === "high" ? "high" : "default (a fallback answers)"}`,
+  body: () => `${S.webRpc.fails} run(s) in a row since ${isoMin(S.webRpc.since)}, ${WEB_RPC} failed as a browser on ${SITE} reads it (eth_blockNumber and its CORS preflight): ${S.webRpc.last}. The web app reads prices, trades and signs (Dynamic) through it first (apps/web/src/config.ts RPC_URL), and ${siteText()}: ${fbOk.length ? "judges can still read and trade through the fallback" : "judges see no prices and cannot trade while it fails"}. The API, the maker and this watch read Ankr first, so nothing else notices. ${macCheck(S.webRpc.kind)} Known and nothing to fix: stack-watch.sh --snooze-web HOURS on the VPS.`,
+  okText: () => `${WEB_RPC} answers the site again (block ${web.block})`,
+});
+S.webRpc.hi = !!S.conds["web-rpc"]?.alerted && (!!pw.hi || (!web.ok && webSev === "high" && !webSnoozed));
 
 // ------------------------------------------------------------------------------------------------ a. maker stalled
 const snapAt = snap.ok ? Date.parse(snap.json.receivedAt || snap.json.generatedAt || "") / 1000 : NaN;
@@ -339,7 +444,7 @@ if (makerFresh) {
   const shown = due.length ? due : empties;
   cond("books", inClose ? null : due.length > 0 || (!!prev.conds?.books?.alerted && empties.length > 0), {
     name: "BOOKS EMPTY", title: `${W}BOOKS EMPTY`, prio: "default", dedupe: STD,
-    body: () => `${shown.length} at-the-money strike(s) without a maker quote on one side${due.length ? ` for over ${dur(T.booksAfterSec)}` : ""}: ${shown.map((e) => e.label + (e.mode && e.mode !== "quoting" ? ` [${e.mode}]` : "")).join("; ")}. Judges cannot trade there. Likely the quoting cap (4 MON per Taipei day, resets 16:00 UTC) is spent or the maker cannot send: from apps/maker-worker, node scripts/control.mjs status (budget.tier, errors). Cap: CONFIG_OVERRIDES, ${OPS} section 0. A deliberate pull: stack-watch.sh --snooze HOURS on the VPS.`,
+    body: () => `${shown.length} at-the-money strike(s) without a maker quote on one side${due.length ? ` for over ${dur(T.booksAfterSec)}` : ""}: ${shown.map((e) => e.label + (e.mode && e.mode !== "quoting" ? ` [${e.mode}]` : "")).join("; ")}. Judges cannot trade there. Likely the quoting cap (6 MON per Taipei day, resets 16:00 UTC) is spent or the maker cannot send: from apps/maker-worker, node scripts/control.mjs status (budget.tier, errors). Cap: CONFIG_OVERRIDES, ${OPS} section 0. A deliberate pull: stack-watch.sh --snooze HOURS on the VPS.`,
     okText: () => "every at-the-money strike has a maker bid and ask again (or left 0.10-0.90)",
   });
 } else {
@@ -451,7 +556,7 @@ const bal = { treasury: balance("treasury"), maker: balance("maker"), operator: 
 if (bal.maker === null && stalled === false && num(snap.json?.maker?.mon) !== null) bal.maker = num(snap.json.maker.mon); // the snapshot's own reading
 cond("treasury-low", bal.treasury === null ? null : bal.treasury < T.treasuryLowMon, {
   name: "TREASURY LOW", title: `${W}TREASURY LOW`, prio: "high", dedupe: BAL,
-  body: () => `The treasury holds ${f2(bal.treasury)} MON (< ${T.treasuryLowMon}, the judging line); it tops up the maker, operator, relayer and attester, up to 12 MON a day. Fund it from the deployer: cd docs/evidence/golive && node fund.mjs treasury=20 --dry, then without --dry (${OPS} section 4).`,
+  body: () => `The treasury holds ${f2(bal.treasury)} MON (< ${T.treasuryLowMon}, the judging line); it tops up the maker, operator, relayer, attester and guardian, up to 14 MON a day. Fund it from the deployer: cd docs/evidence/golive && node fund.mjs treasury=20 --dry, then without --dry (${OPS} section 4).`,
   okText: () => `the treasury holds ${f2(bal.treasury)} MON`,
 });
 cond("maker-low", bal.maker === null ? null : bal.maker < T.makerLowMon, {
@@ -499,13 +604,72 @@ for (const [k, v] of Object.entries(S.ladders)) {
   });
 }
 
+// ------------------------------------------------------------------------------------------------ e2. guardian, attester
+bal.guardian = balance("guardian");
+bal.attester = balance("attester");
+cond("guardian-low", bal.guardian === null ? null : bal.guardian < T.guardianLowMon, {
+  name: "GUARDIAN LOW", title: `${W}GUARDIAN LOW`, prio: "high", dedupe: BAL, after: T.roleLowAfterSec, minRuns: T.readyRuns,
+  body: (since) => `The guardian holds ${f4(bal.guardian)} MON (< ${T.guardianLowMon}) since ${isoMin(since)}; the treasury (${f2(bal.treasury)} MON) tops it up below 0.05, so its top-ups are failing. It pays the gas of challenge() (~0.011 MON: the Worker challenges a wrong settlement inside the 900 s window) and pause(); without it a wrong result pays out. From apps/maker-worker: node scripts/control.mjs treasury; by hand: cd docs/evidence/golive && node fund.mjs guardian=0.15 (${OPS} sections 3 and 4).`,
+  okText: () => `the guardian holds ${f4(bal.guardian)} MON`,
+});
+cond("attester-low", bal.attester === null ? null : bal.attester < T.attesterLowMon, {
+  name: "ATTESTER LOW", title: `${W}ATTESTER LOW`, prio: "high", dedupe: BAL, after: T.roleLowAfterSec, minRuns: T.readyRuns,
+  body: (since) => `The attester holds ${f4(bal.attester)} MON (< ${T.attesterLowMon}, about ${Math.floor(bal.attester / REPORT_MON)} reports at ${REPORT_MON}) since ${isoMin(since)}; the treasury (${f2(bal.treasury)} MON) tops it up below 0.3, so its top-ups are failing. It sends every settlement report (18:05 UTC, retried hourly): without gas no day settles, and the Worker voids a day 48 h after its end. From apps/maker-worker: node scripts/control.mjs treasury; by hand: cd docs/evidence/golive && node fund.mjs attester=0.5 (${OPS} sections 2 and 4).`,
+  okText: () => `the attester holds ${f4(bal.attester)} MON`,
+});
+
 // ------------------------------------------------------------------------------------------------ summary line
 const plans = makerFresh || stalled === false ? Object.entries(S.stations).map(([st, v]) => [st, ladderPlan(st, v.off)]) : [];
 const planText = ([st, p]) => `next ${st} ${ymd(p.next.date)} at ${isoMin(p.next.dueAt)} (${p.next.l ? `${p.next.l.status ?? "?"}` : "not planned yet"})${p.want.open ? "" : `; ${st} ${ymd(p.want.date)} NOT OPEN`}`;
-log(`read: snapshot ${snapAge === null ? "?" : dur(snapAge)} old, ${activeL.length} active ladder(s)${plans.length ? ` (${plans.map(planText).join("; ")})` : ""}${snoozed ? `, maker checks snoozed until ${hhmm(snoozeUntil)}Z` : ""}; relayer ${f2(mon)} MON, float ${flt ?? "?"}, drips ${drips ?? "?"}/${dripCap ?? "?"}, relays ${relays ?? "?"}/${relayCap ?? "?"}; treasury ${f2(bal.treasury)}, maker ${f2(bal.maker)}, operator ${f2(bal.operator)} MON; settlements ${setlList ? setlList.length : "?"}${chainReads.length ? `; chain: ${chainReads.join(", ")}` : ""}`);
+log(`read: snapshot ${snapAge === null ? "?" : dur(snapAge)} old, ${activeL.length} active ladder(s)${plans.length ? ` (${plans.map(planText).join("; ")})` : ""}${snoozed ? `, maker checks snoozed until ${hhmm(snoozeUntil)}Z` : ""}; relayer ${f2(mon)} MON, float ${flt ?? "?"}, drips ${drips ?? "?"}/${dripCap ?? "?"}, relays ${relays ?? "?"}/${relayCap ?? "?"}; treasury ${f2(bal.treasury)}, maker ${f2(bal.maker)}, operator ${f2(bal.operator)}, guardian ${f4(bal.guardian)}, attester ${f4(bal.attester)} MON; settlements ${setlList ? setlList.length : "?"}${chainReads.length ? `; chain: ${chainReads.join(", ")}` : ""}; web RPC ${web.ok ? `block ${web.block}` : `FAILED (${web.why})`}${fbs.length ? `, fallbacks ${fbText()}` : siteJs ? "" : ", the site's fallbacks unknown"}${webSnoozed ? `, WEB RPC DOWN snoozed until ${hhmm(webSnoozeUntil)}Z` : ""}`);
 if (FIX) log(`fixture reads: ${castLog.join(", ") || "none"}`);
 
 // ------------------------------------------------------------------------------------------------ g. daily digest
+// The CRE line: the settlement job's runs (--cre-runs; login "ok" / "missed" / "other" per lib.sh CRE_LAPSE_JS). It
+// says only what the records show: the login showed on the recorded runs from the first one after the last lapse
+// (CRE_AFTER misses in a row, what CRE LOGIN NEEDED pushes on) to the last one with it. That span is not the session's
+// age: a relogin with no miss before it (vps/relogin.sh run ahead of time) leaves no trace in the records, and a gap in
+// them (T.creGapSec without a record) is time nobody looked. A single miss is a CRE API error, not a new session.
+function creLine() {
+  if (!CRE_RUNS || !fs.existsSync(CRE_RUNS)) return null; // no settlement records on this host
+  let runs = null; try { runs = JSON.parse(fs.readFileSync(CRE_RUNS, "utf8")); } catch { /* below */ }
+  if (!Array.isArray(runs)) return "CRE: ? (the settlement job's evidence records are unreadable).";
+  const at = (r) => Date.parse(r.at) / 1000;
+  runs = runs.filter((r) => r && typeof r === "object" && Number.isFinite(at(r)));
+  if (!runs.length) return "CRE: no settlement run recorded yet.";
+  let streak = null, misses = [], singles = [];
+  for (const r of runs) {
+    if (r.login === "missed") misses.push(r);
+    else if (r.login === "ok") {
+      if (misses.length >= CRE_AFTER || !streak) { streak = r; singles = []; } else singles.push(...misses);
+      misses = [];
+    }
+  }
+  const last = runs[runs.length - 1], off = runs.filter((r) => r.path === "official").pop();
+  const rep = runs.filter((r) => Array.isArray(r.sent) && r.sent.length).pop(), shown = runs.filter((r) => r.login === "ok").pop();
+  const exitText = (r) => (Number(r.exit) === 0 ? "ok" : `FAILED (exit ${r.exit ?? "?"}${r.meaning ? `: ${r.meaning}` : ""})`);
+  const parts = [];
+  if (NOW - at(last) > T.creStaleSec) parts.push(`NO SETTLEMENT RUN RECORDED SINCE ${isoMin(at(last))} (${durD(NOW - at(last))} ago; it runs hourly at :05): is isotherm-settle.timer running? (isotherm-vps.sh status)`);
+  parts.push(off ? `last official run ${isoMin(at(off))} ${exitText(off)}` : `no official run in the last ${runs.length} runs`);
+  if (last.stoodDown) parts.push(`the last run (${isoMin(at(last))}) STOOD DOWN (${last.stoodDown === "don" ? "settlement runs on the Chainlink DON" : "this host released the settlement writer role to another host"}; nothing signed here)`);
+  else if (last !== off && last.path !== "official" && last.login === "ok") parts.push(`the last run (${isoMin(at(last))}) took the HARNESS fallback${last.why ? ` (${last.why})` : ""}`);
+  if (rep) parts.push(`last report ${rep.sent.map((o) => `${o.station} ${ymd(o.date)} ${o.action ?? "?"}${o.tmaxC !== null && o.tmaxC !== undefined ? ` ${o.tmaxC}C` : ""}${o.confirmed ? ` (${o.confirmed})` : ""}`).join(", ")} at ${isoMin(at(rep))} on the ${rep.path === "official" ? "official path" : "HARNESS fallback"}`);
+  let login;
+  if (misses.length >= CRE_AFTER) login = `LOGIN LAPSED: ${misses.length} runs in a row without it since ${isoMin(at(misses[0]))}${shown ? ` (last shown ${isoMin(at(shown))})` : ""}; CRE LOGIN NEEDED has the fix (vps/relogin.sh on the Mac)`;
+  else {
+    if (streak) {
+      const span = runs.slice(runs.indexOf(streak), runs.indexOf(shown) + 1), gaps = [];
+      for (let i = 1; i < span.length; i++) if (at(span[i]) - at(span[i - 1]) > T.creGapSec) gaps.push([at(span[i - 1]), at(span[i])]);
+      const big = gaps.slice().sort((x, y) => (y[1] - y[0]) - (x[1] - x[0]))[0];
+      login = `Login shown from ${isoMin(at(streak))} to ${isoMin(at(shown))} on every recorded run`
+        + (singles.length ? ` but ${singles.length} single miss(es) (the last at ${isoMin(at(singles[singles.length - 1]))}; each followed by a run with it: CRE API errors, no action)` : "")
+        + (big ? `; no run recorded ${isoMin(big[0])} to ${isoMin(big[1])}${gaps.length > 1 ? ` (and ${gaps.length - 1} shorter gap(s))` : ""}` : "")
+        + `; a span of ${durD(at(shown) - at(streak))}, not the session's age (a relogin with no miss before it leaves no record)`;
+    } else login = "No run showed the login";
+    if (misses.length) login += `; the LAST run (${isoMin(at(misses[0]))}) missed it: CRE LOGIN NEEDED follows if the next one does too`;
+  }
+  return `CRE: ${parts.join("; ")}. ${login}.`;
+}
 if (NOW >= t0 + T.digestHourUtc * HOUR - JIT && S.digest?.day !== today) {
   const first = !prev.lastRun;
   const yday = utcDay(t0 - 1);
@@ -522,13 +686,16 @@ if (NOW >= t0 + T.digestHourUtc * HOUR - JIT && S.digest?.day !== today) {
     u ? `Yesterday (UTC ${yday.slice(5)}): ${u.drips}/${u.dripCap ?? "?"} drips, ${u.relays}/${u.relayCap ?? "?"} relayed mints (last seen ${hhmm(u.at)}Z). Since the last digest: ${delta(tot.drips, d0.drips)} drips, ${delta(tot.relays, d0.relays)} mints.`
       : `Yesterday (UTC ${yday.slice(5)}): no counter samples. Totals: ${tot.drips ?? "?"} drips, ${tot.relays ?? "?"} relayed mints.`,
     `Relayer ${f2(mon)} MON = ${runway()}; AUSD float ${flt ?? "?"}.`,
-    `Treasury ${f2(bal.treasury)}, maker ${f2(bal.maker)}, operator ${f2(bal.operator)} MON. Maker quoting spend vs its 4 MON cap is not public (control.mjs status).`,
+    `Treasury ${f2(bal.treasury)}, maker ${f2(bal.maker)}, operator ${f2(bal.operator)}, guardian ${f4(bal.guardian)}, attester ${f4(bal.attester)} MON. Maker quoting spend vs its 6 MON cap is not public (control.mjs status).`,
+    `Web RPC (${host(WEB_RPC)}): ${web.ok ? `ok, block ${web.block}` : `FAILING (${web.why})`}; ${siteText()}.`,
     !snap.ok ? "Ladders: ? (/api/snapshot unreadable)."
       : `Ladders: ${activeL.length ? `${activeL.length} active (${activeL.map((l) => `${ladText(l)} to ${num(l.closeTime) !== null ? hhmm(l.closeTime) + "Z" : "?"}`).join(", ")})` : "NONE active"}${plans.length ? `; ${plans.map(([s, p]) => `next ${s} ${ymd(p.next.date)} opens ${isoMin(p.next.dueAt)} (${p.next.l ? `now ${p.next.l.status ?? "?"}` : "not planned yet"})`).join("; ")}` : ""}${stalled !== false ? " (from a stale snapshot)" : ""}.`,
     setlList ? `Settlements: ${set.filter((x) => Number(x.status) === 1).length} settled, ${set.filter((x) => Number(x.status) === 2).length} void${latest ? `; latest ${latest.station} ${ymd(latest.date)} ${Number(latest.status) === 1 ? `${latest.tmaxC}C` : "void"}` : ""}.` : "Settlements: ? (/api/settlements unreadable).",
+    creLine(),
     st ? `Trading: ${st.nonMakerWallets ?? "?"} non-maker wallets, ${st.nonMakerFills ?? "?"} non-maker fills in all.` : null,
     `Open alerts: ${open.length ? open.join("; ") : "none"}.`,
     snoozed ? `Snoozed: the maker checks until ${isoMin(snoozeUntil)} (stack-watch.sh --snooze 0 ends it).` : null,
+    webSnoozed ? `Snoozed: WEB RPC DOWN until ${isoMin(webSnoozeUntil)} (stack-watch.sh --snooze-web 0 ends it).` : null,
     `Watch: ${S.counts.runs} run(s) since the last digest, ${S.counts.apiFails} could not read the API.`,
   ].filter(Boolean);
   once("default", `${W}daily digest ${today}`, lines.join("\n"));

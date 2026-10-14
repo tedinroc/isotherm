@@ -56,6 +56,10 @@ case "$MODE" in
     case "$SU" in ''|*[!0-9]*) echo "snooze   none" ;;
       *) if [ "$SU" -gt "$(date +%s)" ]; then echo "snooze   maker checks held until $(date -u -d "@$SU" +%FT%TZ) (stack-watch.sh --snooze 0 ends it)"; else echo "snooze   none (the last one ended $(date -u -d "@$SU" +%FT%TZ))"; fi ;;
     esac
+    SW=$(cat "$PKG/var/watch/snooze-web-until" 2>/dev/null)   # stack-watch.sh --snooze-web: shown only while it holds
+    case "$SW" in ''|*[!0-9]*) ;;
+      *) if [ "$SW" -gt "$(date +%s)" ]; then echo "snooze   WEB RPC DOWN held until $(date -u -d "@$SW" +%FT%TZ) (stack-watch.sh --snooze-web 0 ends it)"; fi ;;
+    esac
     # -o cat: the run's own lines carry their UTC time; journalctl's default format would print the machine's hostname
     journalctl --user -u "$U" -n 12 --no-pager -o cat 2>/dev/null | sed 's/^/  /'
     ;;

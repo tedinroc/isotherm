@@ -1,4 +1,4 @@
-# 2026-10-13T14:44:41Z watch-systemd-e2e: Ubuntu 24.04.5 LTS aarch64, systemd 255, GNU bash, version 5.2.21(1)-release, node v22.23.3; network: none
+# 2026-10-14T06:00:34Z watch-systemd-e2e: Ubuntu 24.04.5 LTS aarch64, systemd 255, GNU bash, version 5.2.21(1)-release, node v22.23.3; network: none
 
 ## W1. root is refused
     | run as the job's non-root user (its systemd user manager runs the timer)
@@ -9,7 +9,7 @@
     | [vps/install-watch] units written to /home/isotherm/.config/systemd/user
     | [vps/install-watch] timer enabled/active
     |   NEXT                        LEFT LAST PASSED UNIT                 ACTIVATES
-    |   Tue 2026-10-13 14:50:00 UTC 5min -         - isotherm-watch.timer isotherm-watch.service
+    |   Wed 2026-10-14 06:10:00 UTC 9min -         - isotherm-watch.timer isotherm-watch.service
     | [vps/install-watch] installed. Logs: journalctl --user -u isotherm-watch -n 30 -o cat; alerts: /home/isotherm/isotherm/packages/cre-workflow/var/watch/alerts/ALERTS.log; remove: /home/isotherm/isotherm/packages/cre-workflow/vps/install-watch.sh --uninstall
   PASS  exit 0, units written, systemd-analyze verify silent (clean)
     | Environment=ISOTHERM_WATCH_DIR=/home/isotherm/isotherm/packages/cre-workflow/var/watch
@@ -17,24 +17,24 @@
     | OnCalendar=*-*-* *:00/10:00 UTC
   PASS  no @PKG@ left; ExecStart and ISOTHERM_WATCH_DIR point at ~/isotherm/packages/cre-workflow
   PASS  timer enabled/active
-    next run: Tue 2026-10-13 14:50:00 UTC
+    next run: Wed 2026-10-14 06:10:00 UTC
   PASS  the next run is at a :x0 minute
   PASS  a second install: exit 0, units unchanged (idempotent)
 
 ## W3. the schedule
     | Normalized form: *-*-* *:00/10:00 UTC
-    |     Next elapse: Tue 2026-10-13 14:50:00 UTC
-    |    Iteration #2: Tue 2026-10-13 15:00:00 UTC
-    |    Iteration #3: Tue 2026-10-13 15:10:00 UTC
-    |    Iteration #4: Tue 2026-10-13 15:20:00 UTC
-    |    Iteration #5: Tue 2026-10-13 15:30:00 UTC
-    |    Iteration #6: Tue 2026-10-13 15:40:00 UTC
-    |    Iteration #7: Tue 2026-10-13 15:50:00 UTC
-    |    Iteration #8: Tue 2026-10-13 16:00:00 UTC
-    |    Iteration #9: Tue 2026-10-13 16:10:00 UTC
-    |   Iteration #10: Tue 2026-10-13 16:20:00 UTC
-    |   Iteration #11: Tue 2026-10-13 16:30:00 UTC
-    |   Iteration #12: Tue 2026-10-13 16:40:00 UTC
+    |     Next elapse: Wed 2026-10-14 06:10:00 UTC
+    |    Iteration #2: Wed 2026-10-14 06:20:00 UTC
+    |    Iteration #3: Wed 2026-10-14 06:30:00 UTC
+    |    Iteration #4: Wed 2026-10-14 06:40:00 UTC
+    |    Iteration #5: Wed 2026-10-14 06:50:00 UTC
+    |    Iteration #6: Wed 2026-10-14 07:00:00 UTC
+    |    Iteration #7: Wed 2026-10-14 07:10:00 UTC
+    |    Iteration #8: Wed 2026-10-14 07:20:00 UTC
+    |    Iteration #9: Wed 2026-10-14 07:30:00 UTC
+    |   Iteration #10: Wed 2026-10-14 07:40:00 UTC
+    |   Iteration #11: Wed 2026-10-14 07:50:00 UTC
+    |   Iteration #12: Wed 2026-10-14 08:00:00 UTC
   PASS  12 elapses, none at minutes :03-:09
 
 ## W4. one run through systemd (no network: the API is unreadable, nothing is pushed)
@@ -48,46 +48,58 @@
   PASS  Result=success, exit 0
   PASS  Nice 15, I/O class idle (3), CPUWeight 20, MemoryMax 300M
     | Starting isotherm-watch.service - Isotherm stack watchdog (read-only API GETs + cast reads; ntfy phone push)...
-    | [2026-10-13T14:44:41Z] [watch] pending: API unreadable, 1/3 runs in a row (/api/health: no answer; /api/snapshot: no answer); pushed from the 3rd
-    | [2026-10-13T14:44:41Z] [watch] read: snapshot ? old, 0 active ladder(s); relayer ? MON, float ?, drips ?/?, relays ?/?; treasury ?, maker ?, operator ? MON; settlements ?
-    | [2026-10-13T14:44:41Z] [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-13 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
-    | Yesterday (UTC 10-12): no counter samples. Totals: ? drips, ? relayed mints.
+    | [2026-10-14T06:00:37Z] [watch] pending: API unreadable, 1/3 runs in a row (/api/health: no answer; /api/snapshot: no answer); pushed from the 3rd
+    | [2026-10-14T06:00:37Z] [watch] pending: WEB RPC DOWN: https://testnet-rpc.monad.xyz failed 1/3 runs in a row (no answer); pushed from the 3rd, high
+    | [2026-10-14T06:00:37Z] [watch] read: snapshot ? old, 0 active ladder(s); relayer ? MON, float ?, drips ?/?, relays ?/?; treasury ?, maker ?, operator ?, guardian ?, attester ? MON; settlements ?; web RPC FAILED (no answe ...
+    | [2026-10-14T06:00:37Z] [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-14 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
+    | Yesterday (UTC 10-13): no counter samples. Totals: ? drips, ? relayed mints.
     | Relayer ? MON = runway unknown; AUSD float ?.
-    | Treasury ?, maker ?, operator ? MON. Maker quoting spend vs its 4 MON cap is not public (control.mjs status).
+    | Treasury ?, maker ?, operator ?, guardian ?, attester ? MON. Maker quoting spend vs its 6 MON cap is not public (control.mjs status).
+    | Web RPC (testnet-rpc.monad.xyz): FAILING (no answer); the deployed site's script could not be read for its fallback RPCs (none assumed).
     | Ladders: ? (/api/snapshot unreadable).
     | Settlements: ? (/api/settlements unreadable).
+    | CRE: last official run 2026-10-14T05:00Z ok. Login shown from 2026-10-14T05:00Z to 2026-10-14T05:00Z on every recorded run; a span of 0 min, not the session's age (a relogin with no miss before it leaves no record).
     | Open alerts: none.
     | Watch: 1 run(s) since the last digest, 1 could not read the API.
-    | [2026-10-13T14:44:41Z] [watch] run done: 1 push(es) handed to push_alert (each title at most once per its repeat window)
+    | [2026-10-14T06:00:37Z] [watch] run done: 1 push(es) handed to push_alert (each title at most once per its repeat window)
     | Finished isotherm-watch.service - Isotherm stack watchdog (read-only API GETs + cast reads; ntfy phone push).
-  PASS  the run: API unreadable 1/3 (no CANNOT REACH push before the 3rd)
+  PASS  the run (started at minute :0, not skipped): API unreadable 1/3 (no CANNOT REACH push before the 3rd)
+  PASS  the web RPC reads (no network): WEB RPC DOWN pending 1/3; the site unreadable, so its fallbacks unknown
   PASS  the first digest went to push_alert, which sent nothing: no alert URL file here (it only logs)
-  PASS  var/watch/state.json written (api.fails 1)
-  PASS  var/ holds only watch/
+  PASS  the digest's CRE line, from the stand-in settlement record
+  PASS  var/watch/state.json written (api.fails 1, webRpc.fails 1)
+  PASS  var/ holds only watch/ and the settlement's evidence/, with nothing added there
+  PASS  the settlement record byte-identical (only read)
 
 ## W5. status, uninstall, purge; the settlement units untouched
     | timer    enabled/active
-    | next     Tue 2026-10-13 14:50:00 UTC 5min -         - isotherm-watch.timer isotherm-watch.service
+    | next     Wed 2026-10-14 06:10:00 UTC 9min -         - isotherm-watch.timer isotherm-watch.service
     | state    /home/isotherm/isotherm/packages/cre-workflow/var/watch/state.json
     | snooze   none
-    |   [2026-10-13T14:44:41Z] [watch] pending: API unreadable, 1/3 runs in a row (/api/health: no answer; /api/snapshot: no answer); pushed from the 3rd
-    |   [2026-10-13T14:44:41Z] [watch] read: snapshot ? old, 0 active ladder(s); relayer ? MON, float ?, drips ?/?, relays ?/?; treasury ?, maker ?, operator ? MON; settlements ?
-    |   [2026-10-13T14:44:41Z] [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-13 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
-    |   Yesterday (UTC 10-12): no counter samples. Totals: ? drips, ? relayed mints.
+    |   [2026-10-14T06:00:37Z] [vps] ALERT: ISOTHERM WATCH: daily digest 2026-10-14 | First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
+    |   Yesterday (UTC 10-13): no counter samples. Totals: ? drips, ? relayed mints.
     |   Relayer ? MON = runway unknown; AUSD float ?.
-    |   Treasury ?, maker ?, operator ? MON. Maker quoting spend vs its 4 MON cap is not public (control.mjs status).
+    |   Treasury ?, maker ?, operator ?, guardian ?, attester ? MON. Maker quoting spend vs its 6 MON cap is not public (control.mjs status).
+    |   Web RPC (testnet-rpc.monad.xyz): FAILING (no answer); the deployed site's script could not be read for its fallback RPCs (none assumed).
     |   Ladders: ? (/api/snapshot unreadable).
     |   Settlements: ? (/api/settlements unreadable).
+    |   CRE: last official run 2026-10-14T05:00Z ok. Login shown from 2026-10-14T05:00Z to 2026-10-14T05:00Z on every recorded run; a span of 0 min, not the session's age (a relogin with no miss before it l ...
     |   Open alerts: none.
     |   Watch: 1 run(s) since the last digest, 1 could not read the API.
-    |   [2026-10-13T14:44:41Z] [watch] run done: 1 push(es) handed to push_alert (each title at most once per its repeat window)
+    |   [2026-10-14T06:00:37Z] [watch] run done: 1 push(es) handed to push_alert (each title at most once per its repeat window)
     |   Finished isotherm-watch.service - Isotherm stack watchdog (read-only API GETs + cast reads; ntfy phone push).
   PASS  --status shows the run's journal lines and the snooze, and never the machine's hostname (journalctl -o cat)
-    | [2026-10-13T14:44:42Z] [watch] MAKER STALLED, BOOKS EMPTY, LADDER NOT OPENED and NO ACTIVE LADDER snoozed until 2026-10-13T16:44Z (2 h); the other checks keep running; --snooze 0 ends it
-    | snooze   maker checks held until 2026-10-13T16:44:42Z (stack-watch.sh --snooze 0 ends it)
-    | [2026-10-13T14:44:42Z] [watch] snooze ended: the maker checks run again from the next run
+    | [2026-10-14T06:00:38Z] [watch] MAKER STALLED, BOOKS EMPTY, LADDER NOT OPENED and NO ACTIVE LADDER snoozed until 2026-10-14T08:00Z (2 h); the other checks keep running; --snooze 0 ends it
+    | snooze   maker checks held until 2026-10-14T08:00:38Z (stack-watch.sh --snooze 0 ends it)
+    | [2026-10-14T06:00:38Z] [watch] snooze ended: the maker checks run again from the next run
+    | snooze   none
+    | [2026-10-14T06:00:38Z] [watch] WEB RPC DOWN snoozed until 2026-10-14T09:00Z (3 h); the other checks keep running; --snooze-web 0 ends it
+    | snooze   none
+    | snooze   WEB RPC DOWN held until 2026-10-14T09:00:38Z (stack-watch.sh --snooze-web 0 ends it)
+    | [2026-10-14T06:00:38Z] [watch] snooze ended: WEB RPC DOWN run again from the next run
     | snooze   none
   PASS  stack-watch.sh --snooze 2 shows in --status (GNU date); --snooze 0 ends it
+  PASS  stack-watch.sh --snooze-web 3 shows in --status as a second line, only while it holds; --snooze-web 0 ends it
     | [vps/install-watch] timer stopped and disabled; both units removed from /home/isotherm/.config/systemd/user
     | [vps/install-watch] var/watch/ kept (its alerts log and state); --purge deletes it
   PASS  --uninstall: timer gone, both units removed
@@ -95,4 +107,4 @@
   PASS  install again, then --uninstall --purge: var/watch deleted
   PASS  isotherm-settle.service/.timer byte-identical and still enabled
 
-# 2026-10-13T14:44:42Z done: 19 passed, 0 failed
+# 2026-10-14T06:00:40Z done: 23 passed, 0 failed

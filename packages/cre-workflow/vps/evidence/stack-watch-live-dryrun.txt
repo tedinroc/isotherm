@@ -1,17 +1,20 @@
-# 2026-10-13T14:44:42Z stack-watch.sh --dry-run on the Mac against the LIVE public API (4 GETs) and live Monad testnet (cast 1.8.5 reads: Ankr, then the official RPC); scratch state dir. Isolation: ISOTHERM_ALERT_URL_FILE=/nonexistent, so lib.sh cannot read any alert URL; --dry-run alone already guarantees nothing is sent (it never calls push_alert)
-$ ISOTHERM_ALERT_URL_FILE=/nonexistent ISOTHERM_CAST=~/.foundry/bin/cast ISOTHERM_WATCH_DIR=<scratch> bash packages/cre-workflow/vps/stack-watch.sh --dry-run
-[2026-10-13T14:44:42Z] [watch] DRY RUN: nothing is pushed and no state is saved (--dry-run hands nothing to push_alert); no alert URL file
-[2026-10-13T14:45:02Z] [watch] read: snapshot 1 min old, 1 active ladder(s) (next RCSS 2026-10-15 at 2026-10-14T04:00Z (not planned yet)); relayer 102.42 MON, float 51000, drips 0/17, relays 0/28; treasury 158.62, maker 4.83, operator 2.24 MON; settlements 5
-WOULD PUSH [priority default, repeat not limited] ISOTHERM WATCH: daily digest 2026-10-13
+# 2026-10-14T06:00:48Z stack-watch.sh --dry-run on the Mac against the LIVE public API (4 GETs), the LIVE web RPC (eth_blockNumber and its CORS preflight, Origin https://isotherm.pages.dev), the site's index.html and main script (its fallback RPCs) and live Monad testnet (cast 1.8.5 reads: Ankr, then the official RPC); scratch state dir. The settlement var/ is a read-only copy of the VPS's var/evidence/settle-runs.jsonl (its last 1000 lines, fetched over ssh), for the digest's CRE line. Isolation: ISOTHERM_ALERT_URL_FILE=/nonexistent, so lib.sh cannot read any alert URL; --dry-run alone already guarantees nothing is sent (it never calls push_alert)
+# the copy of the VPS records: 74 lines, the last run 2026-10-14T05:05:01Z
+$ ISOTHERM_ALERT_URL_FILE=/nonexistent ISOTHERM_CAST=~/.foundry/bin/cast ISOTHERM_WATCH_DIR=<scratch> ISOTHERM_STATE_DIR=<copy of the VPS var/> bash packages/cre-workflow/vps/stack-watch.sh --dry-run
+[2026-10-14T06:00:48Z] [watch] DRY RUN: nothing is pushed and no state is saved (--dry-run hands nothing to push_alert); no alert URL file
+[2026-10-14T06:01:01Z] [watch] read: snapshot 1 min old, 2 active ladder(s) (next RCSS 2026-10-16 at 2026-10-15T04:00Z (not planned yet)); relayer 102.16 MON, float 50000, drips 1/17, relays 0/28; treasury 175.54, maker 2.32, operator 1.47, guardian 0.0500, attester 0.7776 MON; settlements 6; web RPC block 70889606
+WOULD PUSH [priority default, repeat not limited] ISOTHERM WATCH: daily digest 2026-10-14
     First digest: the watchdog is running (every 10 min; this digest daily at 01:00 UTC).
-    Yesterday (UTC 10-12): no counter samples. Totals: 9 drips, 8 relayed mints.
-    Relayer 102.42 MON = 19.0 worst-case days at the current caps (17 drips x 0.260 + 28 relays x 0.03417 = 5.38 MON/day; 18.4 days left to 10-31); AUSD float 51000.
-    Treasury 158.62, maker 4.83, operator 2.24 MON. Maker quoting spend vs its 4 MON cap is not public (control.mjs status).
-    Ladders: 1 active (RCSS 2026-10-14 to 09:30Z); next RCSS 2026-10-15 opens 2026-10-14T04:00Z (not planned yet).
-    Settlements: 5 settled, 0 void; latest RCSS 2026-10-12 30C.
-    Trading: 4 non-maker wallets, 10 non-maker fills in all.
+    Yesterday (UTC 10-13): no counter samples. Totals: 10 drips, 8 relayed mints.
+    Relayer 102.16 MON = 19.0 worst-case days at the current caps (17 drips x 0.260 + 28 relays x 0.03417 = 5.38 MON/day; 17.7 days left to 10-31); AUSD float 50000.
+    Treasury 175.54, maker 2.32, operator 1.47, guardian 0.0500, attester 0.7776 MON. Maker quoting spend vs its 6 MON cap is not public (control.mjs status).
+    Web RPC (testnet-rpc.monad.xyz): ok, block 70889606; the deployed site (/assets/index-Cd8KBz0E.js) has no fallback RPC.
+    Ladders: 2 active (RCSS 2026-10-14 to 09:30Z, RCSS 2026-10-15 to 09:30Z); next RCSS 2026-10-16 opens 2026-10-15T04:00Z (not planned yet).
+    Settlements: 6 settled, 0 void; latest RCSS 2026-10-13 31C.
+    CRE: last official run 2026-10-14T05:05Z ok; last report RCSS 2026-10-13 settled 31C (resolved) at 2026-10-13T18:05Z on the official path. Login shown from 2026-10-10T09:05Z to 2026-10-14T05:05Z on every recorded run but 3 single miss(es) (the last at 2026-10-13T23:05Z; each followed by a run with it: CRE API errors, no action); no run recorded 2026-10-11T18:05Z to 2026-10-12T14:05Z; a span of 3 d 20 h, not the session's age (a relogin with no miss before it leaves no record).
+    Trading: 5 non-maker wallets, 12 non-maker fills in all.
     Open alerts: none.
     Watch: 1 run(s) since the last digest, 0 could not read the API.
-[2026-10-13T14:45:02Z] [watch] dry run done: 1 push(es) would be sent; nothing pushed, no state saved
+[2026-10-14T06:01:01Z] [watch] dry run done: 1 push(es) would be sent; nothing pushed, no state saved
 exit 0
-afterwards: no state file (a dry run saves none); alerts/: 0 files
+afterwards: no state file (a dry run saves none); no web-build cache (a dry run writes none); alerts/: 0 files; the settlement records unchanged and nothing added to that var/ (./evidence ./evidence/settle-runs.jsonl )
