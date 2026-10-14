@@ -17,8 +17,13 @@ set -euo pipefail
 RPC=${RPC:-http://127.0.0.1:19101}
 KEYDIR=${KEYDIR:-$HOME/.config/isotherm}
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-OUT=${OUT:-$ROOT/script/evidence/e2e-v1}
+# Artifacts: into OUT when set; otherwise into a new directory kept under $TMPDIR (its path printed), which is copied to
+# the tracked script/evidence/e2e-v1/ only with ISOTHERM_WRITE_EVIDENCE=1 and only after a pass (set -e: a failure exits
+# before the copy at the end).
+EVID=$ROOT/script/evidence/e2e-v1
+OUT=${OUT:-$(mktemp -d "${TMPDIR:-/tmp}/isotherm-e2e-v1.XXXXXX")}
 mkdir -p "$OUT"
+echo "artifacts: $OUT"
 export PATH="$PATH:$HOME/.foundry/bin"
 DEP="$ROOT/deployments/testnet.json"
 j() { python3 -c "import json; print(json.load(open('$DEP'))$1)"; }
@@ -209,3 +214,4 @@ log "9. vault AUSD $VB == pre-run $VAULT_START + sum(this run's series collatera
 [[ "$VB" == "$((VAULT_START + SUM))" ]] || exit 1
 echo; column -t -s $'\t' "$GAS_TSV"
 log "E2E v1 OK (anvil fork of live testnet, deployed v1 bytecode). Artifacts in $OUT"
+if [[ "${ISOTHERM_WRITE_EVIDENCE:-0}" == 1 && "$OUT" != "$EVID" ]]; then mkdir -p "$EVID"; cp -R "$OUT/." "$EVID/"; log "copied to script/evidence/e2e-v1/"; fi

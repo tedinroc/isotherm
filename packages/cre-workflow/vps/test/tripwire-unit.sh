@@ -14,7 +14,7 @@
 #   T7 as T6, plus a transaction from another host in the same run         -> WRITER CONFLICT
 #   T8 a failed writeReport whose hash IS in the result JSON, plus a transaction from another host in the same run
 #      (the failed report counts once, not twice)                          -> WRITER CONFLICT
-# Output: stdout (run-container-tests.sh saves it to vps/evidence/).
+# Output: stdout (run-container-tests.sh keeps it under $TMPDIR; vps/evidence/ with ISOTHERM_WRITE_EVIDENCE=1).
 set -uo pipefail
 REAL="$HOME/isotherm/packages/cre-workflow"
 export PATH="$REAL/.tools/bin:$PATH"

@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2016  # single-quoted commands are meant to expand on the remote (test) VPS
 # TEST ONLY, on the Mac with Docker or OrbStack: rehearses the whole VPS kit in Ubuntu 24.04 containers and writes the
-# outputs to vps/evidence/ (local paths replaced by <repo>, <scratch>, ~). Nothing live is sent; no real key, CRE
+# outputs (local paths replaced by <repo>, <scratch>, ~) to a new directory kept under $TMPDIR, its path printed.
+# ISOTHERM_WRITE_EVIDENCE=1 also copies each output to the tracked vps/evidence/, and only for a step that passed (exit 0
+# and no FAIL line); a failed step leaves its tracked file unchanged. Nothing live is sent; no real key, CRE
 # session or launchd job is touched (the Mac side of cutover/rollback runs against a launchctl stub and a scratch HOME).
 #
 #   vps/test/run-container-tests.sh all
@@ -23,11 +25,25 @@
 # Env: ISOTHERM_TEST_SCRATCH (default ~/.cache/isotherm-vps-test), ISOTHERM_FORK_URL (anvil fork source).
 set -uo pipefail
 PKG="$(cd "$(dirname "$0")/../.." && pwd)"; REPO=$(cd "$PKG/../.." && pwd)
-EV="$PKG/vps/evidence"; mkdir -p "$EV"
+EV="$PKG/vps/evidence"
 SC=${ISOTHERM_TEST_SCRATCH:-$HOME/.cache/isotherm-vps-test}; mkdir -p "$SC"; SC=$(cd "$SC" && pwd -P)
 IMG=isotherm-vps-test:24.04; CT=iso-vps; CT64=iso-vps-amd64; SSHPORT=22422; CFG="$SC/ssh_config"
 san() { sed -e "s#$REPO#<repo>#g" -e "s#$SC#<scratch>#g" -e "s#/private<scratch>#<scratch>#g" -e "s#$HOME#~#g"; }
-save() { san >"$EV/$1"; echo "  -> vps/evidence/$1 ($(grep -cE '^\s*PASS' "$EV/$1") PASS, $(grep -cE '^\s*FAIL' "$EV/$1") FAIL lines)"; }
+# The outputs: always this run's own directory, kept under $TMPDIR; save names each file in $KEPT/.step (it runs at the
+# end of a pipeline, so it cannot see the step's exit), and publish, called with the step's exit, copies them to the
+# tracked vps/evidence/ only on request (ISOTHERM_WRITE_EVIDENCE=1) and only when the step passed.
+KEPT=$(mktemp -d "${TMPDIR:-/tmp}/isotherm-vps-evidence.XXXXXX") || { echo "mktemp failed" >&2; exit 2; }
+save() { san >"$KEPT/$1"; echo "$1" >>"$KEPT/.step"; echo "  -> $KEPT/$1 ($(grep -cE '^\s*PASS' "$KEPT/$1") PASS, $(grep -cE '^\s*FAIL' "$KEPT/$1") FAIL lines)"; }
+publish() { # publish <the step's exit code>
+  local f
+  [ -f "$KEPT/.step" ] || return 0
+  while read -r f; do
+    if [ "${ISOTHERM_WRITE_EVIDENCE:-0}" != 1 ]; then :
+    elif [ "$1" = 0 ] && ! grep -qE '^\s*FAIL' "$KEPT/$f"; then mkdir -p "$EV"; cp "$KEPT/$f" "$EV/$f"; echo "  -> vps/evidence/$f"
+    else echo "  -> vps/evidence/$f left unchanged: the step failed (exit $1, $(grep -cE '^\s*FAIL' "$KEPT/$f") FAIL lines)"; fi
+  done <"$KEPT/.step"
+  rm -f "$KEPT/.step"
+}
 R() { ssh -F "$CFG" -o BatchMode=yes isotherm-test "$@"; }
 hdr() { echo "# $(date -u +%FT%TZ) $*"; }
 clear_of_05() { while m=$((10#$(date -u +%M))); [ "$m" -ge 3 ] && [ "$m" -le 8 ]; do echo "  (waiting: the live hourly job runs at :05)" >&2; sleep 30; done; }
@@ -66,14 +82,16 @@ EOF
 }
 step_push() {
   { hdr "vps/push.sh to a fresh stand-in VPS (no rsync there yet: the tar fallback; later pushes use rsync, see setup-arm64.txt)"
-    (cd "$REPO" && ISOTHERM_VPS_SSH_OPTS="-F $CFG" bash packages/cre-workflow/vps/push.sh isotherm-test --force 2>&1)
+    (cd "$REPO" && ISOTHERM_VPS_SSH_OPTS="-F $CFG" bash packages/cre-workflow/vps/push.sh isotherm-test --force 2>&1); rc=$?
     echo "## what arrived (directories to depth 4, size) and a search for files that must never be shipped"
-    R 'cd isotherm && cat SOURCE && find . -maxdepth 4 -type d | sort && du -sh . | cut -f1 && echo "forbidden files: $(find . \( -name "*.key" -o -name ".env*" -o -name "*.wasm" -o -name node_modules -o -name .tools -o -name var \) | wc -l)"'
+    R 'cd isotherm && cat SOURCE && find . -maxdepth 4 -type d | sort && du -sh . | cut -f1 && echo "forbidden files: $(find . \( -name "*.key" -o -name ".env*" -o -name "*.wasm" -o -name node_modules -o -name .tools -o -name var \) | wc -l)"' || rc=1
+    [ "$rc" = 0 ]   # the step's exit: push.sh and the listing both succeeded
   } 2>&1 | save push.txt
 }
 step_setup() {
-  { hdr "vps/setup.sh --with-anvil on the stand-in VPS (Ubuntu 24.04 arm64, systemd)"; R 'time bash isotherm/packages/cre-workflow/vps/setup.sh --with-anvil' 2>&1; echo "exit $?"
-    echo "## a second vps/push.sh now finds rsync on the VPS"; (cd "$REPO" && ISOTHERM_VPS_SSH_OPTS="-F $CFG" bash packages/cre-workflow/vps/push.sh isotherm-test --force 2>&1)
+  { hdr "vps/setup.sh --with-anvil on the stand-in VPS (Ubuntu 24.04 arm64, systemd)"; R 'time bash isotherm/packages/cre-workflow/vps/setup.sh --with-anvil' 2>&1; rc=$?; echo "exit $rc"
+    echo "## a second vps/push.sh now finds rsync on the VPS"; (cd "$REPO" && ISOTHERM_VPS_SSH_OPTS="-F $CFG" bash packages/cre-workflow/vps/push.sh isotherm-test --force 2>&1) || rc=1
+    [ "$rc" = 0 ]   # the step's exit: setup.sh and the second push both succeeded
   } 2>&1 | grep -v 'debconf: delaying' | save setup-arm64.txt
 }
 step_lint() {
@@ -84,8 +102,9 @@ step_lint() {
   { hdr "shellcheck $(R 'shellcheck --version | sed -n 2p') and systemd unit checks on the stand-in VPS"
     R 'bash -s' <<'EOS'
 cd isotherm/packages/cre-workflow
+rc=0   # the step's exit: a finding in the new scripts or a unit that fails verify fails it
 echo "## new scripts (vps/, vps/test/, setup.sh): shellcheck -x, all severities"
-shellcheck -x -P SCRIPTDIR vps/*.sh vps/test/*.sh setup.sh && echo "clean (0 findings)"
+if shellcheck -x -P SCRIPTDIR vps/*.sh vps/test/*.sh setup.sh; then echo "clean (0 findings)"; else rc=1; fi
 echo; echo "## changed shared scripts: findings at HEAD vs now (code: count), all severities"
 for f in scripts/settle-job.sh scripts/run-official.sh scripts/lib-don.sh scripts/don-rollback.sh; do
   a=$(cd /tmp/head && shellcheck -x -P SCRIPTDIR -f gcc "$f" 2>/dev/null | grep -oE 'SC[0-9]+' | sort | uniq -c | awk '{print $2":"$1}' | tr '\n' ' ')
@@ -93,17 +112,18 @@ for f in scripts/settle-job.sh scripts/run-official.sh scripts/lib-don.sh script
   echo "$f  HEAD: ${a:-none}  now: ${b:-none}"
 done
 echo; echo "## systemd-analyze --user verify of the installed units"
-systemd-analyze --user verify ~/.config/systemd/user/isotherm-settle.service ~/.config/systemd/user/isotherm-settle.timer && echo "verify OK"
+if systemd-analyze --user verify ~/.config/systemd/user/isotherm-settle.service ~/.config/systemd/user/isotherm-settle.timer; then echo "verify OK"; else rc=1; fi
 echo; echo "## the timer's schedule"
 systemd-analyze calendar --iterations=3 '*-*-* *:05:00 UTC' | sed -n '1,8p'
 echo; echo "## rendered units"; cat ~/.config/systemd/user/isotherm-settle.service ~/.config/systemd/user/isotherm-settle.timer
+exit "$rc"
 EOS
   } 2>&1 | save lint.txt
 }
 step_live() { clear_of_05; R 'bash isotherm/packages/cre-workflow/vps/test/live-readonly.sh' 2>&1 | save live-readonly.txt; }
 step_login() {
   { hdr "cre login through an ssh tunnel: the CLI on the stand-in VPS, the callback reached from this Mac (no real sign-in)"
-    if lsof -nP -iTCP:53682 -sTCP:LISTEN >/dev/null 2>&1; then echo "port 53682 busy on this Mac; skipped"; return; fi
+    if lsof -nP -iTCP:53682 -sTCP:LISTEN >/dev/null 2>&1; then echo "port 53682 busy on this Mac; skipped"; return 3; fi
     ( ssh -F "$CFG" -o ExitOnForwardFailure=yes -L 53682:127.0.0.1:53682 isotherm-test \
         'export PATH=$HOME/isotherm/packages/cre-workflow/.tools/bin:$PATH; (sleep 6; echo "--- on the VPS while cre login waits:"; ss -ltnp | grep 53682) & timeout 25 script -qec "cre login" /dev/null; echo "--- cre login exited $? (timeout 25 s)"' >"$SC/login-raw.txt" 2>&1 & )
     sleep 9
@@ -149,10 +169,11 @@ step_amd64() {
   docker exec -i -u isotherm "$CT64" sh -c 'cat > /home/isotherm/isotherm/deployments/testnet.json' <"$REPO/deployments/testnet.json"
   docker exec -u isotherm -w /home/isotherm "$CT64" bash -c '
     echo "# $(date -u +%FT%TZ) vps/setup.sh --no-units on $(. /etc/os-release; echo $PRETTY_NAME) $(uname -m) (plain container, emulated on Apple silicon; /proc/cpuinfo avx2: $(grep -m1 -o -w avx2 /proc/cpuinfo || echo none))"
-    time bash isotherm/packages/cre-workflow/vps/setup.sh --no-units; echo "exit $?"
-    P=isotherm/packages/cre-workflow/.tools; echo "installed: $(ls $P/bin | tr "\n" " "); downloads kept: $(ls $P/dl | tr "\n" " ")"' 2>&1 | grep -v 'debconf: delaying' | save setup-amd64.txt
+    time bash isotherm/packages/cre-workflow/vps/setup.sh --no-units; rc=$?; echo "exit $rc"
+    P=isotherm/packages/cre-workflow/.tools; echo "installed: $(ls $P/bin | tr "\n" " "); downloads kept: $(ls $P/dl | tr "\n" " ")"; exit $rc' 2>&1 | grep -v 'debconf: delaying' | save setup-amd64.txt
 }
 step_down() { docker rm -f "$CT" "$CT64" >/dev/null 2>&1; echo "containers removed"; }
 
 STEPS=("$@"); [ "${1:-all}" = all ] && STEPS=(image up push setup lint live login memory fork tripwire mac macpre amd64)
-for s in "${STEPS[@]}"; do echo "== $s"; "step_$s"; done
+for s in "${STEPS[@]}"; do echo "== $s"; "step_$s"; publish "$?"; done
+echo "outputs: $KEPT$([ "${ISOTHERM_WRITE_EVIDENCE:-0}" = 1 ] || echo " (vps/evidence/ unchanged; ISOTHERM_WRITE_EVIDENCE=1 copies the passing steps there)")"

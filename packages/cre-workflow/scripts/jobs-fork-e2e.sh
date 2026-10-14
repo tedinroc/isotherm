@@ -15,7 +15,9 @@
 # Test-only inputs: the day's METARs do not exist yet, so ISOTHERM_TEST_RELABEL serves LIVE archive data of
 # 2026-10-06 relabelled to 2026-10-08 (both jobs refuse it on a non-loopback RPC). Keys: public anvil dev keys
 # (#9 attester, #1 tx sender, #2 guardian), installed on the fork by impersonating the owner.
-# Port: ISOTHERM_ANVIL_PORT (default 19330). Output: evidence/jobs-fork-e2e.txt.
+# Port: ISOTHERM_ANVIL_PORT (default 19330). Output: a report in a new file kept under $TMPDIR (its path printed);
+# ISOTHERM_WRITE_EVIDENCE=1 also writes the tracked evidence/jobs-fork-e2e.txt, and only from a run that passed: A
+# settled the ladder, B's challenge and C's printed command voided it, D refused both live keys (else exit 1).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PKG=$PWD
@@ -72,6 +74,10 @@ via_launchd() { # job scenario
   echo "launchd $label: $(launchctl print "gui/$UID_/$label" | grep -E $'^\t(runs|last exit code|program|working directory) =' | sed 's/^\t//' | tr '\n' ';')"
 }
 
+# the report: always a new file kept under $TMPDIR; the tracked $OUT only on request and only after a pass (checked
+# at the end: the scenarios below run with set +e and print their outcomes)
+KEPT=$(mktemp -d "${TMPDIR:-/tmp}/isotherm-evidence.XXXXXX")/jobs-fork-e2e.txt
+echo "report: $KEPT"
 {
 set +e
 echo "# $(date -u +%FT%TZ) jobs-fork-e2e: launchd jobs from $RTP on an anvil fork of live testnet (pid $ANVIL_PID, :$PORT, block $(cast block-number --rpc-url "$RPC"))"
@@ -148,4 +154,11 @@ echo; echo "## D. live keys on the fork are refused (nothing is signed)"
 (cd "$RTP/settle" && ISOTHERM_RPC=$RPC ISOTHERM_STATE_DIR="$T/D" ISOTHERM_GUARDIAN_KEY_FILE="$HOME/.config/isotherm/guardian.key" WATCH_LOOKBACK_BLOCKS=50 bun ops/challenge-watch.ts | grep "pass done")
 (cd "$RTP" && ISOTHERM_RPC=$RPC ISOTHERM_STATE_DIR="$T/D" ISOTHERM_SETTLE_MODE=harness bash scripts/settle-job.sh 2>&1 | grep -E "REFUSED|exit|evidence\]") || true
 echo; echo "# done $(date -u +%FT%TZ); anvil pid $ANVIL_PID stopped on exit; test labels booted out"
-} 2>&1 | tee "$OUT"
+} 2>&1 | tee "$KEPT"
+echo "-> $KEPT"
+if ! grep -q 'outcomes=RCSS/20261008:settled' "$KEPT" || ! grep -q 'resultOf now Void' "$KEPT" \
+  || ! grep -q '^resultOf after the manual command = (2,' "$KEPT" || [ "$(grep -c 'REFUSED: the LIVE' "$KEPT")" -lt 2 ]; then
+  echo "-> evidence/jobs-fork-e2e.txt left unchanged: an expected outcome is missing (A settled, B and C voided, D refused)" >&2
+  exit 1
+fi
+if [ "${ISOTHERM_WRITE_EVIDENCE:-0}" = 1 ]; then cp "$KEPT" "$OUT"; echo "-> evidence/jobs-fork-e2e.txt"; fi

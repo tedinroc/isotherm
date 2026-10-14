@@ -13,7 +13,7 @@
 #   S8 release -> var/writer.released: a broadcasting run-official.sh refuses; a dry run still works
 #   S9 the timer itself starts the service (temporary every-minute drop-in), then the :05 schedule is back
 # Env: ISOTHERM_FORK_URL (default the Ankr Monad testnet RPC, so the official RPC's per-IP limit is not touched),
-#      PORT (default 19350). Output: stdout (the runner saves it to vps/evidence/).
+#      PORT (default 19350). Output: stdout (the runner keeps it under $TMPDIR; vps/evidence/ only on request).
 set -uo pipefail
 PKG="$HOME/isotherm/packages/cre-workflow"
 export PATH="$PKG/.tools/bin:$PATH"

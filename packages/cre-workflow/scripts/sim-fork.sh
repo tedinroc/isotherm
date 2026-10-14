@@ -13,7 +13,9 @@
 #
 # Binary: the official `cre` if you are logged in (`cre whoami`). Otherwise, ONLY with ISOTHERM_ALLOW_PATCHED_SIM=1,
 # the spike's dev build with the client-side login check removed (spikes/cre/patches; same engine, v1.37.0).
-# Output: evidence/sim-fork*.txt. Port: ISOTHERM_ANVIL_PORT (default 19311; this package uses 19300-19349).
+# Output: a report in a new file kept under $TMPDIR (its path printed); ISOTHERM_WRITE_EVIDENCE=1 also writes the
+# tracked evidence/sim-fork*.txt, and only from a run that passed (the reports confirmed, the replay refused).
+# Port: ISOTHERM_ANVIL_PORT (default 19311; this package uses 19300-19349).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PKG=$PWD
@@ -46,6 +48,10 @@ trap 'kill $ANVIL_PID 2>/dev/null || true' EXIT
 for _ in $(seq 1 60); do cast chain-id --rpc-url "$RPC" >/dev/null 2>&1 && break; sleep 0.5; done
 
 OUT="$PKG/evidence/${OUT_NAME:-sim-fork}.txt"
+# the report: always a new file kept under $TMPDIR; the tracked $OUT only on request and only after a pass (a failed
+# step ends this script here, set -e, so it never reaches the copy below)
+KEPT=$(mktemp -d "${TMPDIR:-/tmp}/isotherm-evidence.XXXXXX")/${OUT##*/}
+echo "report: $KEPT"
 {
   echo "# $(date -u +%FT%TZ) $LABEL"
   echo "# anvil fork of live Monad testnet at block $(cast block-number --rpc-url "$RPC"), pid $ANVIL_PID, port $PORT"
@@ -85,4 +91,10 @@ OUT="$PKG/evidence/${OUT_NAME:-sim-fork}.txt"
   INPUT=$(cast tx "$FIRST" input --rpc-url "$RPC")
   REPLAY=$(cast send --unlocked --from 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 "$FORWARDER" "$INPUT" --gas-limit 200000 --rpc-url "$RPC" --json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).transactionHash))')
   if (cd settle && bun e2e/confirm.ts --rpc "$RPC" "$REPLAY"); then echo "confirm exit 0 (UNEXPECTED)"; else echo "confirm exit $? (4 = not accepted, as expected for a replay)"; fi
-} 2>&1 | tee "$OUT"
+} 2>&1 | tee "$KEPT"
+# passed: the simulator's reports confirmed (exit 0) and the replayed calldata not accepted (exit 4)
+echo "-> $KEPT"
+if ! grep -qx 'confirm exit 0' "$KEPT" || ! grep -q '^confirm exit 4 ' "$KEPT"; then
+  echo "-> evidence/${OUT##*/} left unchanged: the reports did not confirm, or the replay was not refused" >&2; exit 1
+fi
+if [ "${ISOTHERM_WRITE_EVIDENCE:-0}" = 1 ]; then cp "$KEPT" "$OUT"; echo "-> evidence/${OUT##*/}"; fi

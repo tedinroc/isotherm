@@ -4,7 +4,8 @@
 # settle/config.don.json. No MON, no keys: the forwarder owner and the Resolver owner are impersonated on the fork, and
 # the DON signers and the attester are public throwaway keys.
 # Port: ISOTHERM_ANVIL_PORT (default 19341; this package uses 19300-19349). Stops only the anvil it started.
-# Output: evidence/don-gas-fork.txt (log) and evidence/don-gas-fork.json (numbers).
+# Output: a log and the numbers (don-gas-fork.txt, don-gas-fork.json) in a new directory kept under $TMPDIR (its path
+# printed); ISOTHERM_WRITE_EVIDENCE=1 also writes the tracked evidence/don-gas-fork.{txt,json}, only after a pass.
 # ISOTHERM_LIVE_COMPARE=0 skips the read-only eth_estimateGas comparison against live testnet.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -20,10 +21,17 @@ trap 'kill "$ANVIL_PID" 2>/dev/null || true' EXIT
 for _ in $(seq 1 60); do cast chain-id --rpc-url "http://127.0.0.1:$PORT" >/dev/null 2>&1 && break; sleep 0.5; done
 LIVE_CMP=""
 [ "${ISOTHERM_LIVE_COMPARE:-1}" = 1 ] && LIVE_CMP=https://testnet-rpc.monad.xyz
+KEPT=$(mktemp -d "${TMPDIR:-/tmp}/isotherm-evidence.XXXXXX")
+echo "report: $KEPT"
 {
   echo "# $(date -u +%FT%TZ) DON gas measurement: anvil $(anvil --version | head -1 | awk '{print $3}') fork of $FORK_URL at block $(cast block-number --rpc-url "http://127.0.0.1:$PORT") (pid $ANVIL_PID, port $PORT)"
   cd settle
-  ISOTHERM_FORK_RPC="http://127.0.0.1:$PORT" ISOTHERM_LIVE_COMPARE_RPC="$LIVE_CMP" ISOTHERM_DON_GAS_OUT="$PKG/evidence/don-gas-fork.json" \
+  ISOTHERM_FORK_RPC="http://127.0.0.1:$PORT" ISOTHERM_LIVE_COMPARE_RPC="$LIVE_CMP" ISOTHERM_DON_GAS_OUT="$KEPT/don-gas-fork.json" \
     bun test --timeout 600000 ./e2e/don-gas.fork.test.ts 2>&1
-} | tee "$PKG/evidence/don-gas-fork.txt"
-exit "${PIPESTATUS[0]}"
+} | tee "$KEPT/don-gas-fork.txt"
+# reached only after a pass (set -e, pipefail: a failing test ends the script above)
+echo "-> $KEPT"
+if [ "${ISOTHERM_WRITE_EVIDENCE:-0}" = 1 ]; then
+  cp "$KEPT/don-gas-fork.txt" "$PKG/evidence/don-gas-fork.txt"; echo "-> evidence/don-gas-fork.txt"
+  if [ -f "$KEPT/don-gas-fork.json" ]; then cp "$KEPT/don-gas-fork.json" "$PKG/evidence/don-gas-fork.json"; echo "-> evidence/don-gas-fork.json"; fi
+fi

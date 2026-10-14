@@ -5,6 +5,8 @@
 #      through Vault.duePendingLadders and - with no complete data yet for that day - must NOT report (PENDING)
 #   C. the runner refuses the LIVE attester key on a non-live RPC
 # The fork's Resolver attester is pointed at anvil's public key #9 (owner impersonation); the tx sender is anvil #1.
+# Output: a report in a new file kept under $TMPDIR (its path printed); ISOTHERM_WRITE_EVIDENCE=1 also writes the
+# tracked evidence/harness-fork.txt, and only from a run that passed (every step succeeded, C refused the key).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PKG=$PWD
@@ -25,6 +27,10 @@ chmod 600 var/fork-keys/*.key
 RESOLVER=$(node -e 'console.log(require(process.argv[1]).resolver)' "$PKG/../../deployments/testnet.json")
 OWNER=$(node -e 'console.log(require(process.argv[1]).roles.owner)' "$PKG/../../deployments/testnet.json")
 export ISOTHERM_RPC=$RPC ISOTHERM_STATE_DIR=var/fork-harness
+# the report: always a new file kept under $TMPDIR; the tracked $OUT only on request and only after a pass (a failed
+# step ends this script here, set -e, so it never reaches the copy below)
+KEPT=$(mktemp -d "${TMPDIR:-/tmp}/isotherm-evidence.XXXXXX")/harness-fork.txt
+echo "report: $KEPT"
 {
   echo "# $(date -u +%FT%TZ) harness runner on an anvil fork of live testnet, block $(cast block-number --rpc-url "$RPC") (pid $ANVIL_PID)"
   echo "## C. the LIVE attester key on a non-live RPC is refused"
@@ -42,4 +48,7 @@ export ISOTHERM_RPC=$RPC ISOTHERM_STATE_DIR=var/fork-harness
   cast rpc anvil_mine 0x50 0x1 --rpc-url "$RPC" >/dev/null
   HARNESS_AT=$((T + 80)) ./scripts/run-official.sh --harness --force
   echo "resultOf(RCSS,20261008) = $(cast call "$RESOLVER" 'resultOf(bytes4,uint32)((uint8,int16,uint64,uint64,bytes32))' 0x52435353 20261008 --rpc-url "$RPC")"
-} 2>&1 | tee "$OUT"
+} 2>&1 | tee "$KEPT"
+echo "-> $KEPT"
+if grep -q '^UNEXPECTED' "$KEPT"; then echo "-> evidence/harness-fork.txt left unchanged: C accepted the live key" >&2; exit 1; fi
+if [ "${ISOTHERM_WRITE_EVIDENCE:-0}" = 1 ]; then cp "$KEPT" "$OUT"; echo "-> evidence/harness-fork.txt"; fi

@@ -11,7 +11,9 @@
 # No MON, no real key, no CRE login, no launchd: CRE and launchd answers come from facts files, the DON is a throwaway
 # signer set registered on the forked forwarder, and the attester is a public test key. Values settled on the fork
 # (e.g. 27 C) are test values, not weather.
-# Port: ISOTHERM_ANVIL_PORT (default 19342). Output: evidence/don-rehearsal-fork.txt and evidence/don-rehearsal-evidence.jsonl.
+# Port: ISOTHERM_ANVIL_PORT (default 19342). Output: don-rehearsal-fork.txt and don-rehearsal-evidence.jsonl in a new
+# directory kept under $TMPDIR (its path printed); ISOTHERM_WRITE_EVIDENCE=1 also writes the tracked copies in
+# evidence/, and only when every check passed.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 PKG=$PWD
@@ -20,8 +22,11 @@ PORT=${ISOTHERM_ANVIL_PORT:-19342}
 RPC="http://127.0.0.1:$PORT"
 W="$PKG/var/don/rehearsal"
 rm -rf "$W"; mkdir -p "$W/home" evidence
-OUT="$PKG/evidence/don-rehearsal-fork.txt"
+# the report: always a new directory kept under $TMPDIR; the tracked evidence/ copies only on request, after a pass
+KEPT=$(mktemp -d "${TMPDIR:-/tmp}/isotherm-evidence.XXXXXX") || { echo "mktemp failed" >&2; exit 2; }
+OUT="$KEPT/don-rehearsal-fork.txt"
 : >"$OUT"
+echo "report: $KEPT"
 if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then echo "port $PORT is busy" >&2; exit 1; fi
 anvil --fork-url "${ISOTHERM_FORK_URL:-https://testnet-rpc.monad.xyz}" --port "$PORT" --silent >"$W/anvil.log" 2>&1 &
 ANVIL_PID=$!
@@ -123,7 +128,7 @@ D=$(fork_json don --station "$ST" --date "$DT" --tmax 27 --gas "$GAS" --org-owne
 log "$D"
 check "$(jq -r '.reportProcessed == true and (.ladderResolved.status == 1)' <<<"$D")" "ReportProcessed(result=true) + LadderResolved(Settled)"
 expect 0 "evidence record for the DON settlement (path 'don'), read from the chain" scripts/don-evidence.sh --rpc "$RPC" --out "$W/evidence" --no-cre --ladders 3
-cp "$W/evidence/don-runs.jsonl" "$PKG/evidence/don-rehearsal-evidence.jsonl"
+cp "$W/evidence/don-runs.jsonl" "$KEPT/don-rehearsal-evidence.jsonl"
 check "$(jq -s --arg st "$ST" --argjson d "$DT" '[.[] | select(.path == "don" and .station == $st and .date == $d and .reportProcessed == true and .attestation.matches == true and .report.signatures == 4)] | length == 1' "$W/evidence/don-runs.jsonl")" "don-runs.jsonl has the 'don' record (4 DON signatures, attestation by the attester)"
 
 # ---------------------------------------------------------------- rollback
@@ -153,4 +158,10 @@ expect 0 "ROLLBACK --execute signed from a key file (throwaway owner)" env ISOTH
 
 log ""
 log "# rehearsal finished: $FAILS failure(s)"
+echo "-> $KEPT"
+if [ "${ISOTHERM_WRITE_EVIDENCE:-0}" = 1 ]; then
+  if [ "$FAILS" = 0 ]; then
+    for f in don-rehearsal-fork.txt don-rehearsal-evidence.jsonl; do [ -f "$KEPT/$f" ] && cp "$KEPT/$f" "$PKG/evidence/$f" && echo "-> evidence/$f"; done
+  else echo "-> evidence/don-rehearsal-fork.txt and don-rehearsal-evidence.jsonl left unchanged: $FAILS check(s) failed"; fi
+fi
 exit $(( FAILS > 0 ? 1 : 0 ))

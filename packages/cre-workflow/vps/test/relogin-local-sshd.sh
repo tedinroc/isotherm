@@ -14,11 +14,13 @@
 #   S4 --dry-run               -> the real `ssh -G` reads the alias; nothing started
 # Needs port 53682 free on this machine (the fake CLI listens there, standing for the VPS side of the tunnel).
 # Usage: vps/test/relogin-local-sshd.sh   Env: KEEP=1 keeps the scratch.
-# Output: stdout and vps/evidence/relogin-local-sshd.txt (paths, user name and addresses replaced). Exit 0 = all
+# Output: stdout and a report (paths, user name and addresses replaced) in a new file kept under $TMPDIR, its path
+#   printed. ISOTHERM_WRITE_EVIDENCE=1 also writes the tracked vps/evidence/relogin-local-sshd.txt (or the file named
+#   by ISOTHERM_TEST_EVIDENCE=<file>, as in stack-watch-unit.sh), and only when every check passed. Exit 0 = all
 #   pass, 3 = skipped (sshd could not start, or port 53682 is in use).
 set -uo pipefail
 REAL="$(cd "$(dirname "$0")/../.." && pwd)"; REPO=$(cd "$REAL/../.." && pwd)
-EVOUT="$REAL/vps/evidence/relogin-local-sshd.txt"
+EVOUT=${ISOTHERM_TEST_EVIDENCE:-$REAL/vps/evidence/relogin-local-sshd.txt}
 SEARCH="$REAL/.tools/bin:$PATH:/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin"
 NODE=$(PATH=$SEARCH; command -v node) || { echo "node not found" >&2; exit 2; }
 SSHD=$(command -v sshd 2>/dev/null || echo /usr/sbin/sshd)
@@ -151,5 +153,11 @@ echo; echo "# $(date -u +%FT%TZ) done: $PASS passed, $FAIL failed"
 }
 
 main 2>&1 | san | tee "$SC/report.txt"; RC=${PIPESTATUS[0]}
-if [ "$RC" != 3 ]; then mkdir -p "$(dirname "$EVOUT")"; cp "$SC/report.txt" "$EVOUT"; echo "-> vps/evidence/relogin-local-sshd.txt"; fi
+# the report: always to a new file kept under $TMPDIR; to the tracked evidence file only on request, and only after a pass
+KEPT=$(mktemp -d "${TMPBASE%/}/isotherm-evidence.XXXXXX")/relogin-local-sshd.txt
+cp "$SC/report.txt" "$KEPT"; echo "-> $KEPT"
+if [ "${ISOTHERM_WRITE_EVIDENCE:-0}" = 1 ]; then
+  if [ "$RC" = 0 ]; then mkdir -p "$(dirname "$EVOUT")"; cp "$KEPT" "$EVOUT"; echo "-> ${EVOUT#"$REPO"/}"
+  else echo "-> ${EVOUT#"$REPO"/} left unchanged: the run failed or was skipped (exit $RC)"; fi
+fi
 exit "$RC"
