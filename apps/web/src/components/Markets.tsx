@@ -4,7 +4,7 @@ import { useApp } from '../state';
 import { chainNow, type LadderView, type StrikeView } from '../lib/data';
 import { countdown, pct, px } from '../lib/format';
 import { fairTag, type FairTag } from '../lib/fairSource';
-import { formatDate, localDateOf, stationMeta, weekday } from '../lib/stations';
+import { formatDate, localDateOf, observedClock, stationMeta, weekday } from '../lib/stations';
 import { IconExternal, IconThermo } from './icons';
 import { TradeSheet } from './TradeSheet';
 import { useWallet } from '../wallet/wallet';
@@ -157,6 +157,7 @@ function LadderCard({ l, now, booksAt, lang, onPick }: { l: LadderView; now: num
   const ph = phaseOf(l, now);
   const today = localDateOf(now * 1000, m.utcOffsetMin) === l.date;
   const obs = l.snap?.observedMaxC ?? null;
+  const obsAt = observedClock(l.snap?.observedAt, m.utcOffsetMin); // station time (labelled "local"), like the ladder's date
   return (
     <section className="card ladder">
       <header className="ladder-head">
@@ -176,7 +177,7 @@ function LadderCard({ l, now, booksAt, lang, onPick }: { l: LadderView; now: num
           <div className="fact">
             <span className="fact-label">{t('mk.maxSoFar')}</span>
             <span className="fact-value">
-              {obs}°C{l.snap?.observedAt ? <small> · {l.snap.observedAt}</small> : null}
+              {obs}°C{obsAt ? <small> · {t('mk.asOf', { t: obsAt })}</small> : null}
             </span>
           </div>
         )}

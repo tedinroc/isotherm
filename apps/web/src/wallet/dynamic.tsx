@@ -6,7 +6,7 @@ import { useCallback, useMemo, type ReactNode } from 'react';
 import { DynamicContextProvider, mergeNetworks, useDynamicContext, useIsLoggedIn, type EvmNetwork } from '@dynamic-labs/sdk-react-core';
 import { EthereumWalletConnectors, isEthereumWallet } from '@dynamic-labs/ethereum';
 import type { Address } from 'viem';
-import { CHAIN_ID, DYNAMIC_ENVIRONMENT_ID, EXPLORER, RPC_URL } from '../config';
+import { CHAIN_ID, DYNAMIC_ENVIRONMENT_ID, EXPLORER, RPC_URLS } from '../config';
 import type { Client, DynamicBridgeState, DynamicModule } from './wallet';
 
 const ICON = '/icon.svg';
@@ -18,7 +18,9 @@ const networks: EvmNetwork[] = [
     vanityName: 'Monad Testnet',
     iconUrls: [ICON],
     nativeCurrency: { decimals: 18, name: 'Monad', symbol: 'MON', iconUrl: ICON },
-    rpcUrls: [RPC_URL],
+    // RPC_URL, then Ankr (a fork keeps one URL). Dynamic 5.9 sends embedded-wallet transactions through rpcUrls[0]
+    // only; the second URL reaches external wallets (wallet_addEthereumChain) and the SDK's chain definition.
+    rpcUrls: RPC_URLS.slice(0, 2),
     blockExplorerUrls: [`${EXPLORER}/`],
     isTestnet: true,
   },

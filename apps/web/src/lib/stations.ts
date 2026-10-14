@@ -50,3 +50,16 @@ export function localDateOf(epochMs: number, utcOffsetMin: number): number {
   const d = new Date(epochMs + utcOffsetMin * 60_000);
   return d.getUTCFullYear() * 10_000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
 }
+
+/** Station-local "HH:MM" of the latest observation behind "max so far". Accepts an instant with an explicit zone
+ *  (`2026-10-14T02:30:00.000Z`) or an already-local "HH:MM"; anything else (incl. a zone-less date-time) gives null. */
+export function observedClock(at: string | null | undefined, utcOffsetMin: number): string | null {
+  const s = at?.trim() ?? '';
+  const hm = /^(\d{1,2}):(\d{2})$/.exec(s);
+  if (hm) return Number(hm[1]) < 24 && Number(hm[2]) < 60 ? `${hm[1].padStart(2, '0')}:${hm[2]}` : null;
+  if (!/(Z|[+-]\d{2}:?\d{2})$/i.test(s)) return null;
+  const ms = Date.parse(s);
+  if (!Number.isFinite(ms)) return null;
+  const d = new Date(ms + utcOffsetMin * 60_000);
+  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+}

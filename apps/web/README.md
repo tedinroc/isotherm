@@ -18,7 +18,12 @@ npx wrangler@3 pages deploy --branch main   # reads wrangler.toml: project isoth
 
 Environment (all optional, see `env.example`): `VITE_DYNAMIC_ENVIRONMENT_ID`, `VITE_API_URL` (empty = same-origin `/api`;
 `npm run dev` proxies `/api` to the live site, `ISOTHERM_DEV_API` overrides the proxy target), `VITE_RPC_URL`,
-`VITE_EXPLORER`, `VITE_ENV_LABEL` (red banner, use it for fork builds).
+`VITE_EXPLORER`, `VITE_ENV_LABEL` (red banner, use it for fork builds). When `VITE_RPC_URL` is a public Monad testnet
+RPC, every read and dev-wallet request goes there first, then Ankr, then thirdweb (`src/lib/chain.ts`): a 429/5xx is
+retried on the primary once before moving on, and any failure except a revert, a rejected signature or a deterministic tx
+error (insufficient balance, nonce too low, ...) moves on. A 5 s timeout or a second failure skips the primary for 30 s,
+so a hung primary costs about 5 s once per 30 s, not per request. Dynamic's embedded wallet still sends only through
+`VITE_RPC_URL` (SDK limitation). A fork URL on any host never falls back.
 
 **Login:** builds read the public Dynamic Sandbox environment ID from `.env.production` (committed; `npm run dev` reads
 `.env.local` instead, generated from `~/.config/isotherm/dynamic.env`). With it, "Sign in with email" (Dynamic, embedded

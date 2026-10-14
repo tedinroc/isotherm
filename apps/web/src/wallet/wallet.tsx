@@ -3,10 +3,9 @@
 //   - a clearly-labelled dev wallet: a testnet burner key in this browser's localStorage, so judges and testers can
 //     use the app without an account.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { createWalletClient, http, type Account, type Address, type Chain, type Hex, type Transport, type WalletClient } from 'viem';
+import type { Account, Address, Chain, Hex, Transport, WalletClient } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
-import { RPC_URL } from '../config';
-import { chain } from '../lib/chain';
+import { devWalletClient } from '../lib/chain';
 
 export type Client = WalletClient<Transport, Chain, Account>;
 
@@ -91,7 +90,7 @@ export function WalletProvider({ dynamic, children }: { dynamic: DynamicModule |
 
   const devAccount = useMemo(() => (devKey ? privateKeyToAccount(devKey) : null), [devKey]);
   const devClient = useMemo(
-    () => (devAccount ? (createWalletClient({ account: devAccount, chain, transport: http(RPC_URL) }) as Client) : null),
+    () => (devAccount ? (devWalletClient(devAccount) as Client) : null),
     [devAccount],
   );
 
