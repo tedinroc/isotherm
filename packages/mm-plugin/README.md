@@ -101,12 +101,22 @@ Before this change `quote` printed the v0-lite number next to every strike.
 
 ## Install and setup
 
+**Versions.** Tested on `@metamask/agent-wallet` 7.0.0: everything on this page, including the signed-in trades.
+Also tested on 7.2.0 (2026-10-14, signed out, live testnet): the setup script below installs the plugin with all 11
+commands consented, and `doctor`, `markets`, `quote`, `edge` and `kuru book` behave as on 7.0.0. Upgrading a 7.0.0
+install in place keeps the plugin. Signing on 7.2.0 has not been exercised
+([`evidence/04-agent-wallet-7.2.0-signed-out.txt`](evidence/04-agent-wallet-7.2.0-signed-out.txt)). mm 7.0.0 suggests
+upgrading to the newest version with a warning on stderr; `--json` output on stdout is unaffected. Keep 7.0.0; set
+`MM_SKIP_NEW_VERSION_CHECK=true` (or `1`) to hide the warning.
+
 **The 10143 problem.** In mm 7.0.0, MetaMask's hosted RPC gateway answers HTTP 400 `Invalid chainId` for 10143. The
 plugin's *reads* fall back to the RPC in your `customEvmChains[10143]` entry, and then to the public Monad RPC.
 *Signing* needs that chain entry to exist.
 
 **Install note.** On 7.0.0, `mm plugins install <npm-name>` prints "installed" and then silently uninstalls the
-plugin. Installing from a **tarball** works.
+plugin; 7.1.0's changelog lists a fix. Installing from a **tarball** works on 7.0.0 and 7.2.0. Do not install this
+plugin by name on any version: `mm-plugin-isotherm` is not on the npm registry, so that name would fetch whatever
+someone else publishes under it.
 
 The plugin installs from this repository: `npm pack` builds the tarball, and `scripts/setup-mm-monad.sh` installs it and
 handles both problems (the package is not on the npm registry):
@@ -194,7 +204,12 @@ throwaway attester (fork only).
 | v1 contracts (`deployments/testnet.json`, on-chain canonical registry), fork block 68,907,593 | all 38 steps as expected: 39 transactions CONFIRMED (including settlement and redeem after the 900 s challenge window), the sandwiched `sellYes` reverted on its bound, 1 policy denial, and every expected refusal | [`evidence/harness-v1/`](evidence/harness-v1/SUMMARY.txt) |
 | feasibility contracts (fallback, no registry), fork block 68,907,005 | all 38 steps as expected, the same 39 CONFIRMED and the same sandwich result; the maker snapshot is correctly ignored there (different books) | [`evidence/harness-feasibility/`](evidence/harness-feasibility/SUMMARY.txt) |
 | signed-out host on **live** testnet (read only) | `doctor`, `markets`, `quote` and `edge` work with no `mm login`; `quote` shows the live RCSS 2026-10-08 ladder with fair values from the live maker snapshot | [`evidence/02-readonly-live-signed-out.txt`](evidence/02-readonly-live-signed-out.txt) |
-| fresh `HOME` setup with a bare local tarball path | install and chain entry succeed (setup script unchanged since) | [`evidence/01-setup-fresh-home.txt`](evidence/01-setup-fresh-home.txt) |
+| fresh `HOME` setup with a bare local tarball path | install and chain entry succeed (since then the setup script only lost its registry default, which never resolved, and had comment edits; the tarball path is unchanged) | [`evidence/01-setup-fresh-home.txt`](evidence/01-setup-fresh-home.txt) |
+| signed-out **mm 7.2.0** host on **live** testnet (read only), 2026-10-14 | on a fresh `HOME` the current setup script installs the plugin (all 11 commands consented) and writes the chain entry; `doctor`, `markets`, `quote`, `edge` and `kuru book` work as on 7.0.0; a signed-out `buy --dry-run` stops at `AUTH_FAILED`; a home set up by 7.0.0 keeps the plugin when run with 7.2.0. Signing on 7.2.0 not exercised | [`evidence/04-agent-wallet-7.2.0-signed-out.txt`](evidence/04-agent-wallet-7.2.0-signed-out.txt) |
+
+The hint in both runs' `33-gateway-400-mapped.txt` predates the repository install path: it pipes an unpkg URL for
+`mm-plugin-isotherm`, a package that was never published, into `sh`. **Do not run it.** The current hint, and
+`doctor`'s fix field, point to `SKIP_INSTALL=1 sh scripts/setup-mm-monad.sh` in a clone of this repository.
 
 **N1 result (step 20 in both runs).** The plugin planned 10 NO on Tmax ≥ 30 °C at a worst case of 0.6392 per NO
 (`minAusdOut` 3.608238). The attacker drained the bids (0.363 × 85, 0.343 × 50, 0.34 × 100 on the fork's copy of the live v1 book)

@@ -11,7 +11,7 @@
 #   MM             mm command (default: mm)
 #   SKIP_INSTALL=1 only (re)write the chain entry
 #
-# Prereqs (human): `npm i -g @metamask/agent-wallet@7`, then `mm login` and `mm init` before the first TRADE.
+# Prereqs (human): `npm i -g @metamask/agent-wallet@7.0.0`, then `mm login` and `mm init` before the first TRADE.
 # Read-only commands (weather markets/quote/edge/positions, kuru book) work without signing in.
 set -eu
 MM="${MM:-mm}"

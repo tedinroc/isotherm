@@ -1,0 +1,553 @@
+# How to read this file. Each `$` line names the step; `mm` is the @metamask/agent-wallet binary from the prefix named
+# in that part, run with HOME set to the scratch home. `(mm 7.0.0)` / `(mm 7.2.0, same home)` name the binary used.
+# A `$` line marked `(summary: ...)` is a paraphrase: the output under it comes from a small python formatter over
+# that command's JSON or file, not the raw output. All other output is verbatim, apart from local paths, which are
+# replaced by <cwd>, <scratch>, <scratch-home>, <repo> and ~.
+# Three runs, each with its own UTC timestamp below: part 1 (03:37-03:59Z, this tarball), the in-place upgrade and
+# update-warning part (04:50Z), and the kuru book addendum at the end (05:07Z).
+#
+# 2026-10-14T03:37:08Z  signed-out mm 7.2.0 host (no mm login, no mm init), LIVE Monad testnet, reads only; fresh scratch HOME; telemetry off (MM_TELEMETRY_DISABLED=1); npm cache kept outside HOME
+# tarball: npm pack of this package, sha256 c863c8dacd732aa34666eac98d5da7cb4af246c77adde047d88bd86358ba245d
+$ npm i -g @metamask/agent-wallet@7.2.0   # here: npm i --prefix <scratch>/h72
+$ ls -A $HOME   # fresh home: empty
+$ ISOTHERM_TGZ=./mm-plugin-isotherm-0.1.0.tgz sh scripts/setup-mm-monad.sh
+@metamask/agent-wallet: Installing plugin file:<cwd>/mm-plugin-isotherm-0.1.0.tgz... installed v0.1.0
+customEvmChains[10143].rpcTarget = https://testnet-rpc.monad.xyz  (<scratch-home>/.metamask/wallets.json, created)
+Done. Check with:   mm weather doctor --json
+Read-only, no sign-in needed:   mm weather markets --json    mm weather quote taipei --json
+Trading needs `mm login` + `mm init` once, testnet MON for gas (https://faucet.monad.xyz) and testnet AUSD.
+Optional, so ctx.publicClient(10143) works too: run scripts/rpc-shim.mjs from the plugin package and export MM_INFURA_RPC_BASE_URL=http://127.0.0.1:18790
+exit=0
+$ mm plugins
+mm-plugin-isotherm 0.1.0
+$ mm plugins --json   (summary: name, version and sorted command ids of this plugin)
+mm-plugin-isotherm 0.1.0 ['kuru:book', 'kuru:cancel', 'kuru:limit', 'weather:buy', 'weather:doctor', 'weather:edge', 'weather:markets', 'weather:positions', 'weather:quote', 'weather:redeem', 'weather:sell']
+$ cat ~/.metamask/config.json   (summary: its "plugins" entry, then the two experimental flags)
+{
+ "mm-plugin-isotherm": {
+  "version": "0.1.0",
+  "integrity": "",
+  "manifestHash": "c0cfbd61cbe0b16eeaaa3ff131cc30fc0a80a23e3576d5599605014badfe1556",
+  "approvedCapabilities": [
+   "wallet-read",
+   "wallet-submit"
+  ],
+  "approvedCommandIds": [
+   "weather:markets",
+   "weather:quote",
+   "weather:edge",
+   "weather:positions",
+   "weather:doctor",
+   "weather:buy",
+   "weather:sell",
+   "weather:redeem",
+   "kuru:book",
+   "kuru:limit",
+   "kuru:cancel"
+  ],
+  "approvedAt": "2026-10-14T03:52:35.623Z"
+ }
+}
+experimentalPlugins: True  experimentalAllowUnverifiedInstalls: True
+$ mm weather doctor --json
+{
+  "ok": true,
+  "data": {
+    "plugin": "mm-plugin-isotherm@0.1.0",
+    "chainId": 10143,
+    "ok": false,
+    "checks": [
+      {
+        "check": "mm customEvmChains[10143] (executor nonce/gas/fees)",
+        "ok": true,
+        "detail": "rpcTarget https://testnet-rpc.monad.xyz"
+      },
+      {
+        "check": "mm gateway ctx.publicClient(10143)",
+        "ok": false,
+        "detail": "A project id is required to resolve the default EVM gateway RPC URL.",
+        "fix": "optional: the plugin reads through its own RPC fallback. To fix the gateway for other commands too, run scripts/rpc-shim.mjs from this package and export MM_INFURA_RPC_BASE_URL=http://127.0.0.1:18790"
+      },
+      {
+        "check": "read RPC",
+        "ok": true,
+        "detail": "mm-customEvmChains https://testnet-rpc.monad.xyz block 70864620"
+      },
+      {
+        "check": "contract CollateralVault",
+        "ok": true,
+        "detail": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39"
+      },
+      {
+        "check": "contract Resolver",
+        "ok": true,
+        "detail": "0x9c7876Bc27df6cB473f2eaFA296FdEC22747962B"
+      },
+      {
+        "check": "contract IsothermZap",
+        "ok": true,
+        "detail": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0"
+      },
+      {
+        "check": "contract AUSD",
+        "ok": true,
+        "detail": "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC"
+      },
+      {
+        "check": "contract KuruRouter",
+        "ok": true,
+        "detail": "0x7EFbE105Ca7415dE98F96622173458ac1c054630"
+      },
+      {
+        "check": "contract Multicall3",
+        "ok": true,
+        "detail": "0xcA11bde05977b3631167028862bE2a173976CA11"
+      },
+      {
+        "check": "canonical market registry",
+        "ok": true,
+        "detail": "on-chain 0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0.canonicalMarket(seriesId)"
+      },
+      {
+        "check": "maker snapshot API (optional, display only)",
+        "ok": true,
+        "optional": true,
+        "detail": "https://isotherm.pages.dev/api/snapshot: generated 12s ago (limit 600s), ladders RCSS 20261013, RCSS 20261014"
+      },
+      {
+        "check": "wallet",
+        "ok": false,
+        "detail": "none (run `mm init`, or pass --address)",
+        "fix": "mm login && mm init"
+      }
+    ],
+    "wallet": {
+      "address": null,
+      "source": "none (run `mm init`, or pass --address)"
+    },
+    "guardModeAllowlist": {
+      "note": "If your mm wallet runs Guard Mode with an allowlist, these are the contracts the plugin sends transactions to.",
+      "targets": [
+        "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+        "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+        "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC",
+        "0xd029C2D98ff85D8F64799017fE00a59B1159CE02",
+        "each strike's Kuru market (weather markets), for kuru limit/cancel",
+        "each outcome token (YES is approved to the Zap when selling YES or buying NO)"
+      ]
+    },
+    "publicRpc": "https://testnet-rpc.monad.xyz",
+    "deployment": "testnet (bundled)",
+    "abiSet": "v1",
+    "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+    "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+    "rpcSource": "mm-customEvmChains",
+    "rpcUrl": "https://testnet-rpc.monad.xyz",
+    "deploymentSource": "<scratch-home>/.local/share/mm/node_modules/mm-plugin-isotherm/assets/deployments.testnet.json",
+    "deploymentWarnings": []
+  },
+  "hint": "some checks failed: see fix fields"
+}
+exit=0
+$ mm weather markets --json
+{
+  "ok": true,
+  "data": {
+    "chainId": 10143,
+    "network": "Monad testnet (faucet AUSD only, no real money)",
+    "deployment": "testnet (bundled)",
+    "abiSet": "v1",
+    "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+    "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+    "rpcSource": "mm-customEvmChains",
+    "rpcUrl": "https://testnet-rpc.monad.xyz",
+    "ladders": [
+      {
+        "city": "Taipei",
+        "station": "RCSS",
+        "date": "2026-10-14",
+        "state": "open",
+        "closeTime": "2026-10-14T09:30:00Z",
+        "dayEnd": "2026-10-14T16:00:00Z",
+        "minutesToClose": 334,
+        "result": null,
+        "strikes": [
+          {
+            "strike": "Tmax>=29C",
+            "strikeC": 29,
+            "seriesId": "0x40fbf615d908d32593a59b37b8648422d33eb46ba00fda8a57af032bc4683cf7",
+            "yes": "0x2daE9BcE6758a33a0cCc8990C659163db116722c",
+            "no": "0x23392cd33fdDa6c0103af7f5DBf015a300341649",
+            "market": "0x7d01b361af05206DfF5Db88f1A5ceC98E232c550",
+            "marketSource": "registry",
+            "canonical": true,
+            "bestBid": null,
+            "bestAsk": null
+          },
+          {
+            "strike": "Tmax>=30C",
+            "strikeC": 30,
+            "seriesId": "0xc880829e0d47d04a1dc8a37707fa2afb023407ba50990e3034874fa4201e6520",
+            "yes": "0x030aF96Eea2674169525440A00EEC1aC6Ec85971",
+            "no": "0x736e39B65c6e4828bCfF2c3e3d7eBBD5f869Abb6",
+            "market": "0x4948D7eED368B0e7ac7261cd0d79ae6ff98FA55F",
+            "marketSource": "registry",
+            "canonical": true,
+            "bestBid": 0.33,
+            "bestAsk": 0.46
+          },
+          {
+            "strike": "Tmax>=31C",
+            "strikeC": 31,
+            "seriesId": "0x8d0272847e2c585f786571199de8041fccca8ecf1b970846002c739708e9cbab",
+            "yes": "0x687ca3b4EeE7e3Eb818e8461EcBef001C2d83539",
+            "no": "0x3da364E015D5e4ebcB4A755B67870EeC8b522227",
+            "market": "0x377Be42916F6050e647Fe8303157d30282dA638a",
+            "marketSource": "registry",
+            "canonical": true,
+            "bestBid": null,
+            "bestAsk": null
+          }
+        ]
+      }
+    ],
+    "count": 1,
+    "notes": [
+      "Each strike is a fully collateralized YES/NO pair (1 AUSD per complete set). YES pays 1 AUSD iff the official integer METAR Tmax >= k; a void pays 0.5/0.5.",
+      "Only YES has a Kuru book; NO is bought by minting a set and selling the YES leg (weather buy --side no)."
+    ]
+  },
+  "hint": "1 ladder(s)"
+}
+exit=0
+$ mm weather quote taipei --json
+{
+  "ok": true,
+  "data": {
+    "city": "Taipei",
+    "station": "RCSS",
+    "date": "2026-10-14",
+    "ladder": {
+      "state": "open",
+      "closeTime": "2026-10-14T09:30:00Z",
+      "dayEnd": "2026-10-14T16:00:00Z",
+      "result": null
+    },
+    "polymarket": {
+      "slug": "highest-temperature-in-taipei-on-october-14-2026",
+      "url": "https://polymarket.com/event/highest-temperature-in-taipei-on-october-14-2026",
+      "volumeUsd": 26406,
+      "sumMid": 1.003,
+      "closed": false
+    },
+    "makerSnapshot": {
+      "url": "https://isotherm.pages.dev/api/snapshot",
+      "used": true,
+      "generatedAt": "2026-10-14T03:56:53.697Z",
+      "ageS": 18,
+      "stale": false,
+      "strikesUsed": 3,
+      "note": null
+    },
+    "guardrailModel": {
+      "role": "GUARDRAIL ONLY: a sanity check, not a forecast and not a fair value. Isotherm's v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days).",
+      "usedFor": [
+        "maker-snapshot: isotherm-v0 from the maker snapshot (rolling per-model bias correction, empirical residuals)"
+      ],
+      "makerV0Mu": 29.75,
+      "pluginV0Lite": null
+    },
+    "observed": {
+      "source": "aviationweather.gov",
+      "station": "RCSS",
+      "date": 20261014,
+      "status": "in-progress",
+      "maxC": 29,
+      "nReports": 19,
+      "lastReportUtc": "2026-10-14T03:30:00Z",
+      "note": "max over every METAR and SPECI (incl. :30 reports) so far; informational only, settlement uses the official rule after day end"
+    },
+    "rows": [
+      {
+        "strike": "Tmax>=29C",
+        "strikeC": 29,
+        "seriesId": "0x40fbf615d908d32593a59b37b8648422d33eb46ba00fda8a57af032bc4683cf7",
+        "market": "0x7d01b361af05206DfF5Db88f1A5ceC98E232c550",
+        "canonical": true,
+        "book": {
+          "bestBid": null,
+          "bestAsk": null,
+          "bidSize": null,
+          "askSize": null,
+          "mid": null,
+          "spread": null
+        },
+        "fairValue": 1,
+        "fairValueSource": "maker-snapshot",
+        "fairValueBasis": "certain",
+        "polymarketImplied": 0.993,
+        "marketRef": 1,
+        "marketRefSource": "maker-snapshot",
+        "maker": {
+          "fair": 1,
+          "fairSource": "certain",
+          "pmImplied": 0.994178,
+          "quoteBid": null,
+          "quoteAsk": null,
+          "mode": "certain",
+          "flags": [
+            "observed-max>=k"
+          ]
+        },
+        "guardrail": {
+          "p": 1,
+          "source": "maker-snapshot",
+          "basis": "certain",
+          "flag": false
+        },
+        "observedLocked": true,
+        "takerFeeBps": 10
+      },
+      {
+        "strike": "Tmax>=30C",
+        "strikeC": 30,
+        "seriesId": "0xc880829e0d47d04a1dc8a37707fa2afb023407ba50990e3034874fa4201e6520",
+        "market": "0x4948D7eED368B0e7ac7261cd0d79ae6ff98FA55F",
+        "canonical": true,
+        "book": {
+          "bestBid": 0.33,
+          "bestAsk": 0.46,
+          "bidSize": 100,
+          "askSize": 100,
+          "mid": 0.395,
+          "spread": 0.13
+        },
+        "fairValue": 0.3604,
+        "fairValueSource": "maker-snapshot",
+        "fairValueBasis": "polymarket",
+        "polymarketImplied": 0.379,
+        "marketRef": 0.3604,
+        "marketRefSource": "maker-snapshot",
+        "maker": {
+          "fair": 0.3604,
+          "fairSource": "polymarket",
+          "pmImplied": 0.3583,
+          "quoteBid": 0.33,
+          "quoteAsk": 0.46,
+          "mode": "quoting",
+          "flags": [
+            "guard-wide"
+          ]
+        },
+        "guardrail": {
+          "p": 0.554,
+          "source": "maker-snapshot",
+          "basis": "intraday",
+          "flag": true
+        },
+        "observedLocked": false,
+        "takerFeeBps": 10
+      },
+      {
+        "strike": "Tmax>=31C",
+        "strikeC": 31,
+        "seriesId": "0x8d0272847e2c585f786571199de8041fccca8ecf1b970846002c739708e9cbab",
+        "market": "0x377Be42916F6050e647Fe8303157d30282dA638a",
+        "canonical": true,
+        "book": {
+          "bestBid": null,
+          "bestAsk": null,
+          "bidSize": null,
+          "askSize": null,
+          "mid": null,
+          "spread": null
+        },
+        "fairValue": 0.027,
+        "fairValueSource": "maker-snapshot",
+        "fairValueBasis": "polymarket",
+        "polymarketImplied": 0.03,
+        "marketRef": 0.027,
+        "marketRefSource": "maker-snapshot",
+        "maker": {
+          "fair": 0.027,
+          "fairSource": "polymarket",
+          "pmImplied": 0.0269,
+          "quoteBid": null,
+          "quoteAsk": null,
+          "mode": "pulled",
+          "flags": [
+            "guard-wide"
+          ]
+        },
+        "guardrail": {
+          "p": 0.242,
+          "source": "maker-snapshot",
+          "basis": "intraday",
+          "flag": true
+        },
+        "observedLocked": false,
+        "takerFeeBps": 10
+      }
+    ],
+    "notes": [],
+    "fidelity": "183/184 RCSS days match Polymarket",
+    "deployment": "testnet (bundled)",
+    "abiSet": "v1",
+    "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+    "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+    "rpcSource": "mm-customEvmChains",
+    "rpcUrl": "https://testnet-rpc.monad.xyz",
+    "disclaimer": [
+      "Testnet only: Monad testnet 10143 with faucet AUSD. Nothing here is real money or financial advice.",
+      "fairValue is the price the house maker quotes around: the Polymarket-implied P(Tmax >= k) from the maker's snapshot (or the plugin's own Polymarket read when the snapshot is missing or stale). fairValueBasis says when the maker fell back to its model because Polymarket had no usable price. It is a reference price, not a forecast.",
+      "guardrail is GUARDRAIL ONLY: Isotherm's own v0 forecast loses to Polymarket in backtest (Brier 0.0656 vs 0.0594, 381 station-days). The plugin-local v0-lite fallback is cruder still. No forecasting edge is claimed.",
+      "Settlement: official integer °C METAR max for the station-local day incl. SPECI and :30 reports; this rule matches Polymarket on 183/184 RCSS days and 209/209 RJTT days."
+    ]
+  },
+  "hint": "Isotherm Taipei 2026-10-14: 3 strikes"
+}
+exit=0
+$ mm weather edge taipei --json   (summary: ok, then the hint)
+ok: True | 0 strike(s) with a gap >= 0.03 vs Polymarket-implied (testnet; not a forecast)
+$ mm kuru book 0x7d01b361af05206DfF5Db88f1A5ceC98E232c550 --json   (summary: ok, then the hint)
+ok: True | None
+# `None` is the hint field, which kuru book does not set; it is not an error. This summary hid the book itself; the
+# markets output above shows no bid or ask on this strike (Tmax>=29C) at the time. Full output: addendum at the end.
+$ mm weather buy taipei --strike 31 --side yes --amount 1 --max-price 0.01 --dry-run --json   # signed out: stops at the host auth gate, as on 7.0.0
+{
+  "ok": false,
+  "error": {
+    "code": "AUTH_FAILED",
+    "message": "No CLI refresh token available — run `mm login` to sign in.",
+    "hint": "Run `mm login` to sign in."
+  }
+}
+exit=1
+
+## In-place upgrade: a home set up by mm 7.0.0 with the same setup script, then run with the 7.2.0 binary
+# 2026-10-14T04:50Z  a separate run from part 1 (its output files are stamped 04:50:45-04:51:02Z). This part and the
+# update-warning part below use a second scratch home, set up by mm 7.0.0 as the next two lines describe.
+# home set up at 2026-10-14T03:03:56.405Z by mm 7.0.0: ISOTHERM_TGZ=./mm-plugin-isotherm-0.1.0.tgz sh scripts/setup-mm-monad.sh
+# plugin build in that home: "builtAt":"2026-10-14T02:58:15.300Z" (same code as the tarball above; only README.md differs)
+$ (mm 7.0.0) mm plugins
+ ›   Warning: @metamask/agent-wallet update available from 7.0.0 to 7.2.0. Run 
+ ›   npm install -g @metamask/agent-wallet to update.
+mm-plugin-isotherm 0.1.0
+host link: <repo>/packages/mm-plugin/harness/host/node_modules/@metamask/agent-wallet
+$ (mm 7.2.0, same home) mm plugins
+mm-plugin-isotherm 0.1.0
+host link: <scratch>/h72/node_modules/@metamask/agent-wallet
+$ (mm 7.2.0, same home) mm weather quote taipei --json   (summary)
+ok: True [('Tmax>=29C', 'maker-snapshot'), ('Tmax>=30C', 'maker-snapshot'), ('Tmax>=31C', 'maker-snapshot')]
+
+## The 7.0.0 update warning (the version cache in this home says latest = 7.2.0)
+$ (mm 7.0.0) mm config get experimentalPlugins --json   # stderr, then stdout
+exit=0
+stderr:
+ ›   Warning: @metamask/agent-wallet update available from 7.0.0 to 7.2.0. Run 
+ ›   npm install -g @metamask/agent-wallet to update.
+stdout:
+{
+  "ok": true,
+  "data": {
+    "experimentalPlugins": true
+  }
+}
+$ (mm 7.0.0) MM_SKIP_NEW_VERSION_CHECK=true mm config get experimentalPlugins --json
+exit=0
+stderr bytes: 0
+{
+  "ok": true,
+  "data": {
+    "experimentalPlugins": true
+  }
+}
+
+exit: done
+
+## Addendum: kuru book, full output (part 1 printed only the summary above)
+# 2026-10-14T05:07:31Z  same scratch HOME and 7.2.0 host as part 1 (plugin from the tarball above)
+# The same strike as part 1, still without a bid or ask (the maker stopped quoting it once the observed max reached
+# 29 C: quote above shows mode "certain"), then the 2026-10-15 ladder's Tmax>=29C market, which has a live book.
+$ mm kuru book 0x7d01b361af05206DfF5Db88f1A5ceC98E232c550 --json
+{
+  "ok": true,
+  "data": {
+    "market": "0x7d01b361af05206DfF5Db88f1A5ceC98E232c550",
+    "pair": "RCSS-20261014-GE29-Y/AUSD",
+    "params": {
+      "base": "0x2daE9BcE6758a33a0cCc8990C659163db116722c",
+      "quote": "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC",
+      "baseDecimals": 6,
+      "quoteDecimals": 6,
+      "pricePrecision": "10000",
+      "sizePrecision": "1000000",
+      "tick": "0.0010",
+      "minSize": "1.000000",
+      "maxSize": "1000000.000000",
+      "takerFeeBps": 10,
+      "makerFeeBps": 0
+    },
+    "book": {
+      "block": "70879054",
+      "bestBid": null,
+      "bestAsk": null,
+      "bids": [],
+      "asks": []
+    },
+    "mine": null,
+    "deployment": "testnet (bundled)",
+    "abiSet": "v1",
+    "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+    "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+    "rpcSource": "mm-customEvmChains",
+    "rpcUrl": "https://testnet-rpc.monad.xyz"
+  }
+}
+exit=0
+$ mm kuru book 0x9924959179E0f3dF02EAaD343e0351097B290f69 --json
+{
+  "ok": true,
+  "data": {
+    "market": "0x9924959179E0f3dF02EAaD343e0351097B290f69",
+    "pair": "RCSS-20261015-GE29-Y/AUSD",
+    "params": {
+      "base": "0x4F2D135f6804bBDF269156514eFED19814Cd0ad5",
+      "quote": "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC",
+      "baseDecimals": 6,
+      "quoteDecimals": 6,
+      "pricePrecision": "10000",
+      "sizePrecision": "1000000",
+      "tick": "0.0010",
+      "minSize": "1.000000",
+      "maxSize": "1000000.000000",
+      "takerFeeBps": 10,
+      "makerFeeBps": 0
+    },
+    "book": {
+      "block": "70879142",
+      "bestBid": 0.48,
+      "bestAsk": 0.61,
+      "bids": [
+        {
+          "price": 0.48,
+          "size": 100
+        }
+      ],
+      "asks": [
+        {
+          "price": 0.61,
+          "size": 100
+        }
+      ]
+    },
+    "mine": null,
+    "deployment": "testnet (bundled)",
+    "abiSet": "v1",
+    "vault": "0xae36cf0a163bAfCde4D40a6Ab7b5E3C762ad7B39",
+    "zap": "0x1ACaf47987Fe570df5d136Ae1CaC0D45E2B8CFb0",
+    "rpcSource": "mm-customEvmChains",
+    "rpcUrl": "https://testnet-rpc.monad.xyz"
+  }
+}
+exit=0

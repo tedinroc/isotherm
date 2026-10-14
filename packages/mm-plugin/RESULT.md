@@ -1,5 +1,11 @@
 # mm-plugin-isotherm: RESULT (2026-10-07)
 
+> **Superseded (2026-10-07 snapshot).** Kept for the record; [README.md](README.md) is the current description.
+> Since this snapshot the one missing hop (a real MetaMask sign-in with MetaMask's signing service broadcasting on
+> 10143) has run twice: [`evidence/signed-in/`](evidence/signed-in/README.md) (2026-10-08) and
+> [`evidence/signed-in-2026-10-12/`](evidence/signed-in-2026-10-12/README.md). The package was never published to
+> npm, so it installs from this repository (README, "Install and setup"); the unpkg URL in §4 never existed.
+
 **Verdict: the plugin is built and every command works in the real MetaMask Agent Wallet host (`@metamask/agent-wallet`
 7.0.0) on an anvil fork of live Monad testnet. The read path also works against the live chain.** One hop has never
 run: MetaMask's real signing service broadcasting one of our 10143 transactions. It needs a team member to sign in.
@@ -106,7 +112,9 @@ run. Since 2026-10-07 16:06 UTC the API is served at `https://isotherm.pages.dev
    - Install the host and plugin:
      ```sh
      npm i -g @metamask/agent-wallet@7.0.0
-     curl -fsSL https://unpkg.com/mm-plugin-isotherm@0.1.0/scripts/setup-mm-monad.sh -o setup-mm-monad.sh && sh setup-mm-monad.sh
+     # (superseded: this line was an unpkg URL, which never existed; the package installs from the repository)
+     git clone https://github.com/tedinroc/isotherm && cd isotherm/packages/mm-plugin
+     npm ci && npm pack && ISOTHERM_TGZ=./mm-plugin-isotherm-0.1.0.tgz sh scripts/setup-mm-monad.sh
      mm login        # pick one method and keep it: the server-wallet address depends on the method
      mm init         # BYOK gives a deterministic address
      mm weather doctor --json
