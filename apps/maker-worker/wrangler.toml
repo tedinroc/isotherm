@@ -83,9 +83,11 @@ SHADOW_ROLL_EVERY_SEC = "3600"
 # `watchdog --verify` job).
 WATCHDOG_VERIFY_SEC = "300"
 # Settlement guardrails (src/watcher.ts; the CRE settlement itself still runs through the official CRE CLI):
-# "SETTLEMENT OVERDUE <ICAO>:<date>" when a vault ladder has no result 3 h after its local day end, repeated at most
-# hourly per ladder; "OVERDUE CLEARED" once a result lands.
-SETTLE_OVERDUE_SEC = "10800"
+# "SETTLEMENT OVERDUE <ICAO>:<date>" when a vault ladder has no result 5 h after its local day end, repeated at most
+# hourly per ladder; "OVERDUE CLEARED" once a result lands. 5 h since 2026-10-15 (was 3 h): the Worker's alerts reach the
+# phone now (Telegram), and the settlement server tries at day end + 2:05, 3:05 and 4:05 before the VPS's own +5 h alert,
+# so +3 h paged at 03:00 Taipei after a single failed attempt.
+SETTLE_OVERDUE_SEC = "18000"
 SETTLE_OVERDUE_REPEAT_SEC = "3600"
 # From Resolver.staleAt (day end + 48 h) and only while the Resolver is NOT paused: simulate, then send voidIfStale
 # from the operator key (live mode only, <= 0.05 MON/day, <= 1 attempt per ladder per hour). "0" = alert only.
