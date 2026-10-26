@@ -24,6 +24,8 @@ Monad Metropolis, Track 01 (Onchain Finance & Trading). Isotherm runs on Monad t
 | **Videos** | [Technical demo](https://youtu.be/15AFL_xz_3U) (2:58) · [Pitch](https://youtu.be/_OI-bEk7hGI) (1:55) · [Dynamic sign-in flow](https://youtu.be/XU761rIkU-k) (1:12) · [Chainlink CRE live run](https://youtu.be/GjaAFeqG0oA) (1:41) · [MetaMask Agent Wallet flow](https://youtu.be/kaOWRwc2IA0) (3:07) |
 | **Design docs** | [ARCHITECTURE.md](ARCHITECTURE.md) · [docs/OPERATIONS.md](docs/OPERATIONS.md) · logo and cover in [`brand/`](brand/) |
 
+> **Explorer links (note added 2026-10-26, after submission; no code changed):** MonadVision now keeps transaction pages for only about 9 days, so the transaction links in this README open an error page there. Every one of those transactions is still on chain with status success. To view one, open the same hash on MonadScan: `https://testnet.monadscan.com/tx/<hash>`. Contract and address pages on MonadVision still load.
+
 ## The problem and the product
 
 Polymarket already trades daily high-temperature markets that resolve on a public airport weather report. Each city-day is split into 11 mutually exclusive temperature buckets (as of October 2026), traded on an off-chain-matched order book. Isotherm is built for the traders and bot builders already on those markets, and for agents through the MetaMask plugin.
