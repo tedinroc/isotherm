@@ -7,13 +7,24 @@
 
 <p align="center">
 <a href="https://isotherm.pages.dev"><img alt="Live on Monad testnet" src="https://img.shields.io/badge/live-Monad%20testnet%2010143-836EF9"></a>
-<a href="docs/evidence/docs-pass/forge-test-full-fork68898133.txt"><img alt="149 Foundry tests passing" src="https://img.shields.io/badge/Foundry%20tests-149%20passing-2ea44f"></a>
-<a href="script/evidence/sourcify-verify.txt"><img alt="Sourcify exact_match" src="https://img.shields.io/badge/Sourcify-exact__match-1f6feb"></a>
-<a href="spikes/weather/RESULT.md"><img alt="Settlement rule matches Polymarket" src="https://img.shields.io/badge/matches%20Polymarket-183%2F184%20Taipei%2C%20209%2F209%20Tokyo-e36209"></a>
+<a href="docs/evidence/docs-pass/forge-test-full-fork68898133.txt"><img alt="149 Foundry tests in the recorded run" src="https://img.shields.io/badge/recorded%20Foundry%20tests-149-2ea44f"></a>
 <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-blue"></a>
 </p>
 
-Monad Metropolis, Track 01 (Onchain Finance & Trading). Isotherm runs on Monad testnet (chain 10143) with faucet AUSD.
+**MetaMask bounty winner · Monad Metropolis · US$750** — [award card](docs/awards/metropolis-metamask-bounty.png).
+
+**Status:** Monad testnet (chain 10143), using faucet AUSD. Built for Monad Metropolis, Track 01 (Onchain Finance & Trading). The current CRE path uses the official CLI simulator with broadcast through MockKeystoneForwarder; a production DON deployment is not live.
+
+[Open the app](https://isotherm.pages.dev/) · [Watch the technical demo](https://youtu.be/15AFL_xz_3U) · [Quick start](#quick-start) · [Architecture](ARCHITECTURE.md) · [Settlement evidence](#how-it-works)
+
+## Start here
+
+- **Explore the product:** open the app to inspect a city's temperature ladder, then use test funds to try a trade.
+- **Build a trading agent:** start with the [MetaMask Agent Wallet plugin](packages/mm-plugin/README.md), including its signing-policy boundary.
+- **Review settlement:** inspect [the weather replay](spikes/weather/RESULT.md) and [CRE workflow](packages/cre-workflow/README.md); the historical comparison is evidence for those dates and stations, not a future accuracy guarantee.
+- **Run the code:** follow [Quick start](#quick-start) and the component READMEs linked below.
+
+## Project links
 
 | | |
 |---|---|
@@ -162,6 +173,8 @@ docs/  brand/  spikes/  Runbook and evidence, logo and cover, feasibility spikes
 Requirements: Node 22.18+ (it runs the `.ts` sources directly) and Foundry. The CRE workflow also needs `bun` and the CRE CLI v1.37.0, which `packages/cre-workflow/setup.sh` installs at pinned versions (the CLI download is checksum-verified); the script has pinned builds for macOS and Linux (arm64 and amd64). Keys live outside the repo (`~/.config/isotherm/`, one file per role); never commit them.
 
 ```bash
+git clone https://github.com/tedinroc/isotherm.git
+cd isotherm
 forge build && forge test                                                       # offline suite (fork tests skip)
 MONAD_TESTNET_RPC=https://testnet-rpc.monad.xyz FORK_BLOCK=68898133 forge test  # full suite: 149 tests in 18 suites
 (cd packages/forecast && npm test && npm run settle -- RCSS 2026-10-04 2026-10-05)   # recompute days from public archives
@@ -175,6 +188,12 @@ cd packages/cre-workflow && ./setup.sh && export PATH="$PWD/.tools/bin:$PWD/.too
 ```
 
 Deployment (`script/deploy-testnet.sh`, testnet only), the live maker, the API and the settlement job are documented in [docs/OPERATIONS.md](docs/OPERATIONS.md) and each package's README.
+
+## Recognition
+
+**MetaMask bounty winner · Monad Metropolis · US$750.** This is a sponsor bounty award.
+
+<img src="docs/awards/metropolis-metamask-bounty.png" width="600" alt="Monad Metropolis winner card for Isotherm by tedinroc: US$750, MetaMask bounty winner.">
 
 ## Disclosures
 
